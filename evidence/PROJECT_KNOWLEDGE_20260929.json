@@ -53,6 +53,20 @@
       "reuseTargets": [
         "release automation"
       ]
+    },
+    {
+      "context": "GitHub publication",
+      "claimDecision": "GitHub release v1.0.0 is published and remotely verified with the final Windows and exact Linux-built asset hashes.",
+      "evidenceSource": [
+        "evidence/GITHUB_RELEASE_PUBLICATION_20260929.json",
+        "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.0.0"
+      ],
+      "confidence": "CONFIRMED",
+      "reuseTargets": [
+        "handoff",
+        "release verification",
+        "future updater"
+      ]
     }
   ]
 }

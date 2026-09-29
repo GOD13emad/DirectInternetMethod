@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "date": "2026-09-29",
+  "status": "PASS_GITHUB_PUBLISHED",
+  "repo": "GOD13emad/DirectInternetMethod",
+  "tag": "v1.0.0",
+  "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.0.0",
+  "assets": [
+    {
+      "name": "DirectInternetMethod_1.0.0_Windows_Setup.exe",
+      "assetId": 598291472,
+      "sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+      "bytes": 10609007,
+      "downloadCountAtVerification": 0
+    },
+    {
+      "name": "DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+      "assetId": 598320764,
+      "sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+      "bytes": 7951455,
+      "downloadCountAtVerification": 0
+    }
+  ],
+  "note": "Linux release asset was replaced before any download with the exact Linux-built artifact that passed final exact-package acceptance."
+}

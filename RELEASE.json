@@ -60,6 +60,20 @@
   "github": {
     "repo": "GOD13emad/DirectInternetMethod",
     "tag": "v1.0.0",
-    "release": "PENDING_UPLOAD"
+    "status": "PUBLISHED_VERIFIED",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.0.0",
+    "assets": [
+      {
+        "name": "DirectInternetMethod_1.0.0_Windows_Setup.exe",
+        "sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+        "bytes": 10609007
+      },
+      {
+        "name": "DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+        "sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+        "bytes": 7951455
+      }
+    ],
+    "verified": "2026-09-29"
   }
 }

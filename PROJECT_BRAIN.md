@@ -14,8 +14,8 @@ DoD: PASS_FINAL_RELEASE on both platforms + hash-pinned artifacts + GitHub main/
 
 ## Roadmap
 Completed: Windows standalone acceptance; Linux standalone live/rollback acceptance; icon/shortcut/UI correction; deterministic evidence and artifact hashing.
-← CURRENT: publish updated source and both final artifacts to GitHub v1.0.0.
-Open gate: GitHub commit/push/release only.
+Completed: GitHub main and release v1.0.0 published and remotely verified.
+← CURRENT: FINAL — no open release gate.
 Deferred: trusted Authenticode signing for Windows.
 
 ## Failure prevention
@@ -24,9 +24,11 @@ Deferred: trusted Authenticode signing for Windows.
 - Cleanup/rollback remains product-owned and exact.
 
 ## Exact Next Action
-Commit/push current final state, create/update GitHub tag/release v1.0.0, attach both hash-pinned artifacts, then verify release assets remotely.
+None for v1.0.0. Optional future work: Authenticode-sign the Windows installer and validate on additional Linux distributions.
 
 ## HISTORY
 - 2026-09-29: Windows standalone PASS_FINAL_RELEASE.
 - 2026-09-29: Linux standalone PASS_FINAL_RELEASE after live DNS/HTTPS + rollback.
 - 2026-09-29: Brand/UI corrected to dove + slogan; Linux window controls and drag behavior explicitly implemented.
+
+- 2026-09-29: GitHub v1.0.0 publication verified; Windows and Linux assets match final hashes.
