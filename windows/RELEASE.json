@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "product": "Direct Internet Method",
+  "version": "1.0.0",
+  "status": "LOCAL_ACCEPTED_WINDOWS",
+  "date": "2026-09-29",
+  "architecture": "Loopback ULA + ctrld v1.5.7 DoH + Windows NRPT + zapret/WinDivert",
+  "acceptance": "evidence/FINAL_ACCEPTANCE_20260929.json",
+  "acceptanceSummary": "evidence/ACCEPTANCE_SUMMARY_20260929.json",
+  "usage": {
+    "chatgptRequired": false,
+    "offlineRuntime": true,
+    "uacRequiredForMutations": true,
+    "controlPanel": "app/ControlPanel.ps1",
+    "start": "app/Start-Direct.ps1",
+    "stop": "app/Stop-Direct.ps1",
+    "status": "app/Status.ps1",
+    "recovery": "app/Recovery.ps1"
+  },
+  "limitations": [
+    "Windows only in this release.",
+    "Installer is not Authenticode-signed.",
+    "PowerShell 7 must already be installed.",
+    "Effectiveness may vary if the network filtering implementation changes."
+  ]
+}

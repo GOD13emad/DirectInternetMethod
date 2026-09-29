@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "date": "2026-09-29",
+  "product": "Direct Internet Method",
+  "platform": "Windows x64",
+  "version": "1.0.0",
+  "status": "PASS_LOCAL_FINAL",
+  "installer": {
+    "path": "delivery/DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "sha256": "E8366A46F19E193A8ADBAEE5362B3D56663B2079D4878DC0ABEAC9FEF648C245",
+    "bytes": 10646463,
+    "authenticode": "NotSigned"
+  },
+  "installAcceptance": {
+    "exit": 0,
+    "manifest": "24/24 PASS",
+    "desktopShortcut": true,
+    "startMenuShortcut": true,
+    "icon": true,
+    "uninstaller": true
+  },
+  "networkAcceptance": {
+    "source": "evidence/WINDOWS_FINAL_RELEASE_ACCEPTANCE_20260929.json",
+    "status": "PASS_FINAL_RELEASE"
+  },
+  "independence": {
+    "freeNetHub": false,
+    "chatGPT": false,
+    "vpn": false,
+    "httpSocksProxy": false,
+    "defaultRouteTunnel": false
+  },
+  "limitation": "PowerShell 7 is required on Windows; installer is not Authenticode-signed."
+}

@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "date": "2026-09-29",
+  "status": "PASS_FINAL_RELEASE",
+  "product": "Direct Internet Method",
+  "version": "1.0.0",
+  "acceptance": {
+    "status": "PASS_FINAL",
+    "authority": "evidence/FINAL_ACCEPTANCE_20260929.json",
+    "cycles": 2,
+    "cycle1": {
+      "dnsHttpsRounds": 3,
+      "chromeYoutube": true,
+      "exactRollback": true
+    },
+    "cycle2": {
+      "dnsHttpsRounds": 2,
+      "chromeYoutube": true,
+      "exactRollback": true
+    }
+  },
+  "installedPackage": {
+    "installExit": 0,
+    "installRoot": "%LOCALAPPDATA%\\Programs\\DirectInternetMethod",
+    "manifestFiles": 23,
+    "hashMismatches": 0,
+    "releaseStatus": "LOCAL_ACCEPTED_WINDOWS",
+    "controlPanelSmoke": "PASS",
+    "realControlPanelWindowVisible": "PASS",
+    "startMenuShortcuts": [
+      "Direct Internet Method",
+      "Start Direct Internet",
+      "Stop Direct Internet",
+      "Status",
+      "Emergency Recovery"
+    ],
+    "desktopShortcut": true,
+    "uninstaller": true
+  },
+  "finalState": {
+    "mode": "OFF",
+    "adapterDns": [
+      "192.168.20.1"
+    ],
+    "ownedUlaCount": 0,
+    "ownedNrptCount": 0,
+    "ctrldPid": 0,
+    "winwsPid": 0,
+    "winDivertCount": 0,
+    "broadRouteCount": 0,
+    "winHttpDirect": true,
+    "ics": {
+      "state": "Running",
+      "pid": 5044
+    }
+  },
+  "artifacts": [
+    {
+      "file": "DirectInternetMethod_1.0.0_Setup.exe",
+      "bytes": 10572420,
+      "sha256": "E040C3DE515C0E907E990E4948321157DDC8D1F0E773A7258CA044ECA1B90CBC",
+      "authenticode": "NotSigned"
+    },
+    {
+      "file": "DirectInternetMethod_1.0.0_Portable.zip",
+      "bytes": 8847369,
+      "sha256": "3899FADE365E0286270527C50841B1E96F55421FB1848B8CC69A5E9187F96CC7"
+    },
+    {
+      "file": "FreeNetHub_DirectMethod_Handoff_1.0.0.zip",
+      "bytes": 8843780,
+      "sha256": "A100A2295D80B6DFD9AF8291B7C08BA85CC45B9E2AF3DAD6520726CF5A043E11"
+    }
+  ],
+  "handoff": "delivery/FreeNetHub_DirectMethod_Handoff_1.0.0.zip",
+  "chatgptRequiredForNormalUse": false,
+  "limitations": [
+    "Windows only",
+    "PowerShell 7 required",
+    "Installer is not Authenticode-signed",
+    "Filtering changes may require future hostlist/desync updates"
+  ]
+}

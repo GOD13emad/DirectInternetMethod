@@ -1,0 +1,29 @@
+[service]
+log_level = "notice"
+cache_enable = true
+cache_size = 4096
+cache_serve_stale = true
+dns_watchdog_enabled = false
+intercept_mode = "off"
+
+[network.0]
+cidrs = ["0.0.0.0/0"]
+name = "All"
+
+[upstream.0]
+bootstrap_ip = "76.76.10.11"
+endpoint = "https://76.76.10.11/p0"
+name = "Control D Free Unfiltered"
+timeout = 5000
+type = "doh"
+ip_stack = "v4"
+
+[listener.0]
+ip = "::1"
+port = 53
+
+[listener.0.policy]
+name = "Direct DNS"
+networks = [
+  {"network.0" = ["upstream.0"]},
+]

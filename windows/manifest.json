@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "product": "Direct Internet Method",
+  "version": "1.0.0",
+  "architecture": "Loopback ULA + ctrld DoH + Windows NRPT + zapret/WinDivert",
+  "offlineRuntime": true,
+  "requires": "Windows + PowerShell 7; standard Windows UAC for Start/Stop/Recovery",
+  "files": [
+    {
+      "file": "app/Start-Direct.ps1",
+      "bytes": 16373,
+      "sha256": "B7AAC64B1BD288BD86BA98651D351069EADCA07400D834F86800CAFEDC2B3A25"
+    },
+    {
+      "file": "app/Stop-Direct.ps1",
+      "bytes": 7847,
+      "sha256": "BE7719B565F916E390B4C4E15DF4BBE78D20009B115807337E54A30FB6584A2A"
+    },
+    {
+      "file": "app/Status.ps1",
+      "bytes": 4929,
+      "sha256": "E84EE261DA9076B2BF6423874E5B67C1200E4B258C0CC694E763B53DAECA2426"
+    },
+    {
+      "file": "app/Toggle.ps1",
+      "bytes": 668,
+      "sha256": "6F82DCCAFE43970C9C9C6CA032DD25E7E3F30AB3FBAE2A5824C69736F93720C2"
+    },
+    {
+      "file": "app/Recovery.ps1",
+      "bytes": 4219,
+      "sha256": "070EDA06A3C6029A9A8B7DC77D1CAC4430DCA713278454D98C073B542D215C60"
+    },
+    {
+      "file": "app/ControlPanel.ps1",
+      "bytes": 5932,
+      "sha256": "6B0740EBF13B9B9170C176312EFF38E3CFB8B204C2DBA19091D74BA762C3AF41"
+    },
+    {
+      "file": "app/ControlPanel.cmd",
+      "bytes": 205,
+      "sha256": "875903F9181C02FC59F09898F320EC66BACF1428D5BE14378A0B9F686F07D5F7"
+    },
+    {
+      "file": "app/Start.cmd",
+      "bytes": 198,
+      "sha256": "425CF6D3C1B9043AEB850CFC21414ADF450564B63662CCD7E1374BD564FEA110"
+    },
+    {
+      "file": "app/Stop.cmd",
+      "bytes": 197,
+      "sha256": "B0F52F46D09CD9C42CC96890CB8EE869ACA37AC98F569B409CA04FD9F4B8AF2E"
+    },
+    {
+      "file": "app/Status.cmd",
+      "bytes": 176,
+      "sha256": "707BA29AAFB780A66346411F71B878AE36EBDBBC2CF231879891F2B325972420"
+    },
+    {
+      "file": "app/Recovery.cmd",
+      "bytes": 178,
+      "sha256": "84981D658E441DA409714AD534E855CC54967AA846FF51996A80F7ED2E713630"
+    },
+    {
+      "file": "app/DirectInternetMethod.ico",
+      "bytes": 45853,
+      "sha256": "30BDD9DD5BE732C49D5F56BC56DA799158D628A40502479973D6AD3E982175CC"
+    },
+    {
+      "file": "bin/ctrld/ctrld.exe",
+      "bytes": 7602136,
+      "sha256": "FC966FD7DD5EE850A9709F632789CFB5BBC06C45D903D24B8ECFCE3306B658CD"
+    },
+    {
+      "file": "bin/ctrld/ctrld.toml",
+      "bytes": 477,
+      "sha256": "2E1AF2EF934367465B15284DE93016B839849D717F9A8DC4AC18858FC123EAE2"
+    },
+    {
+      "file": "bin/ctrld/LICENSE.txt",
+      "bytes": 1101,
+      "sha256": "55D82D13FE55D4B2AEC42166FCCD3C16C267B7131ECF2FBD7C3C6C3463494501"
+    },
+    {
+      "file": "bin/zapret/winws.exe",
+      "bytes": 223232,
+      "sha256": "A14BFF1DF6234EA555D2E0C61B589F0707C0B12D6C9B7EECCDA76012154996E8"
+    },
+    {
+      "file": "bin/zapret/WinDivert.dll",
+      "bytes": 47616,
+      "sha256": "C1E060EE19444A259B2162F8AF0F3FE8C4428A1C6F694DCE20DE194AC8D7D9A2"
+    },
+    {
+      "file": "bin/zapret/WinDivert64.sys",
+      "bytes": 94144,
+      "sha256": "8DA085332782708D8767BCACE5327A6EC7283C17CFB85E40B03CD2323A90DDC2"
+    },
+    {
+      "file": "bin/zapret/cygwin1.dll",
+      "bytes": 2954293,
+      "sha256": "103104A52E5293CE418944725DF19E2BF81AD9269B9A120D71D39028E821499B"
+    },
+    {
+      "file": "bin/zapret/hosts.txt",
+      "bytes": 98,
+      "sha256": "9C8DBCC6FCFA607BEE4AE16F2DFDEB8D025D66FFD94208A53ED480C2B6892D4B"
+    },
+    {
+      "file": "bin/zapret/LICENSE.txt",
+      "bytes": 1069,
+      "sha256": "DCF5ABD3E5D876C1065982871C0CEC7368C0E61FC795C541798729516BB6B54F"
+    },
+    {
+      "file": "docs/README-FA.md",
+      "bytes": 2652,
+      "sha256": "112A00576990DF0E11A89AB42FCB989D6823CE138502FFD17CDBC46C80D885B9"
+    },
+    {
+      "file": "docs/ARCHITECTURE.md",
+      "bytes": 1977,
+      "sha256": "714FC131D2A3A1E727EA9EF9ECB5208D89C175DB65CD7FCC23581EC1CF67FD2D"
+    },
+    {
+      "file": "RELEASE.json",
+      "bytes": 882,
+      "sha256": "EFE41256264A6A778D7EA1F54DFF34CA0E2C96C8B7E0DDA2D6A53417D10E9C5B"
+    }
+  ]
+}
