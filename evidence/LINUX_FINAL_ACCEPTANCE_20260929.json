@@ -1,69 +1,42 @@
 {
   "schema": 1,
   "date": "2026-09-29",
+  "status": "PASS_FINAL_RELEASE",
   "product": "Direct Internet Method",
   "platform": "Linux x86_64",
   "version": "1.0.0",
-  "status": "PASS_LOCAL_FINAL",
-  "architecture": "temporary dedicated dimdns0 link + ctrld 1.5.7/DoH + systemd-resolved ~. routing + nftables/NFQUEUE + zapret nfqws 72.13",
-  "independence": {
-    "freeNetHub": false,
-    "chatGPT": false,
-    "vpn": false,
-    "httpSocksProxy": false,
-    "defaultRouteTunnel": false
+  "artifact": {
+    "path": "delivery/DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "bytes": 7951455,
+    "sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98"
   },
-  "install": {
-    "networkMutation": false,
-    "launcher": "~/.local/bin/direct-internet-method",
-    "applicationsShortcut": "~/.local/share/applications/direct-internet-method.desktop",
-    "desktopShortcut": "~/Desktop/Direct Internet Method.desktop",
-    "icon": "~/.local/share/icons/hicolor/scalable/apps/direct-internet-method.svg"
+  "exactPackage": {
+    "sha256Sums": "PASS 11/11",
+    "install": "PASS",
+    "networkMutationOnInstall": false,
+    "desktopShortcut": true,
+    "applicationsShortcut": true
   },
-  "live": {
-    "youtube": "HTTP 204",
-    "openai": "HTTP 401 reachable",
-    "github": "HTTP 200",
-    "directDns": "NOERROR with public YouTube A records",
-    "resolvedRoute": "dimdns0 ~.",
-    "physicalDns": "192.168.20.1 unchanged",
-    "defaultRoute": "192.168.20.1 via enp1s0 unchanged",
-    "broadRoutes": 0
+  "ui": {
+    "dedicatedGtkAdwaitaApp": true,
+    "slogan": "زن زندگی آزادی",
+    "doveIcon": true,
+    "draggableStandardHeader": true,
+    "minimize": true,
+    "maximizeRestore": true,
+    "close": true
   },
-  "rollback": {
-    "stateAbsent": true,
-    "dimdns0Absent": true,
-    "ctrldOwned": 0,
-    "nfqwsOwned": 0,
-    "physicalDnsRestored": true
-  },
-  "vpnRestore": {
-    "profile": "OIG-VPN-LIVE",
-    "activeAfterAcceptance": true,
-    "autoconnect": "no"
+  "networkAcceptance": {
+    "youtube": "204",
+    "openai": "401 reachable",
+    "github": "200",
+    "physicalDnsUnchanged": true,
+    "defaultRouteUnchanged": true,
+    "broadRoutes": 0,
+    "rollback": "PASS"
   },
   "dependencies": {
-    "ctrld": {
-      "version": "1.5.7",
-      "binarySha256": "CA64579A2BC866CF72F3E46663E551162AFEFF0D448E899A01817A095E45B071"
-    },
-    "nfqws": {
-      "version": "72.13",
-      "binarySha256": "F34615964D7321650197CD69D3F7CBFDAABE8118B5A0D57C6E41DCCDFF658999"
-    }
-  },
-  "failures": [
-    {
-      "rootCause": "systemd-resolved loopback link could not be configured through the host's networkd-backed resolvectl path",
-      "prevention": "dedicated temporary dummy link and direct resolve1 D-Bus link configuration"
-    },
-    {
-      "rootCause": "nfqws privilege drop prevented rereading the hostlist under a 0700 user directory",
-      "prevention": "copy the bounded hostlist to /run with read-only permissions before nfqws starts and remove it on Stop"
-    },
-    {
-      "rootCause": "ctrld WAN-client guard classified the dedicated listener source as WAN and returned REFUSED",
-      "prevention": "allow_wan_clients=true only on the listener bound to the product-owned dummy-link address"
-    }
-  ]
+    "ctrld": "1.5.7",
+    "nfqws": "72.13"
+  }
 }

@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "date": "2026-09-29",
+  "status": "CURRENT",
+  "records": [
+    {
+      "context": "Product authority",
+      "claimDecision": "Direct Internet Method is a standalone product for Windows and Linux; FreeNetHub integration is downstream and not required for normal use.",
+      "evidenceSource": [
+        "RELEASE.json"
+      ],
+      "confidence": "CONFIRMED",
+      "reuseTargets": [
+        "README",
+        "GitHub Release",
+        "handoff"
+      ]
+    },
+    {
+      "context": "Brand/UI",
+      "claimDecision": "Both platform UIs use a dedicated free-dove icon and display the user-specified slogan; Linux includes explicit Minimize, Maximize/Restore and Close controls plus a draggable standard header.",
+      "evidenceSource": [
+        "windows/app/DirectInternetMethod.ico",
+        "windows/app/ControlPanel.ps1",
+        "linux/app/direct-internet-method.svg",
+        "linux/app/direct_internet_method.py"
+      ],
+      "confidence": "CONFIRMED",
+      "reuseTargets": [
+        "release notes",
+        "future UI"
+      ]
+    },
+    {
+      "context": "Linux failure prevention",
+      "claimDecision": "Use a temporary dedicated DNS link and resolve1 D-Bus routing; stage nfqws hostlist in /run; enable ctrld WAN clients only on the product-owned listener.",
+      "evidenceSource": [
+        "evidence/LINUX_FINAL_ACCEPTANCE_20260929.json"
+      ],
+      "confidence": "CONFIRMED",
+      "reuseTargets": [
+        "maintenance",
+        "regression"
+      ]
+    },
+    {
+      "context": "Release artifacts",
+      "claimDecision": "Only hash-pinned Windows and Linux final artifacts are eligible for GitHub v1.0.0 release.",
+      "evidenceSource": [
+        "RELEASE.json"
+      ],
+      "confidence": "CONFIRMED",
+      "reuseTargets": [
+        "release automation"
+      ]
+    }
+  ]
+}

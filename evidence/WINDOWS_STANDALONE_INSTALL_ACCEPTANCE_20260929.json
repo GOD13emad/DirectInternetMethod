@@ -1,36 +1,39 @@
 {
   "schema": 1,
   "date": "2026-09-29",
+  "status": "PASS_FINAL_RELEASE",
   "product": "Direct Internet Method",
   "platform": "Windows x64",
   "version": "1.0.0",
-  "status": "PASS_LOCAL_FINAL",
-  "installer": {
+  "artifact": {
     "path": "delivery/DirectInternetMethod_1.0.0_Windows_Setup.exe",
-    "sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
     "bytes": 10609007,
+    "sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
     "authenticode": "NotSigned"
   },
-  "installAcceptance": {
+  "install": {
     "exit": 0,
-    "manifest": "24/24 PASS",
+    "manifestCount": 24,
+    "mismatches": [],
     "desktopShortcut": true,
     "startMenuShortcut": true,
     "icon": true,
-    "uninstaller": true,
-    "branding": "freedom dove + زن زندگی آزادی",
-    "controlPanelSmoke": "PASS"
+    "uninstaller": true
   },
-  "networkAcceptance": {
-    "source": "evidence/WINDOWS_FINAL_RELEASE_ACCEPTANCE_20260929.json",
-    "status": "PASS_FINAL_RELEASE"
+  "ui": {
+    "controlPanelParser": "PASS",
+    "windowLaunch": "PASS_RESPONDING",
+    "title": "Direct Internet Method",
+    "slogan": "زن زندگی آزادی",
+    "dedicatedIcon": true
   },
-  "independence": {
-    "freeNetHub": false,
-    "chatGPT": false,
-    "vpn": false,
-    "httpSocksProxy": false,
-    "defaultRouteTunnel": false
+  "postState": {
+    "ula": 0,
+    "nrpt": 0,
+    "ctrld": 0,
+    "winws": 0,
+    "broadRoutes": 0
   },
-  "limitation": "PowerShell 7 is required on Windows; installer is not Authenticode-signed."
+  "networkAcceptanceSource": "evidence/WINDOWS_FINAL_RELEASE_ACCEPTANCE_20260929.json",
+  "limitation": "PowerShell 7 required; installer not Authenticode-signed."
 }

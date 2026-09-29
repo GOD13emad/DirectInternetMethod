@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "product": "Direct Internet Method",
+  "version": "1.0.0",
+  "date": "2026-09-29",
+  "status": "PASS_FINAL_RELEASE",
+  "platforms": {
+    "windows": {
+      "status": "PASS_FINAL_RELEASE",
+      "artifact": "delivery/DirectInternetMethod_1.0.0_Windows_Setup.exe",
+      "sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+      "bytes": 10609007,
+      "installedManifest": "24/24 PASS",
+      "desktopShortcut": true,
+      "startMenuShortcut": true,
+      "dedicatedIcon": true,
+      "uiTitle": "Direct Internet Method",
+      "slogan": "زن زندگی آزادی",
+      "cleanAfterInstall": {
+        "ula": 0,
+        "nrpt": 0,
+        "ctrld": 0,
+        "winws": 0,
+        "broadRoutes": 0
+      },
+      "authenticode": "NotSigned",
+      "requirement": "PowerShell 7"
+    },
+    "linux": {
+      "status": "PASS_FINAL_RELEASE",
+      "artifact": "delivery/DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+      "sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+      "bytes": 7951455,
+      "exactPackageInstall": "PASS",
+      "applicationsShortcut": true,
+      "desktopShortcut": true,
+      "dedicatedIcon": true,
+      "slogan": "زن زندگی آزادی",
+      "windowControls": [
+        "drag-standard-header",
+        "minimize",
+        "maximize-restore",
+        "close"
+      ],
+      "networkAcceptance": "PASS",
+      "rollback": "PASS"
+    }
+  },
+  "architecture": {
+    "windows": "Loopback ULA + ctrld 1.5.7/DoH + NRPT + zapret/winws/WinDivert",
+    "linux": "temporary dimdns0 + ctrld 1.5.7/DoH + systemd-resolved + nftables/NFQUEUE + zapret nfqws 72.13"
+  },
+  "independence": {
+    "freeNetHub": false,
+    "chatGPT": false,
+    "vpn": false,
+    "httpSocksProxy": false,
+    "defaultRouteTunnel": false
+  },
+  "github": {
+    "repo": "GOD13emad/DirectInternetMethod",
+    "tag": "v1.0.0",
+    "release": "PENDING_UPLOAD"
+  }
+}
