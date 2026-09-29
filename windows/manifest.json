@@ -33,8 +33,8 @@
     },
     {
       "file": "app/ControlPanel.ps1",
-      "bytes": 5932,
-      "sha256": "6B0740EBF13B9B9170C176312EFF38E3CFB8B204C2DBA19091D74BA762C3AF41"
+      "bytes": 6594,
+      "sha256": "EEB04ABA09D109C2B204B8C59F5E704B05BA43A20382296A2389CED5E0B4AB34"
     },
     {
       "file": "app/ControlPanel.cmd",
@@ -63,8 +63,8 @@
     },
     {
       "file": "app/DirectInternetMethod.ico",
-      "bytes": 45853,
-      "sha256": "30BDD9DD5BE732C49D5F56BC56DA799158D628A40502479973D6AD3E982175CC"
+      "bytes": 33478,
+      "sha256": "00D25A881AB5CA731437F5C631C031FD0FC0A8223F45181ACB6240EAA28AB01F"
     },
     {
       "file": "bin/ctrld/ctrld.exe",

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "date": "2026-09-29",
+  "product": "Direct Internet Method",
+  "version": "1.0.0",
+  "status": "PASS_LOCAL_FINAL",
+  "windows": {
+    "artifact": "delivery/DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+    "installerExit": 0,
+    "icon": true,
+    "desktopShortcut": true,
+    "startMenuShortcut": true,
+    "networkAcceptance": "PASS_FINAL_RELEASE"
+  },
+  "linux": {
+    "artifact": "delivery/DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "sha256": "5940CC754108189A67627C4DACAF10BEBF0A4613E0B203D6004548CC279A3826",
+    "exactPackageInstall": "PASS",
+    "gui": "Adw.ToolbarView + Adw.HeaderBar",
+    "movableResizable": true,
+    "branding": "freedom dove + زن زندگی آزادی",
+    "networkAcceptance": "PASS_LOCAL_FINAL"
+  },
+  "independence": {
+    "freeNetHub": false,
+    "chatGPT": false,
+    "vpn": false,
+    "httpSocksProxy": false,
+    "defaultRouteTunnel": false
+  }
+}

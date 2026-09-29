@@ -74,13 +74,28 @@ foreach($h in @(70,70,150,90,70)){
  $Grid.RowDefinitions.Add($rd)
 }
 
+$Hero=New-Object Windows.Controls.StackPanel
+$Hero.Orientation='Horizontal'
+$Hero.Margin='24,10,24,4'
+$Logo=New-Object Windows.Controls.Image
+$Logo.Width=54;$Logo.Height=54;$Logo.Margin='0,0,12,0'
+$Logo.Source=[Windows.Media.Imaging.BitmapFrame]::Create([Uri](Join-Path $PSScriptRoot 'DirectInternetMethod.ico'))
+$HeroText=New-Object Windows.Controls.StackPanel
 $Title=New-Object Windows.Controls.TextBlock
 $Title.Text='Direct Internet Method'
-$Title.FontSize=26
+$Title.FontSize=24
 $Title.FontWeight='SemiBold'
-$Title.Margin='24,18,24,6'
-[Windows.Controls.Grid]::SetRow($Title,0)
-$Grid.Children.Add($Title)|Out-Null
+$Slogan=New-Object Windows.Controls.TextBlock
+$Slogan.Text='زن زندگی آزادی'
+$Slogan.FontSize=18
+$Slogan.FontWeight='SemiBold'
+$Slogan.FlowDirection='RightToLeft'
+$HeroText.Children.Add($Title)|Out-Null
+$HeroText.Children.Add($Slogan)|Out-Null
+$Hero.Children.Add($Logo)|Out-Null
+$Hero.Children.Add($HeroText)|Out-Null
+[Windows.Controls.Grid]::SetRow($Hero,0)
+$Grid.Children.Add($Hero)|Out-Null
 
 $StatusPanel=New-Object Windows.Controls.StackPanel
 $StatusPanel.Orientation='Horizontal'

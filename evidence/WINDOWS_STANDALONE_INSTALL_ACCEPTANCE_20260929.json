@@ -7,8 +7,8 @@
   "status": "PASS_LOCAL_FINAL",
   "installer": {
     "path": "delivery/DirectInternetMethod_1.0.0_Windows_Setup.exe",
-    "sha256": "E8366A46F19E193A8ADBAEE5362B3D56663B2079D4878DC0ABEAC9FEF648C245",
-    "bytes": 10646463,
+    "sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+    "bytes": 10609007,
     "authenticode": "NotSigned"
   },
   "installAcceptance": {
@@ -17,7 +17,9 @@
     "desktopShortcut": true,
     "startMenuShortcut": true,
     "icon": true,
-    "uninstaller": true
+    "uninstaller": true,
+    "branding": "freedom dove + زن زندگی آزادی",
+    "controlPanelSmoke": "PASS"
   },
   "networkAcceptance": {
     "source": "evidence/WINDOWS_FINAL_RELEASE_ACCEPTANCE_20260929.json",
