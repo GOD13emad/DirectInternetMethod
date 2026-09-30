@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.1.0",
   "date": "2026-09-30",
-  "status": "PASS_FINAL_RELEASE_READY_TO_PUBLISH",
+  "status": "PASS_FINAL_RELEASE_PUBLISHED_VERIFIED",
   "platforms": {
     "windows": {
       "status": "PASS_FINAL_RELEASE",
@@ -43,7 +43,10 @@
   "github": {
     "repo": "GOD13emad/DirectInternetMethod",
     "tag": "v1.1.0",
-    "status": "PENDING_PUBLICATION"
+    "status": "PUBLISHED_VERIFIED",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.1.0",
+    "publishedAt": "2026-09-30T19:51:47Z",
+    "updateFlow": "PASS_PUBLISHED_UPDATE_FLOW"
   },
   "limitations": [
     "Windows installer is not Authenticode-signed.",

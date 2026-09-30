@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "date": "2026-09-30",
+  "date": "2026-10-01",
   "project": "DirectInternetMethod",
   "version": "1.1.0",
-  "status": "PASS_FINAL_CROSS_PLATFORM_READY_TO_PUBLISH",
+  "status": "PASS_FINAL_CROSS_PLATFORM_PUBLISHED_VERIFIED",
   "windows": {
     "status": "PASS_FINAL_WINDOWS_1_1_0",
     "artifact": "delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe",
@@ -76,7 +76,11 @@
   "publication": {
     "repo": "GOD13emad/DirectInternetMethod",
     "tag": "v1.1.0",
-    "status": "PENDING_PUBLICATION"
+    "status": "PUBLISHED_VERIFIED",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.1.0",
+    "publishedAt": "2026-09-30T19:51:47Z",
+    "updateFlow": "PASS_PUBLISHED_UPDATE_FLOW",
+    "evidence": "evidence/DIM_110_PUBLICATION_FINAL_20261001.json"
   },
   "deferred": [
     "Windows Authenticode signing"

@@ -1,9 +1,9 @@
 {
   "schema": 2,
-  "date": "2026-09-30",
+  "date": "2026-10-01",
   "project": "DirectInternetMethod",
   "targetVersion": "1.1.0",
-  "status": "PASS_FINAL_READY_TO_PUBLISH",
+  "status": "PASS_FINAL_RELEASE_PUBLISHED_VERIFIED",
   "linux": {
     "status": "PASS_FINAL_LINUX_1_1_0",
     "artifact": "delivery/DirectInternetMethod_1.1.0_Linux_x86_64.zip",
@@ -36,6 +36,8 @@
   },
   "crossPlatformFinalAcceptance": "evidence/DIM_110_FINAL_ACCEPTANCE_20260930.json",
   "checksums": "SHA256SUMS.txt",
-  "github110Published": false,
-  "exactNextAction": "Commit the evidence-backed 1.1.0 release state, fast-forward/merge to main, tag v1.1.0, push, publish Windows/Linux artifacts plus SHA256SUMS.txt, then verify GitHub latest/update checksum flow."
+  "github110Published": true,
+  "exactNextAction": "No release blocker remains. Future work is maintenance only: monitor compatibility and prepare a later signed build if Authenticode credentials become available.",
+  "publicationEvidence": "evidence/DIM_110_PUBLICATION_FINAL_20261001.json",
+  "updateFlow": "PASS_PUBLISHED_UPDATE_FLOW"
 }

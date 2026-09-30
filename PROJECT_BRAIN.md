@@ -1,12 +1,12 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: PASS_FINAL_1_1_0_READY_TO_PUBLISH
+Status: FINAL_PUBLISHED_VERIFIED_1_1_0
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
 ## Authoritative current state
 - Source authority: working tree on branch `release/v1.1.0-candidate`; pre-promotion HEAD was `8ffe1627e45045e083a3d86e4e3dfd0902262725`.
-- Cross-platform 1.1.0 product acceptance is **PASS**; publication is the only remaining release step.
+- Cross-platform 1.1.0 product acceptance is **PASS_FINAL_RELEASE** and GitHub publication/update verification is **PUBLISHED_VERIFIED**.
 - Windows final artifact:
   - `delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe`
   - bytes: 157,078,634
@@ -41,7 +41,8 @@ Completed: Windows real-host final-artifact install/ACTIVE/Stop/exact rollback/R
 Completed: Linux protected backend, no-admin actions, live network, rollback/recovery, deterministic build.
 Completed: release docs/metadata reconciled to 1.1.0 and final Windows installer rebuilt/tested.
 Completed: cross-platform final acceptance + SHA256SUMS.
-← CURRENT: commit/promotion to main → tag `v1.1.0` → GitHub release assets → latest/update verification.
+Completed: main/tag `v1.1.0` + GitHub release assets + latest endpoint + full downloaded SHA-256 update verification.
+← CURRENT: no release blocker remains; maintenance/compatibility monitoring only.
 Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
@@ -61,8 +62,8 @@ Deferred: trusted Authenticode signing.
 All three validator failures were harness defects; product runtime remained healthy and their failing evidence is preserved.
 
 ## Evidence / Knowledge
-- Cross-platform final: `evidence/DIM_110_FINAL_ACCEPTANCE_20260930.json` — SHA-256 `76C9EDBBC6D583818E33B558036275B293A560AC6061D09CFB06F5A3C0488773`.
-- Gate status: `evidence/DIM_110_GATE_STATUS_20260930.json` — SHA-256 `E9EB4C875CBE6C282527E5709863CB59FA4CB64404B6C0F8D7AB1EB5BECFBD85`.
+- Cross-platform final: `evidence/DIM_110_FINAL_ACCEPTANCE_20260930.json` — SHA-256 `5610C74C0265D9F614A8619A4E6C6E008DEC7CCEC0774EF0720B8616E1A89D2C`.
+- Gate status: `evidence/DIM_110_GATE_STATUS_20260930.json` — SHA-256 `DC7E7E0544D671BE3D21876159E7629101B59586FBE401AE71019B46FE44AB5A`.
 - Windows final artifact acceptance: `evidence/WINDOWS_110_HOST_FINAL_ARTIFACT_ACCEPTANCE_20260930.json` — SHA-256 `0E37A969EE9C91DF4BD4FCBDAF330A3D4122DCA8DEB7FF1D577D1B2FAC0A3FA9`.
 - Windows final install: `evidence/WINDOWS_110_HOST_FINAL_INSTALL_RESULT_20260930.json` — SHA-256 `846993CCF9F5C381633A61FF0E3689FCE5BC207CC4012D1D8600F9B2BC45CAC8`.
 - Windows active: `evidence/WINDOWS_110_HOST_ACTIVE_ACCEPTANCE_20260930.json` — SHA-256 `52BEEA2E4272E640BBC2D52BB8E25B1F847FA5FC81BD890EACEE6B9C1AA4DAE7`.
@@ -72,11 +73,14 @@ All three validator failures were harness defects; product runtime remained heal
 - Linux final: `evidence/LINUX_110_FINAL_ACCEPTANCE_20260930.json` — SHA-256 `DE4560B6F1AC168EF58453E62A9A809F683560C421E529AE12BA61CDA28668E6`.
 - ctrld root cause: `evidence/WINDOWS_110_CTRLD_SERVICE_ROOT_CAUSE_20260930.json`.
 - action completion root cause: `evidence/WINDOWS_110_ACTION_COMPLETION_ROOT_CAUSE_20260930.json`.
+- Publication final: `evidence/DIM_110_PUBLICATION_FINAL_20261001.json` — SHA-256 `8CAE7F56239575001B665BD4F4240CE999F084D408597F041E13F4327915857D`.
+- Published update-flow verification: `evidence/DIM_110_GITHUB_PUBLICATION_VERIFY_20261001.json` — SHA-256 `461A4CD7C270F18F1E4B732A6AF308BD6B23FFDA2D2AA003AED2C89ADC8CE130`.
+- Additional host exact-rollback revalidation: `evidence/WINDOWS_110_HOST_LIVE_POSTROLLBACK_20261001.json` — SHA-256 `DFB518795599780DBF960791B4ED3F435F77CD2C5C0816B5006210ABAB74B566`.
 - Candidate-cycle evidence was copied to immutable `WINDOWS_110_HOST_CANDIDATE_*` records before final-artifact retest.
 - Earlier stale parallel hashes `D6AF…/A011…/5AEF…` are superseded and must not be used as release authority.
 
 ## Exact Next Action
-Commit only authoritative product/release/evidence files; promote to `main`, tag `v1.1.0`, push, create GitHub release with the Windows installer, Linux ZIP, and `SHA256SUMS.txt`; verify published hashes/latest-release updater flow; then record publication evidence and mark Brain FINAL/PUBLISHED_VERIFIED.
+No release-critical action remains. Keep v1.1.0 immutable; future changes require a new version. Optional deferred work: Authenticode signing when trusted signing credentials are available.
 
 ## HISTORY
 - 2026-09-29: v1.0.0 Windows and Linux PASS_FINAL_RELEASE; GitHub v1.0.0 published and verified.
@@ -101,3 +105,5 @@ Commit only authoritative product/release/evidence files; promote to `main`, tag
 - 2026-09-30: host validation false-negatives isolated to test harness permissions/aggregation/schema normalization; failing evidence preserved; named-check and normalized-route validators PASS.
 - 2026-09-30: release docs/metadata corrected from stale 1.0/CANDIDATE descriptions; final installer rebuilt as SHA-256 `E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0`.
 - 2026-09-30: exact final Windows artifact installed and retested on real host; Start/ACTIVE/Stop/rollback/Recovery PASS. Cross-platform 1.1.0 acceptance is PASS; publication remains.
+
+- 2026-10-01: GitHub v1.1.0 publication verified end-to-end. `/releases/latest` returned v1.1.0; Windows and Linux release assets were downloaded and matched published `SHA256SUMS.txt` exactly. Release state promoted to FINAL/PUBLISHED_VERIFIED.

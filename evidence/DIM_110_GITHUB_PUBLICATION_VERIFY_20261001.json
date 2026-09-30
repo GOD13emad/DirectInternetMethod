@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-01T02:51:10.3364062+03:30",
+  "status": "PASS_PUBLISHED_UPDATE_FLOW",
+  "latestTag": "v1.1.0",
+  "releaseId": 400387485,
+  "publishedAt": "2026-09-30T19:51:47Z",
+  "checks": {
+    "DirectInternetMethod_1.1.0_Windows_Setup.exe": {
+      "expected": "E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0",
+      "actual": "E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0",
+      "match": true,
+      "bytes": 157078634
+    },
+    "DirectInternetMethod_1.1.0_Linux_x86_64.zip": {
+      "expected": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
+      "actual": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
+      "match": true,
+      "bytes": 8139344
+    }
+  }
+}

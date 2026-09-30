@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "DirectInternetMethod",
+  "version": "1.1.0",
+  "status": "PASS_PUBLISHED_VERIFIED",
+  "git": {
+    "branch": "main",
+    "releaseTag": "v1.1.0",
+    "releaseCommit": "dd296c89ec23d434650b8001131d98e526d45f84"
+  },
+  "github": {
+    "repo": "GOD13emad/DirectInternetMethod",
+    "releaseId": 400387485,
+    "tag": "v1.1.0",
+    "publishedAt": "2026-09-30T19:51:47Z",
+    "url": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.1.0",
+    "latestEndpoint": "PASS v1.1.0"
+  },
+  "assets": [
+    {
+      "name": "DirectInternetMethod_1.1.0_Windows_Setup.exe",
+      "bytes": 157078634,
+      "sha256": "E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0",
+      "downloadVerified": true
+    },
+    {
+      "name": "DirectInternetMethod_1.1.0_Linux_x86_64.zip",
+      "bytes": 8139344,
+      "sha256": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
+      "downloadVerified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "published": true
+    }
+  ],
+  "updater": {
+    "status": "PASS_PUBLISHED_UPDATE_FLOW",
+    "evidence": "evidence/DIM_110_GITHUB_PUBLICATION_VERIFY_20261001.json",
+    "windowsChecksumMatch": true,
+    "linuxChecksumMatch": true
+  },
+  "windows": {
+    "status": "PASS_FINAL_RELEASE",
+    "hostLive": true,
+    "exactRollback": true,
+    "recovery": true,
+    "installedServiceSha256": "F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68",
+    "installedManifestSha256": "F60D21EC678B9CB5F44D2CEA70DDFC1C3F4C80D4799A37131BAC18DC5536AD42"
+  },
+  "linux": {
+    "status": "PASS_FINAL_RELEASE",
+    "live": true,
+    "rollback": true,
+    "recovery": true,
+    "deterministicBuild": true
+  },
+  "limitations": [
+    "Windows installer is not Authenticode-signed.",
+    "Filtering effectiveness may vary if network filtering behavior changes."
+  ]
+}
