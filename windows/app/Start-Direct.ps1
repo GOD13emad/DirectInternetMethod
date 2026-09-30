@@ -31,6 +31,18 @@ $Expected=@{
  'hosts.txt'='9C8DBCC6FCFA607BEE4AE16F2DFDEB8D025D66FFD94208A53ED480C2B6892D4B'
 }
 
+function Start-ExactProcess([string]$File,[string[]]$ArgumentList,[string]$WorkingDirectory){
+ $psi=[Diagnostics.ProcessStartInfo]::new()
+ $psi.FileName=$File
+ $psi.WorkingDirectory=$WorkingDirectory
+ $psi.UseShellExecute=$false
+ $psi.CreateNoWindow=$true
+ foreach($a in $ArgumentList){[void]$psi.ArgumentList.Add([string]$a)}
+ $p=[Diagnostics.Process]::Start($psi)
+ if(-not $p){throw ('PROCESS_START_FAILED_'+[IO.Path]::GetFileName($File))}
+ return $p
+}
+
 function Test-Admin{
  $id=[Security.Principal.WindowsIdentity]::GetCurrent()
  $p=[Security.Principal.WindowsPrincipal]::new($id)
@@ -146,9 +158,15 @@ function Curl-Probe([string]$Url,[string]$LocalIp,[int]$Timeout=7){
 function Rollback($s){
  try{Remove-OwnedNrpt ([string]$s.nrptRuleName)}catch{}
  Clear-DnsClientCache -ErrorAction SilentlyContinue
- if($s.PSObject.Properties.Name -contains 'winwsPid' -and $s.winwsPid){Stop-Process -Id ([int]$s.winwsPid) -Force -ErrorAction SilentlyContinue}
+ if($s.PSObject.Properties.Name -contains 'winwsPid' -and $s.winwsPid){
+  $wp=Get-Process -Id ([int]$s.winwsPid) -ErrorAction SilentlyContinue
+  if($wp -and $wp.Path -and $wp.Path.StartsWith($ZapretDir,[StringComparison]::OrdinalIgnoreCase)){Stop-Process -Id $wp.Id -Force -ErrorAction SilentlyContinue}
+ }
  Stop-OwnedWinws
- if($s.PSObject.Properties.Name -contains 'ctrldPid' -and $s.ctrldPid){Stop-Process -Id ([int]$s.ctrldPid) -Force -ErrorAction SilentlyContinue}
+ if($s.PSObject.Properties.Name -contains 'ctrldPid' -and $s.ctrldPid){
+  $cp=Get-Process -Id ([int]$s.ctrldPid) -ErrorAction SilentlyContinue
+  if($cp -and $cp.Path -and $cp.Path.StartsWith($CtrldDir,[StringComparison]::OrdinalIgnoreCase)){Stop-Process -Id $cp.Id -Force -ErrorAction SilentlyContinue}
+ }
  Get-OwnedCtrld|Stop-Process -Force -ErrorAction SilentlyContinue
  Start-Sleep -Milliseconds 400
  Remove-Item -LiteralPath $CtrldSock -Force -ErrorAction SilentlyContinue
@@ -237,7 +255,7 @@ try{
  }
  if(-not $ready){throw 'ULA_NOT_READY'}
 
- $cp=Start-Process -FilePath $Ctrld -ArgumentList @('run',('--config='+$RuntimeConfig),'--silent') -WorkingDirectory $RuntimeCtrld -WindowStyle Hidden -PassThru
+ $cp=Start-ExactProcess $Ctrld @('-s','run','-c',$RuntimeConfig) $RuntimeCtrld
  $state.ctrldPid=$cp.Id
  Write-JsonAtomic $StatePath $state
  Start-Sleep -Seconds 2
@@ -280,7 +298,7 @@ try{
   '--dpi-desync-split-pos=1,midsld',
   '--dpi-desync-fooling=badseq,md5sig'
  )
- $wp=Start-Process -FilePath $Winws -ArgumentList $args -WorkingDirectory $ZapretDir -WindowStyle Hidden -PassThru
+ $wp=Start-ExactProcess $Winws $args $ZapretDir
  $state.winwsPid=$wp.Id
  Write-JsonAtomic $StatePath $state
  Start-Sleep -Seconds 3

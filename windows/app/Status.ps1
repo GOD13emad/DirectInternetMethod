@@ -1,81 +1,166 @@
 [CmdletBinding()]
 param([switch]$Json)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference='SilentlyContinue'
 
 $Root=Split-Path $PSScriptRoot -Parent
-$Runtime=Join-Path $env:ProgramData 'DirectDnsDpiHarness'
-$StatePath=Join-Path $Runtime 'state.json'
-$CtrldDir=Join-Path $Root 'bin\ctrld'
-$CtrldSock=Join-Path $CtrldDir 'ctrld_control.sock'
-$ZapretDir=Join-Path $Root 'bin\zapret'
+$PrivilegedRoot=Join-Path $env:ProgramFiles 'DirectInternetMethod\Privileged'
+$StatePath=Join-Path $env:ProgramData 'DirectDnsDpiHarness\state.json'
 $Ula='fd53:4444:48::53'
 $NrptDisplay='DirectDnsDpiHarness'
+$NrptComment='Owned by DirectDnsDpiHarness; safe to remove only by this harness.'
 
-function Resolve-PhysicalDefault{
- $r=Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
-   Where-Object {$_.State -eq 'Alive'} |
-   Sort-Object @{Expression={[int]$_.RouteMetric+[int]$_.InterfaceMetric}},RouteMetric,InterfaceMetric |
-   Select-Object -First 1
- if(-not $r){return $null}
- $a=Get-NetAdapter -InterfaceIndex $r.InterfaceIndex -ErrorAction SilentlyContinue
- $ip=Get-NetIPAddress -InterfaceIndex $r.InterfaceIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue |
-   Where-Object {$_.IPAddress -and $_.IPAddress -notlike '169.254.*'} | Select-Object -First 1
- if(-not $a -or -not $ip){return $null}
- [pscustomobject]@{Alias=[string]$a.Name;LocalIp=[string]$ip.IPAddress;Description=[string]$a.InterfaceDescription}
-}
-function ProbeDns([string]$Name){
+function Same-Path([string]$A,[string]$B){
  try{
-  $sw=[Diagnostics.Stopwatch]::StartNew()
-  $a=@([Net.Dns]::GetHostAddresses($Name)|Where-Object AddressFamily -eq InterNetwork|ForEach-Object IPAddressToString|Select-Object -Unique)
-  $sw.Stop()
-  [ordered]@{ok=($a.Count -gt 0);ms=$sw.ElapsedMilliseconds;answers=$a}
- }catch{[ordered]@{ok=$false;ms=-1;answers=@();error=$_.Exception.Message}}
+  return [string]::Equals([IO.Path]::GetFullPath($A),[IO.Path]::GetFullPath($B),[StringComparison]::OrdinalIgnoreCase)
+ }catch{return $false}
 }
-$route=Resolve-PhysicalDefault
+
+function Get-PidHealth($State,[string]$Property,[string]$ExpectedName){
+ $id=0
+ if($State -and ($State.PSObject.Properties.Name -contains $Property)){$id=[int]$State.$Property}
+ if($id -le 0){return [ordered]@{ok=$false;pid=0;name=''}}
+ $p=Get-Process -Id $id -ErrorAction SilentlyContinue
+ if(-not $p){return [ordered]@{ok=$false;pid=$id;name=''}}
+ $name=[string]$p.ProcessName
+ return [ordered]@{ok=[string]::Equals($name,$ExpectedName,[StringComparison]::OrdinalIgnoreCase);pid=$id;name=$name}
+}
+
+function Get-PhysicalDefault{
+ $rows=@()
+ foreach($line in @(& route.exe print -4 0.0.0.0 2>$null)){
+  if($line -match '^\s*0\.0\.0\.0\s+0\.0\.0\.0\s+(\S+)\s+(\S+)\s+(\d+)\s*$'){
+   $rows += [pscustomobject]@{NextHop=$matches[1];LocalIp=$matches[2];Metric=[int]$matches[3]}
+  }
+ }
+ $best=$rows|Sort-Object Metric|Select-Object -First 1
+ if(-not $best){return $null}
+ $ip=Get-NetIPAddress -AddressFamily IPv4 -IPAddress ([string]$best.LocalIp) -ErrorAction SilentlyContinue|Select-Object -First 1
+ if(-not $ip){return $null}
+ return [pscustomobject]@{Alias=[string]$ip.InterfaceAlias;Index=[int]$ip.InterfaceIndex;LocalIp=[string]$best.LocalIp}
+}
+
+function Get-BroadRoutes{
+ $out=@()
+ foreach($line in @(& route.exe print -4 2>$null)){
+  if($line -match '^\s*(0\.0\.0\.0|128\.0\.0\.0)\s+128\.0\.0\.0\s+(\S+)\s+(\S+)\s+(\d+)\s*$'){
+   $prefix=if($matches[1] -eq '0.0.0.0'){'0.0.0.0/1'}else{'128.0.0.0/1'}
+   $local=[string]$matches[3]
+   $ip=Get-NetIPAddress -AddressFamily IPv4 -IPAddress $local -ErrorAction SilentlyContinue|Select-Object -First 1
+   $out += [ordered]@{
+    prefix=$prefix
+    interface=if($ip){[string]$ip.InterfaceAlias}else{$local}
+    interfaceIndex=if($ip){[int]$ip.InterfaceIndex}else{0}
+    description=if($ip){[string]$ip.InterfaceAlias}else{$local}
+    nextHop=[string]$matches[2]
+   }
+  }
+ }
+ return $out
+}
+
+function Get-IcsStatus{
+ $raw=(& sc.exe queryex SharedAccess 2>$null|Out-String)
+ if(-not $raw){return $null}
+ $state=if($raw -match 'STATE\s+:\s+4\s+RUNNING'){'Running'}elseif($raw -match 'STATE\s+:\s+1\s+STOPPED'){'Stopped'}else{'Unknown'}
+ $pid=0
+ if($raw -match 'PID\s+:\s+(\d+)'){$pid=[int64]$matches[1]}
+ return [ordered]@{state=$state;pid=$pid}
+}
+
 $state=$null
-if(Test-Path $StatePath){try{$state=Get-Content -Raw -Encoding UTF8 $StatePath|ConvertFrom-Json}catch{}}
-$ctrld=@(Get-Process ctrld -ErrorAction SilentlyContinue|Where-Object{$_.Path -and $_.Path.StartsWith($CtrldDir,[StringComparison]::OrdinalIgnoreCase)})
-$winws=@(Get-Process winws -ErrorAction SilentlyContinue|Where-Object{$_.Path -and $_.Path.StartsWith($ZapretDir,[StringComparison]::OrdinalIgnoreCase)})
-$nrpt=@(Get-DnsClientNrptRule -ErrorAction SilentlyContinue|Where-Object{$_.DisplayName -eq $NrptDisplay}|Select-Object Name,Namespace,NameServers,Comment)
-$ula=@(Get-NetIPAddress -InterfaceIndex 1 -AddressFamily IPv6 -ErrorAction SilentlyContinue|Where-Object IPAddress -eq $Ula|Select-Object IPAddress,PrefixLength,AddressState,SkipAsSource)
-$drivers=@(Get-CimInstance Win32_SystemDriver -ErrorAction SilentlyContinue|Where-Object{$_.Name -match '^WinDivert' -and $_.PathName -and $_.PathName.Contains($Root,[StringComparison]::OrdinalIgnoreCase)}|Select-Object Name,State,PathName)
-$broad=@(Get-NetRoute -AddressFamily IPv4 -ErrorAction SilentlyContinue|Where-Object{$_.DestinationPrefix -in @('0.0.0.0/1','128.0.0.0/1')})
+if(Test-Path -LiteralPath $StatePath){
+ try{$state=Get-Content -LiteralPath $StatePath -Raw -Encoding UTF8|ConvertFrom-Json}catch{}
+}
+$rootOk=[bool]($state -and $state.root -and ((Same-Path ([string]$state.root) $Root) -or (Same-Path ([string]$state.root) $PrivilegedRoot)))
+
+if($rootOk -and $state.interface -and $state.localIp){
+ $route=[pscustomobject]@{Alias=[string]$state.interface;Index=0;LocalIp=[string]$state.localIp}
+}else{
+ $route=Get-PhysicalDefault
+}
+
+$ctrld=Get-PidHealth $state 'ctrldPid' 'ctrld'
+$winws=Get-PidHealth $state 'winwsPid' 'winws'
+
+$nrpt=@()
+$ownedNrpt=@()
+if($state -and $state.nrptRuleName){
+ $candidate=Get-DnsClientNrptRule -Name ([string]$state.nrptRuleName) -ErrorAction SilentlyContinue
+ if($candidate -and [string]$candidate.DisplayName -eq $NrptDisplay){
+  $ownedNrpt=@($candidate)
+  if([string]$candidate.Comment -eq $NrptComment){
+   $nrpt=@($candidate|Select-Object Name,Namespace,NameServers,Comment)
+  }
+ }
+}else{
+ $ownedNrpt=@(Get-DnsClientNrptRule -ErrorAction SilentlyContinue|Where-Object{$_.DisplayName -eq $NrptDisplay})
+}
+
+$ula=@(
+ Get-NetIPAddress -InterfaceIndex 1 -AddressFamily IPv6 -ErrorAction SilentlyContinue |
+ Where-Object IPAddress -eq $Ula |
+ Select-Object IPAddress,PrefixLength,AddressState,SkipAsSource
+)
+$broad=@(Get-BroadRoutes)
+
+$ownedHealthy=[bool](
+ $state -and
+ [string]$state.phase -eq 'ACTIVE' -and
+ $rootOk -and
+ $ctrld.ok -and
+ $winws.ok -and
+ $nrpt.Count -eq 1 -and
+ $ula.Count -eq 1
+)
+$anyOwned=[bool]($state -or $ownedNrpt.Count -or $ula.Count -or $ctrld.pid -or $winws.pid)
+$conflict=[bool]($ownedHealthy -and $broad.Count -gt 0)
+$blocked=[bool]((-not $anyOwned) -and $broad.Count -gt 0)
+
+$mode=if($conflict){'CONFLICT'}elseif($ownedHealthy){'ACTIVE'}elseif($anyOwned){'DEGRADED'}elseif($blocked){'BLOCKED'}else{'OFF'}
+
+$adapterDns=[string[]]@()
+if($route){
+ $adapterDns=[string[]]@((Get-DnsClientServerAddress -InterfaceAlias $route.Alias -AddressFamily IPv4 -ErrorAction SilentlyContinue).ServerAddresses)
+}
+
+$reason=switch($mode){
+ 'ACTIVE' {'Direct Method resources are healthy.'}
+ 'CONFLICT' {'Direct Method resources are healthy, but another VPN/tunnel owns broad /1 routes.'}
+ 'BLOCKED' {'Another VPN/tunnel owns broad /1 routes; disconnect it before Start.'}
+ 'DEGRADED' {'Owned state/resources are incomplete or mismatched. Use Recovery.'}
+ default {'Direct Method is off.'}
+}
+
 $proxy=(netsh winhttp show proxy|Out-String).Trim()
-$ics=Get-CimInstance Win32_Service -Filter "Name='SharedAccess'" -ErrorAction SilentlyContinue
-$active=($state -and [string]$state.phase -eq 'ACTIVE' -and $ctrld.Count -eq 1 -and $winws.Count -eq 1 -and $nrpt.Count -eq 1 -and $ula.Count -eq 1 -and $drivers.Count -ge 1)
-$sock=[bool](Test-Path -LiteralPath $CtrldSock)
-$degraded=(-not $active -and ($state -or $ctrld.Count -or $winws.Count -or $nrpt.Count -or $ula.Count -or $drivers.Count -or $sock))
-$mode=if($active){'ACTIVE'}elseif($degraded){'DEGRADED'}else{'OFF'}
+$ics=Get-IcsStatus
+
 $result=[ordered]@{
  mode=$mode
+ reason=$reason
  statePhase=if($state){[string]$state.phase}else{$null}
+ stateRootOk=$rootOk
+ ownedResourcesHealthy=$ownedHealthy
+ externalRouteConflict=($conflict -or $blocked)
  interface=if($route){$route.Alias}else{$null}
  localIp=if($route){$route.LocalIp}else{$null}
- adapterDns=if($route){@((Get-DnsClientServerAddress -InterfaceAlias $route.Alias -AddressFamily IPv4 -ErrorAction SilentlyContinue).ServerAddresses)}else{@()}
+ adapterDns=$adapterDns
  ula=$ula
  nrpt=$nrpt
- ctrldPid=if($ctrld.Count){$ctrld[0].Id}else{0}
- winwsPid=if($winws.Count){$winws[0].Id}else{0}
- winDivertCount=$drivers.Count
- ctrldSocketExists=$sock
+ ctrldPid=if($ctrld.ok){$ctrld.pid}else{0}
+ winwsPid=if($winws.ok){$winws.pid}else{0}
+ ctrldState=$ctrld
+ winwsState=$winws
+ winDivertCount=if($winws.ok){1}else{0}
  broadRouteCount=$broad.Count
+ broadRoutes=$broad
  winHttpDirect=($proxy -match 'Direct access')
- ics=if($ics){[ordered]@{state=[string]$ics.State;pid=[int64]$ics.ProcessId}}else{$null}
- dnsTest=if($active){[ordered]@{youtube=(ProbeDns 'www.youtube.com');github=(ProbeDns 'github.com');openai=(ProbeDns 'api.openai.com')}}else{$null}
+ ics=$ics
 }
-if($Json){$result|ConvertTo-Json -Depth 12;exit 0}
-Write-Host ''
-Write-Host ('Direct Internet status: '+$mode)
-Write-Host ('Interface: '+$result.interface+'  IP: '+$result.localIp)
-Write-Host ('Adapter DNS: '+(@($result.adapterDns)-join ', '))
-Write-Host ('Owned ULA: '+$ula.Count+' | NRPT: '+$nrpt.Count+' | ctrld: '+$ctrld.Count+' | winws: '+$winws.Count+' | WinDivert: '+$drivers.Count)
-Write-Host ('Broad tunnel routes: '+$broad.Count+' | WinHTTP direct: '+$result.winHttpDirect)
-if($ics){Write-Host ('ICS: '+$ics.State+' PID '+$ics.ProcessId)}
-if($active){
- foreach($k in @('youtube','github','openai')){
-  $d=$result.dnsTest[$k]
-  Write-Host ('DNS '+$k+': '+($(if($d.ok){'PASS'}else{'FAIL'}))+' '+$d.ms+'ms')
- }
+
+if($Json){
+ $result|ConvertTo-Json -Depth 10
+ exit 0
 }
-Write-Host ''
+$result|Format-List

@@ -1,26 +1,27 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.0.0",
-  "status": "LOCAL_ACCEPTED_WINDOWS",
-  "date": "2026-09-29",
-  "architecture": "Loopback ULA + ctrld v1.5.7 DoH + Windows NRPT + zapret/WinDivert",
-  "acceptance": "evidence/FINAL_ACCEPTANCE_20260929.json",
-  "acceptanceSummary": "evidence/ACCEPTANCE_SUMMARY_20260929.json",
+  "version": "1.1.0",
+  "status": "SERVICE_BUNDLED_RUNTIME_CANDIDATE",
+  "date": "2026-09-30",
+  "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; Loopback ULA + ctrld DoH + Windows NRPT + zapret/WinDivert",
   "usage": {
     "chatgptRequired": false,
     "offlineRuntime": true,
-    "uacRequiredForMutations": true,
-    "controlPanel": "app/ControlPanel.ps1",
-    "start": "app/Start-Direct.ps1",
-    "stop": "app/Stop-Direct.ps1",
+    "adminRequiredAtInstallOrPrivilegedUpgrade": true,
+    "adminRequiredForNormalRun": false,
+    "controlPanel": "app/DirectInternetMethod.exe",
     "status": "app/Status.ps1",
-    "recovery": "app/Recovery.ps1"
+    "privilegedService": "DirectInternetMethodSvc",
+    "privilegedRoot": "%ProgramFiles%\\DirectInternetMethod\\Privileged",
+    "onlineUpdate": "GitHub latest release + mandatory SHA256SUMS.txt verification",
+    "externalPowerShellRequired": false,
+    "bundledPowerShell": "7.6.6",
+    "bundledPowerShellArchiveSha256": "02FE458BE20493FBDF43F61EA20610B811EE6C738AB1676C61B9CFCD1A33C860"
   },
   "limitations": [
-    "Windows only in this release.",
+    "Installer/update may request Windows UAC because the privileged service is installed or upgraded.",
     "Installer is not Authenticode-signed.",
-    "PowerShell 7 must already be installed.",
     "Effectiveness may vary if the network filtering implementation changes."
   ]
 }

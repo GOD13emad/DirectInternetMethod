@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "date": "2026-09-30",
+  "project": "DirectInternetMethod",
+  "version": "1.1.0",
+  "status": "CANDIDATE_BLOCKED_LINUX_INSTALL_AUTH",
+  "windows": {
+    "contractAudit": "PASS",
+    "installer": "delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe",
+    "installerSha256": "EE24A8682D663715901CE7CF48A04B7E0F6E328C381D4204DE2202C49A0DD255",
+    "privilegedServiceObserved": "RUNNING",
+    "networkMutationThisAudit": false
+  },
+  "linux": {
+    "contractAuditWindowsAuthority": "PASS",
+    "contractAuditLinuxHost": "PASS",
+    "artifact": "delivery/DirectInternetMethod_1.1.0_Linux_x86_64.zip",
+    "sha256": "D9EC7482412BBB4BD3C44A596FE1B1F5AFC97EE62C86DFBEF4AFEC5E84CCFD33",
+    "bytes": 8136438,
+    "deterministicCrossHost": true,
+    "currentlyInstalledVersion": "1.0.1",
+    "live110Install": "BLOCKED_OWNER_AUTH",
+    "failure": {
+      "rootCause": "install_system.sh assigned Bash readonly UID variable",
+      "fix": "use USER_UID/USER_GID instead of UID/GID; write /etc/directinternetmethod.uid from USER_UID",
+      "regression": "tests/linux_contract_audit.py install_avoids_readonly_uid_variable PASS"
+    }
+  },
+  "superseded": [
+    "Linux 1.1.0 candidate hashes 4ae8b2c8..., C7D2B86E..., 8845B5EB...",
+    "Any PASS_FINAL_RELEASE claim for 1.1.0 before Linux live install/start-stop-recovery validation"
+  ],
+  "exactNextAction": "Authorize one-time Linux 1.1.0 install/privileged upgrade locally, then perform live no-admin Start/Stop/Recovery + rollback verification; only then promote/publish 1.1.0."
+}

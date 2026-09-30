@@ -1,3 +1,14 @@
 *.tmp
 *.log
 __pycache__/
+windows/app/DirectInternetMethod.exe
+windows/app/publish-*/
+windows/gui/bin/
+windows/gui/obj/
+delivery/DirectInternetMethod_1.0.1_*
+.cache/
+windows/vendor/pwsh/
+windows/**/bin/
+windows/**/obj/
+windows/app/DirectInternetMethod.Service.exe
+delivery/DirectInternetMethod_1.1.0_*

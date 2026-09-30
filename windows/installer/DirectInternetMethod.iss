@@ -1,7 +1,7 @@
 #define MyAppName "Direct Internet Method"
-#define MyAppVersion "1.0.0"
-#define MyAppPublisher "Local"
-#define MyAppExeName "ControlPanel.cmd"
+#define MyAppVersion "1.1.0"
+#define MyAppPublisher "Direct Internet Method"
+#define MyAppExeName "DirectInternetMethod.exe"
 
 [Setup]
 AppId={{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}
@@ -9,85 +9,208 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\DirectInternetMethod
+UsePreviousAppDir=yes
 DefaultGroupName=Direct Internet Method
 DisableProgramGroupPage=yes
 OutputDir=..\..\delivery
-OutputBaseFilename=DirectInternetMethod_1.0.0_Setup
+OutputBaseFilename=DirectInternetMethod_1.1.0_Windows_Setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 SetupIconFile=..\app\DirectInternetMethod.ico
-PrivilegesRequired=lowest
+UninstallDisplayIcon={app}\app\DirectInternetMethod.exe
+PrivilegesRequired=admin
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 Uninstallable=yes
 SetupLogging=yes
 CloseApplications=yes
 RestartApplications=no
 
 [Files]
-Source: "..\app\*"; DestDir: "{app}\app"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "..\bin\ctrld\ctrld.exe"; DestDir: "{app}\bin\ctrld"; Flags: ignoreversion
-Source: "..\bin\ctrld\ctrld.toml"; DestDir: "{app}\bin\ctrld"; Flags: ignoreversion
-Source: "..\bin\ctrld\LICENSE.txt"; DestDir: "{app}\bin\ctrld"; Flags: ignoreversion
-Source: "..\bin\zapret\winws.exe"; DestDir: "{app}\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\WinDivert.dll"; DestDir: "{app}\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\WinDivert64.sys"; DestDir: "{app}\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\cygwin1.dll"; DestDir: "{app}\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\hosts.txt"; DestDir: "{app}\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\LICENSE.txt"; DestDir: "{app}\bin\zapret"; Flags: ignoreversion
+Source: "..\app\DirectInternetMethod.exe"; DestDir: "{app}\app"; Flags: ignoreversion
+Source: "..\app\DirectInternetMethod.ico"; DestDir: "{app}\app"; Flags: ignoreversion
+Source: "..\app\Status.ps1"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\manifest.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\RELEASE.json"; DestDir: "{app}"; Flags: ignoreversion
 
+Source: "..\app\DirectInternetMethod.Service.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
+Source: "..\vendor\pwsh\*"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\runtime\pwsh"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\app\Start-Direct.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
+Source: "..\app\Stop-Direct.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
+Source: "..\app\Recovery.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
+Source: "..\bin\ctrld\ctrld.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
+Source: "..\bin\ctrld\ctrld.toml"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
+Source: "..\bin\ctrld\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
+Source: "..\bin\zapret\winws.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\WinDivert.dll"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\WinDivert64.sys"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\cygwin1.dll"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+
+[InstallDelete]
+Type: files; Name: "{app}\app\ControlPanel.cmd"
+Type: files; Name: "{app}\app\ControlPanel.ps1"
+Type: files; Name: "{app}\app\Start.cmd"
+Type: files; Name: "{app}\app\Stop.cmd"
+Type: files; Name: "{app}\app\Status.cmd"
+Type: files; Name: "{app}\app\Recovery.cmd"
+Type: files; Name: "{app}\app\Toggle.ps1"
+Type: files; Name: "{app}\app\Start-Direct.ps1"
+Type: files; Name: "{app}\app\Stop-Direct.ps1"
+Type: files; Name: "{app}\app\Recovery.ps1"
+Type: files; Name: "{app}\app\DirectInternetMethod.Helper.exe"
+Type: filesandordirs; Name: "{app}\bin"
+Type: files; Name: "{app}\is-*.tmp"
+Type: files; Name: "{app}\app\is-*.tmp"
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\evidence"
+Type: files; Name: "{app}\is-*.tmp"
+Type: files; Name: "{app}\app\is-*.tmp"
+Type: dirifempty; Name: "{app}\app"
+Type: dirifempty; Name: "{app}"
+Type: filesandordirs; Name: "{commonpf}\DirectInternetMethod\Privileged"
+Type: dirifempty; Name: "{commonpf}\DirectInternetMethod"
+
 [Icons]
-Name: "{group}\Direct Internet Method"; Filename: "{app}\app\ControlPanel.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\DirectInternetMethod.ico"
-Name: "{group}\Start Direct Internet"; Filename: "{app}\app\Start.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\DirectInternetMethod.ico"
-Name: "{group}\Stop Direct Internet"; Filename: "{app}\app\Stop.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\DirectInternetMethod.ico"
-Name: "{group}\Status"; Filename: "{app}\app\Status.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\DirectInternetMethod.ico"
-Name: "{group}\Emergency Recovery"; Filename: "{app}\app\Recovery.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\DirectInternetMethod.ico"
-Name: "{autodesktop}\Direct Internet Method"; Filename: "{app}\app\ControlPanel.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\DirectInternetMethod.ico"
+Name: "{group}\Direct Internet Method"; Filename: "{app}\app\DirectInternetMethod.exe"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\DirectInternetMethod.exe"
+Name: "{autodesktop}\Direct Internet Method"; Filename: "{app}\app\DirectInternetMethod.exe"; WorkingDir: "{app}\app"; IconFilename: "{app}\app\DirectInternetMethod.exe"
 
 [Run]
-Filename: "{app}\app\ControlPanel.cmd"; Description: "Open Direct Internet Method"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\app\DirectInternetMethod.exe"; Description: "Open Direct Internet Method"; Flags: nowait postinstall skipifsilent
 
 [Code]
-function PowerShell7Available(): Boolean;
+const
+  ServiceName = 'DirectInternetMethodSvc';
+
+function RunSc(Params: String; var ResultCode: Integer): Boolean;
+begin
+  Result := Exec(ExpandConstant('{sys}\sc.exe'), Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+function ServiceExists(): Boolean;
 var
   ResultCode: Integer;
 begin
-  Result := Exec(ExpandConstant('{cmd}'), '/C where pwsh.exe >nul 2>&1', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
+  Result := RunSc('query "' + ServiceName + '"', ResultCode) and (ResultCode = 0);
 end;
 
-function InitializeSetup(): Boolean;
+procedure StopServiceIfPresent();
+var
+  ResultCode: Integer;
 begin
-  if not PowerShell7Available() then
+  if ServiceExists() then
   begin
-    MsgBox('PowerShell 7 (pwsh.exe) is required before installing Direct Internet Method.', mbError, MB_OK);
-    Result := False;
+    RunSc('stop "' + ServiceName + '"', ResultCode);
+    Sleep(1200);
+  end;
+end;
+
+procedure InstallOrUpdateService();
+var
+  ResultCode: Integer;
+  ServiceExe: String;
+  Params: String;
+  Sddl: String;
+begin
+  ServiceExe := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\app\DirectInternetMethod.Service.exe');
+
+  if not ServiceExists() then
+  begin
+    Params := 'create "' + ServiceName + '" binPath= "' + ServiceExe + '" start= auto DisplayName= "Direct Internet Method Service"';
+    if (not RunSc(Params, ResultCode)) or (ResultCode <> 0) then
+      RaiseException('Unable to create Direct Internet Method service. sc.exe exit=' + IntToStr(ResultCode));
+  end
+  else
+  begin
+    Params := 'config "' + ServiceName + '" binPath= "' + ServiceExe + '" start= auto DisplayName= "Direct Internet Method Service"';
+    if (not RunSc(Params, ResultCode)) or (ResultCode <> 0) then
+      RaiseException('Unable to update Direct Internet Method service. sc.exe exit=' + IntToStr(ResultCode));
+  end;
+
+  RunSc('description "' + ServiceName + '" "Privilege-separated backend for Direct Internet Method"', ResultCode);
+
+  Sddl := 'D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;LCCR;;;IU)';
+  if (not RunSc('sdset "' + ServiceName + '" "' + Sddl + '"', ResultCode)) or (ResultCode <> 0) then
+    RaiseException('Unable to set Direct Internet Method service permissions. sc.exe exit=' + IntToStr(ResultCode));
+
+  RunSc('failure "' + ServiceName + '" reset= 86400 actions= restart/5000/restart/10000', ResultCode);
+  RunSc('failureflag "' + ServiceName + '" 1', ResultCode);
+
+  if (not RunSc('start "' + ServiceName + '"', ResultCode)) or ((ResultCode <> 0) and (ResultCode <> 1056)) then
+    RaiseException('Unable to start Direct Internet Method service. sc.exe exit=' + IntToStr(ResultCode));
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  StatePath: String;
+begin
+  StatePath := ExpandConstant('{commonappdata}\DirectDnsDpiHarness\state.json');
+  if FileExists(StatePath) then
+  begin
+    Result := 'Direct Internet Method is active. Use Stop or Recovery before installing/upgrading.';
     exit;
   end;
-  Result := True;
+  StopServiceIfPresent();
+  Result := '';
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    InstallOrUpdateService();
 end;
 
 function InitializeUninstall(): Boolean;
 var
   ResultCode: Integer;
   ScriptPath: String;
+  PwshPath: String;
+  StatePath: String;
   Args: String;
 begin
-  ScriptPath := ExpandConstant('{app}\app\Recovery.ps1');
-  if not FileExists(ScriptPath) then
+  StatePath := ExpandConstant('{commonappdata}\DirectDnsDpiHarness\state.json');
+  if FileExists(StatePath) then
   begin
-    Result := True;
-    exit;
+    ScriptPath := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\app\Recovery.ps1');
+    if not FileExists(ScriptPath) then
+    begin
+      MsgBox('Direct Method is active but the protected Recovery backend is missing. Uninstall was cancelled to avoid leaving network state behind.', mbError, MB_OK);
+      Result := False;
+      exit;
+    end;
+
+    PwshPath := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\runtime\pwsh\pwsh.exe');
+    if not FileExists(PwshPath) then
+    begin
+      MsgBox('Direct Method is active but the protected bundled PowerShell runtime is missing. Uninstall was cancelled to avoid leaving network state behind.', mbError, MB_OK);
+      Result := False;
+      exit;
+    end;
+    Args := '-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + ScriptPath + '"';
+    if (not Exec(PwshPath, Args, ExtractFileDir(ScriptPath), SW_HIDE, ewWaitUntilTerminated, ResultCode)) or (ResultCode <> 0) then
+    begin
+      MsgBox('Recovery did not complete. Uninstall was stopped to avoid leaving network state behind.', mbError, MB_OK);
+      Result := False;
+      exit;
+    end;
   end;
-  Args := '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '"';
-  if Exec('pwsh.exe', Args, ExpandConstant('{app}\app'), SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
+
+  StopServiceIfPresent();
+  Result := True;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ResultCode: Integer;
+begin
+  if CurUninstallStep = usUninstall then
   begin
-    Result := True;
-  end
-  else
-  begin
-    MsgBox('Recovery did not complete. Uninstall was stopped to avoid leaving network state behind.', mbError, MB_OK);
-    Result := False;
+    StopServiceIfPresent();
+    RunSc('delete "' + ServiceName + '"', ResultCode);
+    Sleep(500);
   end;
 end;

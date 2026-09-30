@@ -1,0 +1,1 @@
+using System.Windows; namespace DirectInternetMethod; public partial class App : Application { }

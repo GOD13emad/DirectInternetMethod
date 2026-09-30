@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "date": "2026-09-30",
+  "project": "DirectInternetMethod",
+  "version": "1.1.0",
+  "status": "FAIL_LIVE_LINUX_LIFECYCLE_FIXED_IN_SOURCE_AWAITING_RETEST",
+  "liveEvidence": {
+    "install": {
+      "userInstallVersion": "1.1.0",
+      "protectedBackendInstalled": true,
+      "normalRunRequiresAdmin": false,
+      "idempotentRetryWithoutSecondAdmin": "PASS"
+    },
+    "baseline": {
+      "physicalInterface": "enp1s0",
+      "defaultRoute": "192.168.20.1",
+      "youtubeDirect": "TIMEOUT",
+      "openaiDirect": "401",
+      "githubDirect": "200"
+    },
+    "start": {
+      "command": "systemctl start directinternetmethod-start.service",
+      "adminPromptObserved": false,
+      "elapsedSeconds": 1,
+      "result": "success",
+      "backendState": "ACTIVE"
+    },
+    "afterStart": {
+      "defaultRouteUnchanged": true,
+      "dnsLink": "dimdns0 192.0.2.53/32 ~.",
+      "ctrldStatePid": 334960,
+      "nfqwsStatePid": 335044,
+      "ctrldAlive": false,
+      "nfqwsAlive": false,
+      "dnsResolution": "FAIL",
+      "curlFailure": "Could not resolve host"
+    }
+  },
+  "rootCause": {
+    "classification": "systemd lifecycle ownership",
+    "evidence": [
+      "directinternetmethod-start.service Type=oneshot",
+      "RemainAfterExit=no",
+      "KillMode=control-group",
+      "state PIDs were dead immediately after successful oneshot completion"
+    ],
+    "conclusion": "Long-lived ctrld/nfqws were launched as children of a oneshot action unit and were killed when that unit became inactive."
+  },
+  "prevention": {
+    "method": "launch ctrld and nfqws as independent transient systemd services via systemd-run --collect --service-type=exec; obtain MainPID via systemctl show",
+    "rationale": "Keep long-lived daemons in systemd-owned independent cgroups instead of escaping/relaxing KillMode.",
+    "references": [
+      "https://lists.freedesktop.org/archives/systemd-devel/2016-December/038056.html",
+      "https://cgit.freedesktop.org/systemd/systemd/tree/NEWS"
+    ],
+    "regression": "tests/linux_contract_audit.py: daemon_lifecycle_transient_services"
+  },
+  "currentAuthoritativeSource": {
+    "windowsContractAudit": "PASS",
+    "linuxContractAudit": "PASS",
+    "pythonCompile": "PASS",
+    "gitDiffCheck": "PASS",
+    "candidateLinuxArtifact": "delivery/DirectInternetMethod_1.1.0_Linux_x86_64.zip",
+    "candidateSha256": "90233E06DC9D5F3D477BB687FA2D72A53F414A7412C2119F607B2928D8A36FAF",
+    "promotionStatus": "UNPROVEN"
+  },
+  "blocker": {
+    "linuxRemoteCommander": "DISCONNECTED_AFTER_DNS_FAILURE",
+    "linuxLanPing": "PASS",
+    "ssh22": false,
+    "noRebootPerformed": true
+  },
+  "exactNextAction": "On aliemad-Labtop restore current failed state with systemctl start directinternetmethod-recovery.service if needed; reconnect Remote Commander; sync authoritative source; one-time privileged backend upgrade because helper hash changed; rerun install; live Start->DNS/HTTPS/process ownership->Stop->rollback->Recovery; rebuild on both hosts and require identical artifact hash before promotion."
+}

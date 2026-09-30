@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 ACTION="${1:-status}"
 APP_HOME="${2:-}"
 USER_UID="${3:-1000}"
 USER_GID="${4:-1000}"
-[ "$(id -u)" -eq 0 ] || { echo '{"ok":false,"error":"ROOT_REQUIRED"}'; exit 77; }
+STATE_BASE="${5:-$APP_HOME}"
+
 [ -n "$APP_HOME" ] || { echo '{"ok":false,"error":"APP_HOME_REQUIRED"}'; exit 64; }
+
 BIN="$APP_HOME/runtime/usr/bin"
-DM="$APP_HOME/directmethod"
+DM="$STATE_BASE/directmethod"
 STATE="$DM/state.json"
 CTRLD_CFG="$DM/ctrld.toml"
 HOSTS="$APP_HOME/direct_hosts.txt"
@@ -20,111 +23,273 @@ QNUM=200
 RUN_HOSTS="/run/directinternetmethod-hosts.txt"
 CPID=""
 NPID=""
-mkdir -p "$DM"; chmod 0700 "$DM"; chown "$USER_UID:$USER_GID" "$DM" || true
+CTRLD_UNIT=""
+NFQWS_UNIT=""
+CREATED_LINK=0
+CREATED_TABLE=0
+START_COMMITTED=0
 
-json_escape(){ python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'; }
-physical_iface(){
-  ip -4 route show default | awk '$0 !~ / dev (tun|tap|wg|warp|tailscale|zt|docker|br-|veth)/ {for(i=1;i<=NF;i++)if($i=="dev"){print $(i+1);exit}}'
+mkdir -p "$DM"
+chmod 0700 "$DM"
+chown "$USER_UID:$USER_GID" "$DM" 2>/dev/null || true
+
+require_root(){
+  [ "$(id -u)" -eq 0 ] || { echo '{"ok":false,"error":"ROOT_REQUIRED"}'; exit 77; }
 }
-top_iface(){ ip -4 route show default | head -1 | awk '{for(i=1;i<=NF;i++)if($i=="dev"){print $(i+1);exit}}'; }
-pid_alive(){ [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
-cleanup(){
-  pid_alive "${NPID:-}" && kill "$NPID" 2>/dev/null || true
-  pid_alive "${CPID:-}" && kill "$CPID" 2>/dev/null || true
-  if [ -f "$STATE" ]; then
-    CPID="$(python3 - "$STATE" <<'PY'
-import json,sys
-try: print(json.load(open(sys.argv[1])).get("ctrldPid",""))
-except Exception: print("")
-PY
-)"
-    NPID="$(python3 - "$STATE" <<'PY'
-import json,sys
-try: print(json.load(open(sys.argv[1])).get("nfqwsPid",""))
-except Exception: print("")
-PY
-)"
-    pid_alive "$NPID" && kill "$NPID" 2>/dev/null || true
-    pid_alive "$CPID" && kill "$CPID" 2>/dev/null || true
+
+pid_owned(){
+  local pid="${1:-}" expected="${2:-}"
+  [ -n "$pid" ] && [ -n "$expected" ] || return 1
+  [ -e "/proc/$pid/exe" ] || return 1
+  local actual wanted
+  actual="$(readlink -f "/proc/$pid/exe" 2>/dev/null || true)"
+  wanted="$(readlink -f "$expected" 2>/dev/null || true)"
+  [ -n "$actual" ] && [ -n "$wanted" ] && [ "$actual" = "$wanted" ]
+}
+
+kill_all_owned_by_exe(){
+  local expected="$1" p pid actual wanted
+  wanted="$(readlink -f "$expected" 2>/dev/null || true)"
+  [ -n "$wanted" ] || return 0
+  for p in /proc/[0-9]*/exe; do
+    [ -e "$p" ] || continue
+    actual="$(readlink -f "$p" 2>/dev/null || true)"
+    if [ "$actual" = "$wanted" ]; then
+      pid="${p#/proc/}"
+      pid="${pid%/exe}"
+      case "$pid" in ''|*[!0-9]*) continue;; esac
+      kill "$pid" 2>/dev/null || true
+    fi
+  done
+}
+
+dns_link_owned(){
+  ip link show "$DNS_IF" >/dev/null 2>&1 || return 1
+  ip -o -d link show dev "$DNS_IF" 2>/dev/null | grep -q 'dummy' || return 1
+  ip -4 -o addr show dev "$DNS_IF" 2>/dev/null | grep -q " $DNS_IP/32 " || return 1
+}
+
+nft_table_owned(){
+  local physical="${1:-}" out
+  out="$(nft list table inet "$TABLE" 2>/dev/null)" || return 1
+  grep -Fq 'chain output' <<<"$out" || return 1
+  grep -Eq 'hook output priority (mangle|[-]?[0-9]+)' <<<"$out" || return 1
+  grep -Eq 'udp dport 443 reject' <<<"$out" || return 1
+  grep -Eq 'tcp dport 443.*queue (num 200.*bypass|flags bypass to 200)' <<<"$out" || return 1
+  if [ -n "$physical" ]; then
+    grep -Fq "oifname \"$physical\"" <<<"$out" || grep -Fq "oifname $physical" <<<"$out" || return 1
   fi
-  nft delete table inet "$TABLE" 2>/dev/null || true
+}
+
+state_value(){
+  local key="$1"
+  python3 - "$STATE" "$key" <<'PY'
+import json,sys
+try:
+    d=json.load(open(sys.argv[1],encoding="utf-8"))
+    v=d.get(sys.argv[2],"")
+    print(v if v is not None else "")
+except Exception:
+    print("")
+PY
+}
+
+physical_iface(){
+  ip -4 route show default |
+    awk '$0 !~ / dev (tun|tap|wg|warp|tailscale|zt|docker|br-|veth)/ {for(i=1;i<=NF;i++)if($i=="dev"){print $(i+1);exit}}'
+}
+
+top_iface(){
+  ip -4 route show default | head -1 |
+    awk '{for(i=1;i<=NF;i++)if($i=="dev"){print $(i+1);exit}}'
+}
+
+external_tunnel_active(){
+  local top
+  top="$(top_iface)"
+  case "$top" in
+    tun*|tap*|wg*|warp*|tailscale*|zt*) return 0 ;;
+  esac
+  if command -v nmcli >/dev/null 2>&1; then
+    while IFS=: read -r typ dev; do
+      case "$dev" in
+        tun*|tap*|wg*|warp*|tailscale*|zt*) return 0 ;;
+      esac
+    done < <(nmcli -t -f TYPE,DEVICE connection show --active 2>/dev/null || true)
+  fi
+  return 1
+}
+
+remove_dns_link(){
   if ip link show "$DNS_IF" >/dev/null 2>&1; then
-    IDX="$(cat /sys/class/net/$DNS_IF/ifindex 2>/dev/null || true)"
-    [ -n "$IDX" ] && busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager RevertLink i "$IDX" >/dev/null 2>&1 || true
+    local idx
+    idx="$(cat "/sys/class/net/$DNS_IF/ifindex" 2>/dev/null || true)"
+    [ -n "$idx" ] && busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager RevertLink i "$idx" >/dev/null 2>&1 || true
     ip link del "$DNS_IF" 2>/dev/null || true
+  fi
+}
+
+cleanup_transient(){
+  set +e
+  pid_owned "$NPID" "$NFQWS" && kill "$NPID" 2>/dev/null
+  pid_owned "$CPID" "$CTRLD" && kill "$CPID" 2>/dev/null
+  [ "$CREATED_TABLE" -eq 1 ] && nft delete table inet "$TABLE" >/dev/null 2>&1
+  [ "$CREATED_LINK" -eq 1 ] && remove_dns_link
+  rm -f "$RUN_HOSTS"
+  set -e
+}
+
+cleanup_state_owned(){
+  [ -f "$STATE" ] || return 0
+  local cp np phy
+  cp="$(state_value ctrldPid)"
+  np="$(state_value nfqwsPid)"
+  phy="$(state_value physicalInterface)"
+  pid_owned "$np" "$NFQWS" && kill "$np" 2>/dev/null || true
+  pid_owned "$cp" "$CTRLD" && kill "$cp" 2>/dev/null || true
+  if nft list table inet "$TABLE" >/dev/null 2>&1; then
+    nft_table_owned "$phy" || { echo '{"ok":false,"error":"NFT_TABLE_OWNERSHIP_MISMATCH"}' >&2; return 81; }
+    nft delete table inet "$TABLE"
+  fi
+  if ip link show "$DNS_IF" >/dev/null 2>&1; then
+    dns_link_owned || { echo '{"ok":false,"error":"DNS_LINK_OWNERSHIP_MISMATCH"}' >&2; return 82; }
+    remove_dns_link
   fi
   rm -f "$RUN_HOSTS" "$STATE"
 }
+
+verify_clean(){
+  [ ! -f "$STATE" ] || return 1
+  ! ip link show "$DNS_IF" >/dev/null 2>&1 || return 1
+  ! nft list table inet "$TABLE" >/dev/null 2>&1 || return 1
+  return 0
+}
+
 status(){
-  local cp="" np=""
+  local cp="" np="" ca=false na=false link=false table=false
   if [ -f "$STATE" ]; then
-    cp="$(python3 - "$STATE" <<'PY'
-import json,sys
-try: print(json.load(open(sys.argv[1])).get("ctrldPid",""))
-except Exception: print("")
-PY
-)"
-    np="$(python3 - "$STATE" <<'PY'
-import json,sys
-try: print(json.load(open(sys.argv[1])).get("nfqwsPid",""))
-except Exception: print("")
-PY
-)"
+    cp="$(state_value ctrldPid)"
+    np="$(state_value nfqwsPid)"
+    pid_owned "$cp" "$CTRLD" && ca=true || true
+    pid_owned "$np" "$NFQWS" && na=true || true
   fi
-  python3 - "$STATE" "$cp" "$np" <<'PY'
-import json,os,sys
+  dns_link_owned && link=true || true
+  local phy=""
+  [ -f "$STATE" ] && phy="$(state_value physicalInterface)"
+  nft_table_owned "$phy" && table=true || true
+  python3 - "$STATE" "$ca" "$na" "$link" "$table" <<'PY'
+import json,sys
 state={}
-try: state=json.load(open(sys.argv[1]))
-except Exception: pass
-def alive(x):
- try: os.kill(int(x),0); return True
- except Exception: return False
-print(json.dumps({"ok":bool(state and alive(sys.argv[2]) and alive(sys.argv[3])),"state":state,"ctrldAlive":alive(sys.argv[2]),"nfqwsAlive":alive(sys.argv[3])}))
+try:
+    state=json.load(open(sys.argv[1],encoding="utf-8"))
+except Exception:
+    pass
+flags=[x.lower()=="true" for x in sys.argv[2:]]
+print(json.dumps({
+    "ok":bool(state and all(flags)),
+    "state":state,
+    "ctrldAlive":flags[0],
+    "nfqwsAlive":flags[1],
+    "dnsLink":flags[2],
+    "nftTable":flags[3]
+}))
 PY
 }
+
+rollback_on_exit(){
+  local rc=$?
+  if [ "$ACTION" = "start" ] && [ "$START_COMMITTED" -eq 0 ]; then
+    cleanup_transient
+  fi
+  exit "$rc"
+}
+
 case "$ACTION" in
- stop)
-   cleanup
-   echo '{"ok":true,"state":"STOPPED"}'
-   ;;
- status)
-   status
-   ;;
- start)
-   if [ -f "$STATE" ]; then
-      CPID="$(python3 - "$STATE" <<'PY'
-import json,sys
-try: print(json.load(open(sys.argv[1])).get("ctrldPid",""))
-except Exception: print("")
-PY
-)"
-      NPID="$(python3 - "$STATE" <<'PY'
-import json,sys
-try: print(json.load(open(sys.argv[1])).get("nfqwsPid",""))
-except Exception: print("")
-PY
-)"
-      if pid_alive "$CPID" && pid_alive "$NPID"; then
-         echo '{"ok":true,"state":"ALREADY_ACTIVE"}'; exit 0
+  status)
+    status
+    ;;
+
+  stop)
+    require_root
+    if [ ! -f "$STATE" ]; then
+      echo '{"ok":true,"state":"PASS_NO_STATE","note":"No owned state; no network resources were removed."}'
+      exit 0
+    fi
+    cleanup_state_owned
+    verify_clean || { echo '{"ok":false,"error":"STOP_RESIDUE"}'; exit 78; }
+    echo '{"ok":true,"state":"STOPPED"}'
+    ;;
+
+  recovery)
+    require_root
+    if [ -f "$STATE" ]; then
+      cleanup_state_owned
+    else
+      kill_all_owned_by_exe "$NFQWS"
+      kill_all_owned_by_exe "$CTRLD"
+      sleep .3
+      if nft list table inet "$TABLE" >/dev/null 2>&1; then
+        nft_table_owned "" || { echo '{"ok":false,"error":"NFT_TABLE_OWNERSHIP_MISMATCH"}'; exit 81; }
+        nft delete table inet "$TABLE"
       fi
-      cleanup
-   elif nft list table inet "$TABLE" >/dev/null 2>&1; then
-      echo '{"ok":false,"error":"FOREIGN_OR_STALE_OWNERSHIP_TABLE"}'; exit 69
-   fi
-   [ -x "$CTRLD" ] && [ -x "$NFQWS" ] && [ -s "$HOSTS" ] || { echo '{"ok":false,"error":"RUNTIME_NOT_PROVISIONED"}'; exit 70; }
-   install -m 0644 "$HOSTS" "$RUN_HOSTS"
-   TOP="$(top_iface)"; PHY="$(physical_iface)"
-   [ -n "$PHY" ] || { echo '{"ok":false,"error":"PHYSICAL_DEFAULT_ROUTE_MISSING"}'; exit 71; }
-   case "$TOP" in tun*|tap*|wg*|warp*|tailscale*|zt*) echo '{"ok":false,"error":"EXTERNAL_TUN_DEFAULT_ACTIVE"}'; exit 72;; esac
-   command -v nft >/dev/null && command -v resolvectl >/dev/null || { echo '{"ok":false,"error":"NFT_OR_RESOLVECTL_MISSING"}'; exit 73; }
-   if ip link show "$DNS_IF" >/dev/null 2>&1; then
-      echo '{"ok":false,"error":"DNS_INTERFACE_ALREADY_EXISTS"}'; exit 74
-   fi
-   ip link add "$DNS_IF" type dummy
-   ip addr add "$DNS_IP/32" dev "$DNS_IF"
-   ip link set "$DNS_IF" up
-   DIX="$(cat /sys/class/net/$DNS_IF/ifindex)"
-   cat > "$CTRLD_CFG" <<'EOF'
+      if ip link show "$DNS_IF" >/dev/null 2>&1; then
+        dns_link_owned || { echo '{"ok":false,"error":"DNS_LINK_OWNERSHIP_MISMATCH"}'; exit 79; }
+        remove_dns_link
+      fi
+      rm -f "$RUN_HOSTS"
+    fi
+    verify_clean || { echo '{"ok":false,"error":"RECOVERY_RESIDUE"}'; exit 80; }
+    echo '{"ok":true,"state":"RECOVERED"}'
+    ;;
+
+  start)
+    require_root
+    trap rollback_on_exit EXIT
+
+    if [ -f "$STATE" ]; then
+      CPID="$(state_value ctrldPid)"
+      NPID="$(state_value nfqwsPid)"
+      if pid_owned "$CPID" "$CTRLD" && pid_owned "$NPID" "$NFQWS" &&
+         dns_link_owned &&
+         nft_table_owned "$(state_value physicalInterface)"; then
+        START_COMMITTED=1
+        trap - EXIT
+        echo '{"ok":true,"state":"ALREADY_ACTIVE"}'
+        exit 0
+      fi
+      cleanup_state_owned
+    fi
+
+    if nft list table inet "$TABLE" >/dev/null 2>&1 || ip link show "$DNS_IF" >/dev/null 2>&1; then
+      echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+      exit 69
+    fi
+
+    [ -x "$CTRLD" ] && [ -x "$NFQWS" ] && [ -s "$HOSTS" ] ||
+      { echo '{"ok":false,"error":"RUNTIME_NOT_PROVISIONED"}'; exit 70; }
+
+    command -v nft >/dev/null && command -v resolvectl >/dev/null &&
+    command -v busctl >/dev/null && command -v ip >/dev/null &&
+    command -v systemd-run >/dev/null && command -v systemctl >/dev/null ||
+      { echo '{"ok":false,"error":"REQUIRED_NETWORK_TOOL_MISSING"}'; exit 73; }
+
+    TOP="$(top_iface)"
+    PHY="$(physical_iface)"
+    [ -n "$PHY" ] || { echo '{"ok":false,"error":"PHYSICAL_DEFAULT_ROUTE_MISSING"}'; exit 71; }
+    if external_tunnel_active; then
+      echo '{"ok":false,"error":"EXTERNAL_TUNNEL_ACTIVE"}'
+      exit 72
+    fi
+
+    install -m 0644 "$HOSTS" "$RUN_HOSTS"
+
+    ip link add "$DNS_IF" type dummy
+    CREATED_LINK=1
+    ip addr add "$DNS_IP/32" dev "$DNS_IF"
+    ip link set "$DNS_IF" up
+    DIX="$(cat "/sys/class/net/$DNS_IF/ifindex")"
+
+    cat > "$CTRLD_CFG" <<'EOF'
 [service]
 log_level = "warn"
 cache_enable = true
@@ -152,29 +317,66 @@ allow_wan_clients = true
 name = "Direct Internet Method"
 networks = [{"network.0" = ["upstream.0"]}]
 EOF
-   "$CTRLD" run --config "$CTRLD_CFG" >"$DM/ctrld.log" 2>&1 &
-   CPID=$!
-   for _ in $(seq 1 40); do ss -lntu 2>/dev/null | grep -q "$DNS_IP:53" && break; kill -0 "$CPID" 2>/dev/null || break; sleep .1; done
-   ss -lntu 2>/dev/null | grep -q "$DNS_IP:53" || { kill "$CPID" 2>/dev/null || true; ip link del "$DNS_IF" 2>/dev/null || true; echo '{"ok":false,"error":"CTRLD_LISTENER_FAILED"}'; exit 75; }
-   busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDNS 'ia(iay)' "$DIX" 1 2 4 192 0 2 53 >/dev/null
-   busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDomains 'ia(sb)' "$DIX" 1 '.' true >/dev/null
-   busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDefaultRoute 'ib' "$DIX" true >/dev/null
-   nft add table inet "$TABLE"
-   nft "add chain inet $TABLE output { type filter hook output priority mangle; policy accept; }"
-   nft add rule inet "$TABLE" output oifname "$PHY" udp dport 443 reject
-   nft add rule inet "$TABLE" output oifname "$PHY" tcp dport 443 ct original packets 1-6 queue num "$QNUM" bypass
-   "$NFQWS" --qnum="$QNUM" --filter-tcp=443 --hostlist="$RUN_HOSTS" --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1 >"$DM/nfqws.log" 2>&1 &
-   NPID=$!
-   sleep .4
-   kill -0 "$NPID" 2>/dev/null || { cleanup; echo '{"ok":false,"error":"NFQWS_START_FAILED"}'; exit 76; }
-   python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" <<'PY'
+
+    CTRLD_UNIT="directinternetmethod-ctrld-${USER_UID}.service"
+    systemd-run --quiet --collect --unit="$CTRLD_UNIT" --service-type=exec --property=Restart=no -- "$CTRLD" run --config "$CTRLD_CFG"
+    CPID="$(systemctl show "$CTRLD_UNIT" -p MainPID --value)"
+    case "$CPID" in ''|0|*[!0-9]*) echo '{"ok":false,"error":"CTRLD_TRANSIENT_PID_MISSING"}'; exit 75;; esac
+    for _ in $(seq 1 40); do
+      ss -lntu 2>/dev/null | grep -q "$DNS_IP:53" && break
+      pid_owned "$CPID" "$CTRLD" || break
+      sleep .1
+    done
+    ss -lntu 2>/dev/null | grep -q "$DNS_IP:53" ||
+      { echo '{"ok":false,"error":"CTRLD_LISTENER_FAILED"}'; exit 75; }
+
+    busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDNS 'ia(iay)' "$DIX" 1 2 4 192 0 2 53 >/dev/null
+    busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDomains 'ia(sb)' "$DIX" 1 '.' true >/dev/null
+    busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDefaultRoute 'ib' "$DIX" true >/dev/null
+
+    nft add table inet "$TABLE"
+    CREATED_TABLE=1
+    nft "add chain inet $TABLE output { type filter hook output priority mangle; policy accept; }"
+    nft add rule inet "$TABLE" output oifname "$PHY" udp dport 443 reject
+    nft add rule inet "$TABLE" output oifname "$PHY" tcp dport 443 ct original packets 1-6 queue num "$QNUM" bypass
+
+    NFQWS_UNIT="directinternetmethod-nfqws-${USER_UID}.service"
+    systemd-run --quiet --collect --unit="$NFQWS_UNIT" --service-type=exec --property=Restart=no -- "$NFQWS" --qnum="$QNUM" --filter-tcp=443 --hostlist="$RUN_HOSTS" --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1
+    NPID="$(systemctl show "$NFQWS_UNIT" -p MainPID --value)"
+    case "$NPID" in ''|0|*[!0-9]*) echo '{"ok":false,"error":"NFQWS_TRANSIENT_PID_MISSING"}'; exit 76;; esac
+    sleep .5
+    pid_owned "$NPID" "$NFQWS" || { echo '{"ok":false,"error":"NFQWS_START_FAILED"}'; exit 76; }
+
+    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" <<'PY'
 import json,os,sys,time
 p=sys.argv[1]
-d={"schema":1,"status":"ACTIVE","architecture":"LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS","ctrldPid":int(sys.argv[2]),"nfqwsPid":int(sys.argv[3]),"physicalInterface":sys.argv[4],"dnsInterface":"dimdns0","dnsIp":"192.0.2.53","started":time.time()}
-open(p,"w").write(json.dumps(d,indent=2)+"\n")
-os.chmod(p,0o600); os.chown(p,int(sys.argv[5]),int(sys.argv[6]))
+d={
+  "schema":2,
+  "status":"ACTIVE",
+  "architecture":"LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS",
+  "ctrldPid":int(sys.argv[2]),
+  "nfqwsPid":int(sys.argv[3]),
+  "physicalInterface":sys.argv[4],
+  "dnsInterface":"dimdns0",
+  "dnsIp":"192.0.2.53",
+  "ctrldUnit":sys.argv[7],
+  "nfqwsUnit":sys.argv[8],
+  "started":time.time()
+}
+with open(p,"w",encoding="utf-8") as f:
+    json.dump(d,f,indent=2)
+    f.write("\n")
+os.chmod(p,0o600)
+os.chown(p,int(sys.argv[5]),int(sys.argv[6]))
 PY
-   echo '{"ok":true,"state":"ACTIVE"}'
-   ;;
- *) echo '{"ok":false,"error":"ACTION_INVALID"}'; exit 64;;
+
+    START_COMMITTED=1
+    trap - EXIT
+    echo '{"ok":true,"state":"ACTIVE"}'
+    ;;
+
+  *)
+    echo '{"ok":false,"error":"ACTION_INVALID"}'
+    exit 64
+    ;;
 esac

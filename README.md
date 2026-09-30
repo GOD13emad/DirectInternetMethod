@@ -21,7 +21,7 @@ Standalone direct-connect application for Windows and Linux. It is independent o
 - No VPN, HTTP/SOCKS proxy or default-route tunnel
 
 ## Release artifacts
-- `DirectInternetMethod_1.0.0_Windows_Setup.exe`
-- `DirectInternetMethod_1.0.0_Linux_x86_64.zip`
+- `DirectInternetMethod_1.1.0_Windows_Setup.exe`
+- `DirectInternetMethod_1.1.0_Linux_x86_64.zip`
 
 Acceptance evidence is stored under `evidence/`.

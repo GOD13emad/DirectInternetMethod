@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "date": "2026-09-30",
+  "project": "DirectInternetMethod",
+  "targetVersion": "1.1.0",
+  "status": "CROSS_PLATFORM_RELEASE_NOT_PROMOTED",
+  "linux": {
+    "status": "PASS_FINAL_LINUX_1_1_0",
+    "artifactSha256": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
+    "liveAcceptance": "PASS",
+    "rollback": "PASS",
+    "noAdminNormalActions": "PASS"
+  },
+  "windows": {
+    "status": "CONTRACT_AND_BUILD_PASS_LIVE_NETWORK_1_1_0_UNPROVEN",
+    "installer": "delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe",
+    "bytes": 157083679,
+    "sha256": "EE24A8682D663715901CE7CF48A04B7E0F6E328C381D4204DE2202C49A0DD255",
+    "contractAudit": "PASS",
+    "installedServiceObserved": "RUNNING",
+    "liveNetworkAcceptance110": "MISSING",
+    "reasonNotRun": "Locked project decision: do not mutate Windows networking while owner is actively using Windows."
+  },
+  "authoritativeReleasedVersion": "1.0.0",
+  "github110Published": false,
+  "exactNextAction": "When a dedicated Windows network-test window is explicitly available, capture prestate, live Start/status/HTTPS, Stop/rollback, Recovery, then promote v1.1.0 and publish both assets plus SHA256SUMS.txt."
+}

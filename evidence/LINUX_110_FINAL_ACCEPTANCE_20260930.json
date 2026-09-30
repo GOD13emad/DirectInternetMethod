@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "date": "2026-09-30",
+  "project": "DirectInternetMethod",
+  "version": "1.1.0",
+  "platform": "linux-x86_64",
+  "status": "PASS_FINAL_LINUX_1_1_0",
+  "installed": {
+    "version": "1.1.0",
+    "normalRunRequiresAdmin": false,
+    "protectedBackend": "/usr/lib/directinternetmethod",
+    "idempotentReinstallWithoutSecondAdmin": "PASS"
+  },
+  "liveAcceptance": {
+    "externalVpn": {
+      "name": "OIG-VPN-LIVE",
+      "uuid": "6034d9d3-55d5-4a46-9bd8-913c1efbfdfd",
+      "temporarilyDisconnectedForDirectTest": true,
+      "restoredAfterTest": true
+    },
+    "directBaseline": {
+      "defaultRoute": "192.168.20.1 via enp1s0",
+      "youtube": "TIMEOUT",
+      "openai": "401",
+      "github": "200"
+    },
+    "start": {
+      "rc": 0,
+      "adminPromptObserved": false,
+      "systemdResult": "success"
+    },
+    "ui": {
+      "loadState": "ACTIVE",
+      "physicalInterface": "enp1s0",
+      "dnsInterface": "dimdns0",
+      "dnsIp": "192.0.2.53",
+      "verifyLive": true
+    },
+    "network": {
+      "youtube": "204",
+      "openai": "401",
+      "github": "200",
+      "defaultRouteMutation": false
+    },
+    "daemonOwnership": {
+      "ctrldUnit": "directinternetmethod-ctrld-1000.service",
+      "ctrldActiveState": "active",
+      "ctrldSubState": "running",
+      "nfqwsUnit": "directinternetmethod-nfqws-1000.service",
+      "nfqwsActiveState": "active",
+      "nfqwsSubState": "running"
+    },
+    "stop": {
+      "rc": 0
+    },
+    "recoveryNoState": {
+      "rc": 0
+    },
+    "postClean": {
+      "stateExists": false,
+      "dimdns0Exists": false
+    },
+    "vpnRestore": {
+      "rc": 0
+    }
+  },
+  "deterministicArtifact": {
+    "path": "delivery/DirectInternetMethod_1.1.0_Linux_x86_64.zip",
+    "bytes": 8139344,
+    "sha256": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
+    "independentlyBuiltOn": [
+      "Emad-PC-Ultimate",
+      "aliemad-Labtop"
+    ],
+    "identical": true,
+    "sourceInputsHashIdentical": "14/14"
+  },
+  "resolvedFailures": [
+    "Bash readonly UID variable in privileged installer",
+    "unprivileged post-install probe of protected polkit directory",
+    "installer backup attempted to copy root-owned transient runtime files",
+    "oneshot systemd lifecycle killed long-lived ctrld/nfqws children",
+    "nft ownership guard did not accept canonical queue flags bypass to 200 output",
+    "unprivileged UI process ownership check depended on /proc/<root-pid>/exe under Yama ptrace restrictions"
+  ]
+}
