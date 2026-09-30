@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_FINAL_CLEAN_STATE",
+  "host": "EMAD-PC-ULTIMAT",
+  "observation": {
+    "transientReactivationAt": "2026-10-01T02:53:01+03:30",
+    "evidence": "evidence/WINDOWS_110_POSTFINAL_REACTIVATION_20261001.json",
+    "classification": "UNATTRIBUTED_CUSTOM_START_CONTROL",
+    "productAutoStartDefect": "UNPROVEN",
+    "actionCompleted": "start done/0"
+  },
+  "remediation": {
+    "stop": "done/0",
+    "recovery": "done/0"
+  },
+  "stabilization": {
+    "durationSeconds": 12,
+    "stateExists": false,
+    "ctrldState": "Stopped",
+    "ctrldPid": 0,
+    "winwsCount": 0,
+    "ulaCount": 0,
+    "ownedNrptCount": 0
+  },
+  "conclusion": "Host returned to clean OFF state after explicit Stop and Recovery; no recurrence observed during final stabilization window."
+}
