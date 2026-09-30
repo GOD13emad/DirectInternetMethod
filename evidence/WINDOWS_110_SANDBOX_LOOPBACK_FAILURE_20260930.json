@@ -1,0 +1,74 @@
+﻿{
+    "schema":  1,
+    "status":  "FAIL",
+    "started":  "2026-09-30T19:18:45.1741529+03:30",
+    "identity":  "6766C5B1-9BC9-4\\WDAGUtilityAccount",
+    "isAdmin":  true,
+    "installerHash":  "EE24A8682D663715901CE7CF48A04B7E0F6E328C381D4204DE2202C49A0DD255",
+    "baseline":  [
+                     {
+                         "url":  "https://www.youtube.com/generate_204",
+                         "exit":  28,
+                         "meta":  "curl: (28) Connection timed out after 10001 milliseconds 000||10.001438"
+                     },
+                     {
+                         "url":  "https://api.openai.com/v1/models",
+                         "exit":  0,
+                         "meta":  "401|172.66.0.243|1.168845"
+                     },
+                     {
+                         "url":  "https://github.com/",
+                         "exit":  0,
+                         "meta":  "200|140.82.121.3|1.192664"
+                     }
+                 ],
+    "installExit":  0,
+    "service":  {
+                    "status":  "Running",
+                    "startType":  "Automatic"
+                },
+    "userAppExists":  true,
+    "pre":  {
+                "mode":  "OFF",
+                "reason":  "Direct Method is off.",
+                "statePhase":  null,
+                "stateRootOk":  false,
+                "ownedResourcesHealthy":  false,
+                "externalRouteConflict":  false,
+                "interface":  "Ethernet",
+                "localIp":  "172.30.228.196",
+                "adapterDns":  [
+                                   "172.30.224.1"
+                               ],
+                "ula":  [
+
+                        ],
+                "nrpt":  [
+
+                         ],
+                "ctrldPid":  0,
+                "winwsPid":  0,
+                "ctrldState":  {
+                                   "ok":  false,
+                                   "pid":  0,
+                                   "name":  ""
+                               },
+                "winwsState":  {
+                                   "ok":  false,
+                                   "pid":  0,
+                                   "name":  ""
+                               },
+                "winDivertCount":  0,
+                "broadRouteCount":  0,
+                "broadRoutes":  [
+
+                                ],
+                "winHttpDirect":  true,
+                "ics":  {
+                            "state":  "Stopped",
+                            "pid":  6032
+                        }
+            },
+    "error":  "ACTION_start_FAILED: {\"schema\":1,\"action\":\"start\",\"phase\":\"error\",\"exitCode\":1,\"message\":\"\\u001b[31;1mException: \\u001b[0mC:\\\\Program Files\\\\DirectInternetMethod\\\\Privileged\\\\app\\\\Start-Direct.ps1:339\\u001b[0m  \\u001b[31;1m\\u001b[0m\\u001b[36;1mLine |\\u001b[0m  \\u001b[31;1m\\u001b[0m\\u001b[36;1m\\u001b[36;1m 339 | \\u001b[0m  \\u001b[36;1mthrow (\\u0027START_FAIL_\\u0027+$ev.error)\\u001b[0m  \\u001b[31;1m\\u001b[0m\\u001b[36;1m\\u001b[36;1m\\u001b[0m\\u001b[36;1m\\u001b[0m\\u001b[36;1m     | \\u001b[31;1m  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\\u001b[0m  \\u001b[31;1m\\u001b[0m\\u001b[36;1m\\u001b[36;1m\\u001b[0m\\u001b[36;1m\\u001b[0m\\u001b[36;1m\\u001b[31;1m\\u001b[31;1m\\u001b[36;1m     | \\u001b[31;1mSTART_FAIL_Invalid parameter InterfaceIndex 1 \\u001b[0m\",\"updatedUtc\":\"2026-09-30T15:49:24.9683367+00:00\"}",
+    "finished":  "2026-09-30T19:19:25.2538690+03:30"
+}

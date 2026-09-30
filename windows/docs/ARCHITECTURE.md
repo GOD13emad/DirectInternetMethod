@@ -1,43 +1,43 @@
 # Architecture and Integration Contract
 
-Status: FINAL_ACCEPTED_2026-09-29
+Status: PASS_FINAL_RELEASE_1_1_0_2026-09-30
 
-Architecture:
-- Loopback ULA: fd53:4444:48::53/128, ActiveStore, SkipAsSource=true.
-- ctrld v1.5.7 foreground hidden process, UDP/TCP 53 bound to the ULA.
-- Upstream DoH: https://76.76.10.11/p0, bootstrap 76.76.10.11.
-- Owned NRPT catch-all points Windows DNS Client to the ULA only while active.
-- zapret winws + WinDivert hostlist-scoped TCP/443 DPI desync.
-- Physical default-interface IPv4 is auto-resolved and used for direct HTTPS probes.
+## Windows architecture
+- Native WPF UI runs as the normal user.
+- Fixed-command privileged service: `DirectInternetMethodSvc`.
+- Normal Start/Stop/Recovery use custom service controls; no admin prompt is required after installation.
+- Bundled protected PowerShell 7.6.6 executes lifecycle scripts; no external PowerShell dependency.
+- Owned demand-start SCM DNS helper: `ctrld` v1.5.7.
+- Loopback ULA: `fd53:4444:48::53/128`, SkipAsSource=true.
+- Upstream DoH: `https://76.76.10.11/p0`.
+- Owned NRPT catch-all points Windows DNS Client to the ULA only while ACTIVE.
+- zapret `winws` + WinDivert performs hostlist-scoped TCP/443 DPI desync.
 
-Prohibited mutations:
+## Prohibited mutations
 - No adapter DNS mutation.
-- No Windows Native DoH mapping mutation.
 - No VPN connection creation.
 - No HTTP/SOCKS proxy.
-- No 0.0.0.0/1 or 128.0.0.0/1 routes.
+- No `0.0.0.0/1` or `128.0.0.0/1` routes.
+- No unintended WinHTTP or ICS mutation.
 
-Ownership:
-- NRPT DisplayName: DirectDnsDpiHarness.
-- ULA is removed only when state proves this package created it.
-- ctrld/winws processes are owned only if their executable paths are under the installed package root.
-- WinDivert services are owned only if PathName contains the installed package root.
+## Ownership and rollback
+- ctrld service ownership requires the exact protected binary and runtime config path.
+- NRPT uses the owned DirectDnsDpiHarness display/comment signature.
+- ULA is removed only with package ownership evidence.
+- winws/WinDivert cleanup is package-root scoped.
+- Start fails closed and rolls back on a failed gate.
+- Stop verifies DNS/NRPT/routes/WinHTTP/ICS preservation and owned residue removal.
 
-Accepted precursor evidence:
-- LOOPBACK_ULA_LISTENER_TRIAL_20260929.json
-- NRPT_ULA_TRIAL_20260929.json
-- ULA_DNS_ARCHITECTURE_DECISION_20260929.json
+## Final acceptance
+Windows Sandbox: PASS.
+Windows host `EMAD-PC-ULTIMAT`: PASS.
+Normal-user Start/Stop/Recovery: PASS.
+ACTIVE: YouTube=204, OpenAI=401, GitHub=200.
+Exact rollback: PASS.
+Recovery/no-state: PASS.
 
-Final gate: PASS.
-- Cycle 1: Start → 3 DNS/HTTPS rounds → default-mode Chrome YouTube → Stop → exact rollback.
-- Cycle 2: Start → 2 DNS/HTTPS rounds → default-mode Chrome YouTube → Stop → exact rollback.
-- Authority: `evidence/FINAL_ACCEPTANCE_20260929.json`.
-
-
-Final acceptance:
-- evidence/FINAL_ACCEPTANCE_20260929.json => PASS_FINAL.
-- Cycle 1: 3 DNS/HTTPS stability rounds PASS; Chrome default-mode YouTube PASS; exact rollback PASS.
-- Cycle 2: 2 DNS/HTTPS stability rounds PASS; Chrome default-mode YouTube PASS; exact rollback PASS.
-- Final baseline: adapter DNS restored, preexisting NRPT preserved, ICS same PID, no ULA, no ctrld/winws/WinDivert residue, no /1 routes, WinHTTP direct.
-
-- Final post-patch acceptance additionally proved no `ctrld_control.sock` residue after either rollback.
+Authority:
+- `evidence/WINDOWS_110_SANDBOX_FINAL_ACCEPTANCE_20260930.json`
+- `evidence/WINDOWS_110_HOST_ACTIVE_ACCEPTANCE_20260930.json`
+- `evidence/WINDOWS_110_HOST_ROLLBACK_ACCEPTANCE_20260930.json`
+- `evidence/WINDOWS_110_HOST_RECOVERY_ACCEPTANCE_20260930.json`

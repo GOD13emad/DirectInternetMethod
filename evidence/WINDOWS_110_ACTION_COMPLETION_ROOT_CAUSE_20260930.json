@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "date": "2026-09-30",
+  "context": "Windows 1.1.0 Sandbox Start completion after ctrld SCM fix",
+  "claim": "DirectInternetMethodSvc kept action-status at running after Start-Direct.ps1 had exited because redirected stdout/stderr pipe handles were inherited by long-lived winws.exe; ReadToEndAsync therefore never observed EOF.",
+  "status": "CONFIRMED",
+  "confidence": "high",
+  "evidence": [
+    {
+      "source": "sandbox110_scmfix/output/active.json",
+      "detail": "product Status=ACTIVE/healthy; YouTube=204, OpenAI=401, GitHub=200; action-status still running."
+    },
+    {
+      "source": "sandbox110_scmfix/output/tasklist.txt",
+      "detail": "DirectInternetMethodSvc, ctrld.exe and winws.exe present; no pwsh.exe remained."
+    },
+    {
+      "source": "sandbox110_scmfix/output/service.log",
+      "detail": "action-begin:start exists, no action-end/action-timeout despite pwsh exit."
+    },
+    {
+      "source": "windows/service/Program.cs",
+      "detail": "service redirects PowerShell stdout/stderr, starts ReadToEndAsync, waits for process exit, then awaits stream reads; Start-Direct launches long-lived winws as descendant."
+    }
+  ],
+  "rootCause": "Long-lived descendant inherited redirected OS standard handles, extending pipe lifetime beyond the lifecycle PowerShell process.",
+  "decision": "Remove OS-level stdout/stderr redirection from privileged lifecycle PowerShell process; completion is exit-code based. Keep detailed lifecycle evidence in existing evidence JSON files/service log instead of pipe capture.",
+  "risk": "Without captured streams, action-status error text becomes generic unless evidence is consulted; acceptable because detailed runtime/stop evidence already exists and avoiding deadlock is higher priority.",
+  "reuseTargets": [
+    "service Program.cs",
+    "contract audit",
+    "Sandbox regression",
+    "PROJECT_BRAIN",
+    "final release evidence"
+  ]
+}

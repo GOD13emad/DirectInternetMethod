@@ -5,14 +5,19 @@ $ErrorActionPreference='Stop'
 
 $Root=Split-Path $PSScriptRoot -Parent
 $CtrldDir=Join-Path $Root 'bin\ctrld'
+$Ctrld=Join-Path $CtrldDir 'ctrld.exe'
+$CtrldServiceName='ctrld'
 $CtrldSock=Join-Path $CtrldDir 'ctrld_control.sock'
 $ZapretDir=Join-Path $Root 'bin\zapret'
 $Runtime=Join-Path $env:ProgramData 'DirectDnsDpiHarness'
 $RuntimeCtrld=Join-Path $Runtime 'ctrld'
+$RuntimeConfig=Join-Path $RuntimeCtrld 'ctrld.toml'
 $StatePath=Join-Path $Runtime 'state.json'
 $Evidence=Join-Path $Root 'evidence\stop-latest.json'
 $Ula='fd53:4444:48::53'
-$LoopbackIndex=1
+$LoopbackRoute=Get-NetRoute -AddressFamily IPv6 -DestinationPrefix '::1/128' -ErrorAction Stop | Sort-Object RouteMetric | Select-Object -First 1
+if(-not $LoopbackRoute){throw 'LOOPBACK_INTERFACE_MISSING'}
+$LoopbackIndex=[int]$LoopbackRoute.InterfaceIndex
 $NrptDisplay='DirectDnsDpiHarness'
 $NrptComment='Owned by DirectDnsDpiHarness; safe to remove only by this harness.'
 
@@ -36,6 +41,9 @@ function Same-Path([string]$A,[string]$B){
  }catch{return $false}
 }
 function Same-Json($a,$b){($a|ConvertTo-Json -Depth 20 -Compress) -eq ($b|ConvertTo-Json -Depth 20 -Compress)}
+function Safe-Contains($Value,[string]$Needle){
+ try{$s=[string]$Value;return ($s.Length -gt 0 -and $s.Contains($Needle,[StringComparison]::OrdinalIgnoreCase))}catch{return $false}
+}
 function Get-Ics{
  $s=Get-CimInstance Win32_Service -Filter "Name='SharedAccess'" -ErrorAction SilentlyContinue
  if(-not $s){return [ordered]@{exists=$false;state='';pid=0}}
@@ -91,6 +99,27 @@ function Stop-OwnedWinws{
  }
  Start-Sleep -Milliseconds 300
 }
+function Get-OwnedCtrldService{
+ $svc=Get-CimInstance Win32_Service -Filter "Name='$CtrldServiceName'" -ErrorAction SilentlyContinue
+ if(-not $svc){return $null}
+ $path=[string]$svc.PathName
+ if(-not(Safe-Contains $path $Ctrld) -or -not(Safe-Contains $path $RuntimeConfig) -or -not(Safe-Contains $path 'run -s -c')){throw 'REFUSE_EXTERNAL_CTRLD_SERVICE'}
+ return $svc
+}
+function Stop-OwnedCtrldService{
+ $svc=Get-OwnedCtrldService
+ if(-not $svc){return}
+ if([string]$svc.State -ne 'Stopped'){
+  & sc.exe stop $CtrldServiceName|Out-Null
+  for($i=0;$i -lt 50;$i++){
+   Start-Sleep -Milliseconds 100
+   $svc=Get-CimInstance Win32_Service -Filter "Name='$CtrldServiceName'" -ErrorAction SilentlyContinue
+   if(-not $svc -or [string]$svc.State -eq 'Stopped'){return}
+  }
+  throw 'CTRLD_SERVICE_STOP_TIMEOUT'
+ }
+}
+
 function Get-OwnedCtrld{
  @(Get-Process ctrld -ErrorAction SilentlyContinue|Where-Object{$_.Path -and $_.Path.StartsWith($CtrldDir,[StringComparison]::OrdinalIgnoreCase)})
 }
@@ -107,7 +136,7 @@ if(-not(Test-Path -LiteralPath $StatePath)){
  $ownedRules=@(Get-DnsClientNrptRule -ErrorAction SilentlyContinue|Where-Object{$_.DisplayName -eq $NrptDisplay -and $_.Comment -eq $NrptComment})
  foreach($r in $ownedRules){Remove-DnsClientNrptRule -Name $r.Name -Force -ErrorAction SilentlyContinue}
  Clear-DnsClientCache -ErrorAction SilentlyContinue
- Get-OwnedCtrld|Stop-Process -Force -ErrorAction SilentlyContinue
+ Stop-OwnedCtrldService
  Stop-OwnedWinws
  Remove-Item -LiteralPath $RuntimeCtrld -Recurse -Force -ErrorAction SilentlyContinue
  $r=[ordered]@{status='PASS_NO_STATE';ownedNrptRemoved=$ownedRules.Count;note='ULA is not removed without state ownership evidence.'}
@@ -146,11 +175,7 @@ try{
  Stop-OwnedWinws
  $actions+='Stopped owned winws and WinDivert'
 
- if($s.ctrldPid){
-  $cp=Get-Process -Id ([int]$s.ctrldPid) -ErrorAction SilentlyContinue
-  if($cp -and $cp.Path -and $cp.Path.StartsWith($CtrldDir,[StringComparison]::OrdinalIgnoreCase)){Stop-Process -Id $cp.Id -Force -ErrorAction SilentlyContinue}
- }
- Get-OwnedCtrld|Stop-Process -Force -ErrorAction SilentlyContinue
+ Stop-OwnedCtrldService
  Start-Sleep -Milliseconds 350
  Remove-Item -LiteralPath $CtrldSock -Force -ErrorAction SilentlyContinue
  $actions+='Stopped owned ctrld'

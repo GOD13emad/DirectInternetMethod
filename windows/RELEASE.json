@@ -2,9 +2,9 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.1.0",
-  "status": "SERVICE_BUNDLED_RUNTIME_CANDIDATE",
+  "status": "PASS_FINAL_RELEASE",
   "date": "2026-09-30",
-  "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; Loopback ULA + ctrld DoH + Windows NRPT + zapret/WinDivert",
+  "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; owned demand-start ctrld SCM service + Loopback ULA + DoH + NRPT + zapret/WinDivert",
   "usage": {
     "chatgptRequired": false,
     "offlineRuntime": true,
@@ -13,11 +13,22 @@
     "controlPanel": "app/DirectInternetMethod.exe",
     "status": "app/Status.ps1",
     "privilegedService": "DirectInternetMethodSvc",
+    "dnsHelperService": "ctrld (owned demand-start SCM service)",
     "privilegedRoot": "%ProgramFiles%\\DirectInternetMethod\\Privileged",
     "onlineUpdate": "GitHub latest release + mandatory SHA256SUMS.txt verification",
     "externalPowerShellRequired": false,
     "bundledPowerShell": "7.6.6",
     "bundledPowerShellArchiveSha256": "02FE458BE20493FBDF43F61EA20610B811EE6C738AB1676C61B9CFCD1A33C860"
+  },
+  "acceptance": {
+    "sandbox": "PASS",
+    "hostWindows": "PASS",
+    "normalUserStartStopRecovery": "PASS",
+    "youtubeActive": 204,
+    "openaiActive": 401,
+    "githubActive": 200,
+    "exactRollback": "PASS",
+    "recoveryNoState": "PASS"
   },
   "limitations": [
     "Installer/update may request Windows UAC because the privileged service is installed or upgraded.",

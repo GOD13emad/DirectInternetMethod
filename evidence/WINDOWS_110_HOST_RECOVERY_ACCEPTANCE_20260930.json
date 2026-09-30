@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "status": "PASS",
+  "controlRc": 0,
+  "action": {
+    "schema": 1,
+    "action": "recovery",
+    "phase": "done",
+    "exitCode": 0,
+    "message": "Action completed.",
+    "updatedUtc": "2026-09-30T23:12:56.2973841+03:30"
+  },
+  "stateExists": false
+}

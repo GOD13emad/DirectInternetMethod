@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "version": "1.0.1",
+  "path": "delivery/DirectInternetMethod_1.0.1_Windows_Setup.exe",
+  "bytes": 57795631,
+  "sha256": "E53AA03DB59EFD734FBB7D4ADD012B40453543CBD157B7D388D6DFA6BF5E28FE",
+  "authenticode": "NotSigned",
+  "frozenInputs": 18,
+  "built": "2026-09-30T11:32:52.4761888+03:30"
+}

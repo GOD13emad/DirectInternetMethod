@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "date": "2026-09-30",
+  "context": "Windows 1.1.0 Sandbox live acceptance",
+  "claim": "Windows ctrld v1.5.7 must run under SCM as its own Windows service; running `ctrld run` as a child of DirectInternetMethodSvc is incompatible with ctrld's Windows service lifecycle and caused START_FAIL_ULA_LISTENER_NOT_OWNED.",
+  "status": "CONFIRMED",
+  "confidence": "high",
+  "evidence": [
+    {
+      "source": "sandbox110/output/ctrld-sandbox-port53-exact2-result.json",
+      "detail": "ctrld child stayed alive but produced `failed to start service: The service process could not connect to the service controller`; no owned ULA:53 listener."
+    },
+    {
+      "source": "sandbox110/output/ctrld-service-test.json",
+      "detail": "same ctrld binary registered as SCM service `ctrld` reached RUNNING; UDP+TCP 127.0.0.1:53 owned by one PID; DNS github.com resolved."
+    },
+    {
+      "source": "Control-D-Inc/ctrld v1.5.7 tag commit 3fa03d92d69c541314b3cc65e121e1dd4c1f4193 cmd/cli/cli.go",
+      "detail": "on Windows daemon mode is rejected; when not daemon, run() calls s.Run() to attach to OS service manager."
+    }
+  ],
+  "decision": "Replace child-process ctrld lifecycle with an owned demand-start SCM service named `ctrld`; validate ImagePath ownership before control; preserve fail-closed behavior for external service name collisions.",
+  "rejected": [
+    "Increase listener readiness timeout: disproven by 30s no-listener observation.",
+    "Move ctrld listener to another DNS port: NRPT needs DNS port 53 and would add an unnecessary front-end.",
+    "Run ctrld as ordinary interactive child: incompatible with no-UAC privileged backend/service execution model."
+  ],
+  "reuseTargets": [
+    "Windows Start/Stop/Recovery lifecycle",
+    "installer",
+    "contract audit",
+    "PROJECT_BRAIN",
+    "release notes/root-cause history"
+  ]
+}

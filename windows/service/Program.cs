@@ -153,9 +153,7 @@ internal static class Program
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
-                WorkingDirectory = AppContext.BaseDirectory,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
+                WorkingDirectory = AppContext.BaseDirectory
             };
 
             Log($"action-begin:{actionName}");
@@ -168,27 +166,19 @@ internal static class Program
                 return;
             }
 
-            var stdoutTask = p.StandardOutput.ReadToEndAsync();
-            var stderrTask = p.StandardError.ReadToEndAsync();
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(120));
-            try
-            {
-                await p.WaitForExitAsync(timeout.Token);
-            }
-            catch (OperationCanceledException)
+            if (!p.WaitForExit(120000))
             {
                 try { p.Kill(entireProcessTree: true); } catch { }
-                try { await p.WaitForExitAsync(); } catch { }
-                var timedOutOut = (await stdoutTask).Trim();
-                var timedOutErr = (await stderrTask).Trim();
-                Log($"action-timeout:{actionName}:out={Compact(timedOutOut)}:err={Compact(timedOutErr)}");
+                try { p.WaitForExit(5000); } catch { }
+                Log($"action-timeout:{actionName}");
                 WriteActionStatus(actionName, "error", -2, "Privileged action exceeded the 120 second safety timeout and was terminated.");
                 return;
             }
-            var stdout = (await stdoutTask).Trim();
-            var stderr = (await stderrTask).Trim();
-            Log($"action-end:{actionName}:exit={p.ExitCode}:out={Compact(stdout)}:err={Compact(stderr)}");
-            WriteActionStatus(actionName, p.ExitCode == 0 ? "done" : "error", p.ExitCode, string.IsNullOrWhiteSpace(stderr) ? stdout : stderr);
+            Log($"action-end:{actionName}:exit={p.ExitCode}");
+            var message = p.ExitCode == 0
+                ? "Action completed."
+                : $"Privileged action failed with exit code {p.ExitCode}. See lifecycle evidence/service log.";
+            WriteActionStatus(actionName, p.ExitCode == 0 ? "done" : "error", p.ExitCode, message);
         }
         catch (Exception ex)
         {

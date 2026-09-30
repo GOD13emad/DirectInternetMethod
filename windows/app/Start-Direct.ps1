@@ -8,6 +8,7 @@ $CtrldDir=Join-Path $Root 'bin\ctrld'
 $Ctrld=Join-Path $CtrldDir 'ctrld.exe'
 $CtrldSock=Join-Path $CtrldDir 'ctrld_control.sock'
 $CtrldTemplate=Join-Path $CtrldDir 'ctrld.toml'
+$CtrldServiceName='ctrld'
 $ZapretDir=Join-Path $Root 'bin\zapret'
 $Winws=Join-Path $ZapretDir 'winws.exe'
 $HostList=Join-Path $ZapretDir 'hosts.txt'
@@ -17,7 +18,9 @@ $RuntimeConfig=Join-Path $RuntimeCtrld 'ctrld.toml'
 $StatePath=Join-Path $Runtime 'state.json'
 $Evidence=Join-Path $Root 'evidence\runtime-latest.json'
 $Ula='fd53:4444:48::53'
-$LoopbackIndex=1
+$LoopbackRoute=Get-NetRoute -AddressFamily IPv6 -DestinationPrefix '::1/128' -ErrorAction Stop | Sort-Object RouteMetric | Select-Object -First 1
+if(-not $LoopbackRoute){throw 'LOOPBACK_INTERFACE_MISSING'}
+$LoopbackIndex=[int]$LoopbackRoute.InterfaceIndex
 $NrptDisplay='DirectDnsDpiHarness'
 $NrptComment='Owned by DirectDnsDpiHarness; safe to remove only by this harness.'
 
@@ -96,6 +99,41 @@ function Safe-StartsWith($Value,[string]$Prefix){
 function Safe-Contains($Value,[string]$Needle){
  try{$s=[string]$Value;return ($s.Length -gt 0 -and $s.Contains($Needle,[StringComparison]::OrdinalIgnoreCase))}catch{return $false}
 }
+function Get-OwnedCtrldService{
+ $svc=Get-CimInstance Win32_Service -Filter "Name='$CtrldServiceName'" -ErrorAction SilentlyContinue
+ if(-not $svc){return $null}
+ $path=[string]$svc.PathName
+ if(-not(Safe-Contains $path $Ctrld) -or -not(Safe-Contains $path $RuntimeConfig) -or -not(Safe-Contains $path 'run -s -c')){throw 'REFUSE_EXTERNAL_CTRLD_SERVICE'}
+ return $svc
+}
+function Stop-OwnedCtrldService{
+ $svc=Get-OwnedCtrldService
+ if(-not $svc){return}
+ if([string]$svc.State -ne 'Stopped'){
+  & sc.exe stop $CtrldServiceName|Out-Null
+  for($i=0;$i -lt 50;$i++){
+   Start-Sleep -Milliseconds 100
+   $svc=Get-CimInstance Win32_Service -Filter "Name='$CtrldServiceName'" -ErrorAction SilentlyContinue
+   if(-not $svc -or [string]$svc.State -eq 'Stopped'){return}
+  }
+  throw 'CTRLD_SERVICE_STOP_TIMEOUT'
+ }
+}
+function Start-OwnedCtrldService{
+ $svc=Get-OwnedCtrldService
+ if(-not $svc){throw 'CTRLD_SERVICE_MISSING'}
+ if([string]$svc.State -ne 'Running'){
+  $o=& sc.exe start $CtrldServiceName 2>&1
+  if($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1056){throw ('CTRLD_SERVICE_START_FAILED_'+$LASTEXITCODE+'_'+($o -join ' '))}
+ }
+ for($i=0;$i -lt 80;$i++){
+  Start-Sleep -Milliseconds 100
+  $svc=Get-CimInstance Win32_Service -Filter "Name='$CtrldServiceName'" -ErrorAction SilentlyContinue
+  if($svc -and [string]$svc.State -eq 'Running' -and [int64]$svc.ProcessId -gt 0){return $svc}
+ }
+ throw 'CTRLD_SERVICE_NOT_RUNNING'
+}
+
 function Get-OwnedDrivers{
  @(
   Get-CimInstance Win32_SystemDriver -ErrorAction SilentlyContinue |
@@ -163,11 +201,7 @@ function Rollback($s){
   if($wp -and $wp.Path -and $wp.Path.StartsWith($ZapretDir,[StringComparison]::OrdinalIgnoreCase)){Stop-Process -Id $wp.Id -Force -ErrorAction SilentlyContinue}
  }
  Stop-OwnedWinws
- if($s.PSObject.Properties.Name -contains 'ctrldPid' -and $s.ctrldPid){
-  $cp=Get-Process -Id ([int]$s.ctrldPid) -ErrorAction SilentlyContinue
-  if($cp -and $cp.Path -and $cp.Path.StartsWith($CtrldDir,[StringComparison]::OrdinalIgnoreCase)){Stop-Process -Id $cp.Id -Force -ErrorAction SilentlyContinue}
- }
- Get-OwnedCtrld|Stop-Process -Force -ErrorAction SilentlyContinue
+ Stop-OwnedCtrldService
  Start-Sleep -Milliseconds 400
  Remove-Item -LiteralPath $CtrldSock -Force -ErrorAction SilentlyContinue
  try{Remove-OwnedUla $s}catch{}
@@ -196,7 +230,8 @@ foreach($n in $Expected.Keys){
  if(-not(Test-Path -LiteralPath $p)){throw ('MISSING_'+$n)}
  if((Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash -ne $Expected[$n]){throw ('HASH_MISMATCH_'+$n)}
 }
-if(Get-CimInstance Win32_Service -Filter "Name='ctrld'" -ErrorAction SilentlyContinue){throw 'REFUSE_EXISTING_CTRLD_SERVICE'}
+$ctrldSvc=Get-OwnedCtrldService
+if(-not $ctrldSvc){throw 'CTRLD_SERVICE_MISSING'}
 if(@(Get-NetRoute -AddressFamily IPv4 -ErrorAction SilentlyContinue|Where-Object{$_.DestinationPrefix -in @('0.0.0.0/1','128.0.0.0/1')}).Count){throw 'REFUSE_BROAD_TUNNEL_ROUTE'}
 
 if(Test-Path -LiteralPath $StatePath){
@@ -233,7 +268,7 @@ if($pre.ulaExists){throw 'ULA_PREEXISTS'}
 $state=[ordered]@{
  schema=3;phase='PREPARED';architecture='LOOPBACK_ULA_CTRLD_DOH_NRPT_PLUS_ZAPRET'
  root=$Root;interface=$route.Alias;localIp=$route.LocalIp;prepared=(Get-Date).ToString('o')
- pre=$pre;ulaAddress=$Ula;ulaCreated=$false;nrptRuleName='';ctrldPid=0;winwsPid=0;runtimeConfig=$RuntimeConfig
+ pre=$pre;ulaAddress=$Ula;ulaCreated=$false;nrptRuleName='';ctrldPid=0;ctrldServiceName=$CtrldServiceName;winwsPid=0;runtimeConfig=$RuntimeConfig
 }
 Write-JsonAtomic $StatePath $state
 
@@ -255,13 +290,21 @@ try{
  }
  if(-not $ready){throw 'ULA_NOT_READY'}
 
- $cp=Start-ExactProcess $Ctrld @('-s','run','-c',$RuntimeConfig) $RuntimeCtrld
- $state.ctrldPid=$cp.Id
+ $ctrldSvc=Start-OwnedCtrldService
+ $cpid=[int64]$ctrldSvc.ProcessId
+ $cp=Get-Process -Id $cpid -ErrorAction Stop
+ if(-not $cp.Path -or -not(Safe-StartsWith $cp.Path $CtrldDir)){throw 'CTRLD_SERVICE_PROCESS_OWNERSHIP_MISMATCH'}
+ $state.ctrldPid=$cpid
  Write-JsonAtomic $StatePath $state
- Start-Sleep -Seconds 2
- if($cp.HasExited){throw ('CTRLD_EXIT_'+$cp.ExitCode)}
- $udp=@(Get-NetUDPEndpoint -LocalAddress $Ula -LocalPort 53 -ErrorAction SilentlyContinue|Where-Object OwningProcess -eq $cp.Id)
- $tcp=@(Get-NetTCPConnection -LocalAddress $Ula -LocalPort 53 -State Listen -ErrorAction SilentlyContinue|Where-Object OwningProcess -eq $cp.Id)
+ $udp=@();$tcp=@()
+ for($i=0;$i -lt 80;$i++){
+  $udp=@(Get-NetUDPEndpoint -LocalAddress $Ula -LocalPort 53 -ErrorAction SilentlyContinue|Where-Object OwningProcess -eq $cpid)
+  $tcp=@(Get-NetTCPConnection -LocalAddress $Ula -LocalPort 53 -State Listen -ErrorAction SilentlyContinue|Where-Object OwningProcess -eq $cpid)
+  if($udp.Count -and $tcp.Count){break}
+  $svcNow=Get-CimInstance Win32_Service -Filter "Name='$CtrldServiceName'" -ErrorAction SilentlyContinue
+  if(-not $svcNow -or [string]$svcNow.State -ne 'Running'){throw 'CTRLD_SERVICE_EXITED_BEFORE_LISTENER'}
+  Start-Sleep -Milliseconds 100
+ }
  if(-not $udp.Count -or -not $tcp.Count){throw 'ULA_LISTENER_NOT_OWNED'}
 
  $rule=Add-DnsClientNrptRule -Namespace '.' -NameServers $Ula -DisplayName $NrptDisplay -Comment $NrptComment -PassThru
@@ -284,7 +327,7 @@ try{
  if($cd.exit -ne 0 -or $cd.meta -notmatch '^(200|400)\|'){throw 'CONTROL_D_DOH_DIRECT_FAIL'}
  $ev.dnsStage=[ordered]@{
   ula=(Get-NetIPAddress -InterfaceIndex $LoopbackIndex -IPAddress $Ula -AddressFamily IPv6|Select-Object IPAddress,PrefixLength,AddressState,SkipAsSource)
-  ctrldPid=$cp.Id;udp=$udp.Count;tcp=$tcp.Count
+  ctrldPid=$cpid;udp=$udp.Count;tcp=$tcp.Count
   nrptRule=$rule|Select-Object Name,DisplayName,Namespace,NameServers,Comment
   dns=$dns;adapterDns=$dnsNow;controlD=$cd;ics=$icsNow
  }
@@ -324,12 +367,12 @@ try{
  Write-JsonAtomic $StatePath $state
  $ev.status='PASS_ACTIVE'
  $ev.live=[ordered]@{
-  ctrldPid=$cp.Id;winwsPid=$wp.Id;dns=$dy;youtube=$yt;openai=$oa;github=$gh
+  ctrldPid=$cpid;winwsPid=$wp.Id;dns=$dy;youtube=$yt;openai=$oa;github=$gh
   ics=$icsLive;proxy=$proxy;broadRouteCount=$routes.Count
   drivers=@(Get-OwnedDrivers|Select-Object Name,State,PathName)
  }
  Write-JsonAtomic $Evidence $ev
- [ordered]@{status='PASS_ACTIVE';state=$StatePath;ctrldPid=$cp.Id;winwsPid=$wp.Id;nrptRule=$state.nrptRuleName;ula=$Ula;evidence=$Evidence}|ConvertTo-Json -Depth 6
+ [ordered]@{status='PASS_ACTIVE';state=$StatePath;ctrldPid=$cpid;winwsPid=$wp.Id;nrptRule=$state.nrptRuleName;ula=$Ula;evidence=$Evidence}|ConvertTo-Json -Depth 6
  return
 }catch{
  $ev.error=$_.Exception.Message

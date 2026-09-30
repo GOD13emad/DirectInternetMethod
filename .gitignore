@@ -12,3 +12,16 @@ windows/**/bin/
 windows/**/obj/
 windows/app/DirectInternetMethod.Service.exe
 delivery/DirectInternetMethod_1.1.0_*
+
+# Local validation/sandbox residue
+sandbox*/
+tmp/
+windows/evidence/
+evidence/raw/
+evidence/*.err
+evidence/*.out
+evidence/ctrld-*.toml
+evidence/v-*.err
+evidence/v-*.out
+tests/_*.ps1
+evidence/WINDOWS_UI_LIVE.png

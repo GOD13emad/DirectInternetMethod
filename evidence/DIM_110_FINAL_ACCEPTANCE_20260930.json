@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "date": "2026-09-30",
+  "project": "DirectInternetMethod",
+  "version": "1.1.0",
+  "status": "PASS_FINAL_CROSS_PLATFORM_READY_TO_PUBLISH",
+  "windows": {
+    "status": "PASS_FINAL_WINDOWS_1_1_0",
+    "artifact": "delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe",
+    "bytes": 157078634,
+    "sha256": "E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0",
+    "serviceSha256": "F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68",
+    "manifestSha256": "F60D21EC678B9CB5F44D2CEA70DDFC1C3F4C80D4799A37131BAC18DC5536AD42",
+    "installerBuild": "PASS",
+    "sandboxAcceptance": "PASS",
+    "hostInstall": "PASS",
+    "hostStart": "PASS",
+    "hostActive": "PASS",
+    "hostStopRollback": "PASS_EXACT_ROLLBACK_HOST",
+    "hostRecoveryNoState": "PASS",
+    "normalRunAdminRequired": false,
+    "installUpgradeAdminRequired": true,
+    "live": {
+      "baselineYoutube": "TIMEOUT",
+      "activeYoutube": 204,
+      "openai": 401,
+      "github": 200,
+      "adapterDnsUnchanged": true,
+      "defaultRouteUnchanged": true,
+      "noBroadRoutes": true,
+      "winHttpUnchanged": true,
+      "icsUnchanged": true
+    },
+    "evidence": {
+      "install": {
+        "path": "evidence/WINDOWS_110_HOST_FINAL_INSTALL_RESULT_20260930.json",
+        "sha256": "846993CCF9F5C381633A61FF0E3689FCE5BC207CC4012D1D8600F9B2BC45CAC8"
+      },
+      "active": {
+        "path": "evidence/WINDOWS_110_HOST_ACTIVE_ACCEPTANCE_20260930.json",
+        "sha256": "52BEEA2E4272E640BBC2D52BB8E25B1F847FA5FC81BD890EACEE6B9C1AA4DAE7"
+      },
+      "rollback": {
+        "path": "evidence/WINDOWS_110_HOST_ROLLBACK_ACCEPTANCE_20260930.json",
+        "sha256": "C779172D6DA4F270B06DEF1EE1658973D855414F678552CBCB1980234E93064B"
+      },
+      "recovery": {
+        "path": "evidence/WINDOWS_110_HOST_RECOVERY_ACCEPTANCE_20260930.json",
+        "sha256": "CF5BC74B02353954CF73D908ED50E19719024122D4BA1D0D8EFAFED23DC2F3AD"
+      }
+    },
+    "finalArtifactAcceptance": {
+      "path": "evidence/WINDOWS_110_HOST_FINAL_ARTIFACT_ACCEPTANCE_20260930.json",
+      "sha256": "0E37A969EE9C91DF4BD4FCBDAF330A3D4122DCA8DEB7FF1D577D1B2FAC0A3FA9"
+    }
+  },
+  "linux": {
+    "status": "PASS_FINAL_LINUX_1_1_0",
+    "artifact": "delivery/DirectInternetMethod_1.1.0_Linux_x86_64.zip",
+    "bytes": 8139344,
+    "sha256": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
+    "liveAcceptance": "PASS",
+    "rollback": "PASS",
+    "recovery": "PASS",
+    "normalRunAdminRequired": false,
+    "deterministicCrossHostBuild": "PASS",
+    "evidence": {
+      "path": "evidence/LINUX_110_FINAL_ACCEPTANCE_20260930.json",
+      "sha256": "DE4560B6F1AC168EF58453E62A9A809F683560C421E529AE12BA61CDA28668E6"
+    }
+  },
+  "contracts": {
+    "windows": "PASS",
+    "linux": "PASS"
+  },
+  "publication": {
+    "repo": "GOD13emad/DirectInternetMethod",
+    "tag": "v1.1.0",
+    "status": "PENDING_PUBLICATION"
+  },
+  "deferred": [
+    "Windows Authenticode signing"
+  ]
+}

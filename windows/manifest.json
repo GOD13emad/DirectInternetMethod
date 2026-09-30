@@ -27,57 +27,57 @@
       "scope": "user",
       "file": "app/Status.ps1",
       "source": "app/Status.ps1",
-      "bytes": 5978,
-      "sha256": "D83F08D8B30000BFFE4DCAFB79BD675781421CCC37C3C4E49B61F77A177BA466"
+      "bytes": 6226,
+      "sha256": "744BC96C36AE80B729DC821638A773147FA1FE9FA6C12696EDC48D14FA16CC1A"
     },
     {
       "scope": "user",
       "file": "docs/README-FA.md",
       "source": "docs/README-FA.md",
-      "bytes": 2652,
-      "sha256": "112A00576990DF0E11A89AB42FCB989D6823CE138502FFD17CDBC46C80D885B9"
+      "bytes": 2156,
+      "sha256": "1C4860A4ED2EA501B25BD05ABC0A25727637FD377C11C879C094F9571BCB36FD"
     },
     {
       "scope": "user",
       "file": "docs/ARCHITECTURE.md",
       "source": "docs/ARCHITECTURE.md",
-      "bytes": 1977,
-      "sha256": "714FC131D2A3A1E727EA9EF9ECB5208D89C175DB65CD7FCC23581EC1CF67FD2D"
+      "bytes": 1820,
+      "sha256": "F2B7B49A5545AF6A82F1696340A76E2D3047B782B63585EF102E5B5AEAA58569"
     },
     {
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 1223,
-      "sha256": "5DC12E8DDA843C57E531719F207A2B47084367A06D2B3683AFF2A728FFBA4761"
+      "bytes": 1549,
+      "sha256": "70F16928211852A2DF83CD3869E02B551C46B5AFBF4A110661B2BAFA75AE2703"
     },
     {
       "scope": "privileged",
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
       "bytes": 67568333,
-      "sha256": "412C70BB4245FD0E4A471F99258A83D75936ADB44B41351144D3D1D96A2AB000"
+      "sha256": "F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68"
     },
     {
       "scope": "privileged",
       "file": "app/Start-Direct.ps1",
       "source": "app/Start-Direct.ps1",
-      "bytes": 17010,
-      "sha256": "AEC1FBE335664DE55ADAA3B656A4B2FFD23018FD8C9E97A57E5F4438E4223DE7"
+      "bytes": 18410,
+      "sha256": "44CBC85C243B33B115E3187DFAD2088D06B986D60A3BA7C5C6CDC5DA35587464"
     },
     {
       "scope": "privileged",
       "file": "app/Stop-Direct.ps1",
       "source": "app/Stop-Direct.ps1",
-      "bytes": 9185,
-      "sha256": "B71763439C104DC3DB599E048B7CC6CE8565856C158184667586949317EBE939"
+      "bytes": 10197,
+      "sha256": "96F129F89563E1F2F18A7C135442CD350D5A557E2CEFEDC12A76FA99A18045A2"
     },
     {
       "scope": "privileged",
       "file": "app/Recovery.ps1",
       "source": "app/Recovery.ps1",
-      "bytes": 4698,
-      "sha256": "62A3574F087075F1D77DD158F6238531F181DA0860A8FFB1634E1502F077712C"
+      "bytes": 6039,
+      "sha256": "6B3A5A21F105FDC03A14F839BC07406BA8BD59A8B5BB8F1E32A4B4B5CF1E2F2E"
     },
     {
       "scope": "privileged",

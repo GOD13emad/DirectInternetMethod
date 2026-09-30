@@ -1,0 +1,244 @@
+{
+  "schema": 1,
+  "status": "FAIL",
+  "date": "2026-09-30T22:59:50.2538928+03:30",
+  "host": "EMAD-PC-ULTIMAT",
+  "statePhase": "ACTIVE",
+  "interface": "Ethernet 3",
+  "ctrld": {
+    "serviceState": "Running",
+    "servicePid": 34036,
+    "statePid": 34036,
+    "servicePath": "\"C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\ctrld\\ctrld.exe\" run -s -c \"C:\\ProgramData\\DirectDnsDpiHarness\\ctrld\\ctrld.toml\"",
+    "processName": "ctrld",
+    "udp53": 1,
+    "tcp53": 1
+  },
+  "winws": {
+    "statePid": 45620,
+    "processName": "winws"
+  },
+  "dns": {
+    "preV4": [
+      "192.168.20.1"
+    ],
+    "activeV4": [
+      "192.168.20.1"
+    ],
+    "preV6": [],
+    "activeV6": [],
+    "unchanged": true
+  },
+  "broadRoutes": [],
+  "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+  "winHttpUnchanged": true,
+  "ics": {
+    "preState": "Running",
+    "activeState": "Running",
+    "unchanged": true
+  },
+  "dnsProbe": [
+    {
+      "name": "www.youtube.com",
+      "ok": true,
+      "answers": [
+        "142.251.156.4",
+        "142.251.154.4",
+        "142.251.151.4",
+        "142.251.150.4",
+        "142.251.155.4",
+        "142.251.157.4",
+        "142.251.152.4",
+        "142.251.153.4",
+        "2001:4860:4828:400::",
+        "2001:4860:482b:400::",
+        "2001:4860:482a:400::",
+        "2001:4860:482d:400::",
+        "2001:4860:482c:400::",
+        "2001:4860:4829:400::",
+        "2001:4860:4826:400::",
+        "2001:4860:4827:400::"
+      ]
+    },
+    {
+      "name": "api.openai.com",
+      "ok": true,
+      "answers": [
+        "172.66.0.243",
+        "162.159.140.245",
+        "2a06:98c1:58::f3",
+        "2606:4700:7::f3"
+      ]
+    },
+    {
+      "name": "github.com",
+      "ok": true,
+      "answers": [
+        "140.82.121.4"
+      ]
+    }
+  ],
+  "youtube": {
+    "exit": 0,
+    "meta": "204|142.251.156.4|0.110919|0.319212"
+  },
+  "openai": {
+    "exit": 0,
+    "meta": "401|172.66.0.243|0.035763|0.341340"
+  },
+  "github": {
+    "exit": 0,
+    "meta": "200|140.82.121.4|0.120515|0.658437"
+  },
+  "runtimeEvidence": {
+    "schema": 3,
+    "status": "PASS_ACTIVE",
+    "architecture": "LOOPBACK_ULA_CTRLD_DOH_NRPT_PLUS_ZAPRET",
+    "pre": {
+      "dnsV4": [
+        "192.168.20.1"
+      ],
+      "dnsV6": [],
+      "nrpt": [],
+      "ulaExists": false,
+      "ics": {
+        "exists": true,
+        "state": "Running",
+        "pid": 5184
+      },
+      "broadRouteCount": 0,
+      "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server)."
+    },
+    "dnsStage": {
+      "ula": {
+        "IPAddress": "fd53:4444:48::53",
+        "PrefixLength": 128,
+        "AddressState": 4,
+        "SkipAsSource": true
+      },
+      "ctrldPid": 34036,
+      "udp": 1,
+      "tcp": 1,
+      "nrptRule": {
+        "Name": "{D1378022-5493-48BC-BF7F-72C0F302A22B}",
+        "DisplayName": "DirectDnsDpiHarness",
+        "Namespace": [
+          "."
+        ],
+        "NameServers": {
+          "AddressFamily": 23,
+          "ScopeId": 0,
+          "IsIPv6Multicast": false,
+          "IsIPv6LinkLocal": false,
+          "IsIPv6SiteLocal": false,
+          "IsIPv6Teredo": false,
+          "IsIPv6UniqueLocal": true,
+          "IsIPv4MappedToIPv6": false,
+          "Address": null,
+          "IPAddressToString": "fd53:4444:48::53"
+        },
+        "Comment": "Owned by DirectDnsDpiHarness; safe to remove only by this harness."
+      },
+      "dns": [
+        {
+          "name": "www.youtube.com",
+          "ok": true,
+          "ms": 103,
+          "answers": [
+            "142.251.154.4",
+            "142.251.155.4",
+            "142.251.156.4",
+            "142.251.150.4",
+            "142.251.151.4",
+            "142.251.153.4",
+            "142.251.157.4",
+            "142.251.152.4"
+          ],
+          "private": []
+        },
+        {
+          "name": "github.com",
+          "ok": true,
+          "ms": 84,
+          "answers": [
+            "140.82.121.3"
+          ],
+          "private": []
+        },
+        {
+          "name": "api.openai.com",
+          "ok": true,
+          "ms": 84,
+          "answers": [
+            "162.159.140.245",
+            "172.66.0.243"
+          ],
+          "private": []
+        }
+      ],
+      "adapterDns": [
+        "192.168.20.1"
+      ],
+      "controlD": {
+        "url": "https://76.76.10.11/p0",
+        "exit": 0,
+        "meta": "400|76.76.10.11|0.087123|0.765105|0.851541"
+      },
+      "ics": {
+        "exists": true,
+        "state": "Running",
+        "pid": 5184
+      }
+    },
+    "live": {
+      "ctrldPid": 34036,
+      "winwsPid": 45620,
+      "dns": {
+        "name": "www.youtube.com",
+        "ok": true,
+        "ms": 1,
+        "answers": [
+          "142.251.154.4",
+          "142.251.155.4",
+          "142.251.156.4",
+          "142.251.150.4",
+          "142.251.151.4",
+          "142.251.153.4",
+          "142.251.157.4",
+          "142.251.152.4"
+        ],
+        "private": []
+      },
+      "youtube": {
+        "url": "https://www.youtube.com/generate_204",
+        "exit": 0,
+        "meta": "204|142.251.154.4|0.111471|0.309999|0.412055"
+      },
+      "openai": {
+        "url": "https://api.openai.com/v1/models",
+        "exit": 0,
+        "meta": "401|162.159.140.245|0.034264|0.355297|0.635298"
+      },
+      "github": {
+        "url": "https://github.com/",
+        "exit": 0,
+        "meta": "200|140.82.121.4|0.200879|0.284864|0.890531"
+      },
+      "ics": {
+        "exists": true,
+        "state": "Running",
+        "pid": 5184
+      },
+      "proxy": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+      "broadRouteCount": 0,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys"
+        }
+      ]
+    },
+    "error": ""
+  }
+}

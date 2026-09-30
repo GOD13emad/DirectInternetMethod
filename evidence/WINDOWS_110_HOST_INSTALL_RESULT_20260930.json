@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "status": "PASS",
+  "started": "2026-09-30T22:55:31.7456540+03:30",
+  "ended": "2026-09-30T22:55:55.8225182+03:30",
+  "installerSha256": "0BE4B411080467A6D42DE09628C6558F52CBF5FB67BB00518FCA3D260F592516",
+  "exitCode": 0,
+  "service": {
+    "state": "Running",
+    "startMode": "Auto",
+    "pid": 11216,
+    "path": "C:\\Program Files\\DirectInternetMethod\\Privileged\\app\\DirectInternetMethod.Service.exe"
+  },
+  "ctrld": {
+    "state": "Stopped",
+    "startMode": "Manual",
+    "pid": 0,
+    "path": "\"C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\ctrld\\ctrld.exe\" run -s -c \"C:\\ProgramData\\DirectDnsDpiHarness\\ctrld\\ctrld.toml\""
+  },
+  "installedServiceSha256": "F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68",
+  "installedStartSha256": "44CBC85C243B33B115E3187DFAD2088D06B986D60A3BA7C5C6CDC5DA35587464",
+  "installedManifestSha256": null
+}

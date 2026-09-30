@@ -8,6 +8,8 @@ $Root=Split-Path $PSScriptRoot -Parent
 $PrivilegedRoot=Join-Path $env:ProgramFiles 'DirectInternetMethod\Privileged'
 $StatePath=Join-Path $env:ProgramData 'DirectDnsDpiHarness\state.json'
 $Ula='fd53:4444:48::53'
+$LoopbackRoute=Get-NetRoute -AddressFamily IPv6 -DestinationPrefix '::1/128' -ErrorAction SilentlyContinue | Sort-Object RouteMetric | Select-Object -First 1
+$LoopbackIndex=if($LoopbackRoute){[int]$LoopbackRoute.InterfaceIndex}else{0}
 $NrptDisplay='DirectDnsDpiHarness'
 $NrptComment='Owned by DirectDnsDpiHarness; safe to remove only by this harness.'
 
@@ -99,7 +101,7 @@ if($state -and $state.nrptRuleName){
 }
 
 $ula=@(
- Get-NetIPAddress -InterfaceIndex 1 -AddressFamily IPv6 -ErrorAction SilentlyContinue |
+ Get-NetIPAddress -InterfaceIndex $LoopbackIndex -AddressFamily IPv6 -ErrorAction SilentlyContinue |
  Where-Object IPAddress -eq $Ula |
  Select-Object IPAddress,PrefixLength,AddressState,SkipAsSource
 )

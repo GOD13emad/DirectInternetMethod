@@ -1,0 +1,16 @@
+{
+  "Time": "2026-09-30T14:48:25.9455678+03:30",
+  "Interface": "Ethernet 3",
+  "IfIndex": 18,
+  "NextHop": "192.168.20.1",
+  "Dns": [
+    "192.168.20.1"
+  ],
+  "Ula": 0,
+  "Nrpt": 0,
+  "Ctrld": 0,
+  "Winws": 0,
+  "Broad": 0,
+  "WinHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+  "IcsPid": 8780
+}

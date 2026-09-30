@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "date": "2026-09-30",
+  "project": "DirectInternetMethod",
+  "version": "1.1.0",
+  "status": "PASS_HOST_READONLY_NO_DIM_RESIDUE",
+  "host": "Emad-PC-Ultimate",
+  "scope": "Read-only check only; no Windows host network mutation performed.",
+  "checks": {
+    "stateExists": false,
+    "ulaCount": 0,
+    "ownedNrptCount": 0,
+    "ctrldService": null,
+    "broadOwnedStyleRoutes": []
+  },
+  "conclusion": "Current Windows host has no Direct Internet Method runtime residue from Sandbox/testing. Host-specific live acceptance remains intentionally unrun."
+}

@@ -1,0 +1,17 @@
+{
+  "Time": "2026-09-30T15:24:35.5235203+03:30",
+  "StateExists": false,
+  "RuntimeCtrldExists": false,
+  "Ula": [
+    {
+      "IPAddress": "fd53:4444:48::53",
+      "PrefixLength": 128,
+      "SkipAsSource": true,
+      "AddressState": 4
+    }
+  ],
+  "OwnedNrpt": [],
+  "Ctrld": [],
+  "Winws": [],
+  "Broad": []
+}

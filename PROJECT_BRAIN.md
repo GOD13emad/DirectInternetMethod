@@ -1,85 +1,82 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: INCOMPLETE_FOR_CROSS_PLATFORM_1.1.0
-Final Objective: standalone Windows + Linux direct-connect application with independent install, icon, shortcuts, UI controls, rollback, online update, and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
-DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned deterministic artifacts + GitHub main/release published.
+Status: PASS_FINAL_1_1_0_READY_TO_PUBLISH
+Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
+DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
 ## Authoritative current state
-- Git/source authority: the Windows project working tree for `DirectInternetMethod`; host-specific absolute paths are intentionally omitted from the portable Brain.
-- Latest fully promoted cross-platform release remains `v1.0.0`.
-- Linux 1.1.0: **PASS_FINAL_LINUX_1_1_0**.
-  - Installed user app and protected backend 1.1.0.
-  - Normal Start/Stop/Recovery live-proven without admin prompt.
-  - Direct baseline with VPN off: YouTube timed out; OpenAI=401; GitHub=200.
-  - With Direct Internet Method active: UI `load_state()=ACTIVE`, `verify_live()=true`, YouTube=204, OpenAI=401, GitHub=200.
-  - ctrld and nfqws are independent systemd transient services and were observed `active/running`.
-  - Stop PASS, Recovery/no-state PASS, state and `dimdns0` clean after stop.
-  - Existing Linux VPN `OIG-VPN-LIVE` was temporarily disconnected only for the direct test and restored successfully.
-- Linux deterministic artifact:
+- Source authority: working tree on branch `release/v1.1.0-candidate`; pre-promotion HEAD was `8ffe1627e45045e083a3d86e4e3dfd0902262725`.
+- Cross-platform 1.1.0 product acceptance is **PASS**; publication is the only remaining release step.
+- Windows final artifact:
+  - `delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe`
+  - bytes: 157,078,634
+  - SHA-256: `E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0`
+  - service SHA-256: `F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68`
+  - manifest SHA-256: `F60D21EC678B9CB5F44D2CEA70DDFC1C3F4C80D4799A37131BAC18DC5536AD42`
+  - Authenticode: NotSigned (deferred, not a release blocker).
+- Windows final artifact was installed on the real host and live-tested:
+  - normal-user Start control PASS, action `done/0`;
+  - ACTIVE: YouTube=204, OpenAI=401, GitHub=200;
+  - ctrld SCM service owns UDP/TCP ULA:53; winws + protected WinDivert active;
+  - physical adapter DNS unchanged; no broad /1 routes; WinHTTP unchanged; pre-existing ICS Running/PID preserved;
+  - Stop PASS with exact rollback; Recovery/no-state PASS;
+  - final clean state: no state file, owned NRPT, ULA, ctrld process, winws process, or owned WinDivert residue.
+- Windows Sandbox lifecycle also PASS with restricted Basic User controls.
+- Linux 1.1.0 is **PASS_FINAL_LINUX_1_1_0**:
   - `delivery/DirectInternetMethod_1.1.0_Linux_x86_64.zip`
   - bytes: 8,139,344
   - SHA-256: `621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861`
-  - independently reproduced with identical hash on Windows and Linux; 14/14 package input hashes identical.
-- Windows 1.1.0:
-  - contract audit PASS.
-  - privileged service observed installed/running.
-  - installer exists and hash verified:
-    `EE24A8682D663715901CE7CF48A04B7E0F6E328C381D4204DE2202C49A0DD255`, 157,083,679 bytes.
-  - normal-run no-UAC/service/update contracts PASS.
-  - **live Windows 1.1.0 network Start/Stop acceptance is MISSING**.
-  - Windows network was intentionally kept read-only per locked project decision while owner is actively using that machine.
-- Therefore cross-platform v1.1.0 promotion/publication is NOT yet authorized by evidence.
+  - live ACTIVE YouTube=204, OpenAI=401, GitHub=200;
+  - Stop/Recovery/no-admin normal actions PASS;
+  - independently reproduced deterministic archive hash on Windows and Linux.
+- Windows and Linux contract audits: PASS.
+- `SHA256SUMS.txt` contains the exact final Windows/Linux artifact hashes.
 
 ## Roadmap
-Completed: v1.0.0 Windows/Linux final release and GitHub publication.
-Completed: Windows 1.1.0 native WPF + privileged service + bundled PowerShell 7.6.6 architecture and contract audit.
-Completed: Linux 1.1.0 protected backend, no-admin normal actions, online update hash gate, ownership and rollback guards.
-Completed: Linux install and lifecycle root-cause fixes.
-Completed: Linux 1.1.0 live Start/UI/DNS/HTTPS/process-service/Stop/Recovery acceptance.
-Completed: cross-host deterministic Linux 1.1.0 build.
-← CURRENT: preserve/version 1.1.0 candidate without promoting cross-platform release.
-Open critical gate: dedicated Windows 1.1.0 live network validation window.
-After that: final cross-platform evidence → root RELEASE.json 1.1.0 → SHA256SUMS.txt → main/tag v1.1.0 → GitHub release assets → online-update verification.
-Deferred: trusted Authenticode signing for Windows.
+Completed: v1.0.0 Windows/Linux final release and publication.
+Completed: Windows 1.1.0 native WPF + privilege-separated service + bundled PowerShell 7.6.6.
+Completed: Windows owned demand-start ctrld SCM lifecycle, collision guard, completion/timeout regression.
+Completed: Windows fresh Sandbox normal-user Start/Stop/Recovery acceptance.
+Completed: Windows real-host final-artifact install/ACTIVE/Stop/exact rollback/Recovery acceptance.
+Completed: Linux protected backend, no-admin actions, live network, rollback/recovery, deterministic build.
+Completed: release docs/metadata reconciled to 1.1.0 and final Windows installer rebuilt/tested.
+Completed: cross-platform final acceptance + SHA256SUMS.
+← CURRENT: commit/promotion to main → tag `v1.1.0` → GitHub release assets → latest/update verification.
+Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
-1. Linux privileged installer assigned Bash readonly `UID`.
-   - Fix: `USER_UID/USER_GID`.
-   - Regression: `install_avoids_readonly_uid_variable`.
-2. User installer probed protected polkit directory directly and false-failed after successful backend install.
-   - Fix: protected postconditions verified root-side; user retry verifies accessible backend hashes/state.
-   - Regressions: `install_no_unprivileged_polkit_probe`, `install_idempotent_backend_hash_gate`.
-3. User installer backed up whole app tree and hit root-owned transient runtime files.
-   - Fix: backup only persistent user files; exclude `directmethod/` runtime state/logs/config.
-   - Regression: `install_backup_excludes_runtime_state`.
-4. ctrld/nfqws were children of a oneshot action unit and systemd killed them after action completion.
-   - Fix: independent transient systemd services via `systemd-run --collect --service-type=exec`.
-   - Regression: `daemon_lifecycle_transient_services`.
-5. Recovery nft ownership guard expected creation syntax `queue num 200 bypass`, but `nft list` canonicalized it to `queue flags bypass to 200`.
-   - Fix: ownership guard accepts both semantically equivalent forms.
-   - Regression: `nft_queue_canonical_guard`.
-6. UI attempted `/proc/<root-pid>/exe` ownership verification under Ubuntu Yama `ptrace_scope=1`, causing false STALE.
-   - Fix: unprivileged UI verifies fixed systemd unit name + MainPID + ActiveState; root backend retains exact executable ownership for destructive cleanup.
-   - Regression: `ui_systemd_unit_ownership`.
-7. Cross-platform ZIP compression produced different bytes despite identical inputs.
-   - Fix: fixed ZipInfo metadata + ZIP_STORED.
-   - Gate: independently built Windows/Linux archive hashes must match.
+1. Linux installer used Bash readonly `UID` → `USER_UID/USER_GID`; regression PASS.
+2. Linux unprivileged polkit postcheck false-failed → protected root-side verification; regression PASS.
+3. Linux backup included root-owned transient runtime → persistent-file-only backup; regression PASS.
+4. Linux ctrld/nfqws died with oneshot parent → independent transient systemd services; live regression PASS.
+5. nft queue canonicalization broke ownership guard → accept canonical/creation forms; regression PASS.
+6. Linux UI /proc ownership false-negative under Yama → systemd unit/MainPID UI verification; regression PASS.
+7. Cross-host ZIP bytes differed → fixed ZIP metadata + ZIP_STORED; deterministic cross-host hash PASS.
+8. Windows assumed loopback InterfaceIndex=1 → dynamic owner of `::1/128`; Sandbox/host regression PASS.
+9. Windows ctrld child-process model incompatible with ctrld Windows lifecycle → owned demand-start SCM service; UDP/TCP :53 + DNS regression PASS.
+10. Windows backend completion stayed running after ACTIVE → deterministic process completion handling; Start/Stop/Recovery `done/0` regression PASS.
+11. Host validator could not read SYSTEM `Process.Path` as normal user → validate ctrld service ImagePath/PID/listeners + privileged runtime evidence; harness regression PASS.
+12. Host validator boolean-array aggregation produced false-negative → named boolean map; all active checks PASS.
+13. Rollback validator compared different default-route schemas → normalize route fields; exact rollback PASS.
+All three validator failures were harness defects; product runtime remained healthy and their failing evidence is preserved.
 
 ## Evidence / Knowledge
-- `evidence/LINUX_110_FINAL_ACCEPTANCE_20260930.json`
-  - SHA-256 `de4560b6f1ac168ef58453e62a9a809f683560c421e529ae12ba61cda28668e6`
-- `evidence/DIM_110_GATE_STATUS_20260930.json`
-  - SHA-256 `c54669c83fcb196777f583083be409d7b172f1c043435ee958e4fff0d68f1a78`
-- `evidence/LINUX_110_LIVE_LIFECYCLE_FAILURE_20260930.json`
-  - preserved failure/root-cause record.
-- `evidence/DIM_110_RECONCILE_20260930.json`
-  - preserved reconcile history.
-- Windows installer build evidence: `evidence/WINDOWS_110_INSTALLER_BUILD_20260930.json`.
-- Contract audits: Windows PASS; Linux PASS on both authoritative Windows tree and Linux host.
-- Do not call cross-platform 1.1.0 Final until Windows live network acceptance exists.
+- Cross-platform final: `evidence/DIM_110_FINAL_ACCEPTANCE_20260930.json` — SHA-256 `76C9EDBBC6D583818E33B558036275B293A560AC6061D09CFB06F5A3C0488773`.
+- Gate status: `evidence/DIM_110_GATE_STATUS_20260930.json` — SHA-256 `E9EB4C875CBE6C282527E5709863CB59FA4CB64404B6C0F8D7AB1EB5BECFBD85`.
+- Windows final artifact acceptance: `evidence/WINDOWS_110_HOST_FINAL_ARTIFACT_ACCEPTANCE_20260930.json` — SHA-256 `0E37A969EE9C91DF4BD4FCBDAF330A3D4122DCA8DEB7FF1D577D1B2FAC0A3FA9`.
+- Windows final install: `evidence/WINDOWS_110_HOST_FINAL_INSTALL_RESULT_20260930.json` — SHA-256 `846993CCF9F5C381633A61FF0E3689FCE5BC207CC4012D1D8600F9B2BC45CAC8`.
+- Windows active: `evidence/WINDOWS_110_HOST_ACTIVE_ACCEPTANCE_20260930.json` — SHA-256 `52BEEA2E4272E640BBC2D52BB8E25B1F847FA5FC81BD890EACEE6B9C1AA4DAE7`.
+- Windows exact rollback: `evidence/WINDOWS_110_HOST_ROLLBACK_ACCEPTANCE_20260930.json` — SHA-256 `C779172D6DA4F270B06DEF1EE1658973D855414F678552CBCB1980234E93064B`.
+- Windows recovery: `evidence/WINDOWS_110_HOST_RECOVERY_ACCEPTANCE_20260930.json` — SHA-256 `CF5BC74B02353954CF73D908ED50E19719024122D4BA1D0D8EFAFED23DC2F3AD`.
+- Windows Sandbox: `evidence/WINDOWS_110_SANDBOX_FINAL_ACCEPTANCE_20260930.json` — SHA-256 `EECB896189B88CADA49DD0C8D8D4D48B4D13A11196135C65C2DE757A7DD795BE`.
+- Linux final: `evidence/LINUX_110_FINAL_ACCEPTANCE_20260930.json` — SHA-256 `DE4560B6F1AC168EF58453E62A9A809F683560C421E529AE12BA61CDA28668E6`.
+- ctrld root cause: `evidence/WINDOWS_110_CTRLD_SERVICE_ROOT_CAUSE_20260930.json`.
+- action completion root cause: `evidence/WINDOWS_110_ACTION_COMPLETION_ROOT_CAUSE_20260930.json`.
+- Candidate-cycle evidence was copied to immutable `WINDOWS_110_HOST_CANDIDATE_*` records before final-artifact retest.
+- Earlier stale parallel hashes `D6AF…/A011…/5AEF…` are superseded and must not be used as release authority.
 
 ## Exact Next Action
-During an explicitly available Windows network-test window, capture Windows prestate; live Start through the installed 1.1.0 service; verify product process ownership, DNS/HTTPS and absence of unintended default-route/adapter-DNS/WinHTTP/ICS changes; Stop; verify exact rollback; Recovery/no-state. If PASS, promote 1.1.0: update RELEASE.json/RELEASE_NOTES, generate SHA256SUMS.txt, merge candidate branch to main, tag v1.1.0, create GitHub release with Windows/Linux assets + sums, and verify online updater against the published release.
+Commit only authoritative product/release/evidence files; promote to `main`, tag `v1.1.0`, push, create GitHub release with the Windows installer, Linux ZIP, and `SHA256SUMS.txt`; verify published hashes/latest-release updater flow; then record publication evidence and mark Brain FINAL/PUBLISHED_VERIFIED.
 
 ## HISTORY
 - 2026-09-29: v1.0.0 Windows and Linux PASS_FINAL_RELEASE; GitHub v1.0.0 published and verified.
@@ -92,3 +89,15 @@ During an explicitly available Windows network-test window, capture Windows pres
 - 2026-09-30: UI root-process ownership false-negative under Yama found and replaced by systemd unit/MainPID ownership verification.
 - 2026-09-30: Linux 1.1.0 live UI/network/rollback PASS; original VPN restored.
 - 2026-09-30: final Linux package reproduced identically on Windows and Linux with SHA-256 `621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861`.
+
+- 2026-09-30: Windows Sandbox no-admin service-control path proven with Basic User restricted token; Start failure reproduced and rolled back cleanly; ctrld v1.5.7 SCM lifecycle incompatibility isolated and confirmed against upstream v1.5.7 source and a successful SCM-service experiment.
+
+- 2026-09-30: Windows ctrld converted to owned demand-start SCM service; fresh Sandbox Start reached ACTIVE and restored YouTube while preserving DNS/routes/WinHTTP/ICS.
+- 2026-09-30: service output-pipe inheritance deadlock fixed; fresh final Sandbox Start/Stop/Recovery all reached `done/0`, with clean rollback/recovery. Final Windows candidate installer SHA-256 `D6AFABEF9A951CB8D94F6730325CC791CDFFAA78906FF54036861379BEE2688B`.
+- 2026-09-30: Linux contract audit rechecked on `aliemad-Labtop`; PASS; Linux artifact hash remained `621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861`.
+
+- 2026-09-30: Windows 1.1.0 fresh Sandbox acceptance PASS after SCM lifecycle + deterministic service completion fixes; restricted Basic User Start/Stop/Recovery PASS and exact rollback clean. Host Windows live-network gate intentionally remains open.
+- 2026-09-30: host Windows 1.1.0 candidate installed and live-tested; normal-user Start/Stop/Recovery PASS, ACTIVE YouTube=204/OpenAI=401/GitHub=200, exact rollback PASS.
+- 2026-09-30: host validation false-negatives isolated to test harness permissions/aggregation/schema normalization; failing evidence preserved; named-check and normalized-route validators PASS.
+- 2026-09-30: release docs/metadata corrected from stale 1.0/CANDIDATE descriptions; final installer rebuilt as SHA-256 `E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0`.
+- 2026-09-30: exact final Windows artifact installed and retested on real host; Start/ACTIVE/Stop/rollback/Recovery PASS. Cross-platform 1.1.0 acceptance is PASS; publication remains.

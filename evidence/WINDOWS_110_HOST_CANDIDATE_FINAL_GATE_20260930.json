@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "date": "2026-09-30",
+  "status": "PASS_HOST_WINDOWS_1_1_0_CANDIDATE",
+  "host": "EMAD-PC-ULTIMAT",
+  "testedArtifact": {
+    "path": "delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe",
+    "sha256": "0BE4B411080467A6D42DE09628C6558F52CBF5FB67BB00518FCA3D260F592516",
+    "bytes": 157079481,
+    "serviceSha256": "F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68",
+    "manifestSha256": "535F7933A2C5322A582B320CE875210858CC78521E527CB3FC7358A135EFC415"
+  },
+  "install": "PASS",
+  "noAdminNormalActions": {
+    "start": "PASS done/0",
+    "stop": "PASS done/0",
+    "recovery": "PASS done/0"
+  },
+  "baseline": {
+    "youtube": "TIMEOUT",
+    "openai": 401,
+    "github": 200
+  },
+  "active": {
+    "youtube": 204,
+    "openai": 401,
+    "github": 200,
+    "dns": "PASS",
+    "adapterDnsUnchanged": true,
+    "noBroadRoutes": true,
+    "winHttpUnchanged": true,
+    "icsUnchanged": true,
+    "ctrldUdpTcp53Owned": true
+  },
+  "rollback": {
+    "status": "PASS_EXACT_ROLLBACK_HOST",
+    "stateAbsent": true,
+    "nrptOwned": 0,
+    "ula": 0,
+    "ctrldProcess": 0,
+    "winwsProcess": 0,
+    "winDivertOwned": 0,
+    "defaultRouteUnchanged": true,
+    "dnsUnchanged": true,
+    "winHttpUnchanged": true,
+    "icsUnchanged": true
+  },
+  "recoveryNoState": "PASS",
+  "evidence": {
+    "prestate": {
+      "path": "evidence/WINDOWS_110_HOST_LIVE_PRESTATE_20260930.json",
+      "sha256": "7F221B9EA5F130D81767EE6CDC59CA4618640EE93681D20F7F6D90E679F40283"
+    },
+    "active": {
+      "path": "evidence/WINDOWS_110_HOST_ACTIVE_ACCEPTANCE_20260930.json",
+      "sha256": "5E2A7B12427E6A9F973A314D4FEC3BB5689087FE92916570BC1D0AE75EE5FF5D"
+    },
+    "rollback": {
+      "path": "evidence/WINDOWS_110_HOST_ROLLBACK_ACCEPTANCE_20260930.json",
+      "sha256": "825CF79650BB035537B8710048270AFFA0D4909E000721D58AA752DB7A9C12FB"
+    },
+    "recovery": {
+      "path": "evidence/WINDOWS_110_HOST_RECOVERY_ACCEPTANCE_20260930.json",
+      "sha256": "3299CAB2EC657C699E51E205736B580815DF20D3F71D76BCEE278FA1F319A325"
+    }
+  },
+  "note": "This proves the runtime candidate. Final release metadata is promoted next; the rebuilt final artifact must be host-smoke-tested again because its artifact hash changes."
+}

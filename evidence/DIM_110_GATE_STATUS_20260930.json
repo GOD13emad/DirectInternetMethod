@@ -1,27 +1,41 @@
 {
-  "schema": 1,
+  "schema": 2,
   "date": "2026-09-30",
   "project": "DirectInternetMethod",
   "targetVersion": "1.1.0",
-  "status": "CROSS_PLATFORM_RELEASE_NOT_PROMOTED",
+  "status": "PASS_FINAL_READY_TO_PUBLISH",
   "linux": {
     "status": "PASS_FINAL_LINUX_1_1_0",
-    "artifactSha256": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
+    "artifact": "delivery/DirectInternetMethod_1.1.0_Linux_x86_64.zip",
+    "bytes": 8139344,
+    "sha256": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
     "liveAcceptance": "PASS",
     "rollback": "PASS",
-    "noAdminNormalActions": "PASS"
+    "recovery": "PASS",
+    "noAdminNormalActions": "PASS",
+    "deterministicBuild": "PASS",
+    "contractAudit": "PASS"
   },
   "windows": {
-    "status": "CONTRACT_AND_BUILD_PASS_LIVE_NETWORK_1_1_0_UNPROVEN",
-    "installer": "delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe",
-    "bytes": 157083679,
-    "sha256": "EE24A8682D663715901CE7CF48A04B7E0F6E328C381D4204DE2202C49A0DD255",
+    "status": "PASS_FINAL_WINDOWS_1_1_0",
+    "artifact": "delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe",
+    "bytes": 157078634,
+    "sha256": "E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0",
+    "serviceSha256": "F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68",
+    "manifestSha256": "F60D21EC678B9CB5F44D2CEA70DDFC1C3F4C80D4799A37131BAC18DC5536AD42",
     "contractAudit": "PASS",
-    "installedServiceObserved": "RUNNING",
-    "liveNetworkAcceptance110": "MISSING",
-    "reasonNotRun": "Locked project decision: do not mutate Windows networking while owner is actively using Windows."
+    "freshSandboxInstall": "PASS",
+    "sandboxLiveLifecycle": "PASS",
+    "hostFinalArtifactInstall": "PASS",
+    "hostLiveNetworkAcceptance": "PASS_ACTIVE_HOST",
+    "hostStopRollback": "PASS_EXACT_ROLLBACK_HOST",
+    "hostRecoveryNoState": "PASS",
+    "noAdminNormalActions": "PASS",
+    "authenticode": "NotSigned",
+    "finalArtifactAcceptance": "evidence/WINDOWS_110_HOST_FINAL_ARTIFACT_ACCEPTANCE_20260930.json"
   },
-  "authoritativeReleasedVersion": "1.0.0",
+  "crossPlatformFinalAcceptance": "evidence/DIM_110_FINAL_ACCEPTANCE_20260930.json",
+  "checksums": "SHA256SUMS.txt",
   "github110Published": false,
-  "exactNextAction": "When a dedicated Windows network-test window is explicitly available, capture prestate, live Start/status/HTTPS, Stop/rollback, Recovery, then promote v1.1.0 and publish both assets plus SHA256SUMS.txt."
+  "exactNextAction": "Commit the evidence-backed 1.1.0 release state, fast-forward/merge to main, tag v1.1.0, push, publish Windows/Linux artifacts plus SHA256SUMS.txt, then verify GitHub latest/update checksum flow."
 }

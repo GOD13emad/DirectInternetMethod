@@ -1,21 +1,26 @@
-# Direct Internet Method v1.0.0
+# Direct Internet Method v1.1.0
 
-Standalone Windows + Linux release.
+Cross-platform final release for Windows and Linux.
 
 ## Windows
-- Dedicated application/control panel with dove icon and «زن زندگی آزادی»
-- Desktop + Start Menu shortcuts with the product icon
-- Start / Stop / Status / Recovery
-- Loopback ULA + ctrld 1.5.7/DoH + NRPT + zapret/winws/WinDivert
-- No VPN, HTTP/SOCKS proxy or default-route tunnel
-- SHA-256: `1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602`
-- Current limitation: PowerShell 7 required; installer is not Authenticode-signed
+- Native WPF UI with privilege-separated `DirectInternetMethodSvc`.
+- Normal Start/Stop/Recovery works without UAC after installation.
+- Bundled protected PowerShell 7.6.6; no external PowerShell dependency.
+- ctrld v1.5.7 runs as an owned demand-start Windows service.
+- Loopback ULA + DoH + NRPT + zapret/winws/WinDivert.
+- Online update checks GitHub latest release and requires `SHA256SUMS.txt` verification.
+- Fresh Sandbox acceptance PASS.
+- Real Windows host acceptance PASS: baseline YouTube timeout → ACTIVE YouTube 204; OpenAI 401; GitHub 200.
+- Adapter DNS/default route/WinHTTP/ICS preservation PASS.
+- Exact Stop rollback and Recovery/no-state PASS.
 
 ## Linux
-- Dedicated GTK/Adwaita application with dove icon and «زن زندگی آزادی»
-- Draggable standard header + explicit Minimize / Maximize-Restore / Close
-- Applications launcher + Desktop shortcut + uninstaller
-- Temporary dedicated DNS link + ctrld 1.5.7/DoH + systemd-resolved + nftables/NFQUEUE + nfqws 72.13
-- No VPN, HTTP/SOCKS proxy or default-route tunnel
-- Exact package install + live DNS/HTTPS + rollback PASS
-- SHA-256: `4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98`
+- Protected backend with no-admin normal actions.
+- ctrld + nfqws independent transient systemd services.
+- Direct live acceptance PASS: YouTube 204; OpenAI 401; GitHub 200.
+- Stop and Recovery rollback PASS.
+- Deterministic Linux package reproduced with identical SHA-256 on Windows and Linux.
+
+## Limitations
+- Windows installer is not Authenticode-signed.
+- Filtering effectiveness can vary if network filtering behavior changes.

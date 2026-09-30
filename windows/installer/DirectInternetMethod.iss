@@ -85,6 +85,7 @@ Filename: "{app}\app\DirectInternetMethod.exe"; Description: "Open Direct Intern
 [Code]
 const
   ServiceName = 'DirectInternetMethodSvc';
+  CtrldServiceName = 'ctrld';
 
 function RunSc(Params: String; var ResultCode: Integer): Boolean;
 begin
@@ -96,6 +97,68 @@ var
   ResultCode: Integer;
 begin
   Result := RunSc('query "' + ServiceName + '"', ResultCode) and (ResultCode = 0);
+end;
+
+function CtrldServiceExists(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  Result := RunSc('query "' + CtrldServiceName + '"', ResultCode) and (ResultCode = 0);
+end;
+
+function CtrldServiceOwned(): Boolean;
+var
+  ImagePath: String;
+  OwnedExe: String;
+begin
+  Result := False;
+  if not RegQueryStringValue(HKLM, 'SYSTEM\CurrentControlSet\Services\' + CtrldServiceName, 'ImagePath', ImagePath) then
+    exit;
+  OwnedExe := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\bin\ctrld\ctrld.exe');
+  Result := Pos(LowerCase(OwnedExe), LowerCase(ImagePath)) > 0;
+end;
+
+procedure StopCtrldServiceIfOwned();
+var
+  ResultCode: Integer;
+begin
+  if CtrldServiceExists() and CtrldServiceOwned() then
+  begin
+    RunSc('stop "' + CtrldServiceName + '"', ResultCode);
+    Sleep(1200);
+  end;
+end;
+
+procedure InstallOrUpdateCtrldService();
+var
+  ResultCode: Integer;
+  CtrldExe: String;
+  CtrldConfig: String;
+  BinPath: String;
+  Params: String;
+begin
+  CtrldExe := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\bin\ctrld\ctrld.exe');
+  CtrldConfig := ExpandConstant('{commonappdata}\DirectDnsDpiHarness\ctrld\ctrld.toml');
+  BinPath := '\"' + CtrldExe + '\" run -s -c \"' + CtrldConfig + '\"';
+
+  if CtrldServiceExists() and (not CtrldServiceOwned()) then
+    RaiseException('A different Windows service named ctrld already exists. Direct Internet Method will not overwrite it.');
+
+  if not CtrldServiceExists() then
+  begin
+    Params := 'create "' + CtrldServiceName + '" binPath= "' + BinPath + '" start= demand DisplayName= "Direct Internet Method DNS Helper"';
+    if (not RunSc(Params, ResultCode)) or (ResultCode <> 0) then
+      RaiseException('Unable to create owned ctrld service. sc.exe exit=' + IntToStr(ResultCode));
+  end
+  else
+  begin
+    Params := 'config "' + CtrldServiceName + '" binPath= "' + BinPath + '" start= demand DisplayName= "Direct Internet Method DNS Helper"';
+    if (not RunSc(Params, ResultCode)) or (ResultCode <> 0) then
+      RaiseException('Unable to update owned ctrld service. sc.exe exit=' + IntToStr(ResultCode));
+  end;
+
+  RunSc('description "' + CtrldServiceName + '" "Owned DNS helper for Direct Internet Method; do not start manually"', ResultCode);
+  RunSc('failure "' + CtrldServiceName + '" reset= 0 actions= ""', ResultCode);
 end;
 
 procedure StopServiceIfPresent();
@@ -154,6 +217,12 @@ begin
     Result := 'Direct Internet Method is active. Use Stop or Recovery before installing/upgrading.';
     exit;
   end;
+  if CtrldServiceExists() and (not CtrldServiceOwned()) then
+  begin
+    Result := 'A different Windows service named ctrld already exists. Direct Internet Method will not overwrite it.';
+    exit;
+  end;
+  StopCtrldServiceIfOwned();
   StopServiceIfPresent();
   Result := '';
 end;
@@ -161,7 +230,10 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
+  begin
+    InstallOrUpdateCtrldService();
     InstallOrUpdateService();
+  end;
 end;
 
 function InitializeUninstall(): Boolean;
@@ -199,6 +271,7 @@ begin
     end;
   end;
 
+  StopCtrldServiceIfOwned();
   StopServiceIfPresent();
   Result := True;
 end;
@@ -209,6 +282,9 @@ var
 begin
   if CurUninstallStep = usUninstall then
   begin
+    StopCtrldServiceIfOwned();
+    if CtrldServiceExists() and CtrldServiceOwned() then
+      RunSc('delete "' + CtrldServiceName + '"', ResultCode);
     StopServiceIfPresent();
     RunSc('delete "' + ServiceName + '"', ResultCode);
     Sleep(500);

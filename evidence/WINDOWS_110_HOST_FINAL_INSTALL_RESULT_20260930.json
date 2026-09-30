@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "status": "PASS",
+  "installerSha256": "E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0",
+  "exitCode": 0,
+  "service": {
+    "state": "Running",
+    "startMode": "Auto",
+    "pid": 30672,
+    "path": "C:\\Program Files\\DirectInternetMethod\\Privileged\\app\\DirectInternetMethod.Service.exe"
+  },
+  "ctrld": {
+    "state": "Stopped",
+    "startMode": "Manual",
+    "pid": 0,
+    "path": "\"C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\ctrld\\ctrld.exe\" run -s -c \"C:\\ProgramData\\DirectDnsDpiHarness\\ctrld\\ctrld.toml\""
+  },
+  "installedServiceSha256": "F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68",
+  "installedStartSha256": "44CBC85C243B33B115E3187DFAD2088D06B986D60A3BA7C5C6CDC5DA35587464"
+}

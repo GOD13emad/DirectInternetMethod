@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "date": "2026-09-30",
+  "status": "PASS_SANDBOX_WINDOWS_1_1_0",
+  "scope": "Fresh Windows Sandbox install and restricted Basic User lifecycle acceptance; host Windows network intentionally untouched.",
+  "installer": {
+    "path": "delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe",
+    "bytes": 157079481,
+    "sha256": "0BE4B411080467A6D42DE09628C6558F52CBF5FB67BB00518FCA3D260F592516",
+    "serviceSha256": "F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68",
+    "manifestSha256": "535F7933A2C5322A582B320CE875210858CC78521E527CB3FC7358A135EFC415"
+  },
+  "install": {
+    "mainService": "RUNNING",
+    "ctrldService": {
+      "startType": "DEMAND_START",
+      "initialState": "STOPPED",
+      "imagePath": "\"C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\ctrld\\ctrld.exe\" run -s -c \"C:\\ProgramData\\DirectDnsDpiHarness\\ctrld\\ctrld.toml\""
+    }
+  },
+  "noAdmin": {
+    "method": "Windows Basic User restricted token via runas /trustlevel:0x20000 from active WDAGUtilityAccount session",
+    "startControlRc": 0,
+    "stopControlRc": 0,
+    "recoveryControlRc": 0,
+    "startAction": {
+      "phase": "done",
+      "exitCode": 0
+    },
+    "stopAction": {
+      "phase": "done",
+      "exitCode": 0
+    },
+    "recoveryAction": {
+      "phase": "done",
+      "exitCode": 0
+    }
+  },
+  "start": {
+    "status": "PASS_ACTIVE",
+    "ctrldPid": 5304,
+    "winwsPid": 2052,
+    "udp53": 1,
+    "tcp53": 1,
+    "dns": {
+      "youtube": true,
+      "github": true,
+      "openai": true
+    },
+    "https": {
+      "youtube": "204",
+      "openai": "401",
+      "github": "200"
+    },
+    "controlDDirect": "400",
+    "adapterDnsBefore": [
+      "172.30.224.1"
+    ],
+    "adapterDnsActive": [
+      "172.30.224.1"
+    ],
+    "icsBefore": "Stopped",
+    "icsActive": "Stopped",
+    "broadRouteCountBefore": 0,
+    "broadRouteCountActive": 0,
+    "winHttpBefore": "Direct access",
+    "winHttpActive": "Direct access",
+    "winDivertProtectedPath": true
+  },
+  "stopRollback": {
+    "stateExists": false,
+    "nrptOwned": 0,
+    "ulaCount": 0,
+    "ctrldServiceState": "Stopped",
+    "ctrldProcess": 0,
+    "winwsProcess": 0,
+    "winDivertOwnedCount": 0,
+    "adapterDns": [
+      "172.30.224.1"
+    ],
+    "broadRoutes": 0,
+    "winHttp": "Direct access",
+    "ics": "Stopped"
+  },
+  "recoveryNoState": {
+    "actionPhase": "done",
+    "exitCode": 0,
+    "finalClean": {
+      "stateExists": false,
+      "nrptOwned": 0,
+      "ulaCount": 0,
+      "ctrldServiceState": "Stopped",
+      "ctrldProcess": 0,
+      "winwsProcess": 0,
+      "winDivertOwnedCount": 0,
+      "adapterDns": [
+        "172.30.224.1"
+      ],
+      "broadRoutes": 0,
+      "winHttp": "Direct access",
+      "ics": "Stopped"
+    }
+  },
+  "rootCausesFixed": [
+    "ctrld Windows SCM lifecycle incompatibility when launched as child process",
+    "backend action completion hang from asynchronous process wait path"
+  ],
+  "limitations": [
+    "Windows Sandbox is not the owner's host Windows environment; host-specific live network acceptance remains unproven.",
+    "Installer is not Authenticode-signed."
+  ],
+  "evidencePaths": [
+    "sandbox110_scmfix/output/final-runtime.json",
+    "sandbox110_scmfix/output/final-action-start.txt",
+    "sandbox110_scmfix/output/final-action-stop.txt",
+    "sandbox110_scmfix/output/final-action-recovery.txt",
+    "sandbox110_scmfix/output/rollback-check.json",
+    "evidence/WINDOWS_110_CTRLD_SERVICE_ROOT_CAUSE_20260930.json",
+    "evidence/WINDOWS_110_INSTALLER_BUILD_20260930.json"
+  ]
+}

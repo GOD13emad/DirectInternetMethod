@@ -1,0 +1,120 @@
+{
+  "schema": 1,
+  "status": "FAIL",
+  "date": "2026-09-30T23:02:59.4365635+03:30",
+  "host": "EMAD-PC-ULTIMAT",
+  "stateExists": false,
+  "ownedNrpt": 0,
+  "ula": [],
+  "ctrld": {
+    "state": "Stopped",
+    "pid": 0,
+    "path": "\"C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\ctrld\\ctrld.exe\" run -s -c \"C:\\ProgramData\\DirectDnsDpiHarness\\ctrld\\ctrld.toml\""
+  },
+  "ctrldProcesses": [],
+  "winwsProcesses": [],
+  "ownedDrivers": [],
+  "dns": {
+    "preV4": [
+      "192.168.20.1"
+    ],
+    "postV4": [
+      "192.168.20.1"
+    ],
+    "preV6": [],
+    "postV6": [],
+    "unchanged": true
+  },
+  "defaults": [
+    {
+      "ifIndex": 18,
+      "alias": "Ethernet 3",
+      "nextHop": "192.168.20.1",
+      "routeMetric": 0,
+      "interfaceMetric": 25,
+      "state": "Alive"
+    }
+  ],
+  "preDefaults": [
+    {
+      "ifIndex": 18,
+      "alias": "Ethernet 3",
+      "description": "Intel(R) Ethernet Controller I226-V",
+      "status": "Up",
+      "nextHop": "192.168.20.1",
+      "routeMetric": 0,
+      "interfaceMetric": 25,
+      "state": "Alive"
+    }
+  ],
+  "broadRoutes": [],
+  "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+  "winHttpUnchanged": true,
+  "ics": {
+    "preState": "Running",
+    "postState": "Running",
+    "prePid": 5184,
+    "postPid": 5184,
+    "unchanged": true
+  },
+  "stopEvidence": {
+    "status": "PASS",
+    "actions": [
+      "Removed owned NRPT catch-all",
+      "Stopped owned winws and WinDivert",
+      "Stopped owned ctrld",
+      "Removed owned loopback ULA"
+    ],
+    "externalPreserved": true,
+    "before": {
+      "dnsV4": [
+        "192.168.20.1"
+      ],
+      "dnsV6": [],
+      "externalNrpt": [],
+      "broadRoutes": [],
+      "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+      "ics": {
+        "exists": true,
+        "state": "Running",
+        "pid": 5184
+      }
+    },
+    "post": {
+      "dnsV4": [
+        "192.168.20.1"
+      ],
+      "dnsV6": [],
+      "externalNrpt": [],
+      "broadRoutes": [],
+      "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+      "ics": {
+        "exists": true,
+        "state": "Running",
+        "pid": 5184
+      },
+      "ownedNrptCount": 0,
+      "ulaCount": 0,
+      "ctrldOwnedCount": 0,
+      "winwsOwnedCount": 0,
+      "driverOwnedCount": 0,
+      "runtimeCtrldExists": false,
+      "ctrldSocketExists": false
+    }
+  },
+  "checks": {
+    "noState": true,
+    "noOwnedNrpt": true,
+    "noUla": true,
+    "ctrldStopped": true,
+    "noCtrldProcess": true,
+    "noWinwsProcess": true,
+    "noOwnedDriver": true,
+    "dnsUnchanged": true,
+    "defaultsUnchanged": false,
+    "noBroadRoutes": true,
+    "winHttpUnchanged": true,
+    "icsUnchanged": true,
+    "stopEvidencePass": true
+  }
+}
