@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.3.1",
+  "status": "PASS_LINUX_1_3_1_POST_REBASE_CROSS_HOST",
+  "provenance": {
+    "host": "aliemad-Labtop",
+    "checkout": "fresh clone from pushed hotfix branch",
+    "path": "/home/aliemad/.cache/dim131-postrebase-b0b34aa",
+    "branch": "hotfix/v1.3.1-ui-layout",
+    "commit": "b0b34aa5725cd5632b18dd091d8de4025e1a01fe",
+    "baseMain": "8d5fb149992ee1bdac3e73940b23ad6f0e873a4e"
+  },
+  "gates": {
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS_PROVIDER_CATALOG_R2",
+    "routerGatewayRuntimeSmoke": "PASS_9_PROFILES",
+    "shellSyntax": "PASS_6_FILES",
+    "crlfGuard": "PASS_ZERO_CR"
+  },
+  "runtimeSmoke": {
+    "profiles": 9,
+    "providers": [
+      "VPN Gate",
+      "VPNBook",
+      "Pilovali"
+    ],
+    "configFields": "PASS",
+    "privateDnsGuard": "PASS",
+    "liveEndpointInformational": "reachable TCP/443 219.100.37.213"
+  },
+  "artifact": {
+    "path": "delivery/DirectInternetMethod_1.3.1_Linux_x86_64.zip",
+    "bytes": 8158158,
+    "sha256": "B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34",
+    "windowsBuildSha256": "B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34",
+    "exactCrossHostMatch": true
+  },
+  "priorEvidence": "evidence/LINUX_131_CROSS_HOST_ACCEPTANCE_20261001.json is SUPERSEDED_PRE_REBASE and is not authority.",
+  "networkBackendChangedFrom130": false,
+  "exactNextAction": "Close post-rebase cross-host gate in RELEASE/Brain, push evidence commit, then require protected PR CI/merge before publication."
+}
