@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.3.2",
-  "status": "PASS_RELEASE_READY_WINDOWS_1_3_2",
+  "status": "FINAL_WINDOWS_1_3_2_PUBLISHED_VERIFIED",
   "date": "2026-10-01",
   "previousAccepted": {
     "version": "1.3.1",
@@ -49,7 +49,9 @@
     "windowsCompile": "PASS_0_WARNINGS_0_ERRORS",
     "windowsRegressionContract": "PASS",
     "runtimeGridRows": "PASS_9_ROWS_7_COLUMNS_9_DATAITEMS",
-    "publication": "PENDING"
+    "publication": "PASS_PUBLIC_REDOWNLOAD_VERIFIED",
+    "installedPublicUpdate": "PASS",
+    "installedStartupUi": "PASS_1289x632_NO_OVERLAP"
   },
   "limitations": [
     "PPTP is a legacy compatibility fallback; prefer L2TP/IPsec or OpenVPN.",
@@ -71,5 +73,11 @@
       ]
     },
     "startupLayout": "PASS_1289x632_96DPI_SIX_BUTTONS_NO_OVERLAP"
+  },
+  "publication": {
+    "tag": "v1.3.2",
+    "tagCommit": "a0bf6bbce1932a0f4dd405f0cfbffeeb68ec63e6",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.3.2",
+    "publishedAt": "2026-10-01T07:28:27Z"
   }
 }

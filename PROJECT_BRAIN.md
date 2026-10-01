@@ -1,6 +1,6 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: RELEASE_READY_V1_3_2_ROUTER_GRID_VISIBILITY_PUBLICATION_PENDING
+Status: FINAL_V1_3_2_PUBLISHED_VERIFIED__V1_4_0_DIRECT_METHODS_NEXT
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
@@ -15,8 +15,8 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - **Linux release-ready artifact:** `delivery/DirectInternetMethod_1.3.2_Linux_x86_64.zip`, 8,158,337 bytes, SHA-256 `8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D`; Windows/Linux byte-identical reproduction PASS; Linux contract/runtime smoke PASS with 9 profiles.
 - **Network Scope:** no Direct DNS/DPI privileged network logic changed from v1.3.1. Router Gateway remains non-mutating to routes/DNS.
 - **Validation Boundary:** physical-router authenticated L2TP/IPsec/PPTP success remains model/firmware-dependent; not claimed universally.
-- **Critical Path / Open Gates:** final source/release metadata audit → protected branch/main CI → immutable tag `v1.3.2` → publish exact three assets → public re-download/hash verification → installed Windows Direct Update + Linux update verification.
-- **Brain Status:** CURRENT / RELEASE_READY. Do not mark v1.3.2 FINAL until publication and installed-host verification close.
+- **Critical Path / Open Gates:** none for v1.3.2. Tag/release/assets are immutable and public hashes, Windows installed update, Linux built-in updater, clean OFF state, 1289×632 startup layout and accepted 9-profile Router Gateway payload are verified.
+- **Brain Status:** CURRENT / FINAL for v1.3.2. Publication + host gates CLOSED. Final evidence: `evidence/DIM_132_FINAL_PUBLICATION_HOST_ACCEPTANCE_20261001.json`.
 
 ## CURRENT v1.3.1 UI hotfix / provider-catalog integration
 - **v1.3.1 Historical State:** FINAL/PUBLISHED baseline for v1.3.2 at immutable tag `v1.3.1` (`3b9fa6e`). The lines below preserve its pre-publication acceptance history.
@@ -175,9 +175,10 @@ All earlier harness failures remain preserved; no product runtime failure is hid
 - v1.3 validator false-negative root cause: `evidence/WINDOWS_130_ROUTER_DATA_VALIDATOR_ROOT_CAUSE_20261001.json` — harness-only; product path/hash verified.
 
 ## Exact Next Action
-Push the post-rebase Linux cross-host closure evidence, pass PR #7 required `linux-source`/`windows-source` checks and protected merge, publish immutable v1.3.1 Windows/Linux/SHA256SUMS assets, publicly redownload/hash-verify them, then update/verify the installed Windows app at exact 1289×632.
+Create v1.4.0 from immutable v1.3.2 and add a bounded multi-protocol Direct engine using the already-pinned ctrld/zapret runtimes: encrypted DNS + TCP/443 TLS/SNI desync + TCP/80 HTTP split/tamper + UDP/443 QUIC desync, with no VPN/default-route tunnel/proxy and with exact rollback/hostlist scope. Validate on Linux first, then Windows host without disturbing unrelated network state.
 
 ## HISTORY
+- 2026-10-01: v1.3.2 final publication/host acceptance CLOSED. Public Windows/Linux/SHA256SUMS re-download hashes exact; Windows installed 1.3.2 payload hashes exact + clean OFF + 1289×632 UI PASS; Linux built-in updater upgraded 1.3.1→1.3.2 with exact public ZIP hash and no redundant admin authorization; Python compile + clean OFF PASS.
 - 2026-10-01: aliemad-Labtop fresh clone of pushed post-rebase commit `b0b34aa` reproduced Linux v1.3.1 ZIP SHA `B21BD0D5…23A34` exactly; Linux/Router contracts, Router runtime smoke with 9 profiles, LF guard and six-file Bash syntax PASS. Post-rebase cross-host gate CLOSED.
 - 2026-10-01: user-reported Windows crowding traced to 980×620 startup geometry + non-wrapping six-action footer. v1.3.1 sets 1289×632 preferred startup geometry and responsive footer; dynamic 1289×632 and 1000×632 zero-overlap regressions PASS.
 - 2026-10-01: protected main advanced during v1.3.1 work with provider catalog revision 2 and GitHub hardening. Hotfix branch rebased onto `8d5fb14`; concurrent 9-profile/3-provider catalog and Linux installer hardening preserved. Pre-rebase artifacts superseded; Windows manifest/installer and Linux archive rebuilt from new authority.

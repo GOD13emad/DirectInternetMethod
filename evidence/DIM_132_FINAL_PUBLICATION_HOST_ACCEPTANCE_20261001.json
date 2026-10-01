@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.3.2",
+  "status": "PASS_FINAL_PUBLISHED_VERIFIED",
+  "authority": {
+    "tag": "v1.3.2",
+    "commit": "a0bf6bbce1932a0f4dd405f0cfbffeeb68ec63e6",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.3.2",
+    "publishedAt": "2026-10-01T07:28:27Z",
+    "mainCiRun": 36830270391,
+    "tagCiRun": 36830398621
+  },
+  "publicArtifacts": {
+    "windows": {
+      "name": "DirectInternetMethod_1.3.2_Windows_Setup.exe",
+      "bytes": 157107271,
+      "sha256": "B5141A93BDF2C261F54F4C0483128D973A54DEFBCD45C6C701535037B31E6E58",
+      "redownload": "PASS_EXACT"
+    },
+    "linux": {
+      "name": "DirectInternetMethod_1.3.2_Linux_x86_64.zip",
+      "bytes": 8158337,
+      "sha256": "8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D",
+      "redownload": "PASS_EXACT"
+    },
+    "checksums": {
+      "name": "SHA256SUMS.txt",
+      "bytes": 221,
+      "sha256": "216A6267F056910E85FF996F5E780B9F5D93F3C71E0B8D4F3B6619376E150745",
+      "redownload": "PASS_EXACT"
+    }
+  },
+  "windowsInstalled": {
+    "version": "1.3.2",
+    "guiSha256": "F9FDE9A0A75754EFC6B2573571373E2AB1CD3C3EED6470CD6947D4AD300C5BBD",
+    "serviceSha256": "CF2D1FBF3ACB24613CE317B31F3B70A9ADA8C01EC39989A90811F49543D06D5D",
+    "manifestSha256": "36A310F48929ACC8AD9A5695AA075F1ECCDE591DB43FA66084D7ABBC521FD7A8",
+    "profileCount": 9,
+    "updateAction": {
+      "phase": "done",
+      "exitCode": 0,
+      "message": "Updated to v1.3.2."
+    },
+    "status": "OFF_CLEAN",
+    "physicalDns": [
+      "192.168.20.1"
+    ],
+    "ulaCount": 0,
+    "nrptCount": 0,
+    "broadRouteCount": 0,
+    "winHttpDirect": true,
+    "startupUi": "PASS_EXACT_1289x632_96DPI_SIX_ACTIONS_NO_OVERLAP",
+    "physicalRefreshInput": "PASS_MOUSE_AND_KEYBOARD",
+    "gridRuntimeAuthority": "Installed GUI hash exactly equals accepted v1.3.2 GUI whose UIA runtime evidence is 9 rows / 7 columns / 9 data items."
+  },
+  "linuxInstalled": {
+    "version": "1.3.2",
+    "updatePath": "Built-in public updater check_update_sync + download_and_install_update",
+    "publicZipSha256": "8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D",
+    "backend": "Protected backend 1.2.1 already matched; updater skipped redundant admin authorization.",
+    "pythonCompile": "PASS",
+    "networkState": "OFF_CLEAN",
+    "normalRunRequiresAdmin": false
+  },
+  "validationBoundary": {
+    "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
+    "authenticode": "NOT_SIGNED",
+    "license": "OWNER_LEGAL_DECISION_OPEN"
+  },
+  "exactNextAction": "Start v1.4.0 as a separate feature version for additional direct non-VPN/non-proxy methods; do not mutate immutable v1.3.2 tag/assets."
+}
