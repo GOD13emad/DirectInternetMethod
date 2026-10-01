@@ -1,12 +1,16 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: V1_2_RELEASE_READY_PUBLICATION_CURRENT
+Status: FINAL_V1_2_0_PUBLISHED_VERIFIED
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
 ## Authoritative current state
-- Source authority: Git branch `feature/v1.2-direct-update`; host-final release-ready baseline commit `1f6f0ad` is pushed to origin. The next mutation is promotion/bookkeeping only; runtime/artifact bytes are frozen.
-- Cross-platform 1.1.0 product acceptance is **PASS_FINAL_RELEASE** and GitHub publication/update verification is **PUBLISHED_VERIFIED**.
+- Release authority: tag `v1.2.0` at commit `6c30dbfaa5596285ac42c2dba08fb0c8b259901e`; exact Windows/Linux artifacts and `SHA256SUMS.txt` were published from that commit and public-redownload verified. Current working tree contains only post-publication evidence/metadata pending final audit commit.
+- Cross-platform v1.2.0 product acceptance is **PASS_FINAL / PUBLISHED_VERIFIED**.
+- Windows v1.2.0 final artifact: `delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe`, 157,093,296 bytes, SHA-256 `E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1`; installed GUI/service/manifest hashes match authority; real-host Start/ACTIVE/Stop/exact rollback/Recovery PASS; public updater control 131 PASS against GitHub latest v1.2.0; final state CLEAN_OFF.
+- Linux v1.2.0 final compatibility artifact: `delivery/DirectInternetMethod_1.2.0_Linux_x86_64.zip`, 8,140,827 bytes, SHA-256 `BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC`; contract audit PASS and deterministic cross-host reproduction PASS; network architecture unchanged from accepted v1.1.0.
+- GitHub v1.2.0 release is **PUBLISHED_VERIFIED**; public re-download hashes and GitHub asset digests match `SHA256SUMS.txt`.
+- Historical baseline v1.1.0 product acceptance remains **PASS_FINAL_RELEASE / PUBLISHED_VERIFIED**.
 - Windows final artifact:
   - `delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe`
   - bytes: 157,078,634
@@ -93,6 +97,10 @@ All three validator failures were harness defects; product runtime remained heal
 - Windows v1.2 recovery/no-state: `evidence/WINDOWS_120_HOST_RECOVERY_ACCEPTANCE_20261001.json` — SHA-256 `F86DE943DCBF27FDDF6D2C18DAA6BAD0889A75F2194F274CD6A0CA14C7FF8743`.
 - Windows v1.2 host final acceptance: `evidence/WINDOWS_120_HOST_FINAL_ACCEPTANCE_20261001.json` — SHA-256 `9BE7D268491860622C355C45A28D3DEC45261EF6F71EECB7A45C0E58BC32C06A`; PASS_FINAL_WINDOWS_1_2_0.
 - Windows v1.2 bootstrap Runner fix: `evidence/WINDOWS_120_HOST_BOOTSTRAP_RUNNER_FIX_20261001.json` — SHA-256 `89AF020D5DDCC47CD6403CF40FC2FEE80222B3AB6F1A540C7CC58E7E2D423C42`; final local Runner ZIP SHA-256 `DB13BD5F72DFFD244B657442C3411C65ADD962F8D6D675C71C444B65AE842071`, script SHA-256 `1CD853F5ED1F255B2DDEAF82508E65C6523B042B6E1687848E266D7A9E724C42`.
+- v1.2 public release verification: `evidence/DIM_120_GITHUB_PUBLICATION_VERIFY_20261001.json` — SHA-256 `95BBEC5DFD8231BC95D5FFBF81F4CF05CD7E5DEE1903BAD5CF1082ABB1CF4D24`; latest=v1.2.0; all three public asset hashes/digests match.
+- v1.2 Windows public updater verification: `evidence/WINDOWS_120_HOST_PUBLIC_UPDATER_VERIFY_20261001.json` — SHA-256 `A478EA78232A7BC5564752DC9DC20F64CEADD892B587E37E333E57A058944DE9`; control 131 done/0, Already up to date, no state/pending.
+- v1.2 final clean state: `evidence/DIM_120_FINAL_CLEAN_STATE_20261001.json` — SHA-256 `2E8766F75C6AF16AA9F3B1CB6B0DB7E68C340DAD020EEB8DBCA31AAE8ADDEE27`; exact installed hashes, state/pending absent, ctrld stopped, winws/ULA/NRPT/broad-route zero.
+- v1.2 publication final: `evidence/DIM_120_PUBLICATION_FINAL_20261001.json` — SHA-256 `00635FD814E151D94D5B512DA3F750E6E6BD880A7EDAD6C1C03554A6BA0B14B7`; PASS_FINAL_PUBLISHED_VERIFIED_V1_2_0.
 - Cross-platform v1.2 final acceptance: `evidence/DIM_120_FINAL_ACCEPTANCE_20261001.json` — SHA-256 `399053A0806A3D2EA9A71DEC6D0027444CAD08EFF2910020A1268354EDB1B1AC`; release gate = publication only.
 - Windows v1.2 candidate: `delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe`, 157,093,296 bytes, SHA-256 `E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1`; GUI `FAB82346…`, service `43274024…`, manifest `FA254338…`.
 - Linux v1.2 candidate: `delivery/DirectInternetMethod_1.2.0_Linux_x86_64.zip`, 8,140,827 bytes, SHA-256 `BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC`; identical on Windows and Linux.
@@ -100,7 +108,7 @@ All three validator failures were harness defects; product runtime remained heal
 - Earlier stale parallel hashes `D6AF…/A011…/5AEF…` are superseded and must not be used as release authority.
 
 ## Exact Next Action
-Commit the final host evidence/metadata delta, promote `feature/v1.2-direct-update` to `main`, tag `v1.2.0`, publish the exact Windows/Linux artifacts plus `SHA256SUMS.txt`, then verify GitHub `/releases/latest`, redownload both assets, compare SHA-256, and leave the Windows host clean OFF.
+No release gate remains. Keep `v1.2.0@6c30dbf` immutable; use normal maintenance only. Future Windows versions should be published with both Windows/Linux assets plus `SHA256SUMS.txt`, then verified by public redownload and control 131 regression before promotion to FINAL.
 
 ## HISTORY
 - 2026-09-29: v1.0.0 Windows and Linux PASS_FINAL_RELEASE; GitHub v1.0.0 published and verified.
@@ -138,3 +146,5 @@ Commit the final host evidence/metadata delta, promote `feature/v1.2-direct-upda
 - 2026-10-01: host v1.2 bootstrap attempted from clean v1.1.0. Windows UAC consent appeared, but Commander secure-desktop control was unavailable; no install occurred and host remained clean v1.1.0. Classified as owner UAC gate, not product failure.
 
 - 2026-10-01: exact Windows v1.2.0 candidate installed on EMAD-PC-ULTIMAT. Payload hashes matched; control 131 host regression done/0. Live Start restored YouTube=204 while OpenAI=401/GitHub=200; adapter DNS, default route, WinHTTP and ICS were preserved. Stop exact rollback and Recovery/no-state PASS; host left clean OFF. Windows v1.2 host gate closed.
+
+- 2026-10-01: v1.2.0 published on GitHub from tag/main release commit `6c30dbf`. Windows/Linux/SHA256SUMS assets redownloaded publicly and matched exact hashes/GitHub digests. Installed Windows v1.2 updater queried public latest v1.2.0 and returned Already up to date/done0 without UAC or network-state mutation. Final host clean-state audit PASS; release promoted to FINAL/PUBLISHED_VERIFIED.

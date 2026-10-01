@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "date": "2026-10-01T04:32:58.7261700+03:30",
+  "status": "PASS_HOST_PUBLIC_UPDATER_V1_2_0",
+  "installedVersionBefore": "1.2.0",
+  "latestTag": "v1.2.0",
+  "controlRc": 0,
+  "action": {
+    "phase": "done",
+    "exitCode": 0,
+    "message": "Already up to date."
+  },
+  "stateExists": false,
+  "pendingExists": false,
+  "installedVersionAfter": "1.2.0"
+}

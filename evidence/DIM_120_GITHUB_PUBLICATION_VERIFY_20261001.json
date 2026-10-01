@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "date": "2026-10-01T04:32:16.7223495+03:30",
+  "status": "PASS_PUBLIC_V1_2_0_RELEASE_VERIFY",
+  "latestTag": "v1.2.0",
+  "draft": false,
+  "prerelease": false,
+  "publishedAt": "10/01/2026 00:50:24",
+  "htmlUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.2.0",
+  "targetCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
+  "mainCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
+  "files": [
+    {
+      "name": "DirectInternetMethod_1.2.0_Windows_Setup.exe",
+      "bytes": 157093296,
+      "sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
+      "apiDigest": "sha256:e1d774b29bee29b15632adbed9b6137738e4d297daf1a3b216d5b27de9559fc1"
+    },
+    {
+      "name": "DirectInternetMethod_1.2.0_Linux_x86_64.zip",
+      "bytes": 8140827,
+      "sha256": "BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC",
+      "apiDigest": "sha256:bbcdad529d242987eac74dc4ec4ea02435fab9755d6736ecabe84133fc3dabdc"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 223,
+      "sha256": "4B416C53361A9DFC7196F50C3D46927F23B10E6B83A4C6BED0D61B65D9C1D9A0",
+      "apiDigest": "sha256:4b416c53361a9dfc7196f50c3d46927f23b10e6b83a4c6bed0d61b65d9c1d9a0"
+    }
+  ]
+}

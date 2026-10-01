@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "date": "2026-10-01T04:33:41.0724944+03:30",
+  "status": "PASS_FINAL_CLEAN_OFF_V1_2_0",
+  "host": "EMAD-PC-ULTIMAT",
+  "installedVersion": "1.2.0",
+  "installLocation": "C:\\Users\\Aa.Emad\\AppData\\Local\\Programs\\DirectInternetMethod\\",
+  "serviceSha256": "432740243AE381EAAAA6431B3404B8D3652DF62A103FFAAC4C6C943424F381FE",
+  "guiSha256": "FAB82346A17DCF08FC7EC8E3C7859F87EC8228D0B5A33C6CC6BF2004D12A5D50",
+  "manifestSha256": "FA25433883B8D2FBE040951C14B375A32B201FDDEBFFFFC1D944E4BDC14C4C78",
+  "stateExists": false,
+  "pendingUpdateExists": false,
+  "ctrld": {
+    "state": "Stopped",
+    "pid": 0,
+    "startMode": "Manual"
+  },
+  "winwsCount": 0,
+  "ulaCount": 0,
+  "ownedNrptCount": 0,
+  "broadRouteCount": 0,
+  "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+  "ics": {
+    "state": "Running",
+    "pid": 5184
+  },
+  "defaultRoutes": [
+    {
+      "ifIndex": 18,
+      "alias": "Ethernet 3",
+      "nextHop": "192.168.20.1",
+      "routeMetric": 0,
+      "interfaceMetric": 25,
+      "state": "Alive"
+    }
+  ],
+  "checks": {
+    "version": true,
+    "serviceHash": true,
+    "guiHash": true,
+    "manifestHash": true,
+    "noState": true,
+    "noPending": true,
+    "ctrldStopped": true,
+    "noWinws": true,
+    "noUla": true,
+    "noOwnedNrpt": true,
+    "noBroadRoutes": true,
+    "winHttpDirect": true
+  }
+}

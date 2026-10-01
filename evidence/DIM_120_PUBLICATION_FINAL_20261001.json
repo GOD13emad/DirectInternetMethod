@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_FINAL_PUBLISHED_VERIFIED_V1_2_0",
+  "version": "1.2.0",
+  "git": {
+    "main": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
+    "tag": "v1.2.0",
+    "tagCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e"
+  },
+  "github": {
+    "latestTag": "v1.2.0",
+    "draft": false,
+    "prerelease": false,
+    "publishedAt": "2026-10-01T00:50:24Z",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.2.0"
+  },
+  "publicArtifacts": [
+    {
+      "name": "DirectInternetMethod_1.2.0_Windows_Setup.exe",
+      "bytes": 157093296,
+      "sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1"
+    },
+    {
+      "name": "DirectInternetMethod_1.2.0_Linux_x86_64.zip",
+      "bytes": 8140827,
+      "sha256": "BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 223,
+      "sha256": "4B416C53361A9DFC7196F50C3D46927F23B10E6B83A4C6BED0D61B65D9C1D9A0"
+    }
+  ],
+  "verification": {
+    "publicRedownload": {
+      "status": "PASS",
+      "evidence": "evidence/DIM_120_GITHUB_PUBLICATION_VERIFY_20261001.json",
+      "sha256": "95BBEC5DFD8231BC95D5FFBF81F4CF05CD7E5DEE1903BAD5CF1082ABB1CF4D24"
+    },
+    "windowsPublicUpdater": {
+      "status": "PASS",
+      "latestTag": "v1.2.0",
+      "control131Rc": 0,
+      "phase": "done",
+      "exitCode": 0,
+      "message": "Already up to date.",
+      "evidence": "evidence/WINDOWS_120_HOST_PUBLIC_UPDATER_VERIFY_20261001.json",
+      "sha256": "A478EA78232A7BC5564752DC9DC20F64CEADD892B587E37E333E57A058944DE9"
+    },
+    "finalCleanState": {
+      "status": "PASS_FINAL_CLEAN_OFF_V1_2_0",
+      "evidence": "evidence/DIM_120_FINAL_CLEAN_STATE_20261001.json",
+      "sha256": "2E8766F75C6AF16AA9F3B1CB6B0DB7E68C340DAD020EEB8DBCA31AAE8ADDEE27"
+    }
+  },
+  "windowsDirectUpdate": {
+    "normalUserUacRequired": false,
+    "initial110To120BootstrapMayRequireUac": true,
+    "transport": "Windows system curl.exe",
+    "trustGate": "GitHub asset digest == SHA256SUMS.txt == downloaded file SHA-256",
+    "installPathPreserved": true,
+    "completionMarker": true
+  },
+  "limitations": [
+    "Windows installer is not Authenticode-signed.",
+    "Effectiveness may vary if network filtering behavior changes."
+  ]
+}

@@ -3,10 +3,10 @@
   "product": "Direct Internet Method",
   "version": "1.2.0",
   "date": "2026-10-01",
-  "status": "PASS_FINAL_RELEASE_READY",
+  "status": "FINAL_PUBLISHED_VERIFIED",
   "platforms": {
     "windows": {
-      "status": "PASS_FINAL_WINDOWS_1_2_0",
+      "status": "PASS_FINAL_WINDOWS_1_2_0_PUBLISHED_VERIFIED",
       "artifact": "delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe",
       "sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
       "bytes": 157093296,
@@ -18,7 +18,9 @@
       "normalRunRequiresAdmin": false,
       "normalOnlineUpdateRequiresAdmin": false,
       "authenticode": "NotSigned",
-      "directUpdateHostControl131": "PASS_DONE_0"
+      "directUpdateHostControl131": "PASS_DONE_0",
+      "publicUpdaterVerification": "PASS_HOST_PUBLIC_GITHUB_LATEST_V1_2_0",
+      "finalState": "CLEAN_OFF"
     },
     "linux": {
       "status": "PASS_COMPAT_DETERMINISTIC",
@@ -51,7 +53,11 @@
   "github": {
     "repo": "GOD13emad/DirectInternetMethod",
     "tag": "v1.2.0",
-    "status": "READY_TO_PUBLISH"
+    "status": "PUBLISHED_VERIFIED",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.2.0",
+    "publishedAt": "2026-10-01T00:50:24Z",
+    "tagCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
+    "releaseArtifactCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e"
   },
   "limitations": [
     "Windows installer is not Authenticode-signed.",
@@ -64,6 +70,14 @@
     "linuxCompatibility": "evidence/LINUX_120_COMPAT_ACCEPTANCE_20261001.json",
     "crossPlatformFinal": "evidence/DIM_120_FINAL_ACCEPTANCE_20261001.json",
     "crossPlatformFinalSha256": "399053A0806A3D2EA9A71DEC6D0027444CAD08EFF2910020A1268354EDB1B1AC",
-    "windowsHostFinalSha256": "9BE7D268491860622C355C45A28D3DEC45261EF6F71EECB7A45C0E58BC32C06A"
+    "windowsHostFinalSha256": "9BE7D268491860622C355C45A28D3DEC45261EF6F71EECB7A45C0E58BC32C06A",
+    "publicationVerify": "evidence/DIM_120_GITHUB_PUBLICATION_VERIFY_20261001.json",
+    "publicationVerifySha256": "95BBEC5DFD8231BC95D5FFBF81F4CF05CD7E5DEE1903BAD5CF1082ABB1CF4D24",
+    "windowsPublicUpdater": "evidence/WINDOWS_120_HOST_PUBLIC_UPDATER_VERIFY_20261001.json",
+    "windowsPublicUpdaterSha256": "A478EA78232A7BC5564752DC9DC20F64CEADD892B587E37E333E57A058944DE9",
+    "finalCleanState": "evidence/DIM_120_FINAL_CLEAN_STATE_20261001.json",
+    "finalCleanStateSha256": "2E8766F75C6AF16AA9F3B1CB6B0DB7E68C340DAD020EEB8DBCA31AAE8ADDEE27",
+    "publicationFinal": "evidence/DIM_120_PUBLICATION_FINAL_20261001.json",
+    "publicationFinalSha256": "00635FD814E151D94D5B512DA3F750E6E6BD880A7EDAD6C1C03554A6BA0B14B7"
   }
 }
