@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.3.0",
-  "status": "PASS_RELEASE_READY_WINDOWS_1_3_0",
+  "status": "PASS_FINAL_WINDOWS_1_3_0_PUBLISHED_VERIFIED",
   "date": "2026-10-01",
   "previousAccepted": {
     "version": "1.2.1",
@@ -45,12 +45,22 @@
     "finalWpfUiAutomationSmoke": "PASS",
     "privateDnsInterceptionRegression": "PASS",
     "linuxContract": "PASS",
-    "publication": "PENDING"
+    "publication": "PASS_PUBLIC_REDOWNLOAD_VERIFIED",
+    "hostPublicUpdate": "PASS",
+    "installedRouterGatewayUi": "PASS",
+    "githubGovernance": "PASS"
   },
   "limitations": [
     "PPTP is a legacy compatibility fallback; prefer L2TP/IPsec or OpenVPN.",
     "Router VPN Client capability varies by exact model and firmware.",
     "Endpoint reachability tests are health heuristics, not complete authenticated tunnel handshakes.",
     "Windows installer is not Authenticode-signed."
-  ]
+  ],
+  "publication": {
+    "tag": "v1.3.0",
+    "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.3.0",
+    "publishedAt": "2026-10-01T03:28:18Z",
+    "publicRedownloadHashVerification": "PASS_ALL_ASSETS"
+  }
 }
