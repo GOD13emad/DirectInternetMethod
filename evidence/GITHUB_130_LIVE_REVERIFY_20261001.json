@@ -1,0 +1,190 @@
+{
+  "captured": "2026-10-01T08:03:15.4097512+03:30",
+  "repo": {
+    "full_name": "GOD13emad/DirectInternetMethod",
+    "visibility": "public",
+    "default_branch": "main",
+    "archived": false,
+    "disabled": false,
+    "delete_branch_on_merge": true,
+    "security_and_analysis": {
+      "secret_scanning": {
+        "status": "enabled"
+      },
+      "secret_scanning_push_protection": {
+        "status": "enabled"
+      },
+      "dependabot_security_updates": {
+        "status": "disabled"
+      },
+      "secret_scanning_non_provider_patterns": {
+        "status": "disabled"
+      },
+      "secret_scanning_validity_checks": {
+        "status": "disabled"
+      }
+    }
+  },
+  "latest": {
+    "tag": "v1.3.0",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-10-01T03:28:18Z",
+    "target_commitish": "main",
+    "assets": [
+      {
+        "name": "DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+        "size": 8156742,
+        "digest": "sha256:14ce381d589482fb8dbf437c12b351b5f232653f2c6512f871139fb5f3809824",
+        "state": "uploaded",
+        "downloads": 2
+      },
+      {
+        "name": "DirectInternetMethod_1.3.0_Windows_Setup.exe",
+        "size": 157098906,
+        "digest": "sha256:04ebfd968146a7122a0695db36a01dbacb5f91b69104d6d1dea6d1964bb99263",
+        "state": "uploaded",
+        "downloads": 3
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "size": 221,
+        "digest": "sha256:a56db90964085a0d8452691d70dceff74d888db65b634b370926a3bb38596abe",
+        "state": "uploaded",
+        "downloads": 4
+      }
+    ]
+  },
+  "git": {
+    "tagV130": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+    "originMain": "afc679d428b093e5e27e52da92114878b7119c6a",
+    "head": "afc679d428b093e5e27e52da92114878b7119c6a",
+    "status": ""
+  },
+  "branches": [
+    {
+      "name": "main",
+      "sha": "afc679d428b093e5e27e52da92114878b7119c6a",
+      "protected": true
+    }
+  ],
+  "workflows": [
+    {
+      "id": 371717637,
+      "name": "Source and Release Contracts",
+      "path": ".github/workflows/ci.yml",
+      "state": "active"
+    }
+  ],
+  "runs": [
+    {
+      "name": "Source and Release Contracts",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_branch": "main",
+      "head_sha": "afc679d428b093e5e27e52da92114878b7119c6a",
+      "id": 36813088394
+    },
+    {
+      "name": "Source and Release Contracts",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_branch": "v1.3.0",
+      "head_sha": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+      "id": 36810544835
+    },
+    {
+      "name": "Source and Release Contracts",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_branch": "main",
+      "head_sha": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+      "id": 36810460241
+    },
+    {
+      "name": "Source and Release Contracts",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_branch": "feature/router-gateway-v1.3.0",
+      "head_sha": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+      "id": 36810382473
+    }
+  ],
+  "mainProtection": {
+    "url": "https://api.github.com/repos/GOD13emad/DirectInternetMethod/branches/main/protection",
+    "required_status_checks": {
+      "url": "https://api.github.com/repos/GOD13emad/DirectInternetMethod/branches/main/protection/required_status_checks",
+      "strict": true,
+      "contexts": [
+        "linux-source",
+        "windows-source"
+      ],
+      "contexts_url": "https://api.github.com/repos/GOD13emad/DirectInternetMethod/branches/main/protection/required_status_checks/contexts",
+      "checks": [
+        {
+          "context": "linux-source",
+          "app_id": 15368
+        },
+        {
+          "context": "windows-source",
+          "app_id": 15368
+        }
+      ]
+    },
+    "required_signatures": {
+      "url": "https://api.github.com/repos/GOD13emad/DirectInternetMethod/branches/main/protection/required_signatures",
+      "enabled": false
+    },
+    "enforce_admins": {
+      "url": "https://api.github.com/repos/GOD13emad/DirectInternetMethod/branches/main/protection/enforce_admins",
+      "enabled": true
+    },
+    "required_linear_history": {
+      "enabled": true
+    },
+    "allow_force_pushes": {
+      "enabled": false
+    },
+    "allow_deletions": {
+      "enabled": false
+    },
+    "block_creations": {
+      "enabled": false
+    },
+    "required_conversation_resolution": {
+      "enabled": true
+    },
+    "lock_branch": {
+      "enabled": false
+    },
+    "allow_fork_syncing": {
+      "enabled": false
+    }
+  },
+  "rulesets": {
+    "id": 24283722,
+    "name": "Protect release tags",
+    "target": "tag",
+    "source_type": "Repository",
+    "source": "GOD13emad/DirectInternetMethod",
+    "enforcement": "active",
+    "node_id": "RRS_lACqUmVwb3NpdG9yec5TKcXxzgFyiko",
+    "_links": {
+      "self": {
+        "href": "https://api.github.com/repos/GOD13emad/DirectInternetMethod/rulesets/24283722"
+      },
+      "html": {
+        "href": "https://github.com/GOD13emad/DirectInternetMethod/rules/24283722"
+      }
+    },
+    "created_at": "2026-10-01T05:28:03.16+03:30",
+    "updated_at": "2026-10-01T05:28:03.189+03:30"
+  },
+  "privateVulnerabilityReporting": {
+    "enabled": true
+  }
+}

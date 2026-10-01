@@ -78,8 +78,13 @@ jobs:
         run: dotnet build windows/service/DirectInternetMethod.Service.csproj -c Release --nologo
       - name: Build GUI
         run: dotnet build windows/gui/DirectInternetMethod.csproj -c Release --nologo
-      - name: Router Gateway contract audit
-        run: python tests/router_gateway_contract_audit.py
+      - name: Restore pinned PowerShell runtime
+        shell: pwsh
+        run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
+      - name: Full Windows and Router Gateway contract audits
+        run: |
+          python tests/windows_contract_audit.py
+          python tests/router_gateway_contract_audit.py
 
   windows-release-contract:
     name: windows-release-contract

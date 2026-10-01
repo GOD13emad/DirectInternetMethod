@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "LOCAL_REGRESSION_PASS_PR_PENDING",
+  "context": "Post-publication GitHub line-by-line audit of v1.3.0",
+  "findings": [
+    {
+      "finding": "windows/RELEASE.json remained PASS_RELEASE_READY / publication=PENDING after v1.3.0 was publicly published and verified.",
+      "status": "CONFIRMED",
+      "rootCause": "release_metadata_audit.py validated root RELEASE.json, SHA256SUMS, README, Windows manifest and Linux UI version but did not validate platform release metadata publication state.",
+      "fix": "Promote windows/RELEASE.json to published-verified and extend release_metadata_audit.py to compare platform publication metadata to root authority."
+    },
+    {
+      "finding": "Required windows-source protected check did not run full windows_contract_audit.py; full contract ran only after immutable v* tag creation.",
+      "status": "CONFIRMED",
+      "rootCause": "Full audit requires ignored pinned PowerShell runtime, restored only in tag-specific windows-release-contract job.",
+      "fix": "Restore pinned PowerShell runtime and run full Windows + Router Gateway contract audits in windows-source before merge; retain tag recheck."
+    }
+  ],
+  "invariants": [
+    "No runtime/network source changes.",
+    "No v1.3.0 tag or release asset mutation.",
+    "Root and delivery SHA256SUMS already exact-equal.",
+    "Live GitHub release/branch/protection/ruleset/security checks remain PASS."
+  ],
+  "evidence": [
+    "evidence/GITHUB_130_LIVE_REVERIFY_20261001.json"
+  ],
+  "confidence": "high",
+  "validation": {
+    "releaseMetadataAudit": "PASS",
+    "windowsContractAudit": "PASS",
+    "routerGatewayContractAudit": "PASS",
+    "linuxContractAudit": "PASS",
+    "dotnetServiceBuild": "PASS_0_WARNINGS_0_ERRORS",
+    "dotnetGuiBuild": "PASS_0_WARNINGS_0_ERRORS",
+    "diffCheck": "PASS",
+    "runtimeOrNetworkSourceChanged": false
+  },
+  "nextGate": "Protected GitHub PR required checks linux-source + windows-source must PASS before merge."
+}
