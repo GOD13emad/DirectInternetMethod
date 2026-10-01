@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.3.1",
+  "changeObjective": "Windows startup geometry and footer collision prevention",
+  "status": "PASS_RELEASE_CANDIDATE_WINDOWS_UI_LAYOUT",
+  "authority": {
+    "baseCommit": "30a471ca41ede70c2d6e39c79a6ecb6615dee737",
+    "branch": "hotfix/v1.3.1-ui-layout",
+    "previousAccepted": "v1.3.0"
+  },
+  "userObservedReference": {
+    "screenshotPixels": {
+      "width": 1289,
+      "height": 632
+    },
+    "hostDpi": 96
+  },
+  "rootCause": {
+    "finding": "MainWindow defaulted to 980x620 while six min-width buttons lived in a non-wrapping horizontal StackPanel beside an Auto-sized explanatory footer column.",
+    "effect": "At constrained widths the action strip could compete with/overflow into footer text and controls appeared crowded/overlapped.",
+    "prevention": [
+      "Preferred startup geometry set to 1289x632 DIP; current host is 96 DPI so this equals 1289x632 physical pixels.",
+      "Footer action container changed to WrapPanel.",
+      "Footer explanatory text moved to a bounded 360-DIP column with TextWrapping.",
+      "UseLayoutRounding and SnapsToDevicePixels enabled.",
+      "Static contract and dynamic UIAutomation overlap regression added."
+    ]
+  },
+  "dynamicValidation": {
+    "preferred": {
+      "result": "PASS",
+      "actualPixels": "1289x632",
+      "expectedPixels": "1289x632",
+      "allSixActionsVisible": true,
+      "noButtonButtonOverlap": true,
+      "noButtonFooterOverlap": true,
+      "footerVisible": true
+    },
+    "reducedWidth": {
+      "result": "PASS",
+      "actualPixels": "1000x632",
+      "allSixActionsVisible": true,
+      "wrapped": true,
+      "noButtonButtonOverlap": true,
+      "noButtonFooterOverlap": true,
+      "footerVisible": true
+    },
+    "interaction": {
+      "refreshPhysicalMouse": "PASS",
+      "refreshKeyboardEnter": "PASS",
+      "processResponding": true,
+      "routerGatewayPhysicalMouse": "PASS",
+      "routerGatewayControlsVisible": [
+        "Refresh data",
+        "Test all",
+        "Copy selected"
+      ]
+    }
+  },
+  "regression": {
+    "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
+    "windowsContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "serviceBuild": "PASS_0_WARNINGS_0_ERRORS",
+    "serviceConsoleSelftest": "PASS_IN_BUILD_SEQUENCE_BEFORE_PAYLOAD_COPY",
+    "networkBackendChanged": false,
+    "privilegedActionLogicChanged": false
+  },
+  "payload": {
+    "guiBytes": 161807432,
+    "guiSha256": "8F3A410CCD97D1E0C83BC90E2A079CC76BDA53729FD7954E1152836874A1110E",
+    "serviceBytes": 67588813,
+    "serviceSha256": "1A8A235A15602C861B561E3EDD3DE4C3E34A53623C868B047129B461742829E6",
+    "manifestBytes": 198017,
+    "manifestSha256": "035546B1D3C1B2DA986F645E611AEE8804C704C798FA3E329AE5957357190E08",
+    "manifestFiles": 678
+  },
+  "proportionalValidationBoundary": {
+    "liveNetworkStartStopRerun": "NOT_NEEDED_FOR_LAYOUT_MUTATION_BEFORE_RELEASE",
+    "reason": "No Direct DNS/DPI, service action, updater, route, DNS, or privileged backend behavior was changed; inherited v1.3.0 live-network evidence remains applicable while static backend contracts and service self-test are re-run."
+  },
+  "exactNextAction": "Build v1.3.1 Windows installer and Linux parity archive; run release/source gates; publish through protected GitHub flow; then update and verify the installed Windows app."
+}

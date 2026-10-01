@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.3.1",
+  "status": "PASS_LOCAL_RELEASE_READY_WITH_EXTERNAL_GATES",
+  "previousAccepted": "v1.3.0",
+  "mutationObjective": "Fix Windows default startup size and prevent footer control/text overlap without changing connectivity behavior.",
+  "artifacts": {
+    "windows": {
+      "path": "delivery/DirectInternetMethod_1.3.1_Windows_Setup.exe",
+      "bytes": 157106087,
+      "sha256": "E805F7F10890AD5954750639C8BE10B52D74723900BABB6BC8115AB4FA39CAA0",
+      "authenticode": "NotSigned"
+    },
+    "linux": {
+      "path": "delivery/DirectInternetMethod_1.3.1_Linux_x86_64.zip",
+      "bytes": 8156742,
+      "sha256": "4AB0D082A43F524A7F6C60D69F243BE81CE5ADCC3B211010F50D0141B86BED5C",
+      "crossHost": "PENDING"
+    }
+  },
+  "gates": {
+    "windowsFinalSelfContainedUi": "PASS_1289x632_NO_OVERLAP",
+    "windowsReducedUi": "PASS_1000x632_NO_OVERLAP",
+    "windowsPhysicalInput": "PASS",
+    "windowsCompile": "PASS_0_WARNINGS_0_ERRORS",
+    "serviceBuild": "PASS_0_WARNINGS_0_ERRORS",
+    "serviceSelftest": "PASS",
+    "windowsContract": "PASS",
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "releaseMetadataAudit": "PASS",
+    "powershellSyntax": "PASS",
+    "gitDiffCheck": "PASS"
+  },
+  "regressionScope": {
+    "directDnsDpiLogicChanged": false,
+    "routeDnsRollbackLogicChanged": false,
+    "serviceActionLogicChanged": false,
+    "routerGatewayBehaviorChanged": false,
+    "linuxNetworkBackendChanged": false
+  },
+  "evidence": [
+    "evidence/WINDOWS_131_UI_LAYOUT_ROOT_CAUSE_ACCEPTANCE_20261001.json",
+    "evidence/WINDOWS_131_PAYLOAD_BUILD_20261001.json",
+    "evidence/WINDOWS_131_INSTALLER_BUILD_20261001.json"
+  ],
+  "openGates": [
+    "Linux cross-host exact archive reproduction on aliemad-Labtop",
+    "protected branch linux-source/windows-source CI",
+    "protected PR merge",
+    "v1.3.1 immutable tag/release and public asset hash redownload",
+    "installed Windows public update and final 1289x632 UI verification"
+  ],
+  "exactNextAction": "Commit and push the isolated hotfix branch, use the pushed branch for independent Linux reproduction and protected CI, then publish only after all gates pass."
+}
