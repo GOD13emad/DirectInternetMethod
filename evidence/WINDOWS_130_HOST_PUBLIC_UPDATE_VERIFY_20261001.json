@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "date": "2026-10-01T07:02:47.1348758+03:30",
+  "status": "PASS_HOST_PUBLIC_UPDATE_V1_3_0",
+  "version": "1.3.0",
+  "installLocation": "C:\\Users\\Aa.Emad\\AppData\\Local\\Programs\\DirectInternetMethod\\",
+  "hashes": {
+    "gui": "83594B60BBA67F84175F1287EB12E6921A14C883E83BF2CCF566A8A4A698728B",
+    "service": "034CA29CF4CB3968AAB37CEABDB8D78C84F0B7355659F312D119A19E61C163D4",
+    "manifest": "15D6A96AB4ECA44B70F9C4A6855BAEEC2F03411E8F54233003940B1027BFEFAE",
+    "router": "2AF7033C90D6924FFD171A33C6443DD9F8998A4FA7B123BAB42B50FFCC284388"
+  },
+  "action": {
+    "schema": 1,
+    "action": "update",
+    "phase": "done",
+    "exitCode": 0,
+    "message": "Updated to v1.3.0.",
+    "updatedUtc": "installer-postinstall"
+  },
+  "checks": {
+    "version": true,
+    "gui": true,
+    "service": true,
+    "manifest": true,
+    "router": true,
+    "actionDone": true,
+    "noState": true,
+    "noPending": true,
+    "ctrldStopped": true,
+    "noWinws": true,
+    "noUla": true,
+    "noNrpt": true,
+    "noBroad": true,
+    "physicalDns": true
+  }
+}

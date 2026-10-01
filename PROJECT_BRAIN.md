@@ -17,7 +17,8 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - **Failure prevention:** adding `providers.json` exposed a deterministic-build gap because JSON EOL was not normalized; `.json` is now normalized and cross-host hash is identical.
 - **Validation boundary:** full authenticated tunnel success on an arbitrary physical router remains **UNPROVEN / model-dependent**. The release does not claim universal router compatibility.
 - **Open Gate / Critical Path:** none for v1.3.0 publication. Optional future gate only: physical-router model-specific authenticated tunnel E2E when a concrete model is available.
-- **Brain Status:** CURRENT / FINAL for v1.3.0. GitHub tag/release and public asset hashes are verified.
+- **Windows public-update host verification:** PASS. Installed v1.3.0 hashes match release payload; update action reports done/exit 0; no pending update or residual winws/ULA/NRPT/broad DNS state remains; physical DNS state is clean.
+- **Brain Status:** CURRENT / FINAL for v1.3.0. GitHub tag/release, public asset hashes and Windows public-update host verification are all verified.
 
 ## Authoritative current state
 - **CURRENT release candidate:** v1.2.1 GitHub/Linux-EOL hotfix. No DNS/DPI/network runtime logic changed from accepted Windows v1.2.0 / Linux architecture.
@@ -170,3 +171,4 @@ No release or GitHub gate remains for v1.2.1. Keep tag/release assets immutable.
 - 2026-10-01: live endpoint testing found DNS interception to private 10.10.34.35; reachability logic now fails closed on non-global addresses; final WPF UI regression PASS.
 - 2026-10-01: deterministic Linux builder extended EOL normalization to JSON after cross-host providers.json mismatch; final ZIP is byte-identical across Windows/Linux.
 - 2026-10-01: v1.3.0 tag `1fc9a04` published as GitHub release. Feature/main/tag Source and Release Contracts PASS. All public assets re-downloaded from direct GitHub release URLs and SHA-256 matched; v1.3.0 promoted to FINAL/PUBLISHED_VERIFIED.
+- 2026-10-01: Windows host public-update verification PASS for v1.3.0; installed GUI/service/manifest/router hashes match and no residual network state remains.

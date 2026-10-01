@@ -51,7 +51,8 @@
     "linuxContract": "PASS",
     "linuxRuntimeSmoke": "PASS",
     "linuxDeterministicBuild": "PASS_CROSS_HOST",
-    "publication": "PASS_PUBLIC_REDOWLOAD_VERIFIED"
+    "publication": "PASS_PUBLIC_REDOWLOAD_VERIFIED",
+    "windowsPublicUpdateHost": "PASS"
   },
   "finalUiSmoke": {
     "configFields": [
@@ -121,5 +122,13 @@
       36810544835
     ],
     "publicAssetHashes": "PASS_ALL"
+  },
+  "windowsPublicUpdateHost": {
+    "evidence": "evidence/WINDOWS_130_HOST_PUBLIC_UPDATE_VERIFY_20261001.json",
+    "result": "Updated to v1.3.0",
+    "installedGuiSha256": "83594B60BBA67F84175F1287EB12E6921A14C883E83BF2CCF566A8A4A698728B",
+    "installedServiceSha256": "034CA29CF4CB3968AAB37CEABDB8D78C84F0B7355659F312D119A19E61C163D4",
+    "installedManifestSha256": "15D6A96AB4ECA44B70F9C4A6855BAEEC2F03411E8F54233003940B1027BFEFAE",
+    "residualNetworkState": "PASS_NONE"
   }
 }
