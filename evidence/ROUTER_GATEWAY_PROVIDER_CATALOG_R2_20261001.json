@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_PROVIDER_CATALOG_R2",
+  "manifest": "router_gateway/providers.json",
+  "dataRevision": 2,
+  "readyProfiles": 9,
+  "independentReadyProviders": 3,
+  "readyProviders": [
+    {
+      "provider": "VPN Gate",
+      "profiles": 5,
+      "protocols": [
+        "L2TP/IPsec"
+      ],
+      "source": "https://www.vpngate.net/en/",
+      "credentialSource": "https://www.vpngate.net/en/howto_l2tp.aspx",
+      "status": "CONFIRMED_OFFICIAL"
+    },
+    {
+      "provider": "VPNBook",
+      "profiles": 3,
+      "protocols": [
+        "PPTP"
+      ],
+      "source": "https://www.vpnbook.com/freevpn/pptp-vpn",
+      "status": "CONFIRMED_OFFICIAL_ROTATING"
+    },
+    {
+      "provider": "Pilovali",
+      "profiles": 1,
+      "protocols": [
+        "L2TP/IPsec"
+      ],
+      "source": "https://pilovali.nl/free-vpn/",
+      "status": "CONFIRMED_OFFICIAL_STATIC",
+      "observedHost": "freevpn.pilovali.nl",
+      "observedIp": "37.59.111.66",
+      "linuxPingMsAverage": 105
+    }
+  ],
+  "discoveredAccountRequiredSources": [
+    {
+      "provider": "HideSSH",
+      "protocols": [
+        "L2TP/IPsec"
+      ],
+      "source": "https://hidessh.com/l2tp",
+      "observedServers": 6,
+      "accountValidity": "7 days",
+      "status": "CANDIDATE_ACCOUNT_GENERATOR_REQUIRED",
+      "reasonNotBundled": "Credentials are per-user and account creation includes form/CAPTCHA; do not invent or redistribute credentials."
+    },
+    {
+      "provider": "VPN Jantit",
+      "protocols": [
+        "L2TP/SoftEther",
+        "PPTP"
+      ],
+      "source": "https://www.vpnjantit.com/",
+      "accountValidity": "7 days",
+      "status": "CANDIDATE_ACCOUNT_GENERATOR_REQUIRED",
+      "reasonNotBundled": "Per-user account creation is required."
+    },
+    {
+      "provider": "TCPVPN",
+      "protocols": [
+        "PPTP"
+      ],
+      "source": "https://tcpvpn.com/free-vpn-server-protocol-pptp",
+      "observedPptpServers": 18,
+      "accountValidity": "5 days",
+      "status": "CANDIDATE_ACCOUNT_GENERATOR_REQUIRED",
+      "reasonNotBundled": "Username/password are generated per account."
+    }
+  ],
+  "deferredReadySource": [
+    {
+      "provider": "FreeVPN.me",
+      "protocols": [
+        "L2TP/IPsec",
+        "PPTP"
+      ],
+      "source": "https://freevpn.me/accounts/",
+      "status": "DEFERRED_LOCAL_DNS_INTERCEPTION",
+      "officialCredentialsPresent": true,
+      "localResolutionObserved": "10.10.34.35",
+      "reason": "Current user network resolves the public hostname to a private address; product correctly fails closed. Do not promote as a ready profile without a verified public numeric endpoint."
+    }
+  ],
+  "tests": {
+    "routerGatewayContract": "PASS",
+    "linuxContract": "PASS",
+    "gitDiffCheck": "PASS",
+    "sourceTreeInstallRouterDataFallback": "PASS_ON_LINUX_TEMP",
+    "pilovaliDnsPublic": true,
+    "pilovaliPing": "3/3 replies, avg ~105 ms"
+  },
+  "decision": "Add only the independently verified, directly usable Pilovali profile now. Keep account-generated providers as generator candidates rather than fake ready profiles."
+}

@@ -24,6 +24,9 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - **Final GitHub governance audit:** PASS. Public repo, strict main protection, required Linux/Windows checks, secret scanning/push protection, immutable release-tag ruleset, exact release assets and feature/main/tag CI all verify. The v1.3.0 tag is correctly an ancestor of post-release evidence commits on main.
 - **Post-hygiene GitHub final audit:** PASS. Root `SHA256SUMS.txt` now exactly matches the public v1.3.0 release checksum asset; generic release-metadata CI guard added; Private Vulnerability Reporting enabled; `SECURITY.md` added; merged branches auto-delete enabled; all historical merged remote branches removed so only `main` remains.
 - **License:** `OWNER_LEGAL_DECISION_OPEN`; not a technical release blocker. No software license was selected on the owner's behalf.
+- **Provider catalog revision 2 (post-release data update):** 9 ready profiles from 3 independent ready providers after adding official Pilovali L2TP/IPsec. HideSSH, VPN Jantit and TCPVPN are confirmed candidate sources but require per-user account generation; they are not exposed as fake ready profiles.
+- **Installation/shortcut correction:** Windows v1.3.0 was installed and Start Menu shortcut existed; missing per-user Desktop shortcut was repaired and target/icon verified. Linux was still user-space v1.1.0; it was safely stopped, upgraded from the verified v1.3.0 ZIP, and now has v1.3.0 + Desktop shortcut + Applications entry with network state clean OFF.
+- **Linux source-install failure prevention:** direct source-tree install initially failed because provider data path assumed package layout. Installer now uses packaged path first and canonical source-tree fallback; Linux temp-path regression PASS.
 - **Brain Status:** CURRENT / FINAL for v1.3.0. GitHub tag/release, public asset hashes, Windows public-update host verification, installed UI refresh, Linux public fresh-clone acceptance and final governance audit are verified.
 
 ## Authoritative current state
@@ -192,3 +195,6 @@ No release or GitHub gate remains for v1.3.0. Keep tag `v1.3.0` and its three re
 - 2026-10-01: Corrected GitHub final audit PASS. Release tag ancestry, branch protection, tag rules, exact asset digests and CI verified; repository license remains an explicit owner legal decision, not a technical release gate.
 
 - 2026-10-01: final GitHub hygiene remediation merged through protected PR #2. Root checksum authority synchronized to public v1.3.0 release, release-metadata CI guard added, Private Vulnerability Reporting and merged-branch auto-delete enabled, SECURITY.md added, stale merged remote branches removed. Post-merge main run 36812693607 passed linux-source/windows-source. Final post-hygiene audit PASS.
+- 2026-10-01: Pilovali L2TP/IPsec ready profile added after official-source verification and live public-IP/ping check; ready catalog is now 9 profiles / 3 independent ready providers.
+- 2026-10-01: Linux user-space install corrected from v1.1.0 to v1.3.0 with Desktop/Application shortcuts verified and clean OFF state; Windows missing per-user Desktop shortcut repaired.
+- 2026-10-01: Source-tree Linux installer path defect for Router Gateway data closed with package/source fallback; contract + Linux temp-path regression PASS.

@@ -19,6 +19,8 @@ v1.3.0 adds a separate, non-privileged Router Gateway panel for configuring comp
 - Endpoint health tests do not change routes or VPN state.
 - Public endpoints resolving to private/loopback/link-local addresses are rejected as possible DNS interception.
 - Router guides included for Generic VPN Client, TP-Link, ASUS and MikroTik.
+- Provider catalog revision 2 includes 9 ready profiles from 3 independent providers: VPN Gate, VPNBook and Pilovali.
+- Additional independently researched providers (HideSSH, VPN Jantit, TCPVPN) require per-user account generation and are intentionally not represented as fake ready credentials.
 - The app does not blindly log into or reconfigure the router; exact VPN Client support depends on router model and firmware.
 
 ## Windows 1.3.0

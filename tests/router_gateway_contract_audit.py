@@ -12,8 +12,12 @@ l2=[p for p in profiles if p.get("protocol")=="L2TP/IPsec"]
 pptp=[p for p in profiles if p.get("protocol")=="PPTP"]
 check("schema",m.get("schema")==1 and m.get("version")=="1.3.0")
 check("l2tp_present",len(l2)>=3)
-check("l2tp_official_credentials",all(p.get("username")=="vpn" and p.get("password")=="vpn" and p.get("preSharedKey")=="vpn" for p in l2))
-check("l2tp_numeric_ip",all(re.fullmatch(r"(?:\d{1,3}\.){3}\d{1,3}",p.get("ip","")) for p in l2))
+check("l2tp_credentials_complete",all(p.get("username") and p.get("password") and p.get("preSharedKey") for p in l2))
+vpngate=[p for p in l2 if p.get("provider")=="VPN Gate"]
+pilovali=[p for p in l2 if p.get("provider")=="Pilovali"]
+check("vpngate_official_credentials",len(vpngate)>=5 and all(p.get("username")=="vpn" and p.get("password")=="vpn" and p.get("preSharedKey")=="vpn" for p in vpngate))
+check("pilovali_official_profile",len(pilovali)>=1 and all(p.get("host")=="freevpn.pilovali.nl" and p.get("username")=="VPN" and p.get("password")=="PASSWORD" and p.get("preSharedKey")=="vpn" for p in pilovali))
+check("l2tp_numeric_ip",all(re.fullmatch(r"(?:\d{1,3}\.){3}\d{1,3}",p.get("ip","")) for p in l2 if p.get("ip")))
 check("pptp_present",len(pptp)>=3)
 check("pptp_rotating_status",all(p.get("username")=="vpnbook" and p.get("password") and "ROTATING" in p.get("credentialStatus","") for p in pptp))
 check("pptp_legacy_label",all("legacy" in p.get("security","").lower() for p in pptp))

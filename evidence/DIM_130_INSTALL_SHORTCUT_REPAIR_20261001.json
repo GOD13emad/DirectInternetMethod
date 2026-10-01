@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_INSTALL_SHORTCUT_REPAIR",
+  "windows": {
+    "before": {
+      "installedVersion": "1.3.0",
+      "appExists": true,
+      "startMenuShortcut": true,
+      "desktopShortcut": false
+    },
+    "action": "Created per-user Desktop shortcut pointing to installed DirectInternetMethod.exe with correct working directory and icon.",
+    "after": {
+      "desktopShortcut": true,
+      "target": "%LOCALAPPDATA%\\Programs\\DirectInternetMethod\\app\\DirectInternetMethod.exe",
+      "startMenuShortcut": true
+    },
+    "networkMutation": false
+  },
+  "linux": {
+    "before": {
+      "installedVersion": "1.1.0",
+      "state": "ACTIVE",
+      "desktopShortcutPresent": true,
+      "menuEntryPresent": true
+    },
+    "stop": {
+      "method": "directinternetmethod-stop.service",
+      "result": "PASS_STOPPED"
+    },
+    "firstInstallAttempt": {
+      "result": "FAIL",
+      "rootCause": "Running linux/install.sh directly from source tree expected packaged app/router_gateway/providers.json path."
+    },
+    "prevention": "linux/install.sh now accepts packaged path first and canonical source-tree ../router_gateway/providers.json fallback.",
+    "finalInstall": {
+      "source": "verified local/public-equivalent v1.3.0 Linux ZIP",
+      "result": "PASS",
+      "installedVersion": "1.3.0"
+    },
+    "after": {
+      "state": "CLEAN_OFF",
+      "desktopShortcut": "PASS",
+      "applicationsMenu": "PASS",
+      "routerData": "PASS"
+    },
+    "networkMutationAfterInstall": false
+  }
+}

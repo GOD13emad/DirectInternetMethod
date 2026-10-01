@@ -67,7 +67,10 @@ mkdir -p "$APP/directmethod" "$APP/router_gateway" "$BIN" "$DESKTOP" "$ICONS"
 chmod 0700 "$APP" "$APP/directmethod"
 install -m 0755 "$HERE/app/direct_internet_method.py" "$APP/direct_internet_method.py"
 install -m 0755 "$HERE/app/router_gateway.py" "$APP/router_gateway.py"
-install -m 0644 "$HERE/app/router_gateway/providers.json" "$APP/router_gateway/providers.json"
+ROUTER_DATA="$HERE/app/router_gateway/providers.json"
+[ -f "$ROUTER_DATA" ] || ROUTER_DATA="$HERE/../router_gateway/providers.json"
+[ -f "$ROUTER_DATA" ] || { echo "Missing Router Gateway provider data." >&2; exit 23; }
+install -m 0644 "$ROUTER_DATA" "$APP/router_gateway/providers.json"
 install -m 0644 "$HERE/app/direct-internet-method.svg" "$APP/direct-internet-method.svg"
 install -m 0755 "$HERE/uninstall.sh" "$APP/uninstall.sh"
 
