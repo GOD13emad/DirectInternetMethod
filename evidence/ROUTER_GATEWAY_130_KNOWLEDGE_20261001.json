@@ -1,0 +1,183 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "context": "v1.3.0 Router Gateway design, implementation, debugging and release-readiness",
+  "records": [
+    {
+      "type": "decision",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "Router Gateway is integrated into the existing application as a non-privileged, offline-first configuration-data module. It does not automatically log into or mutate a router.",
+      "evidence": [
+        "windows/gui/RouterGatewayWindow.xaml",
+        "windows/gui/RouterGatewayClient.cs",
+        "linux/app/router_gateway.py",
+        "tests/router_gateway_contract_audit.py"
+      ],
+      "rationale": "Router firmware and VPN-client capability vary by vendor/model/firmware; blind router mutation is higher risk and unnecessary for the requested outcome.",
+      "reuseTargets": [
+        "README",
+        "release notes",
+        "future router model database"
+      ]
+    },
+    {
+      "type": "method",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "L2TP/IPsec is the preferred router profile. PPTP is retained only as a legacy compatibility fallback.",
+      "evidenceSources": [
+        "https://www.vpngate.net/en/howto_l2tp.aspx",
+        "https://www.vpngate.net/en/",
+        "https://www.tp-link.com/us/support/faq/3135/",
+        "https://www.tp-link.com/support/faq/1950/"
+      ],
+      "rationale": "Current router-client documentation supports L2TP/PPTP on selected devices, while PPTP is legacy and weaker; the product labels it accordingly.",
+      "reuseTargets": [
+        "UI copy",
+        "router guide",
+        "documentation"
+      ]
+    },
+    {
+      "type": "source",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "VPN Gate publishes L2TP/IPsec credentials username=vpn, password=vpn, IPsec PSK=vpn and recommends numeric IP use when hostname access is filtered.",
+      "evidenceSources": [
+        "https://www.vpngate.net/en/",
+        "https://www.vpngate.net/en/howto_l2tp.aspx"
+      ],
+      "provenance": "Web research observed 2026-10-01",
+      "reuseTargets": [
+        "router_gateway/providers.json"
+      ]
+    },
+    {
+      "type": "source",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "VPNBook PPTP snapshot observed 2026-09-29 used servers pl134.vpnbook.com, pl140.vpnbook.com, ca225.vpnbook.com, username vpnbook and rotating password ngzc6a8.",
+      "evidenceSources": [
+        "https://www.vpnbook.com/freevpn/pptp-vpn"
+      ],
+      "limitation": "Password rotates; bundled snapshot is labeled rotating and Refresh attempts best-effort update.",
+      "reuseTargets": [
+        "router_gateway/providers.json"
+      ]
+    },
+    {
+      "type": "failure",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "Direct live provider fetch was not reliable from both hosts during development.",
+      "evidence": [
+        "Linux curl to VPN Gate returned TLS wrong-version-number; Windows Invoke-WebRequest probe timed out."
+      ],
+      "rootCause": "Environment/filtering/transport behavior made provider websites unreliable as a sole runtime dependency.",
+      "prevention": "Offline-first bundled manifest + cache + repository refresh; upstream refresh failure is non-fatal.",
+      "regression": [
+        "tests/router_gateway_contract_audit.py windows_offline_first/linux_offline_first"
+      ],
+      "reuseTargets": [
+        "architecture",
+        "failure-prevention"
+      ]
+    },
+    {
+      "type": "failure",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "First Windows Router Gateway compile exposed malformed JSON string mutation and then a missing System.IO namespace.",
+      "rootCause": "Initial implementation defect in C# refresh helper and imports.",
+      "prevention": "Replaced text mutation with JsonNode object mutation; added System.IO; full dotnet build required.",
+      "regression": [
+        "Final dotnet build: 0 warnings, 0 errors",
+        "tests/build_windows_130_payload.ps1"
+      ],
+      "reuseTargets": [
+        "engineering history"
+      ]
+    },
+    {
+      "type": "failure",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "Live UI endpoint test initially classified VPNBook as reachable because DNS resolved it to private 10.10.34.35 and TCP/1723 answered.",
+      "rootCause": "Reachability heuristic trusted DNS output without rejecting private/reserved interception addresses.",
+      "prevention": "Windows IsPublicEndpointAddress guard and Linux ipaddress.is_global guard; private/reserved resolutions now fail closed as DNS intercepted/private.",
+      "regression": [
+        "tests/router_gateway_contract_audit.py windows_private_dns_guard/linux_private_dns_guard",
+        "tests/router_gateway_runtime_smoke.py deterministic 10.10.34.35 rejection",
+        "Final WPF UI smoke: Unverified · DNS intercepted/private address 10.10.34.35"
+      ],
+      "reuseTargets": [
+        "network health testing",
+        "DNS interception handling"
+      ]
+    },
+    {
+      "type": "failure",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "Linux deployment-copy contract initially failed after partial sync because protected backend source was stale.",
+      "rootCause": "Deployment copy drift: linux/system/install_system.sh did not match canonical repo.",
+      "prevention": "Canonical backend source synchronized for parity without mutating the installed protected backend.",
+      "regression": [
+        "Linux contract PASS after parity sync",
+        "Cross-host Linux ZIP hash identical"
+      ],
+      "reuseTargets": [
+        "deployment-copy procedure"
+      ]
+    },
+    {
+      "type": "validation",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "Final Windows payload gate passed service self-test, 678-file manifest rebuild, full Windows regression contract and Router Gateway inclusion.",
+      "evidence": [
+        "evidence/WINDOWS_130_PAYLOAD_BUILD_20261001.json"
+      ],
+      "results": {
+        "guiSha256": "AA869F28A50DA54A8236F2D3DF2C2B0930DA1654E058A7E9B507B3C138096F61",
+        "serviceSha256": "007A40BB4CA5F55171DA488CBCF08C949B249AA2BB352F31995247E608FC9638",
+        "manifestSha256": "EA899168E6D6E0EBBC705B74DBFE45048B97214989363A772A3E21396F967801"
+      }
+    },
+    {
+      "type": "validation",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "Linux runtime smoke loaded 8 profiles, generated required L2TP fields, rejected synthetic private DNS, and reached VPN Gate numeric endpoint 219.100.37.213 via TCP/443.",
+      "limitation": "TCP/443 is an informational reachability heuristic, not an L2TP/IPsec authentication handshake.",
+      "evidence": [
+        "tests/router_gateway_runtime_smoke.py",
+        "aliemad-Labtop execution 2026-10-01"
+      ]
+    },
+    {
+      "type": "validation",
+      "status": "CONFIRMED",
+      "confidence": "HIGH",
+      "claim": "Linux release ZIP reproduced byte-identically on Windows and Linux.",
+      "result": {
+        "sha256": "14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824",
+        "bytes": 8156742
+      },
+      "evidence": [
+        "Windows build_linux_package.py PASS",
+        "aliemad-Labtop build_linux_package.py PASS"
+      ]
+    },
+    {
+      "type": "boundary",
+      "status": "UNVERIFIED",
+      "confidence": "HIGH",
+      "claim": "A complete authenticated L2TP/IPsec or PPTP tunnel handshake on a physical router was not performed in this change set.",
+      "rationale": "The requested product output is modem/router configuration data. Forcing a live router/host tunnel would mutate network state and requires a specific compatible router model/firmware.",
+      "consequence": "Endpoint reachability and configuration generation are validated; exact router-model E2E remains model-dependent."
+    }
+  ]
+}

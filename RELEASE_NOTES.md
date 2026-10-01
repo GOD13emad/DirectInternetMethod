@@ -1,22 +1,31 @@
-# Direct Internet Method v1.2.1
+# Direct Internet Method v1.3.0
 
-Patch release for GitHub/Linux packaging correctness and repository hardening.
+Router Gateway release. The accepted Direct DNS/DPI architecture remains intact; the new path supplies modem/router configuration data without automatically mutating router firmware or the host default route.
 
-## Fixes
-- Linux release shell scripts are now guaranteed LF-only in Git and in the ZIP builder.
-- The Linux package manifest hashes the exact normalized bytes written into the archive.
-- GitHub Actions validates Linux shell syntax, packaged-archive shell syntax, Python syntax, Windows PowerShell syntax, .NET builds, and the full Windows release contract on version tags.
-- Windows and Linux version/channel stay synchronized so the shared GitHub `/releases/latest` updater remains complete on both platforms.
+## Router Gateway
+- Added L2TP/IPsec profiles with copy-ready server/IP, username, password and IPsec PSK.
+- Added PPTP only as an explicitly labeled legacy fallback.
+- Added offline-first bundled provider data and cached refresh.
+- Added current VPN Gate L2TP/IPsec data and rotating VPNBook PPTP snapshot/refresh path.
+- Added Generic, TP-Link, ASUS and MikroTik setup guidance.
+- Added non-mutating endpoint health testing.
+- Added a fail-closed private/reserved-address guard after live testing exposed DNS interception of a public PPTP hostname.
 
 ## Windows
-- Network/DNS/DPI runtime logic is unchanged from accepted v1.2.0.
-- Direct in-app updater remains service-mediated, SHA-256 verified, and no-UAC after the v1.2 bootstrap.
+- Router Gateway integrated into the native WPF UI.
+- Service/network runtime remains unchanged from the previously accepted direct path.
+- Full self-contained payload build, service self-test and Windows regression contract are required before packaging.
 - Installer remains unsigned by Authenticode.
 
 ## Linux
-- Network architecture is unchanged from the accepted v1.2.0/v1.1.0 behavior.
-- Primary patch: repair the CRLF shell packaging defect discovered by public-asset audit of v1.2.0.
+- Router Gateway integrated into the GTK/Adwaita UI.
+- Router Gateway is user-space only; the existing protected backend remains 1.2.1-compatible to avoid unnecessary privilege prompts.
+- Python compile, legacy Linux contract, Router Gateway contract and runtime smoke are required.
+
+## Validation boundaries
+- Endpoint health is a reachability heuristic, not a complete L2TP/IPsec or PPTP authentication handshake.
+- Exact VPN Client support varies by router model/firmware.
+- PPTP should not be used when L2TP/IPsec or OpenVPN is available.
 
 ## Release integrity
-- Release contains Windows installer, Linux x86_64 ZIP, and `SHA256SUMS.txt`.
-- Public assets are re-downloaded after publication and independently hashed before promotion to FINAL.
+Release artifacts are generated only after the source/contract/runtime gates pass. Publication is promoted to FINAL only after public re-download and independent SHA-256 verification.

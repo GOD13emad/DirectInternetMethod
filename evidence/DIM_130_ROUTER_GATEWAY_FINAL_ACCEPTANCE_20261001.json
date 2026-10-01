@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.3.0",
+  "feature": "Router Gateway",
+  "previousAcceptedAuthority": {
+    "version": "1.2.0",
+    "tag": "v1.2.0",
+    "commit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e"
+  },
+  "sourceBaseline": "2d968b4",
+  "branch": "feature/router-gateway-v1.3.0",
+  "status": "PASS_RELEASE_READY",
+  "gates": {
+    "routerGatewayContract": "PASS",
+    "windowsCompile": "PASS_0_WARNINGS_0_ERRORS",
+    "windowsPayloadBuild": "PASS",
+    "windowsServiceSelfTest": "PASS",
+    "windowsRegressionContract": "PASS",
+    "windowsInstallerBuild": "PASS",
+    "finalWpfUiAutomationSmoke": "PASS",
+    "finalPrivateDnsInterceptionRegression": "PASS",
+    "linuxContract": "PASS",
+    "linuxRuntimeSmoke": "PASS",
+    "linuxCrossHostDeterministicBuild": "PASS",
+    "gitDiffCheck": "PASS",
+    "publication": "PENDING"
+  },
+  "finalArtifacts": {
+    "windows": {
+      "path": "delivery/DirectInternetMethod_1.3.0_Windows_Setup.exe",
+      "bytes": 157105373,
+      "sha256": "2B0F0416EFFDEDE2530345F972AEF6CAB6EDDAB2D833CE2983E701DB06BF50F7",
+      "authenticode": "NotSigned"
+    },
+    "linux": {
+      "path": "delivery/DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+      "bytes": 8156742,
+      "sha256": "14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824",
+      "reproducedOn": [
+        "Emad-PC-Ultimate",
+        "aliemad-Labtop"
+      ]
+    },
+    "checksums": {
+      "path": "delivery/SHA256SUMS.txt",
+      "sha256": "249bdc15dd459fa7a4c8ac1764c3f44907eff5ed6e3f31cf68ea544c0257c550"
+    }
+  },
+  "payloadIdentity": {
+    "guiSha256": "AA869F28A50DA54A8236F2D3DF2C2B0930DA1654E058A7E9B507B3C138096F61",
+    "serviceSha256": "007A40BB4CA5F55171DA488CBCF08C949B249AA2BB352F31995247E608FC9638",
+    "manifestSha256": "EA899168E6D6E0EBBC705B74DBFE45048B97214989363A772A3E21396F967801",
+    "manifestFiles": 678
+  },
+  "uiSmoke": {
+    "profileCount": 8,
+    "l2tpConfigFields": "PASS",
+    "healthResults": [
+      "Reachable ICMP 219.100.37.97",
+      "Reachable ICMP 219.100.37.213",
+      "Unverified timeout",
+      "Reachable ICMP 219.100.37.62",
+      "Reachable ICMP 219.100.37.23",
+      "Unverified DNS intercepted/private address 10.10.34.35"
+    ],
+    "privateAddressMisclassification": false
+  },
+  "validationBoundary": {
+    "fullRouterAuthenticatedTunnelHandshake": "UNPROVEN_MODEL_DEPENDENT",
+    "note": "Release validates profile generation, packaging, UI wiring, fail-closed DNS interception handling and endpoint reachability heuristics. It does not claim authenticated tunnel success on every router model/firmware."
+  },
+  "exactNextAction": "Commit release-ready source/evidence, fast-forward main if origin/main authority is unchanged, tag v1.3.0, publish the three exact artifacts, then public-redownload/hash verify before FINAL promotion."
+}

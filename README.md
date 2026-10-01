@@ -2,30 +2,43 @@
 
 **زن زندگی آزادی**
 
-Standalone direct-connect application for Windows and Linux. It is independent of FreeNetHub and does not require ChatGPT for normal use.
+Standalone connectivity application for Windows and Linux. It is independent of FreeNetHub and does not require ChatGPT for normal use.
 
-## Windows 1.2.1
-- Native WPF application + fixed-command privileged Windows service
-- Bundled protected PowerShell 7.6.6; no external PowerShell dependency
-- Normal Start / Stop / Recovery without administrator prompt after installation
-- Owned demand-start ctrld 1.5.7 service + DoH + Loopback ULA + NRPT
-- zapret/winws + WinDivert for hostlist-scoped TCP/443 DPI handling
-- Dedicated icon, Desktop shortcut, Start Menu shortcut and uninstaller
-- No VPN, HTTP/SOCKS proxy or default-route tunnel
-- Direct in-app Windows update through the installed privileged service; GitHub asset digest, SHA256SUMS.txt and downloaded-file SHA-256 must all match
-- Normal Windows updates after v1.2.1 require no UAC; the one-time transition from v1.1.0 may require UAC
-- Installer is not Authenticode-signed
+## Direct Method
+The original Direct Method remains a direct DNS + DPI-bypass path. It does **not** create a VPN, HTTP/SOCKS proxy, or default-route tunnel.
 
-## Linux 1.2.1
-- Dedicated temporary DNS link + ctrld 1.5.7/DoH + systemd-resolved + nftables/NFQUEUE + zapret nfqws 72.13
-- Dedicated GTK/Adwaita application with dove icon and «زن زندگی آزادی»
-- Applications-menu launcher, Desktop shortcut, icon and uninstaller
-- Start / Stop / Refresh / Recovery without admin prompt during normal use
-- No VPN, HTTP/SOCKS proxy or default-route tunnel
+## Router Gateway — v1.3.0
+v1.3.0 adds a separate, non-privileged Router Gateway panel for configuring compatible modems/routers.
+
+- L2TP/IPsec profiles are preferred.
+- PPTP is available only as a legacy compatibility fallback.
+- Copy-ready Server/IP, Username, Password and IPsec PSK fields.
+- Bundled offline snapshot so the panel still works when provider websites are blocked.
+- Refresh from the project manifest, plus best-effort refresh of rotating credentials.
+- Numeric VPN Gate IPs are supplied where available to reduce DDNS-filtering dependency.
+- Endpoint health tests do not change routes or VPN state.
+- Public endpoints resolving to private/loopback/link-local addresses are rejected as possible DNS interception.
+- Router guides included for Generic VPN Client, TP-Link, ASUS and MikroTik.
+- The app does not blindly log into or reconfigure the router; exact VPN Client support depends on router model and firmware.
+
+## Windows 1.3.0
+- Native WPF application + fixed-command privileged Windows service.
+- Bundled protected PowerShell 7.6.6; no external PowerShell dependency.
+- Normal Start / Stop / Recovery and Router Gateway use without administrator prompt after installation.
+- Owned demand-start ctrld service + DoH + Loopback ULA + NRPT.
+- zapret/winws + WinDivert for hostlist-scoped TCP/443 DPI handling.
+- Direct in-app update through the installed privileged service with release digest + SHA256SUMS + downloaded-file SHA-256 verification.
+- Installer is not Authenticode-signed.
+
+## Linux 1.3.0
+- Dedicated temporary DNS link + ctrld/DoH + systemd-resolved + nftables/NFQUEUE + zapret nfqws.
+- GTK/Adwaita application with Router Gateway integrated into the same UI.
+- Existing protected 1.2.1-compatible backend is reused because Router Gateway is user-space only; upgrading this feature does not require needless backend replacement.
+- Start / Stop / Refresh / Recovery and Router Gateway do not require admin during normal use.
 
 ## Release artifacts
-- `DirectInternetMethod_1.2.1_Windows_Setup.exe`
-- `DirectInternetMethod_1.2.1_Linux_x86_64.zip`
+- `DirectInternetMethod_1.3.0_Windows_Setup.exe`
+- `DirectInternetMethod_1.3.0_Linux_x86_64.zip`
 - `SHA256SUMS.txt`
 
-Acceptance evidence is stored under `evidence/`.
+Acceptance and provenance evidence are stored under `evidence/`.

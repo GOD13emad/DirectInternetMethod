@@ -13,7 +13,7 @@ internal static class UpdateClient
     static HttpClient CreateClient()
     {
         var h = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-        h.DefaultRequestHeaders.UserAgent.ParseAdd("DirectInternetMethod/1.2");
+        h.DefaultRequestHeaders.UserAgent.ParseAdd("DirectInternetMethod/1.3");
         h.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return h;
     }

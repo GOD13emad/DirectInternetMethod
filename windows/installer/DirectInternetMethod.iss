@@ -1,5 +1,5 @@
 #define MyAppName "Direct Internet Method"
-#define MyAppVersion "1.2.1"
+#define MyAppVersion "1.3.0"
 #define MyAppPublisher "Direct Internet Method"
 #define MyAppExeName "DirectInternetMethod.exe"
 
@@ -13,7 +13,7 @@ UsePreviousAppDir=yes
 DefaultGroupName=Direct Internet Method
 DisableProgramGroupPage=yes
 OutputDir=..\..\delivery
-OutputBaseFilename=DirectInternetMethod_1.2.1_Windows_Setup
+OutputBaseFilename=DirectInternetMethod_1.3.0_Windows_Setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -31,6 +31,7 @@ RestartApplications=no
 Source: "..\app\DirectInternetMethod.exe"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\DirectInternetMethod.ico"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\Status.ps1"; DestDir: "{app}\app"; Flags: ignoreversion
+Source: "..\..\router_gateway\providers.json"; DestDir: "{app}\app\router_gateway"; Flags: ignoreversion
 Source: "..\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\manifest.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\RELEASE.json"; DestDir: "{app}"; Flags: ignoreversion

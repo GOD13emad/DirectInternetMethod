@@ -59,13 +59,15 @@ fi
 backend_matches_current || { echo "Protected backend verification failed." >&2; exit 22; }
 if [ -d "$APP" ]; then
   mkdir -p "$BACKUP"
-  for f in direct_internet_method.py direct-internet-method.svg uninstall.sh INSTALL.json; do
+  for f in direct_internet_method.py router_gateway.py direct-internet-method.svg uninstall.sh INSTALL.json; do
     [ -f "$APP/$f" ] && cp -a "$APP/$f" "$BACKUP/$f"
   done
 fi
-mkdir -p "$APP/directmethod" "$BIN" "$DESKTOP" "$ICONS"
+mkdir -p "$APP/directmethod" "$APP/router_gateway" "$BIN" "$DESKTOP" "$ICONS"
 chmod 0700 "$APP" "$APP/directmethod"
 install -m 0755 "$HERE/app/direct_internet_method.py" "$APP/direct_internet_method.py"
+install -m 0755 "$HERE/app/router_gateway.py" "$APP/router_gateway.py"
+install -m 0644 "$HERE/app/router_gateway/providers.json" "$APP/router_gateway/providers.json"
 install -m 0644 "$HERE/app/direct-internet-method.svg" "$APP/direct-internet-method.svg"
 install -m 0755 "$HERE/uninstall.sh" "$APP/uninstall.sh"
 
@@ -112,7 +114,7 @@ import json,pathlib,sys,time
 pathlib.Path(sys.argv[1]).write_text(json.dumps({
   "schema":2,
   "product":"Direct Internet Method",
-  "version":"1.2.1",
+  "version":"1.3.0",
   "platform":"linux-x86_64",
   "installedUtc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
   "networkMutationOnInstall":False,
@@ -122,6 +124,6 @@ pathlib.Path(sys.argv[1]).write_text(json.dumps({
 },indent=2)+"\n")
 PY
 
-echo "Installed Direct Internet Method 1.2.1."
+echo "Installed Direct Internet Method 1.3.0."
 echo "Normal Start / Stop / Recovery do not require an admin password."
 echo "Install/update/uninstall of the protected backend may authenticate once."

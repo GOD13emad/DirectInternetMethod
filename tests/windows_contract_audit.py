@@ -76,9 +76,10 @@ check("installer_bundled_pwsh", '..\\vendor\\pwsh\\*' in iss and 'Privileged\\ru
 check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Recovery did not complete" in iss)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.2.1")
+check("manifest_version", manifest.get("version")=="1.3.0")
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
+check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)
 check("manifest_service", ("privileged","app/DirectInternetMethod.Service.exe") in files)
 check("manifest_no_helper", not any(x[1].endswith("Helper.exe") for x in files))
 check("manifest_bundled_pwsh", manifest.get("bundledPowerShellVersion")=="7.6.6" and manifest.get("bundledPowerShellArchiveSha256")=="02FE458BE20493FBDF43F61EA20610B811EE6C738AB1676C61B9CFCD1A33C860" and ("privileged","runtime/pwsh/pwsh.exe") in files)

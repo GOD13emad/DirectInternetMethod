@@ -1,0 +1,54 @@
+<Window x:Class="DirectInternetMethod.RouterGatewayWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Router Gateway — Direct Internet Method" Width="1180" Height="760"
+ MinWidth="980" MinHeight="620" WindowStartupLocation="CenterOwner"
+ Background="#0B1624" Foreground="#F7FAFC" Icon="/DirectInternetMethod.ico">
+ <Window.Resources>
+  <SolidColorBrush x:Key="Card" Color="#14263A"/>
+  <SolidColorBrush x:Key="Muted" Color="#9FB1C3"/>
+  <Style TargetType="TextBlock"><Setter Property="FontFamily" Value="Segoe UI"/></Style>
+  <Style TargetType="Button"><Setter Property="Padding" Value="14,8"/><Setter Property="Margin" Value="0,0,8,0"/></Style>
+ </Window.Resources>
+ <Grid Margin="24">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="Auto"/><RowDefinition Height="14"/><RowDefinition Height="*"/><RowDefinition Height="14"/><RowDefinition Height="190"/></Grid.RowDefinitions>
+  <Grid>
+   <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+   <StackPanel><TextBlock Text="Router Gateway" FontSize="28" FontWeight="Bold"/><TextBlock Text="L2TP/IPsec preferred · PPTP legacy fallback · modem/router configuration data" Foreground="{StaticResource Muted}" Margin="0,5,0,0"/></StackPanel>
+   <Border Grid.Column="1" Background="#153729" CornerRadius="12" Padding="12,7" VerticalAlignment="Center"><TextBlock x:Name="DataStatus" Text="Offline snapshot" Foreground="#68E8A6" FontWeight="SemiBold"/></Border>
+  </Grid>
+  <Border Grid.Row="2" Background="{StaticResource Card}" CornerRadius="16" Padding="14">
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="180"/><ColumnDefinition Width="220"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel><TextBlock Text="Protocol" Foreground="{StaticResource Muted}"/><ComboBox x:Name="ProtocolBox" SelectedIndex="0" SelectionChanged="FilterChanged" Margin="0,5,12,0"><ComboBoxItem Content="All"/><ComboBoxItem Content="L2TP/IPsec"/><ComboBoxItem Content="PPTP"/></ComboBox></StackPanel>
+    <StackPanel Grid.Column="1"><TextBlock Text="Router / modem" Foreground="{StaticResource Muted}"/><ComboBox x:Name="RouterBox" DisplayMemberPath="Name" SelectionChanged="RouterChanged" Margin="0,5,12,0"/></StackPanel>
+    <TextBlock Grid.Column="2" x:Name="HintText" Foreground="{StaticResource Muted}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="6,14,12,0"/>
+    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom"><Button Content="Refresh data" Click="RefreshData_Click"/><Button Content="Test all" Click="TestAll_Click"/><Button Content="Copy selected" Click="CopySelected_Click"/></StackPanel>
+   </Grid>
+  </Border>
+  <Border Grid.Row="4" Background="{StaticResource Card}" CornerRadius="16" Padding="10">
+   <DataGrid x:Name="ProfilesGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="ProfileChanged"
+     Background="#0E1D2D" Foreground="White" GridLinesVisibility="Horizontal" HeadersVisibility="Column" BorderThickness="0">
+    <DataGrid.Columns>
+     <DataGridTextColumn Header="Provider" Binding="{Binding Provider}" Width="110"/>
+     <DataGridTextColumn Header="Protocol" Binding="{Binding Protocol}" Width="120"/>
+     <DataGridTextColumn Header="Country" Binding="{Binding Country}" Width="100"/>
+     <DataGridTextColumn Header="Server / IP" Binding="{Binding DisplayServer}" Width="*"/>
+     <DataGridTextColumn Header="Latency" Binding="{Binding DisplayLatency}" Width="110"/>
+     <DataGridTextColumn Header="Test" Binding="{Binding TestStatus}" Width="180"/>
+     <DataGridTextColumn Header="Credential" Binding="{Binding CredentialStatus}" Width="230"/>
+    </DataGrid.Columns>
+   </DataGrid>
+  </Border>
+  <Border Grid.Row="6" Background="{StaticResource Card}" CornerRadius="16" Padding="14">
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="300"/></Grid.ColumnDefinitions>
+    <TextBox x:Name="ConfigText" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Background="#0E1D2D" Foreground="White" BorderThickness="0" Padding="10"/>
+    <StackPanel Grid.Column="1" Margin="14,0,0,0">
+     <TextBlock Text="Safety / compatibility" FontSize="16" FontWeight="SemiBold"/>
+     <TextBlock Text="Use only a real VPN Client feature on the router. A WAN 'PPTP/L2TP connection type' or VPN pass-through is not necessarily a VPN client." TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,8,0,0"/>
+     <TextBlock Text="PPTP is shown only for legacy compatibility. Credentials may rotate; Refresh data before use." TextWrapping="Wrap" Foreground="#FFD166" Margin="0,10,0,0"/>
+     <TextBlock x:Name="ResultText" TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,12,0,0"/>
+    </StackPanel>
+   </Grid>
+  </Border>
+ </Grid>
+</Window>

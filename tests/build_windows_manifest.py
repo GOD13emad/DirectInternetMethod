@@ -6,6 +6,7 @@ FILES=[
 ("user","app/DirectInternetMethod.exe","app/DirectInternetMethod.exe"),
 ("user","app/DirectInternetMethod.ico","app/DirectInternetMethod.ico"),
 ("user","app/Status.ps1","app/Status.ps1"),
+("user","../router_gateway/providers.json","app/router_gateway/providers.json"),
 ("user","docs/README-FA.md","docs/README-FA.md"),
 ("user","docs/ARCHITECTURE.md","docs/ARCHITECTURE.md"),
 ("user","RELEASE.json","RELEASE.json"),

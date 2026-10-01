@@ -28,3 +28,5 @@ delivery/DirectInternetMethod_1.2.1_*
 delivery/DIM_120_HOST_BOOTSTRAP_RUNNER.zip
 delivery/DirectInternetMethod_1.2.0_*
 evidence/_*.ps1
+delivery/DirectInternetMethod_1.3.0_*
+delivery/SHA256SUMS.txt

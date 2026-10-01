@@ -16,9 +16,10 @@ import gi
 gi.require_version("Gtk","4.0")
 gi.require_version("Adw","1")
 from gi.repository import Gtk, Adw, GLib, Gdk
+from router_gateway import RouterGatewayWindow
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
-VERSION="1.2.1"
+VERSION="1.3.0"
 GLib.set_prgname("DirectInternetMethod")
 GLib.set_application_name("Direct Internet Method")
 try:
@@ -243,7 +244,7 @@ class Window(Adw.ApplicationWindow):
         self.buttons={}
         for text_,action,css in [
             ("Start","start","suggested-action"),("Stop","stop",None),("Refresh","refresh",None),
-            ("Recovery","recovery","destructive-action"),("Update","update",None)]:
+            ("Recovery","recovery","destructive-action"),("Router Gateway","router",None),("Update","update",None)]:
             b=Gtk.Button(label=text_);b.set_size_request(120,48)
             if css:b.add_css_class(css)
             b.connect("clicked",self.on_action,action);buttons.append(b);self.buttons[action]=b
@@ -293,6 +294,8 @@ class Window(Adw.ApplicationWindow):
         ui_test_log("ACTION:"+action)
         if action=="refresh":
             self.refresh();self.result.set_text("");return
+        if action=="router":
+            RouterGatewayWindow(self).present();return
         if action=="update":
             if self.available_update:
                 self.set_sensitive(False);self.result.set_text("Downloading and verifying update…")

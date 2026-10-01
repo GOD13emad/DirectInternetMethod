@@ -2,8 +2,8 @@
 from __future__ import annotations
 import hashlib,json,pathlib,zipfile,tempfile,os
 R=pathlib.Path(__file__).resolve().parent
-OUT=R/"delivery"/"DirectInternetMethod_1.2.1_Linux_x86_64.zip"
-ROOT="DirectInternetMethod_1.2.1_Linux_x86_64"
+OUT=R/"delivery"/"DirectInternetMethod_1.3.0_Linux_x86_64.zip"
+ROOT="DirectInternetMethod_1.3.0_Linux_x86_64"
 FILES=[
  ("README.md","README.md"),
  ("linux/install.sh","install.sh"),
@@ -12,6 +12,8 @@ FILES=[
  ("linux/system/control.sh","system/control.sh"),
  ("linux/system/uninstall_system.sh","system/uninstall_system.sh"),
  ("linux/app/direct_internet_method.py","app/direct_internet_method.py"),
+ ("linux/app/router_gateway.py","app/router_gateway.py"),
+ ("router_gateway/providers.json","app/router_gateway/providers.json"),
  ("linux/app/direct_method_helper.sh","app/direct_method_helper.sh"),
  ("linux/app/hosts.txt","app/hosts.txt"),
  ("linux/app/direct-internet-method.svg","app/direct-internet-method.svg"),
@@ -33,7 +35,7 @@ for src,dst in FILES:
  if not p.is_file(): raise SystemExit("MISSING:"+src)
  data=payload_bytes(src,dst)
  rows.append({"file":dst,"bytes":len(data),"sha256":sha_bytes(data)})
-manifest={"schema":1,"product":"Direct Internet Method","version":"1.2.1","platform":"linux-x86_64","files":rows}
+manifest={"schema":1,"product":"Direct Internet Method","version":"1.3.0","platform":"linux-x86_64","files":rows}
 OUT.parent.mkdir(parents=True,exist_ok=True)
 fd,tmp_name=tempfile.mkstemp(prefix="dim-build-",suffix=".zip",dir=OUT.parent)
 os.close(fd)
@@ -42,7 +44,7 @@ try:
  with zipfile.ZipFile(tmp,"w",compression=zipfile.ZIP_STORED) as z:
   for src,dst in sorted(FILES,key=lambda x:x[1]):
    data=payload_bytes(src,dst)
-   zi=zipfile.ZipInfo(f"{ROOT}/{dst}",date_time=(2026,9,29,0,0,0))
+   zi=zipfile.ZipInfo(f"{ROOT}/{dst}",date_time=(2026,10,1,0,0,0))
    zi.create_system=3
    zi.external_attr=((0o755 if dst.endswith((".sh",".py")) or dst in ("runtime/ctrld","runtime/nfqws") else 0o644)&0xFFFF)<<16
    zi.compress_type=zipfile.ZIP_STORED
@@ -52,7 +54,7 @@ try:
    ("SHA256SUMS.txt","".join(f'{x["sha256"]}  {x["file"]}\n' for x in rows))
   ]:
    data=(json.dumps(obj,ensure_ascii=False,indent=2)+"\n").encode() if isinstance(obj,dict) else obj.encode()
-   zi=zipfile.ZipInfo(f"{ROOT}/{name}",date_time=(2026,9,29,0,0,0))
+   zi=zipfile.ZipInfo(f"{ROOT}/{name}",date_time=(2026,10,1,0,0,0))
    zi.create_system=3
    zi.external_attr=(0o644&0xFFFF)<<16;zi.compress_type=zipfile.ZIP_STORED
    z.writestr(zi,data)

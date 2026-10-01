@@ -339,6 +339,12 @@ public partial class MainWindow : Window
         }
     }
 
+    void RouterGateway_Click(object sender, RoutedEventArgs e)
+    {
+        var w = new RouterGatewayWindow { Owner = this };
+        w.ShowDialog();
+    }
+
     async void Start_Click(object sender, RoutedEventArgs e) => await RunActionAsync("start", "Start");
     async void Stop_Click(object sender, RoutedEventArgs e) => await RunActionAsync("stop", "Stop");
     async void Recovery_Click(object sender, RoutedEventArgs e) => await RunActionAsync("recovery", "Recovery");

@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Python syntax
-        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py tests/linux_contract_audit.py
+        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/app/router_gateway.py tests/linux_contract_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py
       - name: Shell syntax and LF guard
         shell: bash
         run: |
@@ -30,8 +30,10 @@ jobs:
             fi
             bash -n "$f"
           done < <(find linux -type f -name '*.sh' -print | sort)
-      - name: Linux contract audit
-        run: python3 tests/linux_contract_audit.py
+      - name: Linux and Router Gateway contract audits
+        run: |
+          python3 tests/linux_contract_audit.py
+          python3 tests/router_gateway_contract_audit.py
       - name: Build Linux archive
         run: python3 build_linux_package.py
       - name: Validate shell syntax inside built archive
@@ -40,7 +42,7 @@ jobs:
           set -euo pipefail
           d="$(mktemp -d)"
           trap 'rm -rf "$d"' EXIT
-          unzip -q delivery/DirectInternetMethod_1.2.1_Linux_x86_64.zip -d "$d"
+          unzip -q delivery/DirectInternetMethod_1.3.0_Linux_x86_64.zip -d "$d"
           while IFS= read -r f; do
             if grep -q $'\r' "$f"; then
               echo "CRLF detected in packaged shell: $f" >&2
@@ -59,7 +61,7 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Python syntax
         shell: pwsh
-        run: python -m py_compile tests/windows_contract_audit.py tests/build_windows_manifest.py
+        run: python -m py_compile tests/windows_contract_audit.py tests/build_windows_manifest.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py
       - name: PowerShell syntax
         shell: pwsh
         run: |
@@ -75,6 +77,8 @@ jobs:
         run: dotnet build windows/service/DirectInternetMethod.Service.csproj -c Release --nologo
       - name: Build GUI
         run: dotnet build windows/gui/DirectInternetMethod.csproj -c Release --nologo
+      - name: Router Gateway contract audit
+        run: python tests/router_gateway_contract_audit.py
 
   windows-release-contract:
     name: windows-release-contract
@@ -85,5 +89,7 @@ jobs:
       - name: Restore pinned PowerShell runtime
         shell: pwsh
         run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
-      - name: Full Windows contract audit
-        run: python tests/windows_contract_audit.py
+      - name: Full Windows and Router Gateway contract audits
+        run: |
+          python tests/windows_contract_audit.py
+          python tests/router_gateway_contract_audit.py
