@@ -9,11 +9,11 @@
     "previousAccepted": {
       "version": "1.2.1",
       "tag": "v1.2.1",
-      "commit": "ffc81193cd484e50c0855d2ad18e69629fedb63c"
+      "tagCommit": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
+      "publishedGovernanceMain": "ad5f019503ab46d7dc0434e2e8e89f9517d172d2"
     },
     "currentBranch": "feature/router-gateway-v1.3.0",
-    "rebasedCandidateCommit": "82d108c",
-    "note": "Final metadata/build fixes after 82d108c are pending final commit."
+    "note": "v1.3.0 release-ready source is a strict descendant of the fully published/governed v1.2.1 main lineage. Final release identity is the v1.3.0 tag after publication."
   },
   "artifacts": {
     "windows": {

@@ -6,9 +6,9 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 
 
 ## CURRENT v1.3.0 Router Gateway delta
-- **Previous Accepted State:** v1.2.1 remains FINAL/PUBLISHED_VERIFIED at tag `v1.2.1`, commit `ffc81193cd484e50c0855d2ad18e69629fedb63c`.
+- **Previous Accepted State:** v1.2.1 remains FINAL/PUBLISHED_VERIFIED at tag `v1.2.1` (`ffc8119`); publication/governance lineage is finalized through `ad5f019`.
 - **Current Delta:** Router Gateway is integrated into the existing Windows WPF and Linux GTK/Adwaita apps. L2TP/IPsec is preferred; PPTP is explicitly legacy fallback. The module supplies copy-ready router/modem configuration, offline snapshot/cache/refresh, vendor guidance and non-mutating endpoint health tests.
-- **Authority:** canonical Git root `C:\Users\Aa.Emad\source\repos\DirectInternetMethod`; branch `feature/router-gateway-v1.3.0` rebased on authoritative `origin/main` v1.2.1 after concurrent main movement was detected.
+- **Authority:** canonical Git root `C:\Users\Aa.Emad\source\repos\DirectInternetMethod`; branch `feature/router-gateway-v1.3.0` rebased on the fully published/governed v1.2.1 main lineage through `ad5f019` after concurrent main movement was detected.
 - **Windows release-ready artifact:** `delivery/DirectInternetMethod_1.3.0_Windows_Setup.exe`, 157,098,906 bytes, SHA-256 `04EBFD968146A7122A0695DB36A01DBACB5F91B69104D6D1DEA6D1964BB99263`; Authenticode NotSigned.
 - **Windows payload:** GUI `83594B60BBA67F84175F1287EB12E6921A14C883E83BF2CCF566A8A4A698728B`; service `034CA29CF4CB3968AAB37CEABDB8D78C84F0B7355659F312D119A19E61C163D4`; 678-file manifest `15D6A96AB4ECA44B70F9C4A6855BAEEC2F03411E8F54233003940B1027BFEFAE`.
 - **Linux release-ready artifact:** `delivery/DirectInternetMethod_1.3.0_Linux_x86_64.zip`, 8,156,742 bytes, SHA-256 `14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824`; byte-identical Windows/Linux reproduction PASS.

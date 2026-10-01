@@ -77,10 +77,11 @@
     {
       "kind": "authority",
       "status": "CONFIRMED",
-      "claim": "v1.3.0 is based on authoritative v1.2.1 tag/commit after detecting concurrent origin/main movement; pre-rebase v1.3 artifact hashes are superseded.",
+      "claim": "v1.3.0 is based on the fully published/governed v1.2.1 main lineage: tag v1.2.1 at ffc8119, publication/governance through ad5f019. Pre-rebase v1.3 artifact hashes are superseded.",
       "evidence": [
         "git fetch/rebase",
-        "v1.2.1 ffc81193..."
+        "v1.2.1 tag ffc8119",
+        "main governance ad5f019"
       ]
     },
     {

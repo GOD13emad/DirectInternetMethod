@@ -7,8 +7,9 @@
   "previousAccepted": {
     "version": "1.2.1",
     "tag": "v1.2.1",
-    "commit": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
-    "status": "FINAL_PUBLISHED_VERIFIED"
+    "tagCommit": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
+    "publishedGovernanceMain": "ad5f019503ab46d7dc0434e2e8e89f9517d172d2",
+    "status": "FINAL_PUBLISHED_VERIFIED_GITHUB_HARDENED"
   },
   "feature": "Router Gateway — L2TP/IPsec preferred + PPTP legacy fallback configuration data for compatible routers/modems",
   "platforms": {
