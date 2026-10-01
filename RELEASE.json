@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.4.0",
   "date": "2026-10-01",
-  "status": "RELEASE_CANDIDATE_V1_4_0_LOCAL_GATES_PASS",
+  "status": "RELEASE_READY_V1_4_0_LINUX_LIVE_VERIFIED",
   "previousAccepted": {
     "version": "1.3.2",
     "tag": "v1.3.2",
@@ -63,15 +63,16 @@
       "routerGatewayUi": "PASS_PHYSICAL_OPEN_9_VISIBLE_PROFILES"
     },
     "linux": {
-      "status": "PASS_LOCAL_BUILD_PENDING_CROSS_HOST_AND_LIVE_BACKEND",
+      "status": "PASS_RELEASE_READY_CROSS_HOST_LIVE",
       "artifact": "delivery/DirectInternetMethod_1.4.0_Linux_x86_64.zip",
       "bytes": 8159881,
       "sha256": "4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E",
       "protectedBackendVersion": "1.4.0",
       "contractAudit": "PASS",
       "nfqwsMultiprotocolDryRun": "PASS",
-      "crossHostDeterministic": "PENDING",
-      "liveLifecycle": "PENDING"
+      "crossHostDeterministic": "PASS_EXACT_SHA_MATCH",
+      "liveLifecycle": "PASS_START_ACTIVE_STOP_RECOVERY_CLEAN",
+      "installedCandidate": "PASS_1_4_0_EXACT_FILES"
     }
   },
   "checksums": {
@@ -96,8 +97,8 @@
     "windowsPayload": "PASS",
     "windowsInstaller": "PASS",
     "windowsStartupUi": "PASS_1289x632_NO_OVERLAP",
-    "linuxCrossHost": "PENDING",
-    "linuxLiveLifecycle": "PENDING",
+    "linuxCrossHost": "PASS_EXACT_SHA_MATCH",
+    "linuxLiveLifecycle": "PASS_START_ACTIVE_STOP_RECOVERY_CLEAN",
     "protectedCi": "PENDING",
     "publication": "PENDING",
     "installedHosts": "PENDING",
@@ -117,7 +118,8 @@
     "localCandidate": "evidence/DIM_140_LOCAL_RELEASE_CANDIDATE_20261001.json",
     "windowsPayload": "evidence/WINDOWS_140_PAYLOAD_BUILD_20261001.json",
     "windowsInstaller": "evidence/WINDOWS_140_INSTALLER_BUILD_20261001.json",
-    "secureDnsAudit": "evidence/DIM_140_SECURE_DNS_TRANSPORT_AUDIT_20261001.json"
+    "secureDnsAudit": "evidence/DIM_140_SECURE_DNS_TRANSPORT_AUDIT_20261001.json",
+    "linuxLive": "evidence/LINUX_140_CROSS_HOST_LIVE_ACCEPTANCE_20261001.json"
   },
-  "exactNextAction": "Commit and push this exact candidate, reproduce the Linux archive from a fresh aliemad-Labtop clone, then upgrade the protected Linux backend to 1.4.0 and run Start→ACTIVE→Stop→Recovery clean lifecycle validation before protected CI/PR/publication."
+  "exactNextAction": "Commit/push Linux live acceptance, pass protected PR CI/merge, tag and publish v1.4.0, public-redownload/hash-verify all assets, then update/verify installed Windows and Linux from the public release."
 }
