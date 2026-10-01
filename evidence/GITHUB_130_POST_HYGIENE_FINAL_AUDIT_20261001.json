@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "date": "2026-10-01T07:27:49.3925223+03:30",
+  "status": "PASS_FINAL_GITHUB_POST_HYGIENE_AUDIT_V1_3_0",
+  "repository": {
+    "fullName": "GOD13emad/DirectInternetMethod",
+    "visibility": "public",
+    "defaultBranch": "main",
+    "onlyRemoteBranch": "main",
+    "deleteBranchOnMerge": true,
+    "secretScanning": "enabled",
+    "pushProtection": "enabled",
+    "privateVulnerabilityReporting": true,
+    "license": "MISSING_OWNER_LEGAL_DECISION"
+  },
+  "mainProtection": {
+    "strict": true,
+    "requiredContexts": [
+      "linux-source",
+      "windows-source"
+    ],
+    "enforceAdmins": true,
+    "linearHistory": true,
+    "forcePushAllowed": false,
+    "deletionAllowed": false,
+    "conversationResolution": true,
+    "requiredSignatures": false
+  },
+  "releaseTag": {
+    "tag": "v1.3.0",
+    "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+    "immutableRuleset": "Protect release tags",
+    "rules": [
+      "update",
+      "deletion"
+    ],
+    "bypassActors": 0,
+    "ancestorOfCurrentMain": true
+  },
+  "release": {
+    "published": true,
+    "publishedAt": "10/01/2026 03:28:18",
+    "assetCount": 3,
+    "assets": [
+      {
+        "name": "DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+        "size": 8156742,
+        "state": "uploaded",
+        "digest": "sha256:14ce381d589482fb8dbf437c12b351b5f232653f2c6512f871139fb5f3809824"
+      },
+      {
+        "name": "DirectInternetMethod_1.3.0_Windows_Setup.exe",
+        "size": 157098906,
+        "state": "uploaded",
+        "digest": "sha256:04ebfd968146a7122a0695db36a01dbacb5f91b69104d6d1dea6d1964bb99263"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "size": 221,
+        "state": "uploaded",
+        "digest": "sha256:a56db90964085a0d8452691d70dceff74d888db65b634b370926a3bb38596abe"
+      }
+    ],
+    "rootChecksumSha256": "A56DB90964085A0D8452691D70DCEFF74D888DB65B634B370926A3BB38596ABE",
+    "publicChecksumSha256": "A56DB90964085A0D8452691D70DCEFF74D888DB65B634B370926A3BB38596ABE",
+    "rootPublicChecksumExactMatch": true
+  },
+  "hygieneRemediation": {
+    "pr": 2,
+    "prState": "MERGED",
+    "mergedAt": "10/01/2026 03:55:01",
+    "mergeCommit": "1c526686e7ae88592de5890a5e8c05e3733b5c5e",
+    "prChecks": "PASS_linux-source_windows-source",
+    "postMergeMainRun": 36812693607,
+    "postMergeMainRunConclusion": "success",
+    "metadataCiGuard": "PASS",
+    "securityPolicy": "SECURITY.md",
+    "staleMergedRemoteBranchesRemoved": true
+  },
+  "deferred": {
+    "license": "OWNER_LEGAL_DECISION_OPEN",
+    "requiredSignedCommits": "NOT_ENABLED_PROPORTIONAL_RIGOR",
+    "dependabotSecurityUpdates": "DISABLED_LOW_CURRENT_PACKAGE_GRAPH_VALUE"
+  },
+  "exactNextAction": "No GitHub/release blocker remains. Keep v1.3.0 tag/assets immutable; maintenance only."
+}
