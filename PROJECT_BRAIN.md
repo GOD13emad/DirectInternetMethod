@@ -5,7 +5,7 @@ Final Objective: standalone Windows + Linux direct-connect application with inde
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
 ## Authoritative current state
-- Source authority: Git working tree on `feature/v1.2-direct-update`; latest pushed baseline before final host evidence was `76d3f0d`, with current final-host evidence/metadata delta pending commit.
+- Source authority: Git branch `feature/v1.2-direct-update`; host-final release-ready baseline commit `1f6f0ad` is pushed to origin. The next mutation is promotion/bookkeeping only; runtime/artifact bytes are frozen.
 - Cross-platform 1.1.0 product acceptance is **PASS_FINAL_RELEASE** and GitHub publication/update verification is **PUBLISHED_VERIFIED**.
 - Windows final artifact:
   - `delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe`
