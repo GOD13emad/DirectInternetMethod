@@ -78,6 +78,7 @@ All three validator failures were harness defects; product runtime remained heal
 - Published update-flow verification: `evidence/DIM_110_GITHUB_PUBLICATION_VERIFY_20261001.json` — SHA-256 `461A4CD7C270F18F1E4B732A6AF308BD6B23FFDA2D2AA003AED2C89ADC8CE130`.
 - Additional host exact-rollback revalidation: `evidence/WINDOWS_110_HOST_LIVE_POSTROLLBACK_20261001.json` — SHA-256 `DFB518795599780DBF960791B4ED3F435F77CD2C5C0816B5006210ABAB74B566`.
 - Post-final transient custom Start observation: `evidence/WINDOWS_110_POSTFINAL_REACTIVATION_20261001.json` — SHA-256 `84AF92E5DA8DF1FEA549D57B9687950C3BAFC1E12DDFA4A7FE72AB16D55BF142`; source attribution UNPROVEN, not classified as product auto-start defect.
+- Windows 1.2 host bootstrap gate: `evidence/WINDOWS_120_HOST_BOOTSTRAP_GATE_20261001.json` — SHA-256 `75A6C10B3C4DC9A4DFAC0D15DD44EDC3BFFB0268F417D363FDA8285CDDA5B89F`; one-time UAC owner gate; pre/post host remains clean v1.1.0.
 - Windows 1.2 direct-update Sandbox E2E: `evidence/WINDOWS_120_DIRECT_UPDATE_SANDBOX_E2E_20261001.json` — SHA-256 `8A79264D3FA588F9B5F6896110B3DBDD90207433093CC09E92DF8DE0819026CB`; restricted-user control 131, dual SHA-256 verification, exact v1.2 installer, done/0, exact installed payload identity, preserved user install path, and zero DIM network residue.
 - Final clean-state stabilization: `evidence/DIM_110_FINAL_CLEAN_STATE_20261001.json` — SHA-256 `7751A356EF1FFB00BEC0C20E594A12534068D8EA9980964D094A7E90E1584788`; Stop/Recovery done/0, state absent, ctrld stopped, winws/ULA/owned NRPT zero.
 - Windows v1.2 direct-update Sandbox acceptance: `evidence/WINDOWS_120_DIRECT_UPDATE_ACCEPTANCE_20261001.json` — SHA-256 `F2DDB33F715EFDB98FD96F6E2F6C69C6E254241847C417A9680407F5238041FC`.
@@ -122,3 +123,5 @@ Install the exact v1.2.0 Windows candidate on the real Windows host; verify inst
 - 2026-10-01: Linux v1.2 compatibility package rebuilt from Git-controlled source; stale Linux workspace drift reconciled; Windows/Linux deterministic ZIP hash matched at BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC.
 
 - 2026-10-01: Windows v1.2 direct updater reached Sandbox E2E PASS. A restricted user triggered control 131; exact v1.2.0 installer was verified and installed silently by the privileged service; completion returned done/0; exact GUI/service/manifest hashes matched; network state remained clean. Production v1.2 service then returned Already up to date/done0 from the same restricted control against real GitHub latest.
+
+- 2026-10-01: host v1.2 bootstrap attempted from clean v1.1.0. Windows UAC consent appeared, but Commander secure-desktop control was unavailable; no install occurred and host remained clean v1.1.0. Classified as owner UAC gate, not product failure.

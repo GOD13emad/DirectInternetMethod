@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "OWNER_UAC_BOOTSTRAP_GATE_OPEN",
+  "host": "EMAD-PC-ULTIMAT",
+  "target": {
+    "version": "1.2.0",
+    "installer": "delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe",
+    "sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1"
+  },
+  "prestate": {
+    "currentVersion": "1.1.0",
+    "serviceSha256": "F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68",
+    "stateExists": false,
+    "ctrldState": "Stopped",
+    "ctrldPid": 0,
+    "winwsCount": 0,
+    "ulaCount": 0,
+    "ownedNrptCount": 0,
+    "broadRouteCount": 0,
+    "winHttp": "Direct access",
+    "icsState": "Running"
+  },
+  "attempt": {
+    "elevatedLaunchRequested": true,
+    "consentProcessObserved": true,
+    "remoteGuiStatus": "NATIVE_OUTCOME_UNCERTAIN_RESTART_REQUIRED",
+    "secureDesktopControllableByCommander": false,
+    "installCompleted": false,
+    "resultingVersion": "1.1.0",
+    "networkStateRemainedClean": true
+  },
+  "classification": "OWNER_MANUAL_UAC_GATE_NOT_PRODUCT_FAILURE",
+  "exactNextAction": "Run the generated DIM_120_HOST_BOOTSTRAP_RUNNER once and approve the single Windows UAC prompt."
+}
