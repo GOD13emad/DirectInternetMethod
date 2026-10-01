@@ -3,7 +3,7 @@
   "date": "2026-10-01",
   "project": "Direct Internet Method",
   "version": "1.3.1",
-  "status": "PASS_POST_REBASE_LOCAL_PENDING_CROSS_HOST",
+  "status": "PASS_RELEASE_READY_POST_REBASE_CROSS_HOST",
   "previousAccepted": "v1.3.0",
   "mutationObjective": "Fix Windows default startup size and prevent footer control/text overlap without changing connectivity behavior.",
   "artifacts": {
@@ -17,7 +17,7 @@
       "path": "delivery/DirectInternetMethod_1.3.1_Linux_x86_64.zip",
       "bytes": 8158158,
       "sha256": "B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34",
-      "crossHost": "PENDING_POST_REBASE"
+      "crossHost": "PASS_EXACT_SHA_MATCH"
     }
   },
   "gates": {
@@ -33,7 +33,7 @@
     "releaseMetadataAudit": "PASS",
     "powershellSyntax": "PASS",
     "gitDiffCheck": "PASS",
-    "linuxCrossHost": "PENDING_POST_REBASE"
+    "linuxCrossHost": "PASS_POST_REBASE_EXACT_SHA_MATCH"
   },
   "regressionScope": {
     "directDnsDpiLogicChanged": false,
@@ -46,16 +46,16 @@
   "evidence": [
     "evidence/WINDOWS_131_UI_LAYOUT_ROOT_CAUSE_ACCEPTANCE_20261001.json",
     "evidence/WINDOWS_131_PAYLOAD_BUILD_20261001.json",
-    "evidence/WINDOWS_131_INSTALLER_BUILD_20261001.json"
+    "evidence/WINDOWS_131_INSTALLER_BUILD_20261001.json",
+    "evidence/LINUX_131_POST_REBASE_CROSS_HOST_ACCEPTANCE_20261001.json"
   ],
   "openGates": [
-    "post-rebase Linux cross-host exact SHA reproduction",
     "protected branch linux-source/windows-source CI",
     "protected PR merge",
     "v1.3.1 immutable tag/release and public asset hash redownload",
     "installed Windows public update and final 1289x632 UI verification"
   ],
-  "exactNextAction": "Commit/push the post-rebase artifact authority, independently reproduce B21BD0D5... on aliemad-Labtop, then close CI/PR/publication/installed-host gates.",
+  "exactNextAction": "Push the cross-host closure commit, pass protected PR #7 required checks/merge, publish and public-hash-verify v1.3.1, then verify installed Windows update/UI.",
   "authority": {
     "baseMain": "8d5fb149992ee1bdac3e73940b23ad6f0e873a4e",
     "branch": "hotfix/v1.3.1-ui-layout",

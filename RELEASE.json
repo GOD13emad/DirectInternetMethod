@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.3.1",
   "date": "2026-10-01",
-  "status": "RELEASE_READY_V1_3_1_POST_REBASE",
+  "status": "RELEASE_READY_V1_3_1_POST_REBASE_CROSS_HOST_VERIFIED",
   "previousAccepted": {
     "version": "1.3.0",
     "tag": "v1.3.0",
@@ -34,13 +34,14 @@
       "routerGatewayOpen": "PASS_PHYSICAL_MOUSE"
     },
     "linux": {
-      "status": "PASS_LOCAL_CANDIDATE_PENDING_POST_REBASE_CROSS_HOST",
+      "status": "PASS_RELEASE_READY_LINUX_1_3_1_POST_REBASE",
       "artifact": "delivery/DirectInternetMethod_1.3.1_Linux_x86_64.zip",
       "bytes": 8158158,
       "sha256": "B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34",
       "networkBackendChangedFrom130": false,
       "protectedBackendCompatibility": "1.2.1",
-      "crossHostDeterministic": "PENDING_POST_REBASE_FINAL_COMMIT"
+      "crossHostDeterministic": "PASS_EXACT_SHA_MATCH",
+      "crossHostEvidence": "evidence/LINUX_131_POST_REBASE_CROSS_HOST_ACCEPTANCE_20261001.json"
     }
   },
   "checksums": {
@@ -71,7 +72,7 @@
     "windowsInstaller": "PASS",
     "linuxLocalDeterministicBuild": "PASS",
     "publication": "PENDING",
-    "linuxPostRebaseCrossHost": "PENDING",
+    "linuxPostRebaseCrossHost": "PASS_EXACT_SHA_MATCH",
     "protectedCiPrMerge": "PENDING",
     "windowsInstalledPublicUpdate": "PENDING"
   },
@@ -92,7 +93,8 @@
     "windowsUi": "evidence/WINDOWS_131_UI_LAYOUT_ROOT_CAUSE_ACCEPTANCE_20261001.json",
     "windowsPayload": "evidence/WINDOWS_131_PAYLOAD_BUILD_20261001.json",
     "windowsInstaller": "evidence/WINDOWS_131_INSTALLER_BUILD_20261001.json",
-    "releaseReady": "evidence/DIM_131_RELEASE_READY_ACCEPTANCE_20261001.json"
+    "releaseReady": "evidence/DIM_131_RELEASE_READY_ACCEPTANCE_20261001.json",
+    "linuxPostRebaseCrossHost": "evidence/LINUX_131_POST_REBASE_CROSS_HOST_ACCEPTANCE_20261001.json"
   },
-  "exactNextAction": "Commit post-rebase artifact authority, force-with-lease the hotfix branch, independently reproduce Linux ZIP on aliemad-Labtop, then pass protected PR CI/merge before v1.3.1 publication."
+  "exactNextAction": "Push the cross-host closure commit, require PR #7 linux-source/windows-source success and protected merge, then publish/verify immutable v1.3.1 assets and installed Windows public update."
 }
