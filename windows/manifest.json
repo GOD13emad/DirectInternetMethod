@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "product": "Direct Internet Method",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; accepted direct DNS/DPI path plus non-privileged Router Gateway profile manager",
   "offlineRuntime": true,
   "normalRunRequiresAdmin": false,
@@ -20,7 +20,7 @@
       "file": "app/DirectInternetMethod.exe",
       "source": "app/DirectInternetMethod.exe",
       "bytes": 161807432,
-      "sha256": "8F3A410CCD97D1E0C83BC90E2A079CC76BDA53729FD7954E1152836874A1110E"
+      "sha256": "F9FDE9A0A75754EFC6B2573571373E2AB1CD3C3EED6470CD6947D4AD300C5BBD"
     },
     {
       "scope": "user",
@@ -41,7 +41,7 @@
       "file": "app/router_gateway/providers.json",
       "source": "../router_gateway/providers.json",
       "bytes": 6950,
-      "sha256": "C18B6AC37B54A2013B219D245394AFEE7AAF747C94633694A78ABD2C37DA8D82"
+      "sha256": "2B0C8BDF25DDE80A34104B56E5ED64194FC71899006556D60B017D4D53E2885F"
     },
     {
       "scope": "user",
@@ -61,15 +61,15 @@
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 2326,
-      "sha256": "EB12AEDD0FD9C9BC3392547AB64EE222F6B8F86E532F2A1AE3E1AC2D9DA28B62"
+      "bytes": 2971,
+      "sha256": "8D7F0F05658C44CA2DD86D1A1BEE899B7CB1E9EA414EABEDD74A480EA1ED2B41"
     },
     {
       "scope": "privileged",
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
       "bytes": 67588813,
-      "sha256": "1A8A235A15602C861B561E3EDD3DE4C3E34A53623C868B047129B461742829E6"
+      "sha256": "CF2D1FBF3ACB24613CE317B31F3B70A9ADA8C01EC39989A90811F49543D06D5D"
     },
     {
       "scope": "privileged",

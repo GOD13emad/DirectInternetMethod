@@ -117,7 +117,7 @@ import json,pathlib,sys,time
 pathlib.Path(sys.argv[1]).write_text(json.dumps({
   "schema":2,
   "product":"Direct Internet Method",
-  "version":"1.3.1",
+  "version":"1.3.2",
   "platform":"linux-x86_64",
   "installedUtc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
   "networkMutationOnInstall":False,
@@ -127,6 +127,6 @@ pathlib.Path(sys.argv[1]).write_text(json.dumps({
 },indent=2)+"\n")
 PY
 
-echo "Installed Direct Internet Method 1.3.1."
+echo "Installed Direct Internet Method 1.3.2."
 echo "Normal Start / Stop / Recovery do not require an admin password."
 echo "Install/update/uninstall of the protected backend may authenticate once."

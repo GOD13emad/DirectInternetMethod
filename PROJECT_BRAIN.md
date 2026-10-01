@@ -1,11 +1,25 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: V1_3_1_UI_HOTFIX_POST_REBASE_RELEASE_CANDIDATE
+Status: RELEASE_READY_V1_3_2_ROUTER_GRID_VISIBILITY_PUBLICATION_PENDING
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
+## CURRENT v1.3.2 Router Gateway visibility hotfix
+- **Previous Accepted Release:** v1.3.1 is the immutable published baseline at tag `v1.3.1` / commit `3b9fa6e7953e7d18068b8a0b574e0282411584ab`.
+- **Current Authority:** branch `hotfix/router-grid-v1.3.2` created directly from protected `origin/main` at the v1.3.1 release baseline. v1.3.1 startup-layout fixes and provider catalog revision 2 are preserved.
+- **User-visible Failure:** Router Gateway with `Protocol=All` appeared to contain only one populated row.
+- **Root Cause:** all 9 RouterProfile objects were loaded, but unselected WPF DataGrid rows/cells inherited a white default background while the grid foreground was white. The selected blue row alone had readable contrast.
+- **Fix / Prevention:** explicit dark RowBackground `#0E1D2D`, alternating row `#10263A`, readable DataGridRow/DataGridCell foreground `#F7FAFC`, dark headers `#1A3248`, and a permanent `windows_grid_readable_dark_rows` contract.
+- **Runtime V&V:** exact v1.3.2 GUI runtime UIA reports 9 rows, 7 columns and 9 DataItems; VPN Gate, VPNBook and Pilovali are present. v1.3.1 inherited startup geometry still PASSes exactly 1289×632 at 96 DPI with six visible actions and zero overlap.
+- **Windows release-ready artifact:** `delivery/DirectInternetMethod_1.3.2_Windows_Setup.exe`, 157,107,271 bytes, SHA-256 `B5141A93BDF2C261F54F4C0483128D973A54DEFBCD45C6C701535037B31E6E58`; GUI `F9FDE9A0…C5BBD`; service `CF2D1FBF…06D5D`; 678-file manifest `36A310F4…D7A8`.
+- **Linux release-ready artifact:** `delivery/DirectInternetMethod_1.3.2_Linux_x86_64.zip`, 8,158,337 bytes, SHA-256 `8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D`; Windows/Linux byte-identical reproduction PASS; Linux contract/runtime smoke PASS with 9 profiles.
+- **Network Scope:** no Direct DNS/DPI privileged network logic changed from v1.3.1. Router Gateway remains non-mutating to routes/DNS.
+- **Validation Boundary:** physical-router authenticated L2TP/IPsec/PPTP success remains model/firmware-dependent; not claimed universally.
+- **Critical Path / Open Gates:** final source/release metadata audit → protected branch/main CI → immutable tag `v1.3.2` → publish exact three assets → public re-download/hash verification → installed Windows Direct Update + Linux update verification.
+- **Brain Status:** CURRENT / RELEASE_READY. Do not mark v1.3.2 FINAL until publication and installed-host verification close.
+
 ## CURRENT v1.3.1 UI hotfix / provider-catalog integration
-- **Previous Accepted Release:** v1.3.0 remains FINAL/PUBLISHED_VERIFIED at immutable tag `v1.3.0` (`1fc9a04`) until v1.3.1 publication and installed-host validation close.
+- **v1.3.1 Historical State:** FINAL/PUBLISHED baseline for v1.3.2 at immutable tag `v1.3.1` (`3b9fa6e`). The lines below preserve its pre-publication acceptance history.
 - **Current Authority:** branch `hotfix/v1.3.1-ui-layout` rebased onto protected `main` commit `8d5fb149992ee1bdac3e73940b23ad6f0e873a4e`. Concurrent main work was preserved: GitHub supply-chain hardening plus Router Gateway provider catalog revision 2 / Linux source-install hardening.
 - **UI Root Cause:** v1.3.0 opened at 980×620 while six minimum-width actions were forced into a non-wrapping horizontal StackPanel beside Auto-sized footer text; constrained width caused crowding/overlap.
 - **UI Prevention:** preferred startup size 1289×632 DIP; current Windows host is 96 DPI so verified physical size is exactly 1289×632. Footer actions use WrapPanel; explanatory text is bounded to 360 DIP and wraps; layout rounding/pixel snapping enabled.
@@ -67,7 +81,7 @@ Completed: Linux v1.2.0 compatibility/version package; contract audits PASS on W
 Completed: exact Windows v1.2.0 host bootstrap; installed GUI/service/manifest hashes match candidate; control 131 host regression PASS.
 Completed: Windows v1.2.0 host Start/ACTIVE/Stop/exact rollback/Recovery regression PASS.
 Completed: immutable v1.3.0 release/publication gates remain closed as previous accepted authority.
-← CURRENT: v1.3.1 UI/layout hotfix integrated with provider catalog revision 2 and rebuilt post-rebase.
+← CURRENT: v1.3.2 release-ready → final metadata/source audits → protected CI/main → tag/release → public hash verification → installed-host updates.
 Open v1.3.1 gates: protected PR #7 CI/merge; tag/release/public hash verification; installed Windows public-update/final UI verification.
 Deferred: trusted Authenticode signing.
 
@@ -227,3 +241,5 @@ Push the post-rebase Linux cross-host closure evidence, pass PR #7 required `lin
 - 2026-10-01: Source-tree Linux installer path defect for Router Gateway data closed with package/source fallback; contract + Linux temp-path regression PASS.
 
 - 2026-10-01: GitHub line-by-line audit closed for immutable v1.3.0. PR #4 fixed platform release-metadata drift and moved full Windows contract into protected pre-merge CI; PR #5 pinned all GitHub Actions to immutable SHAs and enabled GitHub-Actions-only Dependabot. Main protection, no-bypass v* tag ruleset, secret scanning/push protection, PVR, public release digests and checksum authority reverified. Active v1.3.1 provider/UI worktrees remain separate unreleased development.
+- 2026-10-01: v1.3.2 Router Gateway visibility hotfix release-ready. Screenshot-reported “one profile” traced to WPF white-on-white unselected rows; runtime proved 9 loaded rows. Dark row/cell/header styling + permanent regression added.
+- 2026-10-01: v1.3.2 Windows/Linux artifacts built; Windows full contract and inherited 1289×632 startup layout PASS; Linux ZIP reproduced byte-identically across Windows/Linux.

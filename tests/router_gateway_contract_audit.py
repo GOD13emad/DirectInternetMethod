@@ -10,7 +10,7 @@ m=json.loads((R/"router_gateway/providers.json").read_text(encoding="utf-8"))
 profiles=m.get("profiles",[])
 l2=[p for p in profiles if p.get("protocol")=="L2TP/IPsec"]
 pptp=[p for p in profiles if p.get("protocol")=="PPTP"]
-check("schema",m.get("schema")==1 and m.get("version")=="1.3.1")
+check("schema",m.get("schema")==1 and m.get("version")=="1.3.2")
 check("l2tp_present",len(l2)>=3)
 check("l2tp_credentials_complete",all(p.get("username") and p.get("password") and p.get("preSharedKey") for p in l2))
 vpngate=[p for p in l2 if p.get("provider")=="VPN Gate"]
@@ -28,6 +28,7 @@ wxaml=(R/"windows/gui/RouterGatewayWindow.xaml").read_text(encoding="utf-8")
 mainx=(R/"windows/gui/MainWindow.xaml").read_text(encoding="utf-8")
 iss=(R/"windows/installer/DirectInternetMethod.iss").read_text(encoding="utf-8")
 check("windows_ui_entry","Router Gateway" in mainx and "RouterGatewayWindow" in wclient+wxaml)
+check("windows_grid_readable_dark_rows", all(x in wxaml for x in ('RowBackground="#0E1D2D"','AlternatingRowBackground="#10263A"','TargetType="{x:Type DataGridRow}"','TargetType="{x:Type DataGridCell}"','TargetType="{x:Type DataGridColumnHeader}"','Foreground="#F7FAFC"')))
 check("windows_offline_first","BundledPath" in wclient and "CachePath" in wclient and "RefreshAsync" in wclient)
 check("windows_non_mutating_test","TestAsync" in wclient and "Ping" in wclient and "TcpClient" in wclient)
 check("windows_private_dns_guard","IsPublicEndpointAddress" in wclient and "DNS intercepted/private address" in wclient)

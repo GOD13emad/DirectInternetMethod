@@ -27,7 +27,43 @@
   </Border>
   <Border Grid.Row="4" Background="{StaticResource Card}" CornerRadius="16" Padding="10">
    <DataGrid x:Name="ProfilesGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionChanged="ProfileChanged"
-     Background="#0E1D2D" Foreground="White" GridLinesVisibility="Horizontal" HeadersVisibility="Column" BorderThickness="0">
+     Background="#0E1D2D" Foreground="#F7FAFC" RowBackground="#0E1D2D" AlternatingRowBackground="#10263A"
+     AlternationCount="2" HorizontalGridLinesBrush="#29445C" VerticalGridLinesBrush="#29445C"
+     GridLinesVisibility="Horizontal" HeadersVisibility="Column" BorderThickness="0">
+    <DataGrid.Resources>
+     <Style TargetType="{x:Type DataGridRow}">
+      <Setter Property="Foreground" Value="#F7FAFC"/>
+      <Setter Property="MinHeight" Value="32"/>
+      <Setter Property="BorderBrush" Value="#29445C"/>
+      <Setter Property="BorderThickness" Value="0,0,0,1"/>
+      <Style.Triggers>
+       <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="#0876C9"/>
+        <Setter Property="Foreground" Value="White"/>
+       </Trigger>
+      </Style.Triggers>
+     </Style>
+     <Style TargetType="{x:Type DataGridCell}">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#F7FAFC"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="5,4"/>
+      <Style.Triggers>
+       <Trigger Property="IsSelected" Value="True">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="White"/>
+       </Trigger>
+      </Style.Triggers>
+     </Style>
+     <Style TargetType="{x:Type DataGridColumnHeader}">
+      <Setter Property="Background" Value="#1A3248"/>
+      <Setter Property="Foreground" Value="#DCE8F3"/>
+      <Setter Property="BorderBrush" Value="#29445C"/>
+      <Setter Property="BorderThickness" Value="0,0,1,1"/>
+      <Setter Property="Padding" Value="6,5"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+     </Style>
+    </DataGrid.Resources>
     <DataGrid.Columns>
      <DataGridTextColumn Header="Provider" Binding="{Binding Provider}" Width="110"/>
      <DataGridTextColumn Header="Protocol" Binding="{Binding Protocol}" Width="120"/>

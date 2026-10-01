@@ -1,55 +1,55 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "date": "2026-10-01",
-  "status": "RELEASE_READY_V1_3_1_POST_REBASE_CROSS_HOST_VERIFIED",
+  "status": "PASS_RELEASE_READY_V1_3_2_PUBLICATION_PENDING",
   "previousAccepted": {
-    "version": "1.3.0",
-    "tag": "v1.3.0",
-    "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+    "version": "1.3.1",
+    "tag": "v1.3.1",
+    "tagCommit": "3b9fa6e7953e7d18068b8a0b574e0282411584ab",
     "status": "FINAL_PUBLISHED_VERIFIED"
   },
   "authority": {
-    "baseMain": "8d5fb149992ee1bdac3e73940b23ad6f0e873a4e",
-    "branch": "hotfix/v1.3.1-ui-layout",
-    "note": "Rebased onto current protected main after concurrent provider-catalog and GitHub-hardening work; main provider catalog revision 2 preserved."
+    "baseMain": "3b9fa6e7953e7d18068b8a0b574e0282411584ab",
+    "branch": "hotfix/router-grid-v1.3.2",
+    "note": "Built directly on the immutable v1.3.1 release/main baseline; preserves v1.3.1 startup-layout corrections and provider catalog revision 2."
   },
-  "feature": "Windows startup-size/footer collision hotfix + provider-catalog revision 2 integration",
+  "feature": "Router Gateway DataGrid visibility hotfix",
   "platforms": {
     "windows": {
-      "status": "PASS_RELEASE_READY_WINDOWS_1_3_1_POST_REBASE",
-      "artifact": "delivery/DirectInternetMethod_1.3.1_Windows_Setup.exe",
-      "bytes": 157096702,
-      "sha256": "4F70C372E6B8CE7152D9501E5C4A70F4B2F650638CFDD3014B18EB6E3C123093",
-      "guiSha256": "8F3A410CCD97D1E0C83BC90E2A079CC76BDA53729FD7954E1152836874A1110E",
-      "serviceSha256": "1A8A235A15602C861B561E3EDD3DE4C3E34A53623C868B047129B461742829E6",
-      "manifestSha256": "B0A1B32844262EF38ACE6B9ED2FAC01AA3EF9E7C92347316AFE401FC2ADA1207",
+      "status": "PASS_RELEASE_READY_WINDOWS_1_3_2",
+      "artifact": "delivery/DirectInternetMethod_1.3.2_Windows_Setup.exe",
+      "bytes": 157107271,
+      "sha256": "B5141A93BDF2C261F54F4C0483128D973A54DEFBCD45C6C701535037B31E6E58",
+      "guiSha256": "F9FDE9A0A75754EFC6B2573571373E2AB1CD3C3EED6470CD6947D4AD300C5BBD",
+      "serviceSha256": "CF2D1FBF3ACB24613CE317B31F3B70A9ADA8C01EC39989A90811F49543D06D5D",
+      "manifestSha256": "36A310F48929ACC8AD9A5695AA075F1ECCDE591DB43FA66084D7ABBC521FD7A8",
       "manifestFiles": 678,
       "authenticode": "NotSigned",
       "startupGeometry": "1289x632 DIP",
-      "dynamicUi": "PASS_1289x632_NO_OVERLAP",
-      "reducedUi": "PASS_1000x632_NO_OVERLAP",
-      "physicalRefreshInput": "PASS_MOUSE_KEYBOARD",
-      "routerGatewayOpen": "PASS_PHYSICAL_MOUSE"
+      "startupLayout": "PASS_NO_OVERLAP",
+      "routerGridRuntime": "PASS_9_ROWS_7_COLUMNS_9_DATAITEMS",
+      "routerGridReadableDarkRows": "PASS"
     },
     "linux": {
-      "status": "PASS_RELEASE_READY_LINUX_1_3_1_POST_REBASE",
-      "artifact": "delivery/DirectInternetMethod_1.3.1_Linux_x86_64.zip",
-      "bytes": 8158158,
-      "sha256": "B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34",
-      "networkBackendChangedFrom130": false,
+      "status": "PASS_RELEASE_READY_LINUX_1_3_2",
+      "artifact": "delivery/DirectInternetMethod_1.3.2_Linux_x86_64.zip",
+      "bytes": 8158337,
+      "sha256": "8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D",
+      "networkBackendChangedFrom131": false,
       "protectedBackendCompatibility": "1.2.1",
-      "crossHostDeterministic": "PASS_EXACT_SHA_MATCH",
-      "crossHostEvidence": "evidence/LINUX_131_POST_REBASE_CROSS_HOST_ACCEPTANCE_20261001.json"
+      "contractAudit": "PASS",
+      "runtimeSmoke": "PASS",
+      "crossHostDeterministic": "PASS_EXACT_SHA_MATCH"
     }
   },
   "checksums": {
     "artifact": "delivery/SHA256SUMS.txt",
-    "sha256": "AED6215219CAEC8AA2D3E5FD78D79BEFA9ECBF0F8ABAF6CC38D13823C09EFA28"
+    "sha256": "216A6267F056910E85FF996F5E780B9F5D93F3C71E0B8D4F3B6619376E150745"
   },
   "routerGateway": {
-    "version": "1.3.1",
+    "version": "1.3.2",
     "dataRevision": 2,
     "profileCount": 9,
     "providerCount": 3,
@@ -61,40 +61,29 @@
     "preferred": "L2TP/IPsec",
     "legacyFallback": "PPTP",
     "autoRouterMutation": false,
-    "privateDnsFailClosed": true
+    "privateDnsFailClosed": true,
+    "rootCause": "v1.3.0/v1.3.1 loaded all profiles but unselected WPF DataGrid rows inherited a white background while text foreground was white; only selected blue row was visibly populated.",
+    "fix": "Explicit dark row/alternating-row/cell/header styles plus regression contract."
   },
   "acceptance": {
-    "rebaseOntoLatestOriginMain": "PASS_BASE_8D5FB14",
+    "inheritedV131StartupLayout": "PASS",
     "windowsContract": "PASS",
     "linuxContract": "PASS",
-    "routerGatewayContract": "PASS_INCLUDES_PILOVALI",
-    "windowsFinalUiAutomation": "PASS",
+    "routerGatewayContract": "PASS",
+    "routerGatewayReadableDarkRowsContract": "PASS",
+    "routerGatewayRuntimeGrid": "PASS_9_ROWS",
+    "windowsPayload": "PASS",
     "windowsInstaller": "PASS",
-    "linuxLocalDeterministicBuild": "PASS",
+    "linuxCrossHostDeterministic": "PASS_EXACT_SHA_MATCH",
+    "releaseMetadataAudit": "PENDING_FINAL_SOURCE_GATE",
     "publication": "PENDING",
-    "linuxPostRebaseCrossHost": "PASS_EXACT_SHA_MATCH",
-    "protectedCiPrMerge": "PENDING",
-    "windowsInstalledPublicUpdate": "PENDING"
-  },
-  "superseded": {
-    "preRebaseWindowsInstallerSha256": "E805F7F10890AD5954750639C8BE10B52D74723900BABB6BC8115AB4FA39CAA0",
-    "preRebaseLinuxSha256": [
-      "4AB0D082A43F524A7F6C60D69F243BE81CE5ADCC3B211010F50D0141B86BED5C",
-      "A2B74521A3BDEC2A3B88076D616B865782E5D171E9EAA90B9E29649A064AF3D6"
-    ],
-    "reason": "Protected main advanced with provider catalog revision 2 and GitHub hardening; v1.3.1 branch was rebased and release artifacts were rebuilt."
+    "installedWindowsPublicUpdate": "PENDING",
+    "installedLinuxUpdate": "PENDING"
   },
   "validationBoundary": {
     "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
     "authenticode": "NOT_SIGNED",
     "license": "OWNER_LEGAL_DECISION_OPEN"
   },
-  "evidence": {
-    "windowsUi": "evidence/WINDOWS_131_UI_LAYOUT_ROOT_CAUSE_ACCEPTANCE_20261001.json",
-    "windowsPayload": "evidence/WINDOWS_131_PAYLOAD_BUILD_20261001.json",
-    "windowsInstaller": "evidence/WINDOWS_131_INSTALLER_BUILD_20261001.json",
-    "releaseReady": "evidence/DIM_131_RELEASE_READY_ACCEPTANCE_20261001.json",
-    "linuxPostRebaseCrossHost": "evidence/LINUX_131_POST_REBASE_CROSS_HOST_ACCEPTANCE_20261001.json"
-  },
-  "exactNextAction": "Push the cross-host closure commit, require PR #7 linux-source/windows-source success and protected merge, then publish/verify immutable v1.3.1 assets and installed Windows public update."
+  "exactNextAction": "Run final source/release metadata gates, publish via protected main/tag v1.3.2, public-redownload/hash verify exact assets, then update installed Windows and Linux and verify 9 visible Router Gateway rows."
 }
