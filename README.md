@@ -2,46 +2,61 @@
 
 **زن زندگی آزادی**
 
-Standalone connectivity application for Windows and Linux. It is independent of FreeNetHub and does not require ChatGPT for normal use.
+Standalone direct-connect application for Windows and Linux. It is independent of FreeNetHub and does not require ChatGPT for normal use.
 
-## Direct Method
-The original Direct Method remains a direct DNS + DPI-bypass path. It does **not** create a VPN, HTTP/SOCKS proxy, or default-route tunnel.
+## Direct Method — v1.4.0
 
-## Router Gateway — v1.3.2
-v1.3.2 retains the non-privileged Router Gateway panel and provider-catalog revision 2, and fixes the Windows table visibility defect from v1.3.0/v1.3.1.
+v1.4.0 expands the direct path without creating a VPN, HTTP/SOCKS proxy, or default-route tunnel.
+
+The engine is intentionally bounded to the existing host list and uses four direct method families:
+
+- **Encrypted DNS (DoH):** ctrld uses the proven direct-IP Control D DoH path and explicitly disables OS-resolver leakage if the encrypted upstream fails.
+- **HTTP/80 Host split:** hostlist-scoped TCP/80 DPI desynchronization using fake + multisplit around the HTTP method.
+- **TLS/SNI desync:** hostlist-scoped TCP/443 fake + multidisorder with SNI-oriented split markers.
+- **QUIC desync:** hostlist-scoped UDP/443 QUIC fake packets instead of globally blocking UDP/443.
+
+The app still does **not** change the physical adapter DNS, create broad /1 or default routes, or configure a WinHTTP proxy. Start/Stop/Recovery own only the resources created by Direct Internet Method and retain exact rollback guards.
+
+Deliberately not enabled by default: broad IP fragmentation, permanent small TCP window tricks, global all-domain interception, or a second DPI-bypass runtime. These add compatibility/performance risk without evidence that they improve the current bounded engine.
+
+## Router Gateway
+
+Router Gateway remains a separate non-privileged configuration panel for compatible modems/routers.
 
 - L2TP/IPsec profiles are preferred.
 - PPTP is available only as a legacy compatibility fallback.
 - Copy-ready Server/IP, Username, Password and IPsec PSK fields.
-- Bundled offline snapshot so the panel still works when provider websites are blocked.
-- Refresh from the project manifest, plus best-effort refresh of rotating credentials.
-- Numeric VPN Gate IPs are supplied where available to reduce DDNS-filtering dependency.
-- Endpoint health tests do not change routes or VPN state.
-- Public endpoints resolving to private/loopback/link-local addresses are rejected as possible DNS interception.
-- Router guides included for Generic VPN Client, TP-Link, ASUS and MikroTik.
-- Provider catalog revision 2 includes 9 ready profiles from 3 independent providers: VPN Gate, VPNBook and Pilovali.
-- Unselected Router Gateway rows use explicit dark backgrounds, dark headers and readable foreground text; all loaded profiles remain visible.
-- Additional independently researched providers (HideSSH, VPN Jantit, TCPVPN) require per-user account generation and are intentionally not represented as fake ready credentials.
-- The app does not blindly log into or reconfigure the router; exact VPN Client support depends on router model and firmware.
+- Bundled offline snapshot and best-effort online refresh.
+- Numeric VPN Gate IPs where available.
+- Endpoint tests do not change routes or VPN state.
+- Private/loopback/link-local DNS results are rejected as possible interception.
+- Guides for Generic VPN Client, TP-Link, ASUS and MikroTik.
+- Provider catalog revision 2: 9 ready profiles from VPN Gate, VPNBook and Pilovali.
+- Router support and authenticated tunnel success remain model/firmware-dependent.
 
-## Windows 1.3.2
-- Native WPF application + fixed-command privileged Windows service.
-- Bundled protected PowerShell 7.6.6; no external PowerShell dependency.
-- Normal Start / Stop / Recovery and Router Gateway use without administrator prompt after installation.
-- Owned demand-start ctrld service + DoH + Loopback ULA + NRPT.
-- zapret/winws + WinDivert for hostlist-scoped TCP/443 DPI handling.
-- Direct in-app update through the installed privileged service with release digest + SHA256SUMS + downloaded-file SHA-256 verification.
+## Windows 1.4.0
+
+- Native WPF application; preferred startup geometry remains 1289 × 632 DIP with responsive footer.
+- Fixed-command privileged Windows service; normal Start/Stop/Recovery do not prompt for administrator rights after install.
+- Bundled protected PowerShell 7.6.6.
+- Owned ctrld service + leak-closed direct-IP DoH + loopback ULA + NRPT.
+- zapret/winws + WinDivert for bounded TCP/80, TCP/443 and UDP/443 direct DPI handling.
+- Service-mediated in-app update with GitHub release digest + SHA256SUMS + downloaded-file SHA-256 verification.
 - Installer is not Authenticode-signed.
 
-## Linux 1.3.2
-- Dedicated temporary DNS link + ctrld/DoH + systemd-resolved + nftables/NFQUEUE + zapret nfqws.
-- GTK/Adwaita application with Router Gateway integrated into the same UI.
-- Existing protected 1.2.1-compatible backend is reused because Router Gateway is user-space only; upgrading this feature does not require needless backend replacement.
-- Start / Stop / Refresh / Recovery and Router Gateway do not require admin during normal use.
+## Linux 1.4.0
+
+- Dedicated temporary DNS link + leak-closed ctrld DoH + systemd-resolved.
+- Owned nftables table queues only host traffic classes needed by nfqws: TCP/80, TCP/443 and UDP/443.
+- zapret/nfqws multi-profile direct engine for HTTP, TLS/SNI and QUIC.
+- Protected backend is versioned 1.4.0 because the privileged packet-interception rules changed.
+- GTK/Adwaita UI with Router Gateway integrated.
+- After the one-time protected-backend upgrade, normal Start/Stop/Recovery remain non-interactive.
 
 ## Release artifacts
-- `DirectInternetMethod_1.3.2_Windows_Setup.exe`
-- `DirectInternetMethod_1.3.2_Linux_x86_64.zip`
+
+- `DirectInternetMethod_1.4.0_Windows_Setup.exe`
+- `DirectInternetMethod_1.4.0_Linux_x86_64.zip`
 - `SHA256SUMS.txt`
 
 Acceptance and provenance evidence are stored under `evidence/`.

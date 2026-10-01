@@ -5,6 +5,7 @@ cache_size = 4096
 cache_serve_stale = true
 dns_watchdog_enabled = false
 intercept_mode = "off"
+leak_on_upstream_failure = false
 
 [network.0]
 cidrs = ["0.0.0.0/0"]

@@ -1,0 +1,174 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.4.0",
+  "context": "Method selection for additional direct connectivity that is neither VPN nor application proxy.",
+  "records": [
+    {
+      "claim": "zapret supports separate multi-strategy profiles with --new, protocol/port filters, hostlists, and direct desync methods for HTTP/TLS/QUIC.",
+      "type": "FACT",
+      "status": "CONFIRMED_OFFICIAL",
+      "evidence": "https://github.com/bol-van/zapret/blob/master/docs/readme.en.md",
+      "reuseTargets": [
+        "architecture",
+        "release notes",
+        "technical guide"
+      ]
+    },
+    {
+      "claim": "Official zapret guidance favors intercepting the minimum required traffic; hostlist scoping is therefore retained.",
+      "type": "DECISION",
+      "status": "ACCEPTED",
+      "evidence": "Official zapret readme and quick-start; existing project hostlist model.",
+      "reuseTargets": [
+        "architecture",
+        "risk controls"
+      ]
+    },
+    {
+      "claim": "Use four direct families in v1.4.0: IP-bootstrapped DoH, HTTP/80 host split, TLS/SNI TCP/443 desync, QUIC UDP/443 desync.",
+      "type": "DECISION",
+      "status": "ACCEPTED",
+      "evidence": "Existing pinned ctrld/zapret capabilities + Linux nfqws --dry-run PASS for the three packet profiles.",
+      "reuseTargets": [
+        "product",
+        "README",
+        "release notes"
+      ]
+    },
+    {
+      "claim": "Do not enable IP fragmentation by default.",
+      "type": "DECISION",
+      "status": "ACCEPTED",
+      "evidence": "Official zapret docs state modern networks are hostile to fragmentation; TCP fragments are almost always filtered and UDP fragment survival is not universal.",
+      "source": "https://github.com/bol-van/zapret/blob/master/docs/readme.en.md",
+      "reuseTargets": [
+        "limitations",
+        "architecture rationale"
+      ]
+    },
+    {
+      "claim": "Do not enable wssize/window tricks by default.",
+      "type": "DECISION",
+      "status": "ACCEPTED",
+      "evidence": "Official zapret docs warn wssize may slow sites/increase response time and recommend other working methods when possible.",
+      "source": "https://github.com/bol-van/zapret/blob/master/docs/readme.en.md",
+      "reuseTargets": [
+        "limitations",
+        "architecture rationale"
+      ]
+    },
+    {
+      "claim": "Keep current IP-bootstrapped DoH rather than adding DoH3/DoQ/DoT solely for feature count.",
+      "type": "DECISION_HISTORY",
+      "status": "SUPERSEDED_BY_SECURE_FAILOVER_HARDENING",
+      "evidence": "ctrld officially supports doh/doh3/dot/doq/legacy, while the current DoH path already has project live evidence; no evidence currently justifies added fallback complexity.",
+      "source": "https://github.com/Control-D-Inc/ctrld/blob/main/docs/config.md",
+      "reuseTargets": [
+        "architecture",
+        "future roadmap"
+      ],
+      "supersededReason": "Official ctrld docs show desktop leak_on_upstream_failure defaults true and ordered encrypted upstream retry is supported; the user explicitly requested additional non-VPN/non-proxy methods."
+    },
+    {
+      "claim": "Do not add a second DPI-bypass binary such as GoodbyeDPI; existing pinned zapret covers the required direct techniques.",
+      "type": "DECISION",
+      "status": "ACCEPTED",
+      "evidence": "Method overlap + lower dependency/driver complexity.",
+      "reuseTargets": [
+        "dependency rationale"
+      ]
+    },
+    {
+      "claim": "Linux nfqws v72.13 accepted the proposed TCP80/TCP443/UDP443 multi-profile command with --dry-run and the current six-host list.",
+      "type": "FACT",
+      "status": "CONFIRMED_REPRODUCIBLE",
+      "evidence": "aliemad-Labtop command-line dry-run, exit 0; 3 user-defined profiles; 6 hosts loaded.",
+      "reuseTargets": [
+        "V&V"
+      ]
+    },
+    {
+      "claim": "Windows pinned winws binary contains all required multiprotocol option strings; execution of winws itself requires elevation on this host.",
+      "type": "FACT",
+      "status": "CONFIRMED_STATIC_LIMITED_RUNTIME",
+      "evidence": "binary option-string audit on Emad-PC-Ultimate; non-elevated --dry-run blocked by executable elevation requirement.",
+      "reuseTargets": [
+        "V&V",
+        "validation boundary"
+      ]
+    },
+    {
+      "claim": "DoH3, DoQ and DoT were evaluated as additional encrypted-DNS transports but are not enabled in v1.4.0 because isolated current-network tests did not resolve successfully; established direct-IP DoH remained successful.",
+      "type": "FACT_DECISION",
+      "status": "CONFIRMED_TESTED_NOT_ENABLED",
+      "evidence": "aliemad-Labtop isolated ctrld v1.5.7 tests: DoH to 76.76.10.11/p0 PASS; DoH3, DoQ, DoT returned no DNS answer; alternate direct-IP DoH 76.76.2.11 also returned no answer. Official ctrld docs confirm all transports are supported by software, so the limitation is environmental/evidence-based rather than parser capability.",
+      "sources": [
+        "https://github.com/Control-D-Inc/ctrld/blob/main/docs/config.md",
+        "https://docs.controld.com/docs/free-dns",
+        "https://docs.controld.com/docs/control-d-ip-ranges"
+      ],
+      "reuseTargets": [
+        "architecture",
+        "V&V",
+        "limitations",
+        "future roadmap"
+      ]
+    },
+    {
+      "claim": "ECH is not implemented as a Direct Internet Method toggle because it is browser/server negotiated; Firefox enables it by default where supported and it relies on encrypted DNS HTTPS records.",
+      "type": "DECISION",
+      "status": "ACCEPTED_NO_PRODUCT_MUTATION",
+      "evidence": "Mozilla ECH documentation and Cloudflare ECH documentation.",
+      "sources": [
+        "https://support.mozilla.org/en-US/kb/faq-encrypted-client-hello",
+        "https://developers.cloudflare.com/ssl/edge-certificates/ech/"
+      ],
+      "reuseTargets": [
+        "limitations",
+        "future guide"
+      ]
+    },
+    {
+      "claim": "Alternative ctrld secure DNS transports were live-tested non-disruptively on aliemad-Labtop before inclusion: current-network results were DoH PASS, DoH3 FAIL timeout, DoQ FAIL, DoT FAIL.",
+      "type": "FACT",
+      "status": "CONFIRMED_LIVE_CURRENT_NETWORK",
+      "evidence": "Ephemeral ctrld listeners on high local ports with dig queries to www.youtube.com; no system DNS mutation.",
+      "reuseTargets": [
+        "method choice",
+        "regression",
+        "release notes"
+      ]
+    },
+    {
+      "claim": "DoH3/DoQ/DoT fallback is not enabled in v1.4.0 because three alternatives failed on the current network while direct IP-bootstrapped DoH passed; adding them would increase timeout/failover latency without demonstrated availability.",
+      "type": "DECISION",
+      "status": "ACCEPTED_EVIDENCE_BACKED",
+      "evidence": "Current-network transport matrix plus official ctrld support documentation.",
+      "source": "https://github.com/Control-D-Inc/ctrld/blob/main/docs/config.md",
+      "reuseTargets": [
+        "architecture rationale",
+        "future roadmap"
+      ]
+    },
+    {
+      "claim": "v1.4.0 sets ctrld leak_on_upstream_failure=false so encrypted-DNS upstream failure does not silently fall back to the physical OS resolver.",
+      "type": "DECISION",
+      "status": "ACCEPTED_IMPLEMENTED",
+      "evidence": "Official ctrld config docs state leak_on_upstream_failure defaults true on Windows, macOS and non-router Linux; project goal requires direct encrypted DNS rather than filtered physical DNS fallback.",
+      "source": "https://github.com/Control-D-Inc/ctrld/blob/main/docs/config.md",
+      "reuseTargets": [
+        "security rationale",
+        "architecture",
+        "regression contracts"
+      ]
+    }
+  ],
+  "exactNextAction": "Rebuild Windows manifest/payload and Linux archive, pass source/build gates, then live-validate the exact v1.4.0 Linux protected backend Start/Stop/Recovery before publication.",
+  "concurrentMutation": {
+    "observed": "Uncommitted windows/bin/ctrld/ctrld.toml mutation attempted DoH→DoH3→DoQ→DoT failover and leak_on_upstream_failure=false.",
+    "disposition": "REJECT_AND_RESTORE_BASELINE",
+    "rationale": "Mutation appeared after the v1.4 Windows artifact build, was not part of the controlled change set, and live transport testing did not support DoH3/DoQ/DoT availability on the current network. Baseline direct-IP DoH remains authoritative."
+  }
+}

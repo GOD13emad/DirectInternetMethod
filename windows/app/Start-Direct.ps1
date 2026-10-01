@@ -23,10 +23,11 @@ if(-not $LoopbackRoute){throw 'LOOPBACK_INTERFACE_MISSING'}
 $LoopbackIndex=[int]$LoopbackRoute.InterfaceIndex
 $NrptDisplay='DirectDnsDpiHarness'
 $NrptComment='Owned by DirectDnsDpiHarness; safe to remove only by this harness.'
+$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443')
 
 $Expected=@{
  'ctrld.exe'='FC966FD7DD5EE850A9709F632789CFB5BBC06C45D903D24B8ECFCE3306B658CD'
- 'ctrld.toml'='2E1AF2EF934367465B15284DE93016B839849D717F9A8DC4AC18858FC123EAE2'
+ 'ctrld.toml'='B056AD8A51078208AED39744D48C4F4369AE5BA1E76F7D6F84B027C34CE1314B'
  'winws.exe'='A14BFF1DF6234EA555D2E0C61B589F0707C0B12D6C9B7EECCDA76012154996E8'
  'WinDivert.dll'='C1E060EE19444A259B2162F8AF0F3FE8C4428A1C6F694DCE20DE194AC8D7D9A2'
  'WinDivert64.sys'='8DA085332782708D8767BCACE5327A6EC7283C17CFB85E40B03CD2323A90DDC2'
@@ -266,13 +267,13 @@ $pre=[ordered]@{
 }
 if($pre.ulaExists){throw 'ULA_PREEXISTS'}
 $state=[ordered]@{
- schema=3;phase='PREPARED';architecture='LOOPBACK_ULA_CTRLD_DOH_NRPT_PLUS_ZAPRET'
+ schema=4;phase='PREPARED';architecture='LOOPBACK_ULA_CTRLD_DOH_NRPT_PLUS_ZAPRET_MULTIPROTOCOL'
  root=$Root;interface=$route.Alias;localIp=$route.LocalIp;prepared=(Get-Date).ToString('o')
- pre=$pre;ulaAddress=$Ula;ulaCreated=$false;nrptRuleName='';ctrldPid=0;ctrldServiceName=$CtrldServiceName;winwsPid=0;runtimeConfig=$RuntimeConfig
+ pre=$pre;directMethods=$DirectMethods;ulaAddress=$Ula;ulaCreated=$false;nrptRuleName='';ctrldPid=0;ctrldServiceName=$CtrldServiceName;winwsPid=0;runtimeConfig=$RuntimeConfig
 }
 Write-JsonAtomic $StatePath $state
 
-$ev=[ordered]@{schema=3;status='FAIL';architecture=$state.architecture;pre=$pre;dnsStage=$null;live=$null;error=''}
+$ev=[ordered]@{schema=4;status='FAIL';architecture=$state.architecture;directMethods=$DirectMethods;pre=$pre;dnsStage=$null;live=$null;error=''}
 try{
  New-Item -ItemType Directory -Force -Path $RuntimeCtrld|Out-Null
  $cfg=Get-Content -LiteralPath $CtrldTemplate -Raw -Encoding UTF8
@@ -333,13 +334,24 @@ try{
  }
 
  $args=@(
-  '--wf-l3=ipv4','--wf-tcp=443',
+  '--wf-l3=ipv4','--wf-tcp=80,443','--wf-udp=443',
+  '--filter-l3=ipv4','--filter-tcp=80',
+  ('--hostlist='+$HostList),
+  '--dpi-desync=fake,multisplit',
+  '--dpi-desync-split-pos=method+2',
+  '--dpi-desync-fooling=md5sig',
+  '--new',
   '--filter-l3=ipv4','--filter-tcp=443',
   ('--hostlist='+$HostList),
   '--ipset-exclude-ip=76.76.10.11',
   '--dpi-desync=fake,multidisorder',
   '--dpi-desync-split-pos=1,midsld',
-  '--dpi-desync-fooling=badseq,md5sig'
+  '--dpi-desync-fooling=badseq,md5sig',
+  '--new',
+  '--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic',
+  ('--hostlist='+$HostList),
+  '--dpi-desync=fake',
+  '--dpi-desync-repeats=6'
  )
  $wp=Start-ExactProcess $Winws $args $ZapretDir
  $state.winwsPid=$wp.Id
@@ -348,6 +360,7 @@ try{
  if($wp.HasExited){throw ('WINWS_EXIT_'+$wp.ExitCode)}
 
  $dy=Dns-Probe 'www.youtube.com'
+ $yh=Curl-Probe 'http://www.youtube.com/' $route.LocalIp 7
  $yt=Curl-Probe 'https://www.youtube.com/generate_204' $route.LocalIp 8
  $oa=Curl-Probe 'https://api.openai.com/v1/models' $route.LocalIp 7
  $gh=Curl-Probe 'https://github.com/' $route.LocalIp 7
@@ -355,6 +368,7 @@ try{
  $proxy=(netsh winhttp show proxy|Out-String).Trim()
  $icsLive=Get-Ics
  if(-not $dy.ok){throw 'YOUTUBE_DNS_NOT_CLEAN'}
+ if($yh.exit -ne 0 -or $yh.meta -notmatch '^(200|301|302|303|307|308)\|'){throw 'YOUTUBE_HTTP80_FAIL'}
  if($yt.exit -ne 0 -or $yt.meta -notmatch '^(200|204)\|'){throw 'YOUTUBE_HTTPS_FAIL'}
  if($oa.exit -ne 0 -or $oa.meta -notmatch '^(200|401|403)\|'){throw 'OPENAI_HTTPS_FAIL'}
  if($gh.exit -ne 0 -or $gh.meta -notmatch '^(200|301|302)\|'){throw 'GITHUB_HTTPS_FAIL'}
@@ -367,7 +381,7 @@ try{
  Write-JsonAtomic $StatePath $state
  $ev.status='PASS_ACTIVE'
  $ev.live=[ordered]@{
-  ctrldPid=$cpid;winwsPid=$wp.Id;dns=$dy;youtube=$yt;openai=$oa;github=$gh
+  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;youtubeHttp80=$yh;dns=$dy;youtube=$yt;openai=$oa;github=$gh
   ics=$icsLive;proxy=$proxy;broadRouteCount=$routes.Count
   drivers=@(Get-OwnedDrivers|Select-Object Name,State,PathName)
  }

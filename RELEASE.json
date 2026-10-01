@@ -1,101 +1,123 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "date": "2026-10-01",
-  "status": "FINAL_V1_3_2_PUBLISHED_INSTALLED_VERIFIED",
+  "status": "RELEASE_CANDIDATE_V1_4_0_LOCAL_GATES_PASS",
   "previousAccepted": {
-    "version": "1.3.1",
-    "tag": "v1.3.1",
-    "tagCommit": "3b9fa6e7953e7d18068b8a0b574e0282411584ab",
-    "status": "FINAL_PUBLISHED_VERIFIED"
+    "version": "1.3.2",
+    "tag": "v1.3.2",
+    "tagCommit": "a0bf6bbce1932a0f4dd405f0cfbffeeb68ec63e6",
+    "status": "FINAL_PUBLISHED_INSTALLED_VERIFIED"
   },
   "authority": {
-    "baseMain": "3b9fa6e7953e7d18068b8a0b574e0282411584ab",
-    "branch": "hotfix/router-grid-v1.3.2",
-    "note": "Built directly on the immutable v1.3.1 release/main baseline; preserves v1.3.1 startup-layout corrections and provider catalog revision 2.",
-    "releaseTag": "v1.3.2",
-    "tagCommit": "a0bf6bbce1932a0f4dd405f0cfbffeeb68ec63e6",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.3.2",
-    "postReleaseEvidenceOnMain": true
+    "baseMain": "930db926a15d1688f95892905f4352cfebe46c39",
+    "branch": "feature/direct-multiprotocol-v1.4.0"
   },
-  "feature": "Router Gateway DataGrid visibility hotfix",
+  "feature": "Bounded direct multi-protocol engine: encrypted DNS + HTTP/80 split + TLS/SNI TCP/443 desync + QUIC UDP/443 desync; no VPN/proxy/default-route tunnel.",
+  "directEngine": {
+    "methods": [
+      "encrypted-dns-doh",
+      "http-host-split-tcp80",
+      "tls-sni-desync-tcp443",
+      "quic-desync-udp443"
+    ],
+    "hostlistScoped": true,
+    "physicalAdapterDnsMutation": false,
+    "defaultRouteMutation": false,
+    "winHttpProxy": false,
+    "windowsRuntime": "ctrld + zapret/winws + WinDivert",
+    "linuxRuntime": "ctrld + systemd-resolved + nftables/NFQUEUE + zapret/nfqws",
+    "deferredDefaults": [
+      "IP fragmentation",
+      "wssize/window shrinking",
+      "global all-domain desync",
+      "secondary DPI-bypass runtime",
+      "automatic hostlist growth"
+    ],
+    "secureDns": {
+      "transport": "direct-IP DoH",
+      "endpoint": "https://76.76.10.11/p0",
+      "leakOnUpstreamFailure": false,
+      "rejectedUnprovenFallbacks": [
+        "DoH3",
+        "DoQ",
+        "DoT"
+      ]
+    }
+  },
   "platforms": {
     "windows": {
-      "status": "PASS_RELEASE_READY_WINDOWS_1_3_2",
-      "artifact": "delivery/DirectInternetMethod_1.3.2_Windows_Setup.exe",
-      "bytes": 157107271,
-      "sha256": "B5141A93BDF2C261F54F4C0483128D973A54DEFBCD45C6C701535037B31E6E58",
-      "guiSha256": "F9FDE9A0A75754EFC6B2573571373E2AB1CD3C3EED6470CD6947D4AD300C5BBD",
-      "serviceSha256": "CF2D1FBF3ACB24613CE317B31F3B70A9ADA8C01EC39989A90811F49543D06D5D",
-      "manifestSha256": "36A310F48929ACC8AD9A5695AA075F1ECCDE591DB43FA66084D7ABBC521FD7A8",
+      "status": "PASS_LOCAL_RELEASE_READY_PENDING_PUBLICATION",
+      "artifact": "delivery/DirectInternetMethod_1.4.0_Windows_Setup.exe",
+      "bytes": 157103781,
+      "sha256": "69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93",
+      "guiSha256": "BF1E18CE478724EBD1464C03728C1180A2F4DF31CF4B4BB1AACBA5C62A1B354C",
+      "serviceSha256": "770D5D1CAACD51DB1E2AFC5C7991F099FFA1BBA6488D96224725A696762AF130",
+      "manifestSha256": "7FFD3C000E35CA3B7C4344B82B30DF8271BCEA82166DC3431886B3DB0CB716DF",
       "manifestFiles": 678,
       "authenticode": "NotSigned",
       "startupGeometry": "1289x632 DIP",
       "startupLayout": "PASS_NO_OVERLAP",
-      "routerGridRuntime": "PASS_9_ROWS_7_COLUMNS_9_DATAITEMS",
-      "routerGridReadableDarkRows": "PASS"
+      "physicalRefreshInput": "PASS_MOUSE_KEYBOARD",
+      "routerGatewayUi": "PASS_PHYSICAL_OPEN_9_VISIBLE_PROFILES"
     },
     "linux": {
-      "status": "PASS_RELEASE_READY_LINUX_1_3_2",
-      "artifact": "delivery/DirectInternetMethod_1.3.2_Linux_x86_64.zip",
-      "bytes": 8158337,
-      "sha256": "8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D",
-      "networkBackendChangedFrom131": false,
-      "protectedBackendCompatibility": "1.2.1",
+      "status": "PASS_LOCAL_BUILD_PENDING_CROSS_HOST_AND_LIVE_BACKEND",
+      "artifact": "delivery/DirectInternetMethod_1.4.0_Linux_x86_64.zip",
+      "bytes": 8159881,
+      "sha256": "4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E",
+      "protectedBackendVersion": "1.4.0",
       "contractAudit": "PASS",
-      "runtimeSmoke": "PASS",
-      "crossHostDeterministic": "PASS_EXACT_SHA_MATCH"
+      "nfqwsMultiprotocolDryRun": "PASS",
+      "crossHostDeterministic": "PENDING",
+      "liveLifecycle": "PENDING"
     }
   },
   "checksums": {
     "artifact": "delivery/SHA256SUMS.txt",
-    "sha256": "216A6267F056910E85FF996F5E780B9F5D93F3C71E0B8D4F3B6619376E150745"
+    "sha256": "7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609"
   },
   "routerGateway": {
-    "version": "1.3.2",
+    "version": "1.4.0",
     "dataRevision": 2,
     "profileCount": 9,
     "providerCount": 3,
-    "providers": [
-      "VPN Gate",
-      "VPNBook",
-      "Pilovali"
-    ],
-    "preferred": "L2TP/IPsec",
-    "legacyFallback": "PPTP",
-    "autoRouterMutation": false,
-    "privateDnsFailClosed": true,
-    "rootCause": "v1.3.0/v1.3.1 loaded all profiles but unselected WPF DataGrid rows inherited a white background while text foreground was white; only selected blue row was visibly populated.",
-    "fix": "Explicit dark row/alternating-row/cell/header styles plus regression contract."
+    "behaviorChanged": false
   },
   "acceptance": {
-    "inheritedV131StartupLayout": "PASS",
+    "methodResearch": "PASS_EVIDENCE_FIRST",
     "windowsContract": "PASS",
     "linuxContract": "PASS",
     "routerGatewayContract": "PASS",
-    "routerGatewayReadableDarkRowsContract": "PASS",
-    "routerGatewayRuntimeGrid": "PASS_9_ROWS",
+    "powershellSyntax": "PASS",
+    "bashSyntax": "PASS_SOURCE_LEVEL",
+    "pythonSyntax": "PASS",
     "windowsPayload": "PASS",
     "windowsInstaller": "PASS",
-    "linuxCrossHostDeterministic": "PASS_EXACT_SHA_MATCH",
-    "releaseMetadataAudit": "PASS",
-    "publication": "PASS_PUBLIC_REDOWLOAD_VERIFIED",
-    "installedWindowsPublicUpdate": "PASS_1_3_2_GUI_MANIFEST_AND_SHORTCUTS",
-    "installedLinuxUpdate": "PASS_1_3_2_PUBLIC_ZIP_FILE_MATCH",
-    "runtimeVisibleProfiles": "PASS_9_ROWS_3_PROVIDERS"
+    "windowsStartupUi": "PASS_1289x632_NO_OVERLAP",
+    "linuxCrossHost": "PENDING",
+    "linuxLiveLifecycle": "PENDING",
+    "protectedCi": "PENDING",
+    "publication": "PENDING",
+    "installedHosts": "PENDING",
+    "secureDnsNoOsLeak": "PASS_CONTRACT_AND_DOH_LIVE",
+    "windowsRouterGatewayUi": "PASS_9_VISIBLE_PROFILES"
   },
   "validationBoundary": {
+    "windowsLiveNetwork": "DEFERRED_TO_AVOID_DISRUPTING_ACTIVE_WINDOWS_HOST; Linux is the live-network validation platform for changed v1.4 packet rules.",
+    "quicHttp3ApplicationE2E": "UNPROVEN_HOST_CURL_LACKS_HTTP3",
     "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
     "authenticode": "NOT_SIGNED",
-    "license": "OWNER_LEGAL_DECISION_OPEN"
+    "license": "OWNER_LEGAL_DECISION_OPEN",
+    "secureDnsAlternates": "DoH3/DoQ/DoT software support confirmed but current-network isolated DNS resolution failed; not enabled."
   },
-  "exactNextAction": "Maintenance only; no v1.3.2 release or installed-host gate remains.",
-  "publication": {
-    "publishedAt": "2026-10-01T07:28:27Z",
-    "featureCiRun": 36830135728,
-    "mainCiRun": 36830270391,
-    "tagCiRun": 36830398621,
-    "publicAssetHashVerification": "PASS_ALL"
-  }
+  "evidence": {
+    "methodSelection": "evidence/DIM_140_DIRECT_METHOD_SELECTION_20261001.json",
+    "localCandidate": "evidence/DIM_140_LOCAL_RELEASE_CANDIDATE_20261001.json",
+    "windowsPayload": "evidence/WINDOWS_140_PAYLOAD_BUILD_20261001.json",
+    "windowsInstaller": "evidence/WINDOWS_140_INSTALLER_BUILD_20261001.json",
+    "secureDnsAudit": "evidence/DIM_140_SECURE_DNS_TRANSPORT_AUDIT_20261001.json"
+  },
+  "exactNextAction": "Commit and push this exact candidate, reproduce the Linux archive from a fresh aliemad-Labtop clone, then upgrade the protected Linux backend to 1.4.0 and run Start→ACTIVE→Stop→Recovery clean lifecycle validation before protected CI/PR/publication."
 }

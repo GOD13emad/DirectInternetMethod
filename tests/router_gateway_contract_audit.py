@@ -10,7 +10,7 @@ m=json.loads((R/"router_gateway/providers.json").read_text(encoding="utf-8"))
 profiles=m.get("profiles",[])
 l2=[p for p in profiles if p.get("protocol")=="L2TP/IPsec"]
 pptp=[p for p in profiles if p.get("protocol")=="PPTP"]
-check("schema",m.get("schema")==1 and m.get("version")=="1.3.2")
+check("schema",m.get("schema")==1 and m.get("version")=="1.4.0")
 check("l2tp_present",len(l2)>=3)
 check("l2tp_credentials_complete",all(p.get("username") and p.get("password") and p.get("preSharedKey") for p in l2))
 vpngate=[p for p in l2 if p.get("provider")=="VPN Gate"]
