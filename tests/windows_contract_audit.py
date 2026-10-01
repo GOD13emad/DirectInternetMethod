@@ -43,6 +43,9 @@ check("ui_uses_service_client", 'ServiceClient.Send(action)' in gui)
 check("ui_waits_service_completion", "WaitForActionAsync" in gui and "action-status.json" in gui)
 check("ui_blocked_state", '"BLOCKED"' in gui and "Disconnect external VPN/tunnel to Start" in gui)
 check("ui_vector_hero", "<Viewbox" in xaml and "زن زندگی آزادی" in xaml)
+check("ui_preferred_startup_size_1289x632", 'Width="1289"' in xaml and 'Height="632"' in xaml and 'SizeToContent="Manual"' in xaml)
+check("ui_layout_rounding", 'UseLayoutRounding="True"' in xaml and 'SnapsToDevicePixels="True"' in xaml)
+check("ui_footer_responsive_no_stack_overflow", '<WrapPanel Orientation="Horizontal">' in xaml and 'TextWrapping="Wrap"' in xaml and '<ColumnDefinition Width="360"/>' in xaml)
 check("ui_direct_update_service_handoff", 'ServiceClient.Send("update")' in gui and 'ServiceClient.Send("recovery")' in gui and '"handoff"' in gui and "300000" in gui and "DownloadVerifiedAsync" not in gui and "LaunchInstaller" not in gui)
 check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "digest" in updater and "SHA256SUMS.txt" in updater and "DownloadVerifiedAsync" not in updater and "Process.Start" not in updater)
 
@@ -76,7 +79,7 @@ check("installer_bundled_pwsh", '..\\vendor\\pwsh\\*' in iss and 'Privileged\\ru
 check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Recovery did not complete" in iss)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.3.0")
+check("manifest_version", manifest.get("version")=="1.3.1")
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)

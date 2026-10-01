@@ -23,7 +23,7 @@ v1.3.0 adds a separate, non-privileged Router Gateway panel for configuring comp
 - Additional independently researched providers (HideSSH, VPN Jantit, TCPVPN) require per-user account generation and are intentionally not represented as fake ready credentials.
 - The app does not blindly log into or reconfigure the router; exact VPN Client support depends on router model and firmware.
 
-## Windows 1.3.0
+## Windows 1.3.1
 - Native WPF application + fixed-command privileged Windows service.
 - Bundled protected PowerShell 7.6.6; no external PowerShell dependency.
 - Normal Start / Stop / Recovery and Router Gateway use without administrator prompt after installation.
@@ -32,15 +32,15 @@ v1.3.0 adds a separate, non-privileged Router Gateway panel for configuring comp
 - Direct in-app update through the installed privileged service with release digest + SHA256SUMS + downloaded-file SHA-256 verification.
 - Installer is not Authenticode-signed.
 
-## Linux 1.3.0
+## Linux 1.3.1
 - Dedicated temporary DNS link + ctrld/DoH + systemd-resolved + nftables/NFQUEUE + zapret nfqws.
 - GTK/Adwaita application with Router Gateway integrated into the same UI.
 - Existing protected 1.2.1-compatible backend is reused because Router Gateway is user-space only; upgrading this feature does not require needless backend replacement.
 - Start / Stop / Refresh / Recovery and Router Gateway do not require admin during normal use.
 
 ## Release artifacts
-- `DirectInternetMethod_1.3.0_Windows_Setup.exe`
-- `DirectInternetMethod_1.3.0_Linux_x86_64.zip`
+- `DirectInternetMethod_1.3.1_Windows_Setup.exe`
+- `DirectInternetMethod_1.3.1_Linux_x86_64.zip`
 - `SHA256SUMS.txt`
 
 Acceptance and provenance evidence are stored under `evidence/`.

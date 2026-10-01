@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.3.1",
+  "status": "PASS_WINDOWS_1_3_1_PAYLOAD",
+  "payload": {
+    "gui": {
+      "bytes": 161807432,
+      "sha256": "8F3A410CCD97D1E0C83BC90E2A079CC76BDA53729FD7954E1152836874A1110E"
+    },
+    "service": {
+      "bytes": 67588813,
+      "sha256": "1A8A235A15602C861B561E3EDD3DE4C3E34A53623C868B047129B461742829E6"
+    },
+    "manifest": {
+      "bytes": 198017,
+      "sha256": "035546B1D3C1B2DA986F645E611AEE8804C704C798FA3E329AE5957357190E08",
+      "files": 678
+    }
+  },
+  "gates": {
+    "guiPublish": "PASS",
+    "servicePublish": "PASS",
+    "serviceConsoleSelftest": "PASS",
+    "manifestBuild": "PASS",
+    "windowsContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "finalSelfContainedUiGeometry": "PASS_1289x632_96DPI",
+    "finalSelfContainedUiNoOverlap": true,
+    "finalSelfContainedRefreshInput": "PASS_MOUSE_KEYBOARD",
+    "finalSelfContainedRouterGatewayOpen": "PASS_PHYSICAL_MOUSE"
+  },
+  "note": "The initial synchronous payload orchestration call exceeded the transport time limit after publish/self-test/copy. State was reconciled rather than blindly rerun: both payload binaries existed and the script sequence proves the service self-test gate had completed before copy. Manifest and contracts were then run explicitly and passed.",
+  "exactNextAction": "Use this payload in the built v1.3.1 installer and continue release qualification."
+}
