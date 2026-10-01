@@ -1,6 +1,6 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: V1_2_1_RELEASE_READY_GITHUB_AUDIT
+Status: V1_2_1_PUBLISHED_VERIFIED_GITHUB_PROTECTION_PENDING
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
@@ -22,8 +22,8 @@ Completed: Windows v1.2.0 Sandbox E2E direct-update acceptance from restricted u
 Completed: Linux v1.2.0 compatibility/version package; contract audits PASS on Windows/Linux and deterministic cross-host ZIP reproduction PASS.
 Completed: exact Windows v1.2.0 host bootstrap; installed GUI/service/manifest hashes match candidate; control 131 host regression PASS.
 Completed: Windows v1.2.0 host Start/ACTIVE/Stop/exact rollback/Recovery regression PASS.
-← CURRENT: commit release-ready v1.2.1 evidence/metadata → GitHub Actions PASS on exact commit → fast-forward remote main → tag v1.2.1 → tag Actions PASS → publish Windows/Linux/SHA256SUMS → public re-download/Linux bash validation → Windows in-app updater 1.2.0→1.2.1 → main protection.
-Open release gate: GitHub final commit/tag/publication verification.
+← CURRENT: final post-publication evidence commit → exact-commit CI PASS → apply minimal main protection → fast-forward protected main to that already-tested commit.
+Open release gate: GitHub main protection + final governance verification only.
 Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
@@ -138,3 +138,5 @@ Wait for GitHub Actions on the exact release-ready v1.2.1 commit. If PASS, fast-
 - 2026-10-01: v1.2.0 published on GitHub from tag/main release commit `6c30dbf`. Windows/Linux/SHA256SUMS assets redownloaded publicly and matched exact hashes/GitHub digests. Installed Windows v1.2 updater queried public latest v1.2.0 and returned Already up to date/done0 without UAC or network-state mutation. Final host clean-state audit PASS; release promoted to FINAL/PUBLISHED_VERIFIED.
 
 - 2026-10-01: deep GitHub audit found public Linux v1.2.0 release defect: all six packaged shell scripts retained CRLF and failed bash -n. v1.2.0 tag/assets left immutable; patch v1.2.1 created with LF Git policy, package-byte normalization, GitHub Actions, and cross-host deterministic ZIP. Windows network logic unchanged. Concurrent Router Gateway writer was isolated via dedicated worktree. v1.2.1 Windows exact Sandbox identity and Linux source/archive syntax gates PASS; release is READY, not yet published.
+
+- 2026-10-01: v1.2.1 published. Public Linux ZIP SHA-256 CAF93659… passed LF-only + bash -n on aliemad-Labtop. Windows host updated 1.2.0→1.2.1 via public GitHub latest/control 131 without UAC; installed hashes matched release authority; state/pending remained absent. Public redownload of Windows/Linux/SHA256SUMS matched exact hashes. Main protection remains the sole open GitHub gate.

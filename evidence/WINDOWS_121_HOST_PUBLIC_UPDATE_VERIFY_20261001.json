@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_WINDOWS_PUBLIC_UPDATE_1_2_0_TO_1_2_1",
+  "host": "EMAD-PC-ULTIMAT",
+  "before": "1.2.0",
+  "after": "1.2.1",
+  "trigger": "SCM control 131 from normal user",
+  "result": {
+    "phase": "done",
+    "exitCode": 0,
+    "message": "Updated to v1.2.1."
+  },
+  "installed": {
+    "serviceSha256": "B2E7AFC2733B4466C55807C435DD779C6270D6C5F72E85D7B3FBC834FE24D87A",
+    "guiSha256": "D7AFA238E8E7CCD31D7B6C48DDDBA30C7F6E2DECBAF519B7FA111E611DF5BAE3",
+    "manifestSha256": "292D1ABA16DA071CABC696525015981004047F3B8988AAC68A2884B9B9AC1F7B"
+  },
+  "stateExists": false,
+  "pendingExists": false,
+  "uacRequired": false
+}

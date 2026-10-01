@@ -3,10 +3,10 @@
   "product": "Direct Internet Method",
   "version": "1.2.1",
   "date": "2026-10-01",
-  "status": "PASS_RELEASE_READY_V1_2_1",
+  "status": "PASS_PUBLISHED_VERIFIED_V1_2_1_GITHUB_PROTECTION_PENDING",
   "platforms": {
     "windows": {
-      "status": "PASS_RELEASE_READY_WINDOWS_1_2_1",
+      "status": "PASS_PUBLIC_UPDATE_WINDOWS_1_2_1",
       "artifact": "delivery/DirectInternetMethod_1.2.1_Windows_Setup.exe",
       "sha256": "B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA",
       "bytes": 157077755,
@@ -17,10 +17,11 @@
       "contractAudit": "PASS",
       "networkLogicChangedFrom120": false,
       "normalOnlineUpdateRequiresAdmin": false,
-      "authenticode": "NotSigned"
+      "authenticode": "NotSigned",
+      "hostPublicUpdate": "PASS_1_2_0_TO_1_2_1_NO_UAC"
     },
     "linux": {
-      "status": "PASS_RELEASE_READY_LINUX_1_2_1",
+      "status": "PASS_PUBLIC_LINUX_1_2_1",
       "artifact": "delivery/DirectInternetMethod_1.2.1_Linux_x86_64.zip",
       "sha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65",
       "bytes": 8139783,
@@ -29,7 +30,8 @@
       "eol": "LF_ONLY",
       "contractAudit": "PASS",
       "deterministicBuild": "PASS_CROSS_HOST",
-      "networkLogicChanged": false
+      "networkLogicChanged": false,
+      "publicArchiveBashSyntax": "PASS"
     }
   },
   "architecture": {
@@ -52,12 +54,16 @@
   "github": {
     "repo": "GOD13emad/DirectInternetMethod",
     "tag": "v1.2.1",
-    "status": "READY_TO_PUBLISH",
+    "status": "PUBLISHED_VERIFIED_PROTECTION_PENDING",
     "branch": "hotfix/v1.2.1-linux-eol-github-hardening",
     "actionsBaselineCommit": "27940bdaf436dbc6d4c92a070f899b0eff0fce74",
     "actionsBaselineStatus": "PASS",
-    "finalCommitActions": "PENDING",
-    "mainProtection": "PENDING_POST_MERGE"
+    "finalCommitActions": "PASS",
+    "mainProtection": "PENDING_POST_MERGE",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.2.1",
+    "publishedAt": "2026-10-01T01:50:38Z",
+    "tagCommit": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
+    "latest": "v1.2.1"
   },
   "limitations": [
     "Windows installer is not Authenticode-signed.",
@@ -71,7 +77,10 @@
     "linux121": "evidence/LINUX_121_EOL_DETERMINISTIC_ACCEPTANCE_20261001.json",
     "windows121": "evidence/WINDOWS_121_SANDBOX_IDENTITY_ACCEPTANCE_20261001.json",
     "actions121": "evidence/GITHUB_ACTIONS_121_HOTFIX_ACCEPTANCE_20261001.json",
-    "concurrentWriterIsolation": "evidence/GITHUB_AUDIT_CONCURRENT_WRITER_ISOLATION_20261001.json"
+    "concurrentWriterIsolation": "evidence/GITHUB_AUDIT_CONCURRENT_WRITER_ISOLATION_20261001.json",
+    "publication121": "evidence/DIM_121_GITHUB_PUBLICATION_VERIFY_20261001.json",
+    "linuxPublic121": "evidence/LINUX_121_PUBLIC_RELEASE_VERIFY_20261001.json",
+    "windowsPublic121": "evidence/WINDOWS_121_HOST_PUBLIC_UPDATE_VERIFY_20261001.json"
   },
   "hotfix": {
     "reason": "Public v1.2.0 Linux ZIP contains CRLF shell scripts and fails bash -n.",

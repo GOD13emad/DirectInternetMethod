@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_PUBLIC_LINUX_V1_2_1_RUNTIME_ARCHIVE",
+  "release": "v1.2.1",
+  "asset": {
+    "name": "DirectInternetMethod_1.2.1_Linux_x86_64.zip",
+    "sha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65"
+  },
+  "host": "aliemad-Labtop",
+  "checks": {
+    "publicDownload": true,
+    "hashMatch": true,
+    "allShellFilesLfOnly": true,
+    "bashSyntaxAll": true
+  },
+  "regressionAgainst": "evidence/GITHUB_V120_LINUX_EOL_RELEASE_FAILURE_20261001.json",
+  "conclusion": "v1.2.0 CRLF public-release defect is fixed in public v1.2.1 asset."
+}
