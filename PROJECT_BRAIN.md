@@ -1,8 +1,23 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: FINAL_V1_3_0_GITHUB_LINE_BY_LINE_AUDIT_CLOSED__POST_RELEASE_V1_3_1_DEV_ACTIVE
+Status: V1_3_1_UI_HOTFIX_POST_REBASE_RELEASE_CANDIDATE
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
+
+## CURRENT v1.3.1 UI hotfix / provider-catalog integration
+- **Previous Accepted Release:** v1.3.0 remains FINAL/PUBLISHED_VERIFIED at immutable tag `v1.3.0` (`1fc9a04`) until v1.3.1 publication and installed-host validation close.
+- **Current Authority:** branch `hotfix/v1.3.1-ui-layout` rebased onto protected `main` commit `8d5fb149992ee1bdac3e73940b23ad6f0e873a4e`. Concurrent main work was preserved: GitHub supply-chain hardening plus Router Gateway provider catalog revision 2 / Linux source-install hardening.
+- **UI Root Cause:** v1.3.0 opened at 980×620 while six minimum-width actions were forced into a non-wrapping horizontal StackPanel beside Auto-sized footer text; constrained width caused crowding/overlap.
+- **UI Prevention:** preferred startup size 1289×632 DIP; current Windows host is 96 DPI so verified physical size is exactly 1289×632. Footer actions use WrapPanel; explanatory text is bounded to 360 DIP and wraps; layout rounding/pixel snapping enabled.
+- **Dynamic Windows V&V:** self-contained 1.3.1 GUI post-rebase opens at exactly 1289×632; all six actions visible; zero button/button and button/footer overlap; Refresh mouse + keyboard PASS; Router Gateway physical mouse open PASS. Reduced 1000×632 regression also PASSed with wrapping and zero overlap.
+- **Router Gateway concurrent delta preserved:** catalog revision 2 now contains 9 ready profiles from 3 providers (VPN Gate, VPNBook, Pilovali). Router contract PASS including official Pilovali profile; auto-router mutation remains false.
+- **Windows post-rebase candidate:** `delivery/DirectInternetMethod_1.3.1_Windows_Setup.exe`, 157,096,702 bytes, SHA-256 `4F70C372E6B8CE7152D9501E5C4A70F4B2F650638CFDD3014B18EB6E3C123093`; GUI `8F3A410C…110E`; service `1A8A235A…29E6`; manifest `B0A1B328…1207`; Authenticode NotSigned.
+- **Linux post-rebase local candidate:** `delivery/DirectInternetMethod_1.3.1_Linux_x86_64.zip`, 8,158,158 bytes, SHA-256 `B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34`. Post-rebase independent Linux reproduction remains OPEN until the final branch commit is cloned on aliemad-Labtop.
+- **Superseded candidate hashes:** pre-rebase Windows `E805F7F1…CAA0`; pre-rebase Linux `4AB0D082…BED5C`; intermediate post-rebase Linux `A2B74521…F3D6`. They are preserved as history but are not release authority.
+- **Regression:** Windows full contract PASS; Linux contract PASS; Router contract PASS; release metadata to be rerun after final metadata; Windows GUI/service source was unchanged by concurrent main, so binary hashes remained identical while manifest/installer were rebuilt for the new provider data.
+- **Validation Boundary:** Direct DNS/DPI, route/DNS rollback and Windows service action logic were not modified by this UI hotfix. Physical-router authenticated tunnel success remains model/firmware-dependent.
+- **Critical Path / Open Gates:** commit + force-with-lease rebased branch → independent Linux exact-SHA reproduction → required PR `linux-source`/`windows-source` checks → protected merge → v1.3.1 tag/release/public hash verification → installed Windows public-update + final installed UI 1289×632 verification.
+- **Brain Status:** CURRENT / CANDIDATE. Do not promote v1.3.1 to FINAL until all gates above close.
 
 
 ## CURRENT v1.3.0 Router Gateway delta
@@ -51,8 +66,9 @@ Completed: Windows v1.2.0 Sandbox E2E direct-update acceptance from restricted u
 Completed: Linux v1.2.0 compatibility/version package; contract audits PASS on Windows/Linux and deterministic cross-host ZIP reproduction PASS.
 Completed: exact Windows v1.2.0 host bootstrap; installed GUI/service/manifest hashes match candidate; control 131 host regression PASS.
 Completed: Windows v1.2.0 host Start/ACTIVE/Stop/exact rollback/Recovery regression PASS.
-← CURRENT: maintenance/monitoring only; v1.3.0 release/publication gates are closed.
-Open release gate: none.
+Completed: immutable v1.3.0 release/publication gates remain closed as previous accepted authority.
+← CURRENT: v1.3.1 UI/layout hotfix integrated with provider catalog revision 2 and rebuilt post-rebase.
+Open v1.3.1 gates: final Linux cross-host exact reproduction; protected PR CI/merge; tag/release/public hash verification; installed Windows public-update/final UI verification.
 Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
@@ -145,9 +161,11 @@ All earlier harness failures remain preserved; no product runtime failure is hid
 - v1.3 validator false-negative root cause: `evidence/WINDOWS_130_ROUTER_DATA_VALIDATOR_ROOT_CAUSE_20261001.json` — harness-only; product path/hash verified.
 
 ## Exact Next Action
-No release or GitHub gate remains for v1.3.0. Keep tag `v1.3.0` and its three release assets immutable. Maintenance only; any future version must pass protected-main CI, protected-tag publication, public re-download/hash verification, and platform-specific post-update regression.
+Commit and force-with-lease the rebased v1.3.1 candidate, clone that exact commit on aliemad-Labtop and require Linux ZIP SHA-256 `B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34`; then pass PR #7 required checks/merge, publish immutable v1.3.1 assets, publicly redownload/hash-verify them, and update/verify the installed Windows app at exact 1289×632.
 
 ## HISTORY
+- 2026-10-01: user-reported Windows crowding traced to 980×620 startup geometry + non-wrapping six-action footer. v1.3.1 sets 1289×632 preferred startup geometry and responsive footer; dynamic 1289×632 and 1000×632 zero-overlap regressions PASS.
+- 2026-10-01: protected main advanced during v1.3.1 work with provider catalog revision 2 and GitHub hardening. Hotfix branch rebased onto `8d5fb14`; concurrent 9-profile/3-provider catalog and Linux installer hardening preserved. Pre-rebase artifacts superseded; Windows manifest/installer and Linux archive rebuilt from new authority.
 - 2026-09-29: v1.0.0 Windows and Linux PASS_FINAL_RELEASE; GitHub v1.0.0 published and verified.
 - 2026-09-30: Windows 1.1.0 native UI/service/bundled-runtime candidate built; contract audit PASS.
 - 2026-09-30: Linux installer readonly-UID failure found and fixed.

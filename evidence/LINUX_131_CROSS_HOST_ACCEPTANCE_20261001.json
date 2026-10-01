@@ -3,7 +3,7 @@
   "date": "2026-10-01",
   "project": "Direct Internet Method",
   "version": "1.3.1",
-  "status": "PASS_LINUX_1_3_1_CROSS_HOST_REPRODUCTION",
+  "status": "SUPERSEDED_PRE_REBASE",
   "provenance": {
     "host": "aliemad-Labtop",
     "checkout": "fresh clone",
@@ -32,5 +32,8 @@
     "exactCrossHostMatch": true
   },
   "networkBackendChangedFrom130": false,
-  "exactNextAction": "Close the cross-host gate in release metadata/Brain, then pass protected GitHub CI and PR merge before publication."
+  "exactNextAction": "Do not use this pre-rebase hash as v1.3.1 release authority.",
+  "supersededBy": "Post-rebase cross-host acceptance to be recorded separately",
+  "supersededReason": "Protected main advanced to 8d5fb14 with provider catalog revision 2 and Linux installer hardening; artifact inputs changed.",
+  "authoritative": false
 }
