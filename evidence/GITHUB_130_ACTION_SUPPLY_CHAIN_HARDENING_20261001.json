@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "LOCAL_REGRESSION_PASS_PR_PENDING",
+  "context": "Final GitHub Actions supply-chain hardening for DirectInternetMethod v1.3.0",
+  "actions": [
+    {
+      "uses": "actions/checkout",
+      "previous": "v7",
+      "pinnedCommit": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "verifiedUpstreamCommit": true,
+      "annotation": "v7.0.1"
+    },
+    {
+      "uses": "actions/setup-dotnet",
+      "previous": "v6",
+      "pinnedCommit": "a98b56852c35b8e3190ac28c8c2271da59106c68",
+      "verifiedUpstreamCommit": true,
+      "annotation": "v6"
+    }
+  ],
+  "dependabot": {
+    "scope": "github-actions only",
+    "interval": "weekly",
+    "rationale": "Repository has no PackageReference/requirements/package.json package dependency surface; only GitHub Actions are maintained automatically."
+  },
+  "securitySettings": {
+    "secretScanning": "enabled",
+    "pushProtection": "enabled",
+    "privateVulnerabilityReporting": "enabled",
+    "nonProviderPatterns": "UNAVAILABLE_FOR_CURRENT_REPO_OR_PLAN_API_NOOP",
+    "validityChecks": "UNAVAILABLE_FOR_CURRENT_REPO_OR_PLAN_API_NOOP",
+    "requiredCommitSignatures": "DEFERRED_NO_SIGNING_INFRASTRUCTURE"
+  },
+  "invariants": [
+    "No runtime/network source changed.",
+    "No v1.3.0 tag or public release asset changed.",
+    "main remains protected and required checks remain linux-source/windows-source.",
+    "Release tag v* ruleset update/deletion protection remains immutable with no bypass."
+  ],
+  "nextGate": "Protected PR must run linux-source/windows-source successfully using SHA-pinned actions.",
+  "validation": {
+    "actionRefGuard": "PASS_ALL_USES_FULL_40_HEX_SHA",
+    "releaseMetadataAudit": "PASS",
+    "windowsContractAudit": "PASS",
+    "routerGatewayContractAudit": "PASS",
+    "linuxContractAudit": "PASS",
+    "serviceBuild": "PASS_0_WARNINGS_0_ERRORS",
+    "guiBuild": "PASS_0_WARNINGS_0_ERRORS",
+    "diffCheck": "PASS",
+    "runtimeNetworkSourceChanged": false
+  }
+}
