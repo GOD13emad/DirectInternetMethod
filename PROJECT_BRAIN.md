@@ -1,6 +1,6 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: RELEASE_READY_V1_3_2_ROUTER_GRID_VISIBILITY_PUBLICATION_PENDING
+Status: FINAL_V1_3_2_ROUTER_GRID_PUBLISHED_INSTALLED_VERIFIED
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
@@ -15,8 +15,9 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - **Linux release-ready artifact:** `delivery/DirectInternetMethod_1.3.2_Linux_x86_64.zip`, 8,158,337 bytes, SHA-256 `8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D`; Windows/Linux byte-identical reproduction PASS; Linux contract/runtime smoke PASS with 9 profiles.
 - **Network Scope:** no Direct DNS/DPI privileged network logic changed from v1.3.1. Router Gateway remains non-mutating to routes/DNS.
 - **Validation Boundary:** physical-router authenticated L2TP/IPsec/PPTP success remains model/firmware-dependent; not claimed universally.
-- **Critical Path / Open Gates:** final source/release metadata audit → protected branch/main CI → immutable tag `v1.3.2` → publish exact three assets → public re-download/hash verification → installed Windows Direct Update + Linux update verification.
-- **Brain Status:** CURRENT / RELEASE_READY. Do not mark v1.3.2 FINAL until publication and installed-host verification close.
+- **Critical Path / Open Gates:** none for v1.3.2. Optional future validation only: model-specific physical-router authenticated tunnel E2E.
+- **Publication / Installed Hosts:** PASS. v1.3.2 public release is hash-verified; Windows installed GUI/manifest match release payload, 9 profiles + Desktop/Start shortcuts present, clean OFF state; Linux installed files match the public ZIP exactly, 9 profiles + Desktop/Applications shortcuts present, clean OFF state.
+- **Brain Status:** CURRENT / FINAL for v1.3.2.
 
 ## CURRENT v1.3.1 UI hotfix / provider-catalog integration
 - **v1.3.1 Historical State:** FINAL/PUBLISHED baseline for v1.3.2 at immutable tag `v1.3.1` (`3b9fa6e`). The lines below preserve its pre-publication acceptance history.
@@ -243,3 +244,4 @@ Push the post-rebase Linux cross-host closure evidence, pass PR #7 required `lin
 - 2026-10-01: GitHub line-by-line audit closed for immutable v1.3.0. PR #4 fixed platform release-metadata drift and moved full Windows contract into protected pre-merge CI; PR #5 pinned all GitHub Actions to immutable SHAs and enabled GitHub-Actions-only Dependabot. Main protection, no-bypass v* tag ruleset, secret scanning/push protection, PVR, public release digests and checksum authority reverified. Active v1.3.1 provider/UI worktrees remain separate unreleased development.
 - 2026-10-01: v1.3.2 Router Gateway visibility hotfix release-ready. Screenshot-reported “one profile” traced to WPF white-on-white unselected rows; runtime proved 9 loaded rows. Dark row/cell/header styling + permanent regression added.
 - 2026-10-01: v1.3.2 Windows/Linux artifacts built; Windows full contract and inherited 1289×632 startup layout PASS; Linux ZIP reproduced byte-identically across Windows/Linux.
+- 2026-10-01: v1.3.2 public release and both installed hosts verified. Public asset SHA-256 PASS; Windows installed GUI/manifest match release payload with 9 visible-profile runtime regression and both shortcuts; Linux installed user-space files match public ZIP exactly with both shortcuts and clean OFF state.

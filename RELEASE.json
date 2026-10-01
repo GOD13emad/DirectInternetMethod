@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.3.2",
   "date": "2026-10-01",
-  "status": "PASS_RELEASE_READY_V1_3_2_PUBLICATION_PENDING",
+  "status": "FINAL_V1_3_2_PUBLISHED_INSTALLED_VERIFIED",
   "previousAccepted": {
     "version": "1.3.1",
     "tag": "v1.3.1",
@@ -13,7 +13,11 @@
   "authority": {
     "baseMain": "3b9fa6e7953e7d18068b8a0b574e0282411584ab",
     "branch": "hotfix/router-grid-v1.3.2",
-    "note": "Built directly on the immutable v1.3.1 release/main baseline; preserves v1.3.1 startup-layout corrections and provider catalog revision 2."
+    "note": "Built directly on the immutable v1.3.1 release/main baseline; preserves v1.3.1 startup-layout corrections and provider catalog revision 2.",
+    "releaseTag": "v1.3.2",
+    "tagCommit": "a0bf6bbce1932a0f4dd405f0cfbffeeb68ec63e6",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.3.2",
+    "postReleaseEvidenceOnMain": true
   },
   "feature": "Router Gateway DataGrid visibility hotfix",
   "platforms": {
@@ -75,15 +79,23 @@
     "windowsPayload": "PASS",
     "windowsInstaller": "PASS",
     "linuxCrossHostDeterministic": "PASS_EXACT_SHA_MATCH",
-    "releaseMetadataAudit": "PENDING_FINAL_SOURCE_GATE",
-    "publication": "PENDING",
-    "installedWindowsPublicUpdate": "PENDING",
-    "installedLinuxUpdate": "PENDING"
+    "releaseMetadataAudit": "PASS",
+    "publication": "PASS_PUBLIC_REDOWLOAD_VERIFIED",
+    "installedWindowsPublicUpdate": "PASS_1_3_2_GUI_MANIFEST_AND_SHORTCUTS",
+    "installedLinuxUpdate": "PASS_1_3_2_PUBLIC_ZIP_FILE_MATCH",
+    "runtimeVisibleProfiles": "PASS_9_ROWS_3_PROVIDERS"
   },
   "validationBoundary": {
     "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
     "authenticode": "NOT_SIGNED",
     "license": "OWNER_LEGAL_DECISION_OPEN"
   },
-  "exactNextAction": "Run final source/release metadata gates, publish via protected main/tag v1.3.2, public-redownload/hash verify exact assets, then update installed Windows and Linux and verify 9 visible Router Gateway rows."
+  "exactNextAction": "Maintenance only; no v1.3.2 release or installed-host gate remains.",
+  "publication": {
+    "publishedAt": "2026-10-01T07:28:27Z",
+    "featureCiRun": 36830135728,
+    "mainCiRun": 36830270391,
+    "tagCiRun": 36830398621,
+    "publicAssetHashVerification": "PASS_ALL"
+  }
 }

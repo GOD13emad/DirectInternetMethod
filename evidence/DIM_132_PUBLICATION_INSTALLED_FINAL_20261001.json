@@ -1,0 +1,100 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.3.2",
+  "status": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED",
+  "release": {
+    "tag": "v1.3.2",
+    "tagCommit": "a0bf6bbce1932a0f4dd405f0cfbffeeb68ec63e6",
+    "url": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.3.2",
+    "publishedAt": "2026-10-01T07:28:27Z",
+    "draft": false,
+    "prerelease": false
+  },
+  "ci": {
+    "feature": {
+      "run": 36830135728,
+      "status": "PASS"
+    },
+    "main": {
+      "run": 36830270391,
+      "status": "PASS"
+    },
+    "tag": {
+      "run": 36830398621,
+      "status": "PASS"
+    }
+  },
+  "publicAssets": [
+    {
+      "name": "DirectInternetMethod_1.3.2_Windows_Setup.exe",
+      "bytes": 157107271,
+      "sha256": "B5141A93BDF2C261F54F4C0483128D973A54DEFBCD45C6C701535037B31E6E58",
+      "publicRedownload": "PASS"
+    },
+    {
+      "name": "DirectInternetMethod_1.3.2_Linux_x86_64.zip",
+      "bytes": 8158337,
+      "sha256": "8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D",
+      "publicRedownload": "PASS"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 221,
+      "sha256": "216A6267F056910E85FF996F5E780B9F5D93F3C71E0B8D4F3B6619376E150745",
+      "publicRedownload": "PASS"
+    }
+  ],
+  "rootCauseAndFix": {
+    "userObservedFailure": "Router Gateway appeared to show only one populated profile row while Protocol=All.",
+    "rootCause": "All 9 profiles were loaded. Unselected WPF DataGrid rows inherited white background while foreground was white, making rows 2-9 visually disappear.",
+    "fix": "Explicit dark row/cell/header styles and alternating dark rows; selected row remains high-contrast blue.",
+    "regression": "PASS_9_ROWS_7_COLUMNS_9_DATAITEMS"
+  },
+  "windowsInstalled": {
+    "version": "1.3.2",
+    "guiSha256": "F9FDE9A0A75754EFC6B2573571373E2AB1CD3C3EED6470CD6947D4AD300C5BBD",
+    "manifestSha256": "36A310F48929ACC8AD9A5695AA075F1ECCDE591DB43FA66084D7ABBC521FD7A8",
+    "exactReleaseGuiMatch": true,
+    "exactReleaseManifestMatch": true,
+    "profiles": 9,
+    "providers": [
+      "Pilovali",
+      "VPN Gate",
+      "VPNBook"
+    ],
+    "desktopShortcut": true,
+    "startMenuShortcut": true,
+    "residualStateFile": false
+  },
+  "linuxInstalled": {
+    "version": "1.3.2",
+    "publicZipSha256": "8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D",
+    "publicZipMatch": true,
+    "installedFileMatches": {
+      "direct_internet_method.py": true,
+      "router_gateway.py": true,
+      "providers.json": true
+    },
+    "installedHashes": {
+      "direct_internet_method.py": "4A77C861ECA35E1D2B500F32CEA45BA5B87DC218C03D6328CBD21F0E6FAB9A5C",
+      "router_gateway.py": "5E3856F52BE22738D180BA675B296B602261185ACC052D7E4C1DAEF752BD195C",
+      "providers.json": "6F3C4084CB851C73167433C280FE231F0DFB84F4CE2CD3DCA3F1AC6C63125D03"
+    },
+    "profiles": 9,
+    "providers": [
+      "Pilovali",
+      "VPN Gate",
+      "VPNBook"
+    ],
+    "desktopShortcut": true,
+    "applicationsMenu": true,
+    "residualStateFile": false
+  },
+  "validationBoundary": {
+    "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
+    "note": "UI/profile visibility, packaging, installation and data integrity are verified. Universal authenticated tunnel success across arbitrary router firmware is not claimed."
+  },
+  "exactNextAction": "Maintenance only; no v1.3.2 release or installation gate remains."
+}
