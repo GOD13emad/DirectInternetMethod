@@ -1,40 +1,18 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: FINAL_V1_2_0_PUBLISHED_VERIFIED
+Status: V1_2_1_RELEASE_READY_GITHUB_AUDIT
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
 ## Authoritative current state
-- Release authority: immutable tag `v1.2.0` at commit `6c30dbfaa5596285ac42c2dba08fb0c8b259901e`; exact Windows/Linux artifacts and `SHA256SUMS.txt` were published from that commit and public-redownload verified. Post-publication verification evidence is committed on `main` at `6de3010c8719364290f0edee20b096e235214e91`.
-- Cross-platform v1.2.0 product acceptance is **PASS_FINAL / PUBLISHED_VERIFIED**.
-- Windows v1.2.0 final artifact: `delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe`, 157,093,296 bytes, SHA-256 `E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1`; installed GUI/service/manifest hashes match authority; real-host Start/ACTIVE/Stop/exact rollback/Recovery PASS; public updater control 131 PASS against GitHub latest v1.2.0; final state CLEAN_OFF.
-- Linux v1.2.0 final compatibility artifact: `delivery/DirectInternetMethod_1.2.0_Linux_x86_64.zip`, 8,140,827 bytes, SHA-256 `BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC`; contract audit PASS and deterministic cross-host reproduction PASS; network architecture unchanged from accepted v1.1.0.
-- GitHub v1.2.0 release is **PUBLISHED_VERIFIED**; public re-download hashes and GitHub asset digests match `SHA256SUMS.txt`.
-- Historical baseline v1.1.0 product acceptance remains **PASS_FINAL_RELEASE / PUBLISHED_VERIFIED**.
-- Windows final artifact:
-  - `delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe`
-  - bytes: 157,078,634
-  - SHA-256: `E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0`
-  - service SHA-256: `F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68`
-  - manifest SHA-256: `F60D21EC678B9CB5F44D2CEA70DDFC1C3F4C80D4799A37131BAC18DC5536AD42`
-  - Authenticode: NotSigned (deferred, not a release blocker).
-- Windows final artifact was installed on the real host and live-tested:
-  - normal-user Start control PASS, action `done/0`;
-  - ACTIVE: YouTube=204, OpenAI=401, GitHub=200;
-  - ctrld SCM service owns UDP/TCP ULA:53; winws + protected WinDivert active;
-  - physical adapter DNS unchanged; no broad /1 routes; WinHTTP unchanged; pre-existing ICS Running/PID preserved;
-  - Stop PASS with exact rollback; Recovery/no-state PASS;
-  - final clean state: no state file, owned NRPT, ULA, ctrld process, winws process, or owned WinDivert residue.
-- Windows Sandbox lifecycle also PASS with restricted Basic User controls.
-- Linux 1.1.0 is **PASS_FINAL_LINUX_1_1_0**:
-  - `delivery/DirectInternetMethod_1.1.0_Linux_x86_64.zip`
-  - bytes: 8,139,344
-  - SHA-256: `621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861`
-  - live ACTIVE YouTube=204, OpenAI=401, GitHub=200;
-  - Stop/Recovery/no-admin normal actions PASS;
-  - independently reproduced deterministic archive hash on Windows and Linux.
-- Windows and Linux contract audits: PASS.
-- `SHA256SUMS.txt` contains the exact final Windows/Linux artifact hashes.
+- **CURRENT release candidate:** v1.2.1 GitHub/Linux-EOL hotfix. No DNS/DPI/network runtime logic changed from accepted Windows v1.2.0 / Linux architecture.
+- Windows v1.2.1 exact artifact: `DirectInternetMethod_1.2.1_Windows_Setup.exe`, 157,077,755 bytes, SHA-256 `B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA`; final Sandbox identity PASS; GUI `D7AFA238…`, service `B2E7AFC2…`, manifest `292D1ABA…`.
+- Linux v1.2.1 exact artifact: `DirectInternetMethod_1.2.1_Linux_x86_64.zip`, 8,139,783 bytes, SHA-256 `CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65`; source/archive shell syntax PASS, CR bytes=0, Windows/Linux builds identical.
+- **v1.2.0 Linux public artifact is CONFIRMED FAILED/SUPERSEDED:** public ZIP SHA-256 `BBCDAD…` contains CRLF shell scripts; all six packaged shell files fail `bash -n` after public download. Windows v1.2.0 runtime/lifecycle acceptance remains valid.
+- GitHub workflow `Source and Release Contracts` is active; run `36801264553` on commit `27940bd` passed Linux and Windows source jobs. Final release-ready commit Actions is still an open gate.
+- GitHub secret scanning and push protection are enabled. Main branch force-push/deletion protection remains to be applied after the hotfix is promoted.
+- Repository LICENSE is MISSING; this is an explicit owner/legal choice and no license was invented during the audit.
+- Concurrent Router Gateway work was detected in the original Project Root. v1.2.1 work was isolated into `C:\Users\Aa.Emad\source\repos\DirectInternetMethod_hotfix121`; original Router Gateway work was not overwritten or deleted.
 
 ## Roadmap
 Completed: v1.0.0 and v1.1.0 Windows/Linux final releases and publication.
@@ -44,8 +22,8 @@ Completed: Windows v1.2.0 Sandbox E2E direct-update acceptance from restricted u
 Completed: Linux v1.2.0 compatibility/version package; contract audits PASS on Windows/Linux and deterministic cross-host ZIP reproduction PASS.
 Completed: exact Windows v1.2.0 host bootstrap; installed GUI/service/manifest hashes match candidate; control 131 host regression PASS.
 Completed: Windows v1.2.0 host Start/ACTIVE/Stop/exact rollback/Recovery regression PASS.
-← CURRENT: commit/promote feature branch → main → tag `v1.2.0` → GitHub release Windows+Linux+SHA256SUMS → latest/download verification.
-Open release gate: publication verification only.
+← CURRENT: commit release-ready v1.2.1 evidence/metadata → GitHub Actions PASS on exact commit → fast-forward remote main → tag v1.2.1 → tag Actions PASS → publish Windows/Linux/SHA256SUMS → public re-download/Linux bash validation → Windows in-app updater 1.2.0→1.2.1 → main protection.
+Open release gate: GitHub final commit/tag/publication verification.
 Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
@@ -67,7 +45,10 @@ Deferred: trusted Authenticode signing.
 16. Update completion originally depended on target service startup → installer now writes `action-status=done/0` and deletes pending marker at post-install; fresh Sandbox seeded-pending regression PASS.
 17. Linux v1.2 deterministic package initially mismatched due stale non-Git Linux workspace inputs → reconcile package inputs from Git-controlled authority; Windows/Linux ZIP hash now identical.
 18. Host bootstrap Runner helper name `H` collided with PowerShell alias `h/Get-History` before elevation → rename to `Get-Sha256`, pin runner/script hashes, and require final host bootstrap evidence; fixed Runner PASS.
-All three validator failures were harness defects; product runtime remained healthy and their failing evidence is preserved.
+19. Public Linux v1.2.0 ZIP shipped CRLF shell scripts → no Git EOL policy + package builder copied checkout bytes verbatim; confirmed public asset failure on Linux. Prevention: *.sh LF policy + package-byte LF normalization + CI source/archive bash gates; v1.2.1 regression PASS.
+20. Initial v1.2.1 Linux ZIP remained cross-host non-deterministic after shell-only normalization → README/license/hosts text EOL differed across hosts; normalize all package text payloads (.sh/.py/.md/.txt/.svg) before hashing/packing; Windows/Linux v1.2.1 ZIP hash now identical.
+21. Concurrent writer switched original checkout to Router Gateway branch during GitHub audit → hotfix commit briefly landed on local Router branch. Prevention: recovered hotfix ref and isolated all subsequent work to dedicated Git worktree; Router Gateway tracked/untracked work preserved.
+All earlier harness failures remain preserved; no product runtime failure is hidden.
 
 ## Evidence / Knowledge
 - Cross-platform final: `evidence/DIM_110_FINAL_ACCEPTANCE_20260930.json` — SHA-256 `5610C74C0265D9F614A8619A4E6C6E008DEC7CCEC0774EF0720B8616E1A89D2C`.
@@ -107,8 +88,15 @@ All three validator failures were harness defects; product runtime remained heal
 - Candidate-cycle evidence was copied to immutable `WINDOWS_110_HOST_CANDIDATE_*` records before final-artifact retest.
 - Earlier stale parallel hashes `D6AF…/A011…/5AEF…` are superseded and must not be used as release authority.
 
+- GitHub v1.2.0 Linux public-release failure: `evidence/GITHUB_V120_LINUX_EOL_RELEASE_FAILURE_20261001.json`.
+- Linux v1.2.1 LF/deterministic acceptance: `evidence/LINUX_121_EOL_DETERMINISTIC_ACCEPTANCE_20261001.json` — SHA-256 `ECBEB4CD6DE6EC3C20AE74CB8E46E3A894900845F6014A1002FD0921626ED2E5`.
+- Windows v1.2.1 exact Sandbox identity: `evidence/WINDOWS_121_SANDBOX_IDENTITY_ACCEPTANCE_20261001.json` — SHA-256 `9D6F8161FAA8197BD8F7D48E5AC4B764F248C6EA009F76285D32AA5256B7EC40`.
+- GitHub Actions hotfix acceptance: `evidence/GITHUB_ACTIONS_121_HOTFIX_ACCEPTANCE_20261001.json` — SHA-256 `3EC713DD9259245A4DEAAD8E3B0415494F473960F6EFF4FA008678A1017C36B8`.
+- Concurrent-writer isolation: `evidence/GITHUB_AUDIT_CONCURRENT_WRITER_ISOLATION_20261001.json` — SHA-256 `92F6A20D4338BB02FAFDD6CEF84EFC13F75EADE52D1A67B7DE602E90A7EA7996`.
+- v1.2.1 release-ready aggregate: `evidence/DIM_121_RELEASE_READY_ACCEPTANCE_20261001.json` — SHA-256 `B70FF0F478E98B44A6F47EEE826E79F30C7E9726DDEC120EA9E15C3A91FCC89F`.
+
 ## Exact Next Action
-No release gate remains. Keep `v1.2.0@6c30dbf` immutable; use normal maintenance only. Future Windows versions should be published with both Windows/Linux assets plus `SHA256SUMS.txt`, then verified by public redownload and control 131 regression before promotion to FINAL.
+Wait for GitHub Actions on the exact release-ready v1.2.1 commit. If PASS, fast-forward remote main, tag v1.2.1, require tag workflow PASS (including Windows release contract), publish the exact Windows/Linux artifacts plus SHA256SUMS, public-redownload/hash both assets, run bash syntax on the public Linux ZIP, then update the installed Windows host through control 131 and apply minimal main branch force-push/deletion protection.
 
 ## HISTORY
 - 2026-09-29: v1.0.0 Windows and Linux PASS_FINAL_RELEASE; GitHub v1.0.0 published and verified.
@@ -148,3 +136,5 @@ No release gate remains. Keep `v1.2.0@6c30dbf` immutable; use normal maintenance
 - 2026-10-01: exact Windows v1.2.0 candidate installed on EMAD-PC-ULTIMAT. Payload hashes matched; control 131 host regression done/0. Live Start restored YouTube=204 while OpenAI=401/GitHub=200; adapter DNS, default route, WinHTTP and ICS were preserved. Stop exact rollback and Recovery/no-state PASS; host left clean OFF. Windows v1.2 host gate closed.
 
 - 2026-10-01: v1.2.0 published on GitHub from tag/main release commit `6c30dbf`. Windows/Linux/SHA256SUMS assets redownloaded publicly and matched exact hashes/GitHub digests. Installed Windows v1.2 updater queried public latest v1.2.0 and returned Already up to date/done0 without UAC or network-state mutation. Final host clean-state audit PASS; release promoted to FINAL/PUBLISHED_VERIFIED.
+
+- 2026-10-01: deep GitHub audit found public Linux v1.2.0 release defect: all six packaged shell scripts retained CRLF and failed bash -n. v1.2.0 tag/assets left immutable; patch v1.2.1 created with LF Git policy, package-byte normalization, GitHub Actions, and cross-host deterministic ZIP. Windows network logic unchanged. Concurrent Router Gateway writer was isolated via dedicated worktree. v1.2.1 Windows exact Sandbox identity and Linux source/archive syntax gates PASS; release is READY, not yet published.

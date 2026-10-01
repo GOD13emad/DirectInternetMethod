@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_WINDOWS_1_2_1_FINAL_SANDBOX_IDENTITY",
+  "buildSourceCommit": "27940bdaf436dbc6d4c92a070f899b0eff0fce74",
+  "installer": {
+    "name": "DirectInternetMethod_1.2.1_Windows_Setup.exe",
+    "bytes": 157077755,
+    "sha256": "B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA",
+    "authenticode": "NotSigned"
+  },
+  "install": {
+    "exitCode": 0,
+    "registryVersion": "1.2.1",
+    "installLocation": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Programs\\DirectInternetMethod\\"
+  },
+  "payload": {
+    "guiVersion": "1.2.1+27940bdaf436dbc6d4c92a070f899b0eff0fce74",
+    "guiSha256": "D7AFA238E8E7CCD31D7B6C48DDDBA30C7F6E2DECBAF519B7FA111E611DF5BAE3",
+    "serviceVersion": "1.2.1+27940bdaf436dbc6d4c92a070f899b0eff0fce74",
+    "serviceSha256": "B2E7AFC2733B4466C55807C435DD779C6270D6C5F72E85D7B3FBC834FE24D87A",
+    "manifestVersion": "1.2.1",
+    "manifestSha256": "292D1ABA16DA071CABC696525015981004047F3B8988AAC68A2884B9B9AC1F7B"
+  },
+  "cleanState": {
+    "stateExists": false,
+    "pendingExists": false,
+    "ctrldState": "Stopped",
+    "ctrldPid": 0,
+    "winwsCount": 0,
+    "ulaCount": 0,
+    "ownedNrptCount": 0
+  },
+  "networkLogicChangedFrom120": false
+}

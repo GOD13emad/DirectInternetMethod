@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_V1_2_1_RELEASE_READY",
+  "version": "1.2.1",
+  "scope": "Patch release to repair confirmed public Linux v1.2.0 CRLF packaging defect and harden GitHub CI; no network/DPI runtime logic changes.",
+  "windows": {
+    "artifact": {
+      "name": "DirectInternetMethod_1.2.1_Windows_Setup.exe",
+      "bytes": 157077755,
+      "sha256": "B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA"
+    },
+    "guiSha256": "D7AFA238E8E7CCD31D7B6C48DDDBA30C7F6E2DECBAF519B7FA111E611DF5BAE3",
+    "serviceSha256": "B2E7AFC2733B4466C55807C435DD779C6270D6C5F72E85D7B3FBC834FE24D87A",
+    "manifestSha256": "292D1ABA16DA071CABC696525015981004047F3B8988AAC68A2884B9B9AC1F7B",
+    "contractAudit": "PASS",
+    "finalSandboxIdentity": "PASS",
+    "networkLogicChanged": false
+  },
+  "linux": {
+    "artifact": {
+      "name": "DirectInternetMethod_1.2.1_Linux_x86_64.zip",
+      "bytes": 8139783,
+      "sha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65"
+    },
+    "sourceShellSyntax": "PASS",
+    "packageShellSyntax": "PASS",
+    "sourceCrBytes": 0,
+    "packageCrBytes": 0,
+    "contractAudit": "PASS",
+    "crossHostDeterministic": true,
+    "networkLogicChanged": false
+  },
+  "github": {
+    "workflow": "Source and Release Contracts",
+    "workflowRun36801264553": "PASS",
+    "secretScanning": "enabled",
+    "pushProtection": "enabled",
+    "branchProtection": "PENDING_POST_MERGE",
+    "finalCommitActions": "PENDING"
+  },
+  "supersedes": {
+    "linuxV120": {
+      "status": "FAIL_PUBLIC_LINUX_V1_2_0_SHELL_EOL",
+      "sha256": "BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC"
+    },
+    "windowsV120": "Runtime/lifecycle acceptance remains valid; superseded only by synchronized patch-release channel."
+  },
+  "openGates": [
+    "Final release-ready commit GitHub Actions PASS",
+    "Fast-forward main",
+    "Tag v1.2.1 tag Actions PASS",
+    "Publish all 3 assets",
+    "Public redownload/hash/bash validation",
+    "Windows installed updater 1.2.0 -> 1.2.1 PASS",
+    "Main force-push/deletion protection"
+  ],
+  "deferred": [
+    "Authenticode signing",
+    "Repository license choice requires owner authority"
+  ]
+}

@@ -3,30 +3,33 @@
   "product": "Direct Internet Method",
   "version": "1.2.1",
   "date": "2026-10-01",
-  "status": "CANDIDATE_GITHUB_AUDIT_HOTFIX",
+  "status": "PASS_RELEASE_READY_V1_2_1",
   "platforms": {
     "windows": {
-      "status": "CANDIDATE_VERSION_SYNC_NO_NETWORK_LOGIC_CHANGE",
+      "status": "PASS_RELEASE_READY_WINDOWS_1_2_1",
       "artifact": "delivery/DirectInternetMethod_1.2.1_Windows_Setup.exe",
-      "sandboxAcceptance": "PASS",
-      "directUpdateSandbox": "PASS",
-      "hostAcceptance": "PASS_FINAL_WINDOWS_1_2_0",
-      "rollback": "PASS_EXACT_ROLLBACK_HOST",
-      "recovery": "PASS_NO_STATE_HOST",
-      "normalRunRequiresAdmin": false,
+      "sha256": "B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA",
+      "bytes": 157077755,
+      "guiSha256": "D7AFA238E8E7CCD31D7B6C48DDDBA30C7F6E2DECBAF519B7FA111E611DF5BAE3",
+      "serviceSha256": "B2E7AFC2733B4466C55807C435DD779C6270D6C5F72E85D7B3FBC834FE24D87A",
+      "manifestSha256": "292D1ABA16DA071CABC696525015981004047F3B8988AAC68A2884B9B9AC1F7B",
+      "sandboxIdentity": "PASS",
+      "contractAudit": "PASS",
+      "networkLogicChangedFrom120": false,
       "normalOnlineUpdateRequiresAdmin": false,
-      "authenticode": "NotSigned",
-      "directUpdateHostControl131": "PASS_DONE_0",
-      "publicUpdaterVerification": "PASS_HOST_PUBLIC_GITHUB_LATEST_V1_2_0",
-      "finalState": "CLEAN_OFF"
+      "authenticode": "NotSigned"
     },
     "linux": {
-      "status": "CANDIDATE_EOL_REPAIR",
+      "status": "PASS_RELEASE_READY_LINUX_1_2_1",
       "artifact": "delivery/DirectInternetMethod_1.2.1_Linux_x86_64.zip",
-      "liveAcceptance": "Inherited unchanged network architecture from accepted 1.1.0",
-      "contractAudit": "PASS_WINDOWS_AND_LINUX",
+      "sha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65",
+      "bytes": 8139783,
+      "shellSyntaxSource": "PASS",
+      "shellSyntaxArchive": "PASS",
+      "eol": "LF_ONLY",
+      "contractAudit": "PASS",
       "deterministicBuild": "PASS_CROSS_HOST",
-      "normalRunRequiresAdmin": false
+      "networkLogicChanged": false
     }
   },
   "architecture": {
@@ -49,35 +52,37 @@
   "github": {
     "repo": "GOD13emad/DirectInternetMethod",
     "tag": "v1.2.1",
-    "status": "NOT_PUBLISHED"
+    "status": "READY_TO_PUBLISH",
+    "branch": "hotfix/v1.2.1-linux-eol-github-hardening",
+    "actionsBaselineCommit": "27940bdaf436dbc6d4c92a070f899b0eff0fce74",
+    "actionsBaselineStatus": "PASS",
+    "finalCommitActions": "PENDING",
+    "mainProtection": "PENDING_POST_MERGE"
   },
   "limitations": [
     "Windows installer is not Authenticode-signed.",
+    "Repository license remains an explicit owner/legal choice; none was invented during audit.",
     "Effectiveness may vary if network filtering behavior changes."
   ],
   "evidence": {
-    "windowsHostFinal": "evidence/WINDOWS_120_HOST_FINAL_ACCEPTANCE_20261001.json",
-    "windowsDirectUpdateSandbox": "evidence/WINDOWS_120_DIRECT_UPDATE_SANDBOX_E2E_20261001.json",
-    "linuxCompatibility": "evidence/LINUX_120_COMPAT_ACCEPTANCE_20261001.json",
-    "crossPlatformFinal": "evidence/DIM_120_FINAL_ACCEPTANCE_20261001.json",
-    "crossPlatformFinalSha256": "399053A0806A3D2EA9A71DEC6D0027444CAD08EFF2910020A1268354EDB1B1AC",
-    "windowsHostFinalSha256": "9BE7D268491860622C355C45A28D3DEC45261EF6F71EECB7A45C0E58BC32C06A",
-    "publicationVerify": "evidence/DIM_120_GITHUB_PUBLICATION_VERIFY_20261001.json",
-    "publicationVerifySha256": "95BBEC5DFD8231BC95D5FFBF81F4CF05CD7E5DEE1903BAD5CF1082ABB1CF4D24",
-    "windowsPublicUpdater": "evidence/WINDOWS_120_HOST_PUBLIC_UPDATER_VERIFY_20261001.json",
-    "windowsPublicUpdaterSha256": "A478EA78232A7BC5564752DC9DC20F64CEADD892B587E37E333E57A058944DE9",
-    "finalCleanState": "evidence/DIM_120_FINAL_CLEAN_STATE_20261001.json",
-    "finalCleanStateSha256": "2E8766F75C6AF16AA9F3B1CB6B0DB7E68C340DAD020EEB8DBCA31AAE8ADDEE27",
-    "publicationFinal": "evidence/DIM_120_PUBLICATION_FINAL_20261001.json",
-    "publicationFinalSha256": "00635FD814E151D94D5B512DA3F750E6E6BD880A7EDAD6C1C03554A6BA0B14B7"
+    "releaseReady": "evidence/DIM_121_RELEASE_READY_ACCEPTANCE_20261001.json",
+    "releaseReadySha256": "B70FF0F478E98B44A6F47EEE826E79F30C7E9726DDEC120EA9E15C3A91FCC89F",
+    "v120LinuxFailure": "evidence/GITHUB_V120_LINUX_EOL_RELEASE_FAILURE_20261001.json",
+    "linux121": "evidence/LINUX_121_EOL_DETERMINISTIC_ACCEPTANCE_20261001.json",
+    "windows121": "evidence/WINDOWS_121_SANDBOX_IDENTITY_ACCEPTANCE_20261001.json",
+    "actions121": "evidence/GITHUB_ACTIONS_121_HOTFIX_ACCEPTANCE_20261001.json",
+    "concurrentWriterIsolation": "evidence/GITHUB_AUDIT_CONCURRENT_WRITER_ISOLATION_20261001.json"
   },
   "hotfix": {
     "reason": "Public v1.2.0 Linux ZIP contains CRLF shell scripts and fails bash -n.",
+    "confirmed": true,
+    "v120LinuxStatus": "FAILED_SUPERSEDED",
     "networkLogicChanged": false,
     "safeguards": [
-      ".gitattributes *.sh eol=lf",
-      "Linux package builder normalizes shell payload bytes to LF",
-      "GitHub Actions shell/package syntax gates"
+      ".gitattributes LF policy",
+      "package-byte LF normalization for text payloads",
+      "GitHub Actions source/archive shell syntax gates",
+      "cross-host deterministic ZIP gate"
     ]
   }
 }

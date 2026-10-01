@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_LINUX_1_2_1_EOL_DETERMINISTIC",
+  "sourceCommit": "27940bdaf436dbc6d4c92a070f899b0eff0fce74",
+  "sourceShells": {
+    "count": 6,
+    "crBytes": 0,
+    "bashSyntax": "PASS"
+  },
+  "package": {
+    "name": "DirectInternetMethod_1.2.1_Linux_x86_64.zip",
+    "bytes": 8139783,
+    "sha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65",
+    "windowsBuildSha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65",
+    "linuxBuildSha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65",
+    "crossHostDeterministic": true,
+    "packagedShells": {
+      "count": 6,
+      "crBytes": 0,
+      "bashSyntax": "PASS"
+    }
+  },
+  "linuxContract": "PASS",
+  "networkLogicChanged": false,
+  "rootCauseClosed": "v1.2.0 CRLF shell payload defect prevented by Git EOL policy + package-byte normalization + CI archive syntax gate."
+}
