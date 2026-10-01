@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.4.0",
   "date": "2026-10-01",
-  "status": "RELEASE_READY_V1_4_0_LINUX_LIVE_VERIFIED",
+  "status": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED_V1_4_0",
   "previousAccepted": {
     "version": "1.3.2",
     "tag": "v1.3.2",
@@ -12,7 +12,10 @@
   },
   "authority": {
     "baseMain": "930db926a15d1688f95892905f4352cfebe46c39",
-    "branch": "feature/direct-multiprotocol-v1.4.0"
+    "releaseCommit": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
+    "releaseTree": "db7f8e02ca706ca0c74a54901368a6a61a4733cd",
+    "branch": "main",
+    "tag": "v1.4.0"
   },
   "feature": "Bounded direct multi-protocol engine: encrypted DNS + HTTP/80 split + TLS/SNI TCP/443 desync + QUIC UDP/443 desync; no VPN/proxy/default-route tunnel.",
   "directEngine": {
@@ -48,7 +51,7 @@
   },
   "platforms": {
     "windows": {
-      "status": "PASS_LOCAL_RELEASE_READY_PENDING_PUBLICATION",
+      "status": "PASS_FINAL_PUBLIC_INSTALLED_LIVE",
       "artifact": "delivery/DirectInternetMethod_1.4.0_Windows_Setup.exe",
       "bytes": 157103781,
       "sha256": "69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93",
@@ -63,7 +66,7 @@
       "routerGatewayUi": "PASS_PHYSICAL_OPEN_9_VISIBLE_PROFILES"
     },
     "linux": {
-      "status": "PASS_RELEASE_READY_CROSS_HOST_LIVE",
+      "status": "PASS_FINAL_PUBLIC_INSTALLED_LIVE",
       "artifact": "delivery/DirectInternetMethod_1.4.0_Linux_x86_64.zip",
       "bytes": 8159881,
       "sha256": "4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E",
@@ -99,14 +102,17 @@
     "windowsStartupUi": "PASS_1289x632_NO_OVERLAP",
     "linuxCrossHost": "PASS_EXACT_SHA_MATCH",
     "linuxLiveLifecycle": "PASS_START_ACTIVE_STOP_RECOVERY_CLEAN",
-    "protectedCi": "PENDING",
-    "publication": "PENDING",
-    "installedHosts": "PENDING",
+    "protectedCi": "PASS_MAIN_AND_TAG",
+    "publication": "PASS_PUBLIC_HASH_VERIFIED",
+    "installedHosts": "PASS_WINDOWS_AND_LINUX",
     "secureDnsNoOsLeak": "PASS_CONTRACT_AND_DOH_LIVE",
-    "windowsRouterGatewayUi": "PASS_9_VISIBLE_PROFILES"
+    "windowsRouterGatewayUi": "PASS_9_VISIBLE_PROFILES",
+    "windowsLiveLifecycle": "PASS_START_ACTIVE_STOP_RECOVERY_EXACT_ROLLBACK",
+    "windowsPublicUpdate": "PASS_1_3_2_TO_1_4_0_NO_UAC",
+    "linuxPublicIdentity": "PASS_EXACT_PUBLIC_PACKAGE"
   },
   "validationBoundary": {
-    "windowsLiveNetwork": "DEFERRED_TO_AVOID_DISRUPTING_ACTIVE_WINDOWS_HOST; Linux is the live-network validation platform for changed v1.4 packet rules.",
+    "windowsLiveNetwork": "PASS_REAL_HOST_START_ACTIVE_STOP_RECOVERY_EXACT_ROLLBACK",
     "quicHttp3ApplicationE2E": "UNPROVEN_HOST_CURL_LACKS_HTTP3",
     "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
     "authenticode": "NOT_SIGNED",
@@ -119,7 +125,10 @@
     "windowsPayload": "evidence/WINDOWS_140_PAYLOAD_BUILD_20261001.json",
     "windowsInstaller": "evidence/WINDOWS_140_INSTALLER_BUILD_20261001.json",
     "secureDnsAudit": "evidence/DIM_140_SECURE_DNS_TRANSPORT_AUDIT_20261001.json",
-    "linuxLive": "evidence/LINUX_140_CROSS_HOST_LIVE_ACCEPTANCE_20261001.json"
+    "linuxLive": "evidence/LINUX_140_CROSS_HOST_LIVE_ACCEPTANCE_20261001.json",
+    "windowsFinal": "evidence/WINDOWS_140_HOST_FINAL_ACCEPTANCE_20261001.json",
+    "linuxFinal": "evidence/LINUX_140_PUBLIC_INSTALLED_FINAL_ACCEPTANCE_20261001.json",
+    "publicationFinal": "evidence/DIM_140_PUBLICATION_INSTALLED_FINAL_20261001.json"
   },
-  "exactNextAction": "Commit/push Linux live acceptance, pass protected PR CI/merge, tag and publish v1.4.0, public-redownload/hash-verify all assets, then update/verify installed Windows and Linux from the public release."
+  "exactNextAction": "Maintenance only. Keep v1.4.0 tag/assets immutable; future releases must repeat protected contracts, deterministic builds, live lifecycle, public hash verification and installed-host update verification."
 }
