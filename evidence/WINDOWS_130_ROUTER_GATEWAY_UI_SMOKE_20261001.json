@@ -1,0 +1,72 @@
+{
+  "status": "PASS",
+  "result": "Endpoint health test completed for 8 profile(s). This is a reachability heuristic, not a full VPN handshake.",
+  "tests": [
+    "Reachable · ICMP 219.100.37.97",
+    "Reachable · ICMP 219.100.37.213",
+    "Unverified · Timeout",
+    "Reachable · ICMP 219.100.37.62",
+    "Reachable · ICMP 219.100.37.23",
+    "Unverified · DNS intercepted/private address 10.10.34.35",
+    "Unverified · DNS intercepted/private address 10.10.34.35",
+    "Unverified · DNS intercepted/private address 10.10.34.35"
+  ],
+  "testCount": 8,
+  "configHasL2tp": true,
+  "configPreview": "Direct Internet Method — Router Gateway\r\nProvider: VPN Gate\r\nProtocol: L2TP/IPsec\r\nCountry: Japan\r\nServer: 219.100.37.97\r\nHostname (reference): public-vpn-95.opengw.net\r\nUsername: vpn\r\nPassword: vpn\r\nIPsec PSK / Secret: vpn\r\nSecurity: IPsec PSK\r\nCredential status: CONFIRMED_OFFICIAL_STATIC\r\nSource observed UTC: 2026-10-01 02:20\r\n\r\nRouter: Generic VPN Client\r\nOpen the router VPN Client page. Add L2TP/IPsec. Enter Server/IP, Username, Password and IPsec pre-shared key. Enable route-all only if you want the whole LAN through the tunnel.\r\n\r\nTip: If DDNS is filtered, use the numeric server IP.",
+  "networkMutation": {
+    "stateUnchanged": true,
+    "dnsUnchanged": true,
+    "broadRoutesUnchanged": true,
+    "pre": {
+      "state": false,
+      "dns": [
+        "1:",
+        "7:",
+        "10:",
+        "11:",
+        "12:",
+        "13:",
+        "14:",
+        "15:",
+        "18:192.168.20.1",
+        "19:",
+        "25:",
+        "27:",
+        "29:",
+        "32:",
+        "33:",
+        "34:",
+        "36:",
+        "41:",
+        "102:"
+      ],
+      "broad": 0
+    },
+    "post": {
+      "state": false,
+      "dns": [
+        "1:",
+        "7:",
+        "10:",
+        "11:",
+        "12:",
+        "13:",
+        "14:",
+        "15:",
+        "18:192.168.20.1",
+        "19:",
+        "25:",
+        "27:",
+        "29:",
+        "32:",
+        "33:",
+        "34:",
+        "36:",
+        "41:",
+        "102:"
+      ],
+      "broad": 0
+    }
+  }
+}
