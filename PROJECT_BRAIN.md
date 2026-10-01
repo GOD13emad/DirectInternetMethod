@@ -1,25 +1,24 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: V1_4_0_DIRECT_MULTIPROTOCOL_RELEASE_CANDIDATE
+Status: FINAL_V1_4_0_DIRECT_MULTIPROTOCOL_PUBLISHED_INSTALLED_VERIFIED
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
 ## CURRENT v1.4.0 Direct multi-protocol engine
-- **Previous Accepted Release:** v1.3.2 is FINAL/PUBLISHED/INSTALLED_VERIFIED at immutable tag `v1.3.2` / commit `a0bf6bb`.
-- **Current Authority:** isolated worktree `C:\Users\Aa.Emad\source\repos\DirectInternetMethod_v140`, branch `feature/direct-multiprotocol-v1.4.0`, based on protected main `930db926a15d1688f95892905f4352cfebe46c39`.
-- **Mutation Objective:** add the minimum-sufficient direct methods that are neither VPN nor application proxy while preserving route/DNS/proxy ownership and exact rollback.
-- **Methods:** encrypted DNS/DoH; hostlist-scoped HTTP/80 fake+multisplit; hostlist-scoped TLS/SNI TCP/443 fake+multidisorder; hostlist-scoped QUIC UDP/443 fake desync. Windows uses ctrld + winws/WinDivert; Linux uses ctrld + owned nft/NFQUEUE + nfqws.
-- **Safety invariants:** no physical adapter DNS mutation, no default-route or broad /1 route creation, no WinHTTP proxy, no global all-domain interception, no second DPI-bypass runtime.
-- **Evidence-first exclusions:** IP fragmentation remains deferred because official zapret documentation describes unreliable modern-network delivery; wssize/window tricks remain deferred because official docs warn of site slowdown/latency. DoH3/DoQ/DoT were isolated-tested with ctrld v1.5.7 on aliemad-Labtop but produced no DNS answer on the current network, so they are not enabled. The proven direct-IP DoH path remains active and `leak_on_upstream_failure=false` now prevents silent fallback to the physical OS resolver.
-- **Linux privileged backend:** bumped from 1.2.1 to 1.4.0 because privileged nft/nfqws rules changed. This intentionally requires one protected-backend upgrade authorization instead of silently reusing stale privileged code.
-- **Local V&V:** Windows contract PASS including multiprotocol/hostlist and leak-closed DoH invariants; Linux contract PASS including TCP80/TCP443/UDP443 queue scope, no UDP443 reject and leak-closed DoH; Router Gateway contract PASS; PowerShell parse PASS; Linux nfqws exact 3-profile command `--dry-run` PASS with 6 hosts; Windows GUI/service publish + service self-test PASS; direct-IP DoH isolated live test PASS.
-- **Windows UI:** final local candidate preserves exact 1289×632 startup geometry at 96 DPI, all six actions visible, zero overlap, Refresh physical mouse + keyboard PASS; Router Gateway physical open PASS with all 9 DataItems visible.
-- **Local artifacts:** Windows installer 157,103,781 bytes, SHA-256 `69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93`; GUI `BF1E18CE…B354C`; service `770D5D1C…AF130`; manifest `7FFD3C00…716DF`. Linux ZIP 8,159,881 bytes, SHA-256 `4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E`; checksum file SHA-256 `7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609`.
-- **Linux cross-host/live gate:** PASS on fresh clone commit `015b58a`; Linux ZIP SHA exactly matches Windows build; protected backend upgraded 1.2.1→1.4.0; normal-user Start reached ACTIVE with DoH + HTTP/80 + TLS/SNI + QUIC profiles, exact nft queues and YouTube/OpenAI/GitHub probes PASS; Stop restored state/link/nft/process/default-route/physical-DNS cleanly; Recovery no-state PASS. A stale ctrld from an earlier ad-hoc transport test was identified by exact command-line provenance, terminated, temp directory removed, and final residue regression PASS.
-- **Open Gates / Critical Path:** protected CI/PR → immutable v1.4.0 tag/release/public hash verification → installed-host public-update verification. Windows live packet-engine mutation remains deferred to avoid disrupting the active Windows host; the changed network engine is live-validated on Linux.
-- **Validation Boundary:** QUIC config/runtime ownership is verifiable, but current host curl builds do not expose HTTP/3, so no curl-based QUIC application E2E claim is made. DoH3/DoQ/DoT are software-supported but not promoted because current-network live tests failed; ECH is browser/server negotiated rather than a Direct Internet Method toggle.
-- **Knowledge/Evidence:** `evidence/DIM_140_DIRECT_METHOD_SELECTION_20261001.json`; `evidence/DIM_140_SECURE_DNS_TRANSPORT_AUDIT_20261001.json`; `evidence/DIM_140_LOCAL_RELEASE_CANDIDATE_20261001.json`; Windows payload/installer build evidence.
-- **Brain Status:** CURRENT / RELEASE READY; Linux live/cross-host gates are closed. Not FINAL until protected CI/publication/public installed-host gates close.
+- **Current Accepted Authority:** FINAL/PUBLISHED/INSTALLED_VERIFIED at immutable tag `v1.4.0` and protected-main release commit `910e22d06209e244f8caf809c9821e3fb16c7cc1`; source tree `db7f8e02ca706ca0c74a54901368a6a61a4733cd`.
+- **Direct Methods:** leak-closed direct-IP DoH; hostlist-scoped HTTP/80 fake+multisplit; hostlist-scoped TLS/SNI TCP/443 fake+multidisorder; hostlist-scoped QUIC UDP/443 fake desync. No VPN, HTTP/SOCKS/WinHTTP proxy, default-route tunnel, physical-adapter DNS mutation, broad /1 route, or global all-domain interception.
+- **Evidence-first exclusions:** DoH3/DoQ/DoT are supported by ctrld but isolated current-network tests did not return DNS answers, so they are not enabled. ECH remains browser/server negotiated rather than an OS direct-method toggle. IP fragmentation, wssize/window shrinking, automatic hostlist growth and a second DPI-bypass runtime remain deferred because their evidence/risk trade-off does not justify default complexity.
+- **Public Artifacts:** Windows setup 157,103,781 bytes / SHA-256 `69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93`; Linux ZIP 8,159,881 bytes / `4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E`; checksum file `7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609`. Public re-download and GitHub digests match exactly.
+- **Protected CI:** PASS on protected `main` run `36836911098` and immutable tag run `36837069912`.
+- **Windows Public Update / Identity:** installed v1.3.2 updated directly to v1.4.0 through service control 131 without UAC; completion `done/0`; repeat check = `Already up to date`. Installed GUI `BF1E18CE…B354C`, service `770D5D1C…AF130`, manifest `7FFD3C00…716DF` match release authority.
+- **Windows UI / Router Gateway:** installed GUI opens exactly 1289×632 at 96 DPI; all six actions visible, zero overlap; Refresh mouse/keyboard PASS; Router Gateway physical open PASS with 9 visible DataItems, 7 columns and VPN Gate/VPNBook/Pilovali present.
+- **Windows Real-host Live Lifecycle:** PASS. Start reached `PASS_ACTIVE` with all four direct methods. Live probes: HTTP/80 YouTube=301, YouTube HTTPS=204, OpenAI=401, GitHub=200. Physical DNS `192.168.20.1`, default route via `192.168.20.1`, WinHTTP direct and ICS Running remained unchanged. Stop removed only owned NRPT/winws/WinDivert/ctrld/ULA and exact rollback PASS; Recovery `done/0`; final state is clean OFF with zero owned residue.
+- **Linux Public Installed / Live:** public ZIP hash verified; installed user-space authoritative files and protected backend files match the public package exactly; protected backend=1.4.0; updater reports up-to-date. Pre-public live acceptance source tree is byte-identical to public tag tree and Start→ACTIVE→Stop→Recovery clean lifecycle PASS. Final state: no state file, dimdns0, nft table, ctrld/nfqws processes or transient units; physical default route and DNS preserved.
+- **Linux Hygiene:** stale unreferenced user-space helper/host/runtime copies from older architecture were backed up at `~/.cache/DirectInternetMethod/legacy-residue-v140-20261001` and removed; current authoritative paths remain exact and clean.
+- **Validation Boundary:** Windows installer remains unsigned. Physical-router authenticated L2TP/IPsec/PPTP success is model/firmware-dependent. HTTP/3 application-level QUIC is not separately claimed because current curl builds lack HTTP/3; UDP/443 QUIC desync configuration/runtime and both platform lifecycles are verified.
+- **Knowledge/Evidence:** method selection + secure-DNS + Linux live evidence retained; final records: `WINDOWS_140_HOST_FINAL_ACCEPTANCE_20261001.json` SHA-256 `4453FAE1733A84BA8900F3FB89467AEAC60E14C1DBEADF3065158522559047CB`, `LINUX_140_PUBLIC_INSTALLED_FINAL_ACCEPTANCE_20261001.json` `7D987E1838CA1BAE0F609F631972655C354F5AB8D09510C91DDAAB9D5F00A0E2`, `DIM_140_PUBLICATION_INSTALLED_FINAL_20261001.json` `09137E037CDD10C30140EDE1909F56D3029B68D8BBC811E620FE8B08BF9DBACA`.
+- **Open Gates / Critical Path:** none for v1.4.0.
+- **Brain Status:** CURRENT / FINAL.
 
 ## CURRENT v1.3.2 Router Gateway visibility hotfix
 - **Previous Accepted Release:** v1.3.1 is the immutable published baseline at tag `v1.3.1` / commit `3b9fa6e7953e7d18068b8a0b574e0282411584ab`.
@@ -81,14 +80,13 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - **Actions supply-chain closure:** `evidence/GITHUB_130_ACTION_SUPPLY_CHAIN_HARDENING_20261001.json` — all official actions pinned to immutable 40-hex commits; weekly GitHub-Actions Dependabot active; PR #5 + main CI PASS.
 
 ## Authoritative current state
-- **CURRENT release authority:** v1.3.0 is FINAL/PUBLISHED_VERIFIED at immutable tag `v1.3.0` (`1fc9a04`); post-publication evidence continues on `main`. v1.2.1 is the previous accepted/superseded release.
-- Windows v1.2.1 exact artifact: `DirectInternetMethod_1.2.1_Windows_Setup.exe`, 157,077,755 bytes, SHA-256 `B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA`; final Sandbox identity PASS; GUI `D7AFA238…`, service `B2E7AFC2…`, manifest `292D1ABA…`.
-- Linux v1.2.1 exact artifact: `DirectInternetMethod_1.2.1_Linux_x86_64.zip`, 8,139,783 bytes, SHA-256 `CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65`; source/archive shell syntax PASS, CR bytes=0, Windows/Linux builds identical.
-- **v1.2.0 Linux public artifact is CONFIRMED FAILED/SUPERSEDED:** public ZIP SHA-256 `BBCDAD…` contains CRLF shell scripts; all six packaged shell files fail `bash -n` after public download. Windows v1.2.0 runtime/lifecycle acceptance remains valid.
-- GitHub workflow `Source and Release Contracts` is active; feature run `36810382473`, main run `36810460241`, and tag run `36810544835` all PASS on release commit `1fc9a04`.
-- GitHub secret scanning and push protection are enabled. `main` protection is strict and enforced for admins; required contexts are `linux-source` and `windows-source`; force-push/deletion are blocked; linear history and conversation resolution are required. Release tags `v*` are protected by the active tag ruleset.
-- Repository LICENSE is MISSING; this is an explicit owner/legal choice and no license was invented during the audit.
-- Concurrent Router Gateway work was detected in the original Project Root. v1.2.1 work was isolated into `C:\Users\Aa.Emad\source\repos\DirectInternetMethod_hotfix121`; original Router Gateway work was not overwritten or deleted.
+- **CURRENT release authority:** v1.4.0 is FINAL/PUBLISHED/INSTALLED_VERIFIED at immutable tag `v1.4.0`, release/main commit `910e22d06209e244f8caf809c9821e3fb16c7cc1`, source tree `db7f8e02ca706ca0c74a54901368a6a61a4733cd`.
+- Windows v1.4.0 public artifact: `DirectInternetMethod_1.4.0_Windows_Setup.exe`, 157,103,781 bytes, SHA-256 `69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93`; installed GUI/service/manifest identity, public update and real-host lifecycle PASS.
+- Linux v1.4.0 public artifact: `DirectInternetMethod_1.4.0_Linux_x86_64.zip`, 8,159,881 bytes, SHA-256 `4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E`; deterministic reproduction, public installed identity and live lifecycle PASS.
+- GitHub `Source and Release Contracts`: protected-main run `36836911098` PASS and immutable-tag run `36837069912` PASS. Release assets and public re-download SHA-256 values match.
+- GitHub protection/security controls from earlier governance audits remain part of project authority unless a later audit supersedes them: protected main, protected immutable `v*` tags, secret scanning/push protection and SHA-pinned actions.
+- Repository LICENSE remains MISSING by explicit owner/legal choice; no license was selected automatically.
+- Historical v1.0–v1.3.x release facts/evidence below remain append-only history and are superseded as current release authority by v1.4.0.
 
 ## Roadmap
 Completed: v1.0.0 and v1.1.0 Windows/Linux final releases and publication.
@@ -100,9 +98,10 @@ Completed: exact Windows v1.2.0 host bootstrap; installed GUI/service/manifest h
 Completed: Windows v1.2.0 host Start/ACTIVE/Stop/exact rollback/Recovery regression PASS.
 Completed: immutable v1.3.0 release/publication gates remain closed as previous accepted authority.
 Completed: v1.3.2 FINAL/PUBLISHED/INSTALLED_VERIFIED.
-← CURRENT: v1.4.0 direct multi-protocol candidate → Linux cross-host + protected-backend live lifecycle → protected CI/publication.
-Open v1.4.0 gates: Linux cross-host deterministic build; owner-authorized protected backend 1.4.0 install/live lifecycle; protected CI/PR; publication/public hashes; installed-host updates.
-Deferred: trusted Authenticode signing.
+Completed: v1.4.0 direct multi-protocol engine, deterministic builds, Windows/Linux live lifecycle, protected CI, immutable publication, public hash verification and installed-host updates.
+← CURRENT: v1.4.0 FINAL/PUBLISHED/INSTALLED_VERIFIED; maintenance only.
+Open v1.4.0 release gates: none.
+Deferred: trusted Authenticode signing; model-specific physical-router authenticated tunnel E2E; HTTP/3 application-level QUIC claim; optional encrypted-DNS transports only if independently proven.
 
 ## Failure → Root Cause → Prevention → Regression
 1. Linux installer used Bash readonly `UID` → `USER_UID/USER_GID`; regression PASS.
@@ -194,9 +193,10 @@ All earlier harness failures remain preserved; no product runtime failure is hid
 - v1.3 validator false-negative root cause: `evidence/WINDOWS_130_ROUTER_DATA_VALIDATOR_ROOT_CAUSE_20261001.json` — harness-only; product path/hash verified.
 
 ## Exact Next Action
-Push the Linux live/cross-host acceptance evidence, pass protected CI/PR, tag/publish immutable v1.4.0, publicly re-download and hash-verify Windows/Linux/SHA256SUMS, then verify Windows public in-app update while remaining OFF and re-verify Linux against the public package.
+Maintenance only. Keep tag `v1.4.0` and its three release assets immutable. Any future release must start from protected `main` and repeat platform contracts, deterministic artifact gates, live Start/Stop/Recovery, public re-download/hash verification and installed-host update verification.
 
 ## HISTORY
+- 2026-10-01: v1.4.0 finalized end-to-end. Protected main/tag CI PASS; public Windows/Linux/SHA256SUMS assets re-downloaded with exact hashes. Windows updated 1.3.2→1.4.0 through control 131 without UAC, installed hashes/UI/9-profile Router Gateway verified, and real-host Start→PASS_ACTIVE→Stop exact rollback→Recovery PASS with DNS/default-route/WinHTTP/ICS preserved. Linux public-package identity and clean OFF state verified; obsolete unreferenced legacy user-space runtime residue backed up and removed. v1.4.0 promoted to FINAL/PUBLISHED/INSTALLED_VERIFIED.
 - 2026-10-01: v1.4.0 fresh-clone Linux acceptance PASS at commit `015b58a`: exact ZIP SHA reproduced, backend upgraded to 1.4.0, Start→ACTIVE live probes PASS, nft queues exactly TCP80/TCP443/UDP443 bounded to first packets, Stop exact-clean rollback and Recovery no-state PASS. Earlier ad-hoc DNS-transport ctrld residue was removed and final no-residue regression passed.
 - 2026-10-01: v1.4 method audit expanded beyond VPN/proxy: bounded HTTP/80, TLS/SNI TCP/443 and QUIC UDP/443 zapret profiles added; direct-IP DoH retained and hardened with `leak_on_upstream_failure=false`. DoH3/DoQ/DoT were isolated-tested but failed to resolve on the current Linux network, so they were not promoted. ECH classified as browser/server negotiated rather than an app-level method toggle.
 - 2026-10-01: v1.4.0 direct multi-protocol candidate created from final v1.3.2. Added bounded encrypted DNS + HTTP/80 + TLS/SNI TCP/443 + QUIC UDP/443 methods; removed Linux UDP/443 blanket reject; preserved no-VPN/no-proxy/no-default-route/physical-DNS invariants. Local source/build/UI gates PASS; Linux live protected-backend gate remains open.

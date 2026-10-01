@@ -1,0 +1,205 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.4.0",
+  "status": "PASS_FINAL_WINDOWS_1_4_0_PUBLIC_INSTALLED_LIVE",
+  "authority": {
+    "tag": "v1.4.0",
+    "tagCommit": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
+    "mainCommit": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
+    "sourceTree": "db7f8e02ca706ca0c74a54901368a6a61a4733cd"
+  },
+  "publicArtifact": {
+    "path": "DirectInternetMethod_1.4.0_Windows_Setup.exe",
+    "bytes": 157103781,
+    "sha256": "69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93",
+    "githubDigest": "sha256:69f0ef63e3a658ec616362fc7d7adab95337ec3a034d3981df44c685db9fcb93",
+    "publicRedownload": "PASS_EXACT_SHA256",
+    "authenticode": "NotSigned"
+  },
+  "publicUpdate": {
+    "from": "1.3.2",
+    "to": "1.4.0",
+    "trigger": "installed service custom control 131",
+    "initialResult": {
+      "phase": "done",
+      "exitCode": 0,
+      "message": "Updated to v1.4.0."
+    },
+    "recheck": {
+      "phase": "done",
+      "exitCode": 0,
+      "message": "Already up to date."
+    },
+    "uacPrompt": false,
+    "pendingUpdateResidue": false
+  },
+  "installedPayload": {
+    "version": "1.4.0",
+    "guiSha256": "BF1E18CE478724EBD1464C03728C1180A2F4DF31CF4B4BB1AACBA5C62A1B354C",
+    "manifestSha256": "7FFD3C000E35CA3B7C4344B82B30DF8271BCEA82166DC3431886B3DB0CB716DF",
+    "serviceSha256": "770D5D1CAACD51DB1E2AFC5C7991F099FFA1BBA6488D96224725A696762AF130",
+    "routerProfiles": 9,
+    "routerDataRevision": 2,
+    "desktopShortcut": true,
+    "startMenuShortcut": true
+  },
+  "ui": {
+    "startupGeometry": "1289x632 at 96 DPI",
+    "sixActionsVisible": true,
+    "overlapCount": 0,
+    "refreshPhysicalMouse": "PASS",
+    "refreshKeyboardEnter": "PASS",
+    "routerGatewayPhysicalOpen": "PASS",
+    "routerGatewayDataItems": 9,
+    "routerGatewayColumns": 7,
+    "providersVisible": [
+      "VPN Gate",
+      "VPNBook",
+      "Pilovali"
+    ]
+  },
+  "liveLifecycle": {
+    "pre": {
+      "mode": "OFF",
+      "adapter": "Ethernet 3",
+      "adapterDns": [
+        "192.168.20.1"
+      ],
+      "defaultRoute": {
+        "interfaceIndex": 18,
+        "nextHop": "192.168.20.1",
+        "routeMetric": 0
+      },
+      "winHttp": "Direct access",
+      "ics": "Running",
+      "stateExists": false,
+      "ulaCount": 0,
+      "ownedNrptCount": 0,
+      "broadRouteCount": 0,
+      "winwsCount": 0,
+      "ctrldCount": 0,
+      "ctrldService": "Stopped"
+    },
+    "start": {
+      "action": {
+        "phase": "done",
+        "exitCode": 0
+      },
+      "runtimeStatus": "PASS_ACTIVE",
+      "architecture": "LOOPBACK_ULA_CTRLD_DOH_NRPT_PLUS_ZAPRET_MULTIPROTOCOL",
+      "directMethods": [
+        "encrypted-dns-doh",
+        "http-host-split-tcp80",
+        "tls-sni-desync-tcp443",
+        "quic-desync-udp443"
+      ],
+      "dns": {
+        "youtube": "PASS_PUBLIC_ONLY",
+        "github": "PASS_PUBLIC_ONLY",
+        "openai": "PASS_PUBLIC_ONLY",
+        "controlDDirect": "400 from 76.76.10.11"
+      },
+      "probes": {
+        "youtubeHttp80": "301",
+        "youtubeHttps": "204",
+        "openaiHttps": "401",
+        "githubHttps": "200"
+      },
+      "preserved": {
+        "adapterDns": [
+          "192.168.20.1"
+        ],
+        "defaultRoute": {
+          "interfaceIndex": 18,
+          "nextHop": "192.168.20.1",
+          "routeMetric": 0
+        },
+        "broadRouteCount": 0,
+        "winHttp": "Direct access",
+        "ics": "Running"
+      },
+      "ownedRuntime": {
+        "ctrldService": "Running",
+        "winwsRunning": true,
+        "winDivertPath": "C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+        "loopbackUla": "fd53:4444:48::53",
+        "ownedNrptCount": 1
+      }
+    },
+    "stop": {
+      "action": {
+        "phase": "done",
+        "exitCode": 0
+      },
+      "stopEvidence": "PASS",
+      "externalPreserved": true,
+      "actions": [
+        "Removed owned NRPT catch-all",
+        "Stopped owned winws and WinDivert",
+        "Stopped owned ctrld",
+        "Removed owned loopback ULA"
+      ],
+      "exactRollback": {
+        "adapterDns": [
+          "192.168.20.1"
+        ],
+        "defaultRoute": {
+          "interfaceIndex": 18,
+          "nextHop": "192.168.20.1",
+          "routeMetric": 0
+        },
+        "broadRouteCount": 0,
+        "winHttp": "Direct access",
+        "ics": "Running",
+        "stateExists": false,
+        "ulaCount": 0,
+        "ownedNrptCount": 0,
+        "winwsCount": 0,
+        "ctrldCount": 0,
+        "winDivertRunning": 0,
+        "ctrldService": "Stopped"
+      }
+    },
+    "recovery": {
+      "action": {
+        "phase": "done",
+        "exitCode": 0
+      },
+      "finalClean": true
+    }
+  },
+  "finalState": {
+    "directService": "Running",
+    "ctrldService": "Stopped",
+    "stateExists": false,
+    "ulaCount": 0,
+    "ownedNrptCount": 0,
+    "broadRouteCount": 0,
+    "winwsCount": 0,
+    "ctrldCount": 0,
+    "winDivertRunning": 0,
+    "adapterDns": [
+      "192.168.20.1"
+    ],
+    "defaultRoute": {
+      "interfaceIndex": 18,
+      "nextHop": "192.168.20.1",
+      "routeMetric": 0
+    },
+    "ics": "Running",
+    "winHttp": "Direct access"
+  },
+  "validationBoundary": {
+    "http3ApplicationE2E": "UNPROVEN_HOST_CURL_LACKS_HTTP3; UDP/443 QUIC profile configuration/runtime is validated",
+    "installerSignature": "NOT_SIGNED"
+  },
+  "provenance": [
+    "installed service action-status.json",
+    "C:\\Program Files\\DirectInternetMethod\\Privileged\\evidence\\runtime-latest.json",
+    "C:\\Program Files\\DirectInternetMethod\\Privileged\\evidence\\stop-latest.json",
+    "UIAutomation against installed v1.4.0 GUI",
+    "public GitHub release asset re-download"
+  ]
+}

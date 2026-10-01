@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.4.0",
+  "status": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED_V1_4_0",
+  "authority": {
+    "tag": "v1.4.0",
+    "commit": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
+    "main": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
+    "tree": "db7f8e02ca706ca0c74a54901368a6a61a4733cd"
+  },
+  "publicRelease": {
+    "publishedAt": "2026-10-01T08:37:55Z",
+    "assets": [
+      {
+        "name": "DirectInternetMethod_1.4.0_Windows_Setup.exe",
+        "bytes": 157103781,
+        "sha256": "69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93"
+      },
+      {
+        "name": "DirectInternetMethod_1.4.0_Linux_x86_64.zip",
+        "bytes": 8159881,
+        "sha256": "4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 223,
+        "sha256": "7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609"
+      }
+    ],
+    "publicRedownload": "PASS_ALL_EXACT",
+    "checksumContents": "PASS_MATCH_WINDOWS_AND_LINUX_ASSETS"
+  },
+  "ci": {
+    "main": {
+      "runId": 36836911098,
+      "status": "success"
+    },
+    "tag": {
+      "runId": 36837069912,
+      "status": "success"
+    },
+    "workflow": "Source and Release Contracts"
+  },
+  "windows": {
+    "status": "PASS_FINAL_WINDOWS_1_4_0_PUBLIC_INSTALLED_LIVE",
+    "evidence": "evidence/WINDOWS_140_HOST_FINAL_ACCEPTANCE_20261001.json"
+  },
+  "linux": {
+    "status": "PASS_FINAL_LINUX_1_4_0_PUBLIC_INSTALLED_LIVE",
+    "evidence": "evidence/LINUX_140_PUBLIC_INSTALLED_FINAL_ACCEPTANCE_20261001.json"
+  },
+  "methods": {
+    "enabled": [
+      "encrypted DNS direct-IP DoH with OS-resolver leak disabled",
+      "HTTP/80 host split/desync",
+      "TLS/SNI TCP/443 desync",
+      "QUIC UDP/443 desync"
+    ],
+    "deliberatelyNotEnabled": [
+      "DoH3/DoQ/DoT: software-supported but isolated current-network tests produced no DNS answer",
+      "ECH product toggle: browser/server negotiated, not an OS direct-method toggle",
+      "IP fragmentation: deferred due documented modern-network reliability risk",
+      "wssize/window shrinking: deferred due documented latency/site-compatibility risk",
+      "automatic hostlist growth: deferred to avoid unintended global interception",
+      "second DPI-bypass runtime: unnecessary dependency/driver complexity"
+    ]
+  },
+  "limitations": [
+    "Windows installer is not Authenticode-signed.",
+    "Physical-router authenticated L2TP/IPsec/PPTP success remains router-model/firmware-dependent.",
+    "HTTP/3 application-level QUIC success is not separately proven because current curl builds lack HTTP/3; the UDP/443 QUIC desync profile and full Windows/Linux lifecycle are validated."
+  ],
+  "roadmap": {
+    "completed": [
+      "v1.4.0 protected CI",
+      "immutable tag/release",
+      "public re-download/hash verification",
+      "Windows public in-app update",
+      "Windows installed UI and Router Gateway regression",
+      "Windows live Start/Stop/Recovery exact rollback",
+      "Linux public installed identity",
+      "Linux live lifecycle",
+      "final clean-state verification"
+    ],
+    "openReleaseGates": [],
+    "deferred": [
+      "trusted Authenticode signing",
+      "model-specific physical-router authenticated tunnel E2E",
+      "optional future encrypted-DNS transport fallbacks only if independently proven"
+    ]
+  },
+  "exactNextAction": "Maintenance only. Keep v1.4.0 tag/assets immutable; any future release starts from protected main and must repeat platform contracts, deterministic artifact gates, live lifecycle, public hash verification and installed-host update verification."
+}

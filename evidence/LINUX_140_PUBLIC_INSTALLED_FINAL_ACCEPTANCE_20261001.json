@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.4.0",
+  "status": "PASS_FINAL_LINUX_1_4_0_PUBLIC_INSTALLED_LIVE",
+  "authority": {
+    "tag": "v1.4.0",
+    "tagCommit": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
+    "tagTree": "db7f8e02ca706ca0c74a54901368a6a61a4733cd",
+    "prePublicationAcceptedCommit": "42b7304",
+    "prePublicationAcceptedTree": "db7f8e02ca706ca0c74a54901368a6a61a4733cd",
+    "sourceTreeIdentity": "PASS_EXACT_TREE_MATCH"
+  },
+  "publicArtifact": {
+    "path": "DirectInternetMethod_1.4.0_Linux_x86_64.zip",
+    "bytes": 8159881,
+    "sha256": "4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E",
+    "githubDigest": "sha256:4cf521fd3821f9204999c0f17b217a60dc7117ac68421e5634fdf8d15d3c485e",
+    "publicRedownload": "PASS_EXACT_SHA256",
+    "crossHostDeterministic": "PASS_EXACT_SHA_MATCH"
+  },
+  "installed": {
+    "userVersion": "1.4.0",
+    "protectedBackendVersion": "1.4.0",
+    "updaterCheck": "UP_TO_DATE_NONE",
+    "authoritativeUserFiles": "PASS_EXACT_PUBLIC_PACKAGE_HASHES",
+    "protectedBackendFiles": "PASS_EXACT_PUBLIC_PACKAGE_HASHES",
+    "exactVerifiedFiles": [
+      "app/direct_internet_method.py",
+      "app/router_gateway.py",
+      "app/router_gateway/providers.json",
+      "app/direct-internet-method.svg",
+      "uninstall.sh",
+      "app/direct_method_helper.sh -> /usr/lib/directinternetmethod/direct_method_helper.sh",
+      "app/hosts.txt -> /usr/lib/directinternetmethod/direct_hosts.txt",
+      "system/control.sh -> /usr/lib/directinternetmethod/control.sh",
+      "system/uninstall_system.sh -> /usr/lib/directinternetmethod/uninstall_system.sh",
+      "runtime/ctrld -> /usr/lib/directinternetmethod/runtime/usr/bin/ctrld",
+      "runtime/nfqws -> /usr/lib/directinternetmethod/runtime/usr/bin/nfqws"
+    ]
+  },
+  "liveLifecycle": {
+    "status": "PASS_START_ACTIVE_STOP_RECOVERY_CLEAN",
+    "sourceEvidence": "evidence/LINUX_140_CROSS_HOST_LIVE_ACCEPTANCE_20261001.json",
+    "sourceTreeIdentityToPublicTag": "PASS",
+    "directMethods": [
+      "encrypted-dns-doh",
+      "http-host-split-tcp80",
+      "tls-sni-desync-tcp443",
+      "quic-desync-udp443"
+    ],
+    "finalState": {
+      "state": "ABSENT",
+      "dnsLink": "ABSENT",
+      "nftTable": "ABSENT",
+      "ctrldProcess": "ABSENT",
+      "nfqwsProcess": "ABSENT",
+      "ctrldTransientUnit": "inactive",
+      "nfqwsTransientUnit": "inactive",
+      "defaultRoute": "default via 192.168.20.1 dev enp1s0",
+      "physicalDns": "192.168.20.1"
+    }
+  },
+  "upgradeHygiene": {
+    "finding": "Legacy unreferenced user-space direct_method_helper.sh, direct_hosts.txt and runtime/ remained from pre-protected-backend installs.",
+    "status": "CLEANED_ON_INSTALLED_HOST",
+    "safetyBasis": "Current UI references /usr/lib/directinternetmethod and does not reference these user-space legacy copies.",
+    "backupPath": "/home/aliemad/.cache/DirectInternetMethod/legacy-residue-v140-20261001",
+    "removed": [
+      "~/.local/share/DirectInternetMethod/direct_method_helper.sh",
+      "~/.local/share/DirectInternetMethod/direct_hosts.txt",
+      "~/.local/share/DirectInternetMethod/runtime"
+    ],
+    "regression": "PASS_OBSOLETE_PATHS_ABSENT_CURRENT_AUTHORITATIVE_FILES_EXACT"
+  },
+  "validationBoundary": {
+    "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
+    "http3ApplicationE2E": "UNPROVEN_HOST_CURL_LACKS_HTTP3"
+  },
+  "provenance": [
+    "public GitHub v1.4.0 ZIP re-download",
+    "fresh-clone/cross-host live acceptance",
+    "installed file SHA-256 comparison to public ZIP",
+    "/var/lib/directinternetmethod/install.json",
+    "~/.local/share/DirectInternetMethod/INSTALL.json"
+  ]
+}
