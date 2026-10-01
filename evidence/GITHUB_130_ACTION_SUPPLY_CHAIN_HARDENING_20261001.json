@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "date": "2026-10-01",
-  "status": "LOCAL_REGRESSION_PASS_PR_PENDING",
+  "status": "PASS_MERGED_MAIN_CI",
   "context": "Final GitHub Actions supply-chain hardening for DirectInternetMethod v1.3.0",
   "actions": [
     {
@@ -38,7 +38,7 @@
     "main remains protected and required checks remain linux-source/windows-source.",
     "Release tag v* ruleset update/deletion protection remains immutable with no bypass."
   ],
-  "nextGate": "Protected PR must run linux-source/windows-source successfully using SHA-pinned actions.",
+  "nextGate": "CLOSED",
   "validation": {
     "actionRefGuard": "PASS_ALL_USES_FULL_40_HEX_SHA",
     "releaseMetadataAudit": "PASS",
@@ -49,5 +49,25 @@
     "guiBuild": "PASS_0_WARNINGS_0_ERRORS",
     "diffCheck": "PASS",
     "runtimeNetworkSourceChanged": false
+  },
+  "pr": {
+    "number": 5,
+    "url": "https://github.com/GOD13emad/DirectInternetMethod/pull/5",
+    "initialHead": "9a4fae4e75483eea5cd4c2dd48b21c9abbafe70f",
+    "rebasedHead": "65ebd48d4b0bd9ec688bc89a3c63d830f045f8f1",
+    "baseAtMerge": "6104a0a2d4b488a70bf3176f4a6395976f23b998",
+    "mergeCommit": "b6cfc5e49cf074c2a74f79b19beca45350f67ea0",
+    "requiredChecks": {
+      "linuxSource": "PASS",
+      "windowsSource": "PASS"
+    },
+    "finalPrCiRun": 36816869694,
+    "mainCiRun": 36816987358,
+    "mainCiConclusion": "success"
+  },
+  "concurrencyReconciliation": {
+    "concurrentMainAdvance": "30a471c -> 6104a0a",
+    "classification": "ACTIVE_POST_RELEASE_V1_3_1_DEVELOPMENT",
+    "resolution": "Rebased hardening branch onto origin/main without overwriting provider catalog work; full local and protected CI rerun PASS."
   }
 }

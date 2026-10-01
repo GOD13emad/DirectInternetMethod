@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "date": "2026-10-01",
-  "status": "LOCAL_REGRESSION_PASS_PR_PENDING",
+  "status": "PASS_MERGED_MAIN_CI",
   "context": "Post-publication GitHub line-by-line audit of v1.3.0",
   "findings": [
     {
@@ -37,5 +37,18 @@
     "diffCheck": "PASS",
     "runtimeOrNetworkSourceChanged": false
   },
-  "nextGate": "Protected GitHub PR required checks linux-source + windows-source must PASS before merge."
+  "nextGate": "CLOSED",
+  "pr": {
+    "number": 4,
+    "url": "https://github.com/GOD13emad/DirectInternetMethod/pull/4",
+    "headCommit": "63adc9f6712c8385662516848c0556dd1d56c373",
+    "mergeCommit": "30a471ca41ede70c2d6e39c79a6ecb6615dee737",
+    "requiredChecks": {
+      "linuxSource": "PASS",
+      "windowsSource": "PASS"
+    },
+    "prCiRun": 36816103907,
+    "mainCiRun": 36816213011,
+    "mainCiConclusion": "success"
+  }
 }

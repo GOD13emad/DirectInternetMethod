@@ -1,6 +1,6 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: FINAL_V1_3_0_ROUTER_GATEWAY_PUBLISHED_VERIFIED
+Status: FINAL_V1_3_0_GITHUB_LINE_BY_LINE_AUDIT_CLOSED__POST_RELEASE_V1_3_1_DEV_ACTIVE
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
@@ -22,12 +22,16 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - **Installed Windows Router Gateway UI refresh:** PASS. Installed app shows 8 profiles, refreshes to cache, and state/broad/DNS remain unchanged.
 - **Validator root cause:** CLOSED / harness-only. Initial post-install validator looked in `{app}\router_gateway`; installer and WPF correctly use `{app}\app\router_gateway`. Validator now derives path from executable directory contract.
 - **Final GitHub governance audit:** PASS. Public repo, strict main protection, required Linux/Windows checks, secret scanning/push protection, immutable release-tag ruleset, exact release assets and feature/main/tag CI all verify. The v1.3.0 tag is correctly an ancestor of post-release evidence commits on main.
-- **Post-hygiene GitHub final audit:** PASS. Root `SHA256SUMS.txt` now exactly matches the public v1.3.0 release checksum asset; generic release-metadata CI guard added; Private Vulnerability Reporting enabled; `SECURITY.md` added; merged branches auto-delete enabled; all historical merged remote branches removed so only `main` remains.
+- **Post-hygiene GitHub final audit:** PASS. Root `SHA256SUMS.txt` exactly matches the public v1.3.0 release checksum asset; release-metadata CI guard is enforced; Private Vulnerability Reporting and secret scanning/push protection are enabled; required CI is SHA-pinned and the full Windows contract now runs pre-merge. A current `feature/router-providers-v1.3.1` branch/worktree exists as active post-release development and is explicitly outside immutable v1.3.0 release authority.
 - **License:** `OWNER_LEGAL_DECISION_OPEN`; not a technical release blocker. No software license was selected on the owner's behalf.
 - **Provider catalog revision 2 (post-release data update):** 9 ready profiles from 3 independent ready providers after adding official Pilovali L2TP/IPsec. HideSSH, VPN Jantit and TCPVPN are confirmed candidate sources but require per-user account generation; they are not exposed as fake ready profiles.
 - **Installation/shortcut correction:** Windows v1.3.0 was installed and Start Menu shortcut existed; missing per-user Desktop shortcut was repaired and target/icon verified. Linux was still user-space v1.1.0; it was safely stopped, upgraded from the verified v1.3.0 ZIP, and now has v1.3.0 + Desktop shortcut + Applications entry with network state clean OFF.
 - **Linux source-install failure prevention:** direct source-tree install initially failed because provider data path assumed package layout. Installer now uses packaged path first and canonical source-tree fallback; Linux temp-path regression PASS.
 - **Brain Status:** CURRENT / FINAL for v1.3.0. GitHub tag/release, public asset hashes, Windows public-update host verification, installed UI refresh, Linux public fresh-clone acceptance and final governance audit are verified.
+
+- **GitHub line-by-line final audit:** `evidence/GITHUB_130_LINE_BY_LINE_FINAL_AUDIT_20261001.json` — SHA-256 `5F14FE447285028DDA7DB5581978E69A6AAF9051F6A00D1A9B6890661869C385`; PASS_FINAL_GITHUB_LINE_BY_LINE_AUDIT_V1_3_0.
+- **Metadata/CI drift closure:** `evidence/GITHUB_130_METADATA_CI_DRIFT_FIX_20261001.json` — platform publication metadata synchronized; full Windows contract moved into protected pre-merge `windows-source`; PR #4 + main CI PASS.
+- **Actions supply-chain closure:** `evidence/GITHUB_130_ACTION_SUPPLY_CHAIN_HARDENING_20261001.json` — all official actions pinned to immutable 40-hex commits; weekly GitHub-Actions Dependabot active; PR #5 + main CI PASS.
 
 ## Authoritative current state
 - **CURRENT release authority:** v1.3.0 is FINAL/PUBLISHED_VERIFIED at immutable tag `v1.3.0` (`1fc9a04`); post-publication evidence continues on `main`. v1.2.1 is the previous accepted/superseded release.
@@ -73,6 +77,10 @@ Deferred: trusted Authenticode signing.
 19. Public Linux v1.2.0 ZIP shipped CRLF shell scripts → no Git EOL policy + package builder copied checkout bytes verbatim; confirmed public asset failure on Linux. Prevention: *.sh LF policy + package-byte LF normalization + CI source/archive bash gates; v1.2.1 regression PASS.
 20. Initial v1.2.1 Linux ZIP remained cross-host non-deterministic after shell-only normalization → README/license/hosts text EOL differed across hosts; normalize all package text payloads (.sh/.py/.md/.txt/.svg) before hashing/packing; Windows/Linux v1.2.1 ZIP hash now identical.
 21. Concurrent writer switched original checkout to Router Gateway branch during GitHub audit → hotfix commit briefly landed on local Router branch. Prevention: recovered hotfix ref and isolated all subsequent work to dedicated Git worktree; Router Gateway tracked/untracked work preserved.
+22. Windows platform release metadata remained `release-ready/publication=PENDING` after public v1.3.0 publication → release metadata audit did not compare platform publication state to root authority. Prevention: synchronize `windows/RELEASE.json`, enforce root/platform publication fields and root/delivery checksum equality in CI; PR #4/main CI PASS.
+29. Required protected Windows CI ran full contract only after immutable tag creation → pinned PowerShell runtime was restored only in tag job. Prevention: restore pinned runtime and run full Windows + Router Gateway contract in required pre-merge `windows-source`; PR #4/main CI PASS.
+30. GitHub Actions used floating major tags (`checkout@v7`, `setup-dotnet@v6`) → mutable supply-chain refs. Prevention: pin official actions to verified full commit SHAs and maintain them with weekly GitHub-Actions Dependabot; PR #5/main CI PASS.
+
 All earlier harness failures remain preserved; no product runtime failure is hidden.
 28. Initial v1.3 post-install validator checked `{app}\\router_gateway` and falsely reported missing Router Gateway data → installer/UI contract actually uses `{app}\\app\\router_gateway`; corrected validator derives the path from executable directory; installed hash and UI refresh regression PASS.
 
@@ -198,3 +206,5 @@ No release or GitHub gate remains for v1.3.0. Keep tag `v1.3.0` and its three re
 - 2026-10-01: Pilovali L2TP/IPsec ready profile added after official-source verification and live public-IP/ping check; ready catalog is now 9 profiles / 3 independent ready providers.
 - 2026-10-01: Linux user-space install corrected from v1.1.0 to v1.3.0 with Desktop/Application shortcuts verified and clean OFF state; Windows missing per-user Desktop shortcut repaired.
 - 2026-10-01: Source-tree Linux installer path defect for Router Gateway data closed with package/source fallback; contract + Linux temp-path regression PASS.
+
+- 2026-10-01: GitHub line-by-line audit closed for immutable v1.3.0. PR #4 fixed platform release-metadata drift and moved full Windows contract into protected pre-merge CI; PR #5 pinned all GitHub Actions to immutable SHAs and enabled GitHub-Actions-only Dependabot. Main protection, no-bypass v* tag ruleset, secret scanning/push protection, PVR, public release digests and checksum authority reverified. Active v1.3.1 provider/UI worktrees remain separate unreleased development.

@@ -1,0 +1,171 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_FINAL_GITHUB_LINE_BY_LINE_AUDIT_V1_3_0",
+  "releaseAuthority": {
+    "tag": "v1.3.0",
+    "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+    "draft": false,
+    "prerelease": false,
+    "publishedAt": "2026-10-01T03:28:18Z",
+    "assets": [
+      {
+        "name": "DirectInternetMethod_1.3.0_Windows_Setup.exe",
+        "bytes": 157098906,
+        "digest": "sha256:04ebfd968146a7122a0695db36a01dbacb5f91b69104d6d1dea6d1964bb99263"
+      },
+      {
+        "name": "DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+        "bytes": 8156742,
+        "digest": "sha256:14ce381d589482fb8dbf437c12b351b5f232653f2c6512f871139fb5f3809824"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 221,
+        "digest": "sha256:a56db90964085a0d8452691d70dceff74d888db65b634b370926a3bb38596abe"
+      }
+    ]
+  },
+  "repository": {
+    "visibility": "public",
+    "defaultBranch": "main",
+    "archived": false,
+    "disabled": false,
+    "deleteBranchOnMerge": true,
+    "checksumAuthority": {
+      "rootEqualsDelivery": true,
+      "sha256": "A56DB90964085A0D8452691D70DCEFF74D888DB65B634B370926A3BB38596ABE"
+    },
+    "openPullRequests": 0,
+    "currentRemoteBranches": [
+      {
+        "name": "main",
+        "sha": "b6cfc5e49cf074c2a74f79b19beca45350f67ea0",
+        "protected": true
+      },
+      {
+        "name": "feature/router-providers-v1.3.1",
+        "sha": "6104a0a2d4b488a70bf3176f4a6395976f23b998",
+        "protected": false,
+        "classification": "ACTIVE_POST_RELEASE_DEVELOPMENT_WORKTREE_FULLY_ANCESTOR_OF_MAIN"
+      }
+    ]
+  },
+  "mainProtection": {
+    "strict": true,
+    "requiredChecks": [
+      "linux-source",
+      "windows-source"
+    ],
+    "enforceAdmins": true,
+    "requiredLinearHistory": true,
+    "allowForcePushes": false,
+    "allowDeletions": false,
+    "requiredConversationResolution": true,
+    "requiredCommitSignatures": false
+  },
+  "tagProtection": {
+    "rulesetId": 24283722,
+    "name": "Protect release tags",
+    "enforcement": "active",
+    "pattern": "refs/tags/v*",
+    "blockedOperations": [
+      "update",
+      "deletion"
+    ],
+    "bypassActors": 0,
+    "currentUserCanBypass": "never"
+  },
+  "ci": {
+    "workflow": "Source and Release Contracts",
+    "status": "active",
+    "actionPins": {
+      "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "setupDotnet": "a98b56852c35b8e3190ac28c8c2271da59106c68",
+      "floatingUses": 0
+    },
+    "linuxSource": {
+      "required": true,
+      "sourceLfGuard": true,
+      "builtArchiveShellGuard": true,
+      "releaseMetadataAudit": true
+    },
+    "windowsSource": {
+      "required": true,
+      "buildService": true,
+      "buildGui": true,
+      "restorePinnedPowerShell": true,
+      "fullWindowsContractPreMerge": true,
+      "routerGatewayContract": true
+    },
+    "tagRecheck": {
+      "windowsReleaseContract": true
+    },
+    "pr4": {
+      "number": 4,
+      "mergeCommit": "30a471ca41ede70c2d6e39c79a6ecb6615dee737",
+      "prRun": 36816103907,
+      "mainRun": 36816213011,
+      "conclusion": "success"
+    },
+    "pr5": {
+      "number": 5,
+      "rebasedHead": "65ebd48d4b0bd9ec688bc89a3c63d830f045f8f1",
+      "mergeCommit": "b6cfc5e49cf074c2a74f79b19beca45350f67ea0",
+      "prRun": 36816869694,
+      "mainRun": 36816987358,
+      "conclusion": "success"
+    }
+  },
+  "dependencyMaintenance": {
+    "dependabotWorkflowActive": true,
+    "githubActionsWeekly": true,
+    "packageDependencySurface": "NONE_DETECTED_NO_PACKAGE_REFERENCE_REQUIREMENTS_PACKAGE_JSON",
+    "dependabotSecurityUpdates": "NOT_APPLICABLE_TO_CURRENT_PACKAGE_SURFACE"
+  },
+  "security": {
+    "secretScanning": "enabled",
+    "pushProtection": "enabled",
+    "privateVulnerabilityReporting": true,
+    "secretScanningNonProviderPatterns": "UNAVAILABLE_OR_NOT_SUPPORTED_FOR_CURRENT_REPO_CONFIGURATION_API_REMAINS_DISABLED",
+    "secretScanningValidityChecks": "UNAVAILABLE_OR_NOT_SUPPORTED_FOR_CURRENT_REPO_CONFIGURATION_API_REMAINS_DISABLED",
+    "requiredCommitSignatures": "DEFERRED_NO_SIGNING_INFRASTRUCTURE"
+  },
+  "metadataConsistency": {
+    "windowsReleasePublicationDrift": "FIXED",
+    "rootDeliveryChecksumDriftGuard": "ENFORCED",
+    "releaseMetadataAudit": "PASS",
+    "windowsReleaseStatus": "PASS_FINAL_WINDOWS_1_3_0_PUBLISHED_VERIFIED"
+  },
+  "contentQuality": {
+    "secretPatternAudit": "PASS_NO_HITS",
+    "jsonParseAudit": "PASS",
+    "powershellParseAudit": "PASS",
+    "pythonCompileAudit": "PASS",
+    "dotnetServiceBuild": "PASS_0_WARNINGS_0_ERRORS",
+    "dotnetGuiBuild": "PASS_0_WARNINGS_0_ERRORS",
+    "mergeConflictMarkers": "ZERO",
+    "todoFixmeMarkers": "ZERO"
+  },
+  "evidence": {
+    "liveReverify": {
+      "path": "evidence/GITHUB_130_LIVE_REVERIFY_20261001.json",
+      "sha256": "A550624958CD5CC57B5F13DF43C0553D188660CAE8DA58D46E8C560054427426"
+    },
+    "metadataCiDrift": {
+      "path": "evidence/GITHUB_130_METADATA_CI_DRIFT_FIX_20261001.json",
+      "sha256": "876CDEF76768218B879AEA729E949A60617346BC94C9C1E8349AE1BBFD863972"
+    },
+    "actionSupplyChain": {
+      "path": "evidence/GITHUB_130_ACTION_SUPPLY_CHAIN_HARDENING_20261001.json",
+      "sha256": "4C8FD362D29282FE33931BEEF5C648498261EAA80558635B5FC162E501E3131A"
+    }
+  },
+  "boundaries": {
+    "license": "MISSING_OWNER_LEGAL_CHOICE",
+    "authenticode": "WINDOWS_INSTALLER_NOT_SIGNED",
+    "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
+    "activePostReleaseDevelopment": "v1.3.1 provider/UI worktrees exist and are not part of immutable v1.3.0 release authority"
+  },
+  "conclusion": "No GitHub/release-governance blocker remains for v1.3.0. Release tag/assets are immutable and verified; required CI is protected and SHA-pinned; post-release v1.3.1 development is explicitly separate from release authority."
+}

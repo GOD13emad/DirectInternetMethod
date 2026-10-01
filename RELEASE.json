@@ -85,7 +85,7 @@
     "preRebaseV130Hashes": true,
     "reason": "origin/main advanced to authoritative v1.2.1 during work; v1.3 was rebased and rebuilt from the new authority."
   },
-  "exactNextAction": "Maintenance/monitoring only; no product, release, or GitHub gate remains. Keep v1.3.0 tag/assets immutable.",
+  "exactNextAction": "No v1.3.0 product/release/GitHub gate remains. Keep tag/assets immutable. Active v1.3.1 provider/UI worktrees are separate unreleased development and must pass a new versioned release gate before publication.",
   "publication": {
     "tag": "v1.3.0",
     "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
@@ -97,9 +97,9 @@
     "publicRedownloadHashVerification": "PASS_ALL_ASSETS"
   },
   "githubGovernance": {
-    "status": "PASS_FINAL_GITHUB_POST_HYGIENE_AUDIT_V1_3_0",
-    "mainProtection": "strict required linux-source + windows-source; enforce admins; linear history; force-push/deletion blocked; conversation resolution required",
-    "tagRuleset": "Protect release tags active",
+    "status": "PASS_FINAL_GITHUB_LINE_BY_LINE_AUDIT_V1_3_0",
+    "mainProtection": "strict required linux-source + windows-source; enforce admins; full Windows contract pre-merge; linear history; force-push/deletion blocked; conversation resolution required",
+    "tagRuleset": "Protect release tags active; v* update/deletion blocked; no bypass actors; current user cannot bypass",
     "secretScanning": "enabled",
     "pushProtection": "enabled",
     "license": "MISSING_OWNER_LEGAL_CHOICE",
@@ -108,10 +108,37 @@
     "privateVulnerabilityReporting": "enabled",
     "deleteBranchOnMerge": true,
     "remoteBranches": [
-      "main"
+      "main",
+      "feature/router-providers-v1.3.1"
     ],
-    "finalAuditEvidence": "evidence/GITHUB_130_POST_HYGIENE_FINAL_AUDIT_20261001.json",
-    "finalAuditSha256": "57D22DDF65DE3F63795076CFC3827725B4A7744F4684078FBCF1554FDE449E18"
+    "finalAuditEvidence": "evidence/GITHUB_130_LINE_BY_LINE_FINAL_AUDIT_20261001.json",
+    "finalAuditSha256": "5F14FE447285028DDA7DB5581978E69A6AAF9051F6A00D1A9B6890661869C385",
+    "actions": {
+      "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "setupDotnet": "a98b56852c35b8e3190ac28c8c2271da59106c68",
+      "floatingUses": 0
+    },
+    "dependabotActions": "enabled_weekly_github-actions_only",
+    "advancedSecretScanning": {
+      "nonProviderPatterns": "UNAVAILABLE_OR_UNSUPPORTED_CURRENT_REPO_CONFIGURATION_API_REMAINS_DISABLED",
+      "validityChecks": "UNAVAILABLE_OR_UNSUPPORTED_CURRENT_REPO_CONFIGURATION_API_REMAINS_DISABLED"
+    },
+    "requiredCommitSignatures": "DEFERRED_NO_SIGNING_INFRASTRUCTURE",
+    "packageDependabot": "NOT_APPLICABLE_NO_PACKAGE_MANIFESTS",
+    "activePostReleaseDevelopment": "feature/router-providers-v1.3.1 is an active v1.3.1 worktree branch and is explicitly outside immutable v1.3.0 release authority",
+    "metadataConsistency": "PASS_WINDOWS_RELEASE_PUBLICATION_SYNC_AND_ROOT_DELIVERY_CHECKSUM_GUARD",
+    "pr4": {
+      "mergeCommit": "30a471ca41ede70c2d6e39c79a6ecb6615dee737",
+      "prCiRun": 36816103907,
+      "mainCiRun": 36816213011,
+      "status": "PASS"
+    },
+    "pr5": {
+      "mergeCommit": "b6cfc5e49cf074c2a74f79b19beca45350f67ea0",
+      "prCiRun": 36816869694,
+      "mainCiRun": 36816987358,
+      "status": "PASS"
+    }
   },
   "evidence": {
     "githubFinalAudit": "evidence/GITHUB_130_FINAL_AUDIT_20261001.json",
@@ -120,6 +147,7 @@
     "linuxPublicReleaseAcceptance": "evidence/LINUX_130_PUBLIC_RELEASE_ACCEPTANCE_20261001.json",
     "routerDataValidatorRootCause": "evidence/WINDOWS_130_ROUTER_DATA_VALIDATOR_ROOT_CAUSE_20261001.json",
     "repoContentAudit": "evidence/GITHUB_REPO_CONTENT_AUDIT_20261001.json",
-    "allTrackedSyntaxAudit": "evidence/GITHUB_ALL_TRACKED_SYNTAX_AUDIT_20261001.json"
+    "allTrackedSyntaxAudit": "evidence/GITHUB_ALL_TRACKED_SYNTAX_AUDIT_20261001.json",
+    "githubLineByLineFinalAudit": "evidence/GITHUB_130_LINE_BY_LINE_FINAL_AUDIT_20261001.json"
   }
 }
