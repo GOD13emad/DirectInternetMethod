@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_OFFICIAL_SOURCE_FRESHNESS",
+  "vpnGate": {
+    "source": "https://www.vpngate.net/en/howto_l2tp.aspx",
+    "username": "vpn",
+    "password": "vpn",
+    "preSharedKey": "vpn",
+    "numericIpFallback": true,
+    "status": "CONFIRMED_OFFICIAL"
+  },
+  "vpnBook": {
+    "source": "https://www.vpnbook.com/freevpn/pptp-vpn",
+    "hosts": [
+      "pl134.vpnbook.com",
+      "pl140.vpnbook.com",
+      "ca225.vpnbook.com"
+    ],
+    "username": "vpnbook",
+    "password": "ngzc6a8",
+    "sourceLastUpdated": "2026-09-29",
+    "status": "CONFIRMED_OFFICIAL_ROTATING"
+  },
+  "bundledManifest": "router_gateway/providers.json",
+  "bundledMatch": true,
+  "runtimeNote": "Direct Windows fetch timed out under the current network; offline-first snapshot remains authoritative until refresh succeeds. This is expected fail-soft behavior, not a source mismatch.",
+  "evidence": [
+    "Official source checked via web 2026-10-01",
+    "WINDOWS_130_ROUTER_GATEWAY_UI_SMOKE_20261001.json"
+  ]
+}

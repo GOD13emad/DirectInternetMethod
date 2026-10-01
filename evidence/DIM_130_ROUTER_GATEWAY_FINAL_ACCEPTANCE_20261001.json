@@ -4,7 +4,7 @@
   "project": "Direct Internet Method",
   "version": "1.3.0",
   "feature": "Router Gateway",
-  "status": "PASS_RELEASE_READY_PUBLICATION_PENDING",
+  "status": "PASS_FINAL_PUBLISHED_VERIFIED",
   "authority": {
     "previousAccepted": {
       "version": "1.2.1",
@@ -51,7 +51,7 @@
     "linuxContract": "PASS",
     "linuxRuntimeSmoke": "PASS",
     "linuxDeterministicBuild": "PASS_CROSS_HOST",
-    "publication": "PENDING"
+    "publication": "PASS_PUBLIC_REDOWLOAD_VERIFIED"
   },
   "finalUiSmoke": {
     "configFields": [
@@ -110,5 +110,16 @@
     }
   ],
   "boundary": "Authenticated tunnel success on a physical modem/router remains model/firmware dependent and was not claimed.",
-  "exactNextAction": "Commit and publish; verify GitHub CI; tag/release exact assets; public re-download/hash verification."
+  "exactNextAction": "Maintenance only; no open release gate.",
+  "publication": {
+    "tag": "v1.3.0",
+    "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.3.0",
+    "ciRuns": [
+      36810382473,
+      36810460241,
+      36810544835
+    ],
+    "publicAssetHashes": "PASS_ALL"
+  }
 }

@@ -1,6 +1,6 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: RELEASE_READY_V1_3_0_ROUTER_GATEWAY_PUBLICATION_PENDING
+Status: FINAL_V1_3_0_ROUTER_GATEWAY_PUBLISHED_VERIFIED
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
@@ -16,8 +16,8 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - **V&V:** Router Gateway contract PASS; Windows compile 0 warnings/0 errors; service self-test + full regression contract PASS; final release WPF UI automation PASS; 8-profile Test All completed; DNS interception `10.10.34.35` rejected fail-closed; Linux contract/runtime smoke PASS; deterministic cross-host ZIP PASS.
 - **Failure prevention:** adding `providers.json` exposed a deterministic-build gap because JSON EOL was not normalized; `.json` is now normalized and cross-host hash is identical.
 - **Validation boundary:** full authenticated tunnel success on an arbitrary physical router remains **UNPROVEN / model-dependent**. The release does not claim universal router compatibility.
-- **Open Gate / Critical Path:** final Git commit → verify `origin/main` unchanged → push/CI → tag/release exact assets → public re-download/hash verification.
-- **Brain Status:** CURRENT. v1.3.0 becomes FINAL/PUBLISHED_VERIFIED only after the public publication verification gate closes.
+- **Open Gate / Critical Path:** none for v1.3.0 publication. Optional future gate only: physical-router model-specific authenticated tunnel E2E when a concrete model is available.
+- **Brain Status:** CURRENT / FINAL for v1.3.0. GitHub tag/release and public asset hashes are verified.
 
 ## Authoritative current state
 - **CURRENT release candidate:** v1.2.1 GitHub/Linux-EOL hotfix. No DNS/DPI/network runtime logic changed from accepted Windows v1.2.0 / Linux architecture.
@@ -37,8 +37,8 @@ Completed: Windows v1.2.0 Sandbox E2E direct-update acceptance from restricted u
 Completed: Linux v1.2.0 compatibility/version package; contract audits PASS on Windows/Linux and deterministic cross-host ZIP reproduction PASS.
 Completed: exact Windows v1.2.0 host bootstrap; installed GUI/service/manifest hashes match candidate; control 131 host regression PASS.
 Completed: Windows v1.2.0 host Start/ACTIVE/Stop/exact rollback/Recovery regression PASS.
-← CURRENT: v1.3.0 Router Gateway release-ready → final commit/push → CI/tag/release → public re-download/hash verification.
-Open release gate: v1.3.0 publication + public re-download/hash verification.
+← CURRENT: maintenance/monitoring only; v1.3.0 release/publication gates are closed.
+Open release gate: none.
 Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
@@ -169,3 +169,4 @@ No release or GitHub gate remains for v1.2.1. Keep tag/release assets immutable.
 - 2026-10-01: v1.3.0 Router Gateway release-ready delta finalized on top of authoritative v1.2.1 after concurrent-main audit/rebase. Windows/Linux local gates PASS.
 - 2026-10-01: live endpoint testing found DNS interception to private 10.10.34.35; reachability logic now fails closed on non-global addresses; final WPF UI regression PASS.
 - 2026-10-01: deterministic Linux builder extended EOL normalization to JSON after cross-host providers.json mismatch; final ZIP is byte-identical across Windows/Linux.
+- 2026-10-01: v1.3.0 tag `1fc9a04` published as GitHub release. Feature/main/tag Source and Release Contracts PASS. All public assets re-downloaded from direct GitHub release URLs and SHA-256 matched; v1.3.0 promoted to FINAL/PUBLISHED_VERIFIED.

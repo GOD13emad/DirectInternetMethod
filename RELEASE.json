@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.3.0",
   "date": "2026-10-01",
-  "status": "PASS_RELEASE_READY_V1_3_0_PUBLICATION_PENDING",
+  "status": "FINAL_V1_3_0_PUBLISHED_VERIFIED",
   "previousAccepted": {
     "version": "1.2.1",
     "tag": "v1.2.1",
@@ -64,7 +64,7 @@
     "finalWpfUiAutomation": "PASS",
     "linuxContractAndRuntime": "PASS",
     "linuxDeterministicCrossHost": "PASS",
-    "publication": "PENDING"
+    "publication": "PASS_PUBLIC_REDOWLOAD_VERIFIED"
   },
   "validationBoundary": {
     "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
@@ -74,5 +74,15 @@
     "preRebaseV130Hashes": true,
     "reason": "origin/main advanced to authoritative v1.2.1 during work; v1.3 was rebased and rebuilt from the new authority."
   },
-  "exactNextAction": "Commit/push v1.3.0, run GitHub contracts, tag/release exact assets, then public-redownload and hash-verify before FINAL."
+  "exactNextAction": "Maintenance/monitoring only; model-specific physical-router E2E is optional future validation when a concrete router is available.",
+  "publication": {
+    "tag": "v1.3.0",
+    "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.3.0",
+    "publishedAt": "2026-10-01T03:28:18Z",
+    "featureCiRun": 36810382473,
+    "mainCiRun": 36810460241,
+    "tagCiRun": 36810544835,
+    "publicRedownloadHashVerification": "PASS_ALL_ASSETS"
+  }
 }

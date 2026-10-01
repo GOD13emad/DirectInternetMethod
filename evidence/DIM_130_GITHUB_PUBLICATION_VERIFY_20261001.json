@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "date": "2026-10-01T06:59:36.9770506+03:30",
+  "status": "PASS_PUBLIC_V1_3_0_RELEASE_VERIFY",
+  "latestTag": "v1.3.0",
+  "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+  "files": [
+    {
+      "name": "DirectInternetMethod_1.3.0_Windows_Setup.exe",
+      "bytes": 157098906,
+      "sha256": "04EBFD968146A7122A0695DB36A01DBACB5F91B69104D6D1DEA6D1964BB99263"
+    },
+    {
+      "name": "DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+      "bytes": 8156742,
+      "sha256": "14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 221,
+      "sha256": "A56DB90964085A0D8452691D70DCEFF74D888DB65B634B370926A3BB38596ABE"
+    }
+  ]
+}

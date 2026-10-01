@@ -3,7 +3,7 @@
   "date": "2026-10-01",
   "project": "Direct Internet Method",
   "scope": "Router Gateway v1.3.0",
-  "status": "CURRENT",
+  "status": "FINAL_PUBLISHED_VERIFIED",
   "records": [
     {
       "kind": "decision",
@@ -108,6 +108,17 @@
       "status": "UNVERIFIED",
       "claim": "Full authenticated L2TP/IPsec/PPTP handshake on a specific physical router was not performed.",
       "reason": "Router model/firmware is not specified and automatic router mutation is intentionally out of scope."
+    },
+    {
+      "kind": "publication",
+      "status": "CONFIRMED",
+      "claim": "v1.3.0 tag/release published on GitHub; feature/main/tag CI all passed; all three public assets were re-downloaded from direct public GitHub release URLs and SHA-256 matched local authority exactly.",
+      "evidence": [
+        "evidence/DIM_130_PUBLICATION_FINAL_20261001.json",
+        "GitHub Actions 36810382473",
+        "GitHub Actions 36810460241",
+        "GitHub Actions 36810544835"
+      ]
     }
   ]
 }
