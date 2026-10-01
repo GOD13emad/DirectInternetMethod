@@ -3,7 +3,7 @@
   "date": "2026-10-01",
   "project": "Direct Internet Method",
   "version": "1.4.0",
-  "status": "PASS_LOCAL_RELEASE_CANDIDATE_FINAL_BUILD",
+  "status": "PASS_RELEASE_READY_LOCAL_CROSS_HOST_LIVE",
   "authority": {
     "baseMain": "930db926a15d1688f95892905f4352cfebe46c39",
     "branch": "feature/direct-multiprotocol-v1.4.0"
@@ -28,8 +28,8 @@
     "windowsStartupUi": "PASS_1289x632_NO_OVERLAP",
     "windowsPhysicalRefresh": "PASS_MOUSE_KEYBOARD",
     "linuxNfqwsDryRun": "PASS_3_PROFILES_6_HOSTS",
-    "linuxCrossHost": "PENDING",
-    "linuxLiveProtectedBackend": "PENDING",
+    "linuxCrossHost": "PASS_EXACT_SHA_MATCH",
+    "linuxLiveProtectedBackend": "PASS_START_ACTIVE_STOP_RECOVERY_CLEAN",
     "protectedCi": "PENDING",
     "publication": "PENDING",
     "secureDnsNoOsLeak": "PASS",
@@ -65,7 +65,7 @@
     "DoH3/DoQ/DoT were not promoted after isolated live tests failed to resolve on the current network.",
     "Protected Linux backend version is 1.4.0 because privileged nft/nfqws rules changed."
   ],
-  "exactNextAction": "Push exact candidate; fresh-clone and reproduce Linux SHA; install protected Linux 1.4.0 backend and validate live lifecycle; then protected CI/PR/release/public hashes/installed-host update.",
+  "exactNextAction": "Push evidence closure; pass protected CI/PR, publish and publicly hash-verify v1.4.0, then validate public update on both installed hosts.",
   "secureDns": {
     "active": "direct-IP DoH https://76.76.10.11/p0",
     "leakOnUpstreamFailure": false,
@@ -76,5 +76,6 @@
       "dot": "FAIL_NO_DNS_ANSWER_NOT_ENABLED",
       "alternateDoH76_76_2_11": "FAIL_NO_DNS_ANSWER_NOT_ENABLED"
     }
-  }
+  },
+  "evidenceLinuxLive": "evidence/LINUX_140_CROSS_HOST_LIVE_ACCEPTANCE_20261001.json"
 }
