@@ -5,7 +5,7 @@ Final Objective: standalone Windows + Linux direct-connect application with inde
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
 ## Authoritative current state
-- Release authority: tag `v1.2.0` at commit `6c30dbfaa5596285ac42c2dba08fb0c8b259901e`; exact Windows/Linux artifacts and `SHA256SUMS.txt` were published from that commit and public-redownload verified. Current working tree contains only post-publication evidence/metadata pending final audit commit.
+- Release authority: immutable tag `v1.2.0` at commit `6c30dbfaa5596285ac42c2dba08fb0c8b259901e`; exact Windows/Linux artifacts and `SHA256SUMS.txt` were published from that commit and public-redownload verified. Post-publication verification evidence is committed on `main` at `6de3010c8719364290f0edee20b096e235214e91`.
 - Cross-platform v1.2.0 product acceptance is **PASS_FINAL / PUBLISHED_VERIFIED**.
 - Windows v1.2.0 final artifact: `delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe`, 157,093,296 bytes, SHA-256 `E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1`; installed GUI/service/manifest hashes match authority; real-host Start/ACTIVE/Stop/exact rollback/Recovery PASS; public updater control 131 PASS against GitHub latest v1.2.0; final state CLEAN_OFF.
 - Linux v1.2.0 final compatibility artifact: `delivery/DirectInternetMethod_1.2.0_Linux_x86_64.zip`, 8,140,827 bytes, SHA-256 `BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC`; contract audit PASS and deterministic cross-host reproduction PASS; network architecture unchanged from accepted v1.1.0.

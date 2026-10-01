@@ -57,7 +57,8 @@
     "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.2.0",
     "publishedAt": "2026-10-01T00:50:24Z",
     "tagCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
-    "releaseArtifactCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e"
+    "releaseArtifactCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
+    "publicationEvidenceCommit": "6de3010c8719364290f0edee20b096e235214e91"
   },
   "limitations": [
     "Windows installer is not Authenticode-signed.",
