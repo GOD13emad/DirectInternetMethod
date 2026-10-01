@@ -1,101 +1,77 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "date": "2026-10-01",
-  "status": "FINAL_PUBLISHED_VERIFIED_GITHUB_HARDENED_V1_2_1",
+  "status": "PASS_RELEASE_READY_V1_3_0_PUBLICATION_PENDING",
+  "previousAccepted": {
+    "version": "1.2.1",
+    "tag": "v1.2.1",
+    "commit": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
+    "status": "FINAL_PUBLISHED_VERIFIED"
+  },
+  "feature": "Router Gateway — L2TP/IPsec preferred + PPTP legacy fallback configuration data for compatible routers/modems",
   "platforms": {
     "windows": {
-      "status": "PASS_PUBLIC_UPDATE_WINDOWS_1_2_1",
-      "artifact": "delivery/DirectInternetMethod_1.2.1_Windows_Setup.exe",
-      "sha256": "B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA",
-      "bytes": 157077755,
-      "guiSha256": "D7AFA238E8E7CCD31D7B6C48DDDBA30C7F6E2DECBAF519B7FA111E611DF5BAE3",
-      "serviceSha256": "B2E7AFC2733B4466C55807C435DD779C6270D6C5F72E85D7B3FBC834FE24D87A",
-      "manifestSha256": "292D1ABA16DA071CABC696525015981004047F3B8988AAC68A2884B9B9AC1F7B",
-      "sandboxIdentity": "PASS",
-      "contractAudit": "PASS",
-      "networkLogicChangedFrom120": false,
-      "normalOnlineUpdateRequiresAdmin": false,
+      "status": "PASS_RELEASE_READY_WINDOWS_1_3_0",
+      "artifact": "delivery/DirectInternetMethod_1.3.0_Windows_Setup.exe",
+      "bytes": 157098906,
+      "sha256": "04EBFD968146A7122A0695DB36A01DBACB5F91B69104D6D1DEA6D1964BB99263",
+      "guiSha256": "83594B60BBA67F84175F1287EB12E6921A14C883E83BF2CCF566A8A4A698728B",
+      "serviceSha256": "034CA29CF4CB3968AAB37CEABDB8D78C84F0B7355659F312D119A19E61C163D4",
+      "manifestSha256": "15D6A96AB4ECA44B70F9C4A6855BAEEC2F03411E8F54233003940B1027BFEFAE",
+      "manifestFiles": 678,
       "authenticode": "NotSigned",
-      "hostPublicUpdate": "PASS_1_2_0_TO_1_2_1_NO_UAC"
+      "finalUiAutomationSmoke": "PASS",
+      "privateDnsInterceptionRegression": "PASS"
     },
     "linux": {
-      "status": "PASS_PUBLIC_LINUX_1_2_1",
-      "artifact": "delivery/DirectInternetMethod_1.2.1_Linux_x86_64.zip",
-      "sha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65",
-      "bytes": 8139783,
-      "shellSyntaxSource": "PASS",
-      "shellSyntaxArchive": "PASS",
-      "eol": "LF_ONLY",
+      "status": "PASS_RELEASE_READY_LINUX_1_3_0",
+      "artifact": "delivery/DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+      "bytes": 8156742,
+      "sha256": "14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824",
       "contractAudit": "PASS",
+      "runtimeSmoke": "PASS",
       "deterministicBuild": "PASS_CROSS_HOST",
-      "networkLogicChanged": false,
-      "publicArchiveBashSyntax": "PASS"
+      "networkLogicChangedFrom121": false
     }
   },
-  "architecture": {
-    "windows": "Native WPF + fixed-command Windows service + bundled PowerShell 7.6.6 + owned demand-start ctrld + Loopback ULA/NRPT + zapret/WinDivert + service-mediated verified direct updater",
-    "linux": "GTK/Adwaita + protected backend + ctrld/systemd-resolved + nftables/NFQUEUE + nfqws"
+  "checksums": {
+    "artifact": "delivery/SHA256SUMS.txt",
+    "sha256": "A56DB90964085A0D8452691D70DCEFF74D888DB65B634B370926A3BB38596ABE"
   },
-  "directUpdate": {
-    "windows": "SCM control 131 -> LocalSystem service -> GitHub latest -> GitHub digest == SHA256SUMS == file SHA256 -> silent Inno Setup /DIR registered install path -> installer completion marker",
-    "windowsNormalUserUac": false,
-    "initialTransitionFrom110": "One privileged 1.2.0 install is required because v1.1.0 predates the service-mediated updater.",
-    "linux": "Existing verified GitHub latest + SHA256SUMS flow"
+  "routerGateway": {
+    "preferred": "L2TP/IPsec",
+    "legacyFallback": "PPTP",
+    "autoRouterMutation": false,
+    "offlineFirst": true,
+    "profileCount": 8,
+    "routerGuides": [
+      "Generic VPN Client",
+      "TP-Link VPN Client",
+      "ASUS VPN Fusion",
+      "MikroTik RouterOS"
+    ],
+    "healthTest": "reachability heuristic only",
+    "privateDnsFailClosed": true
   },
-  "independence": {
-    "freeNetHub": false,
-    "chatGPT": false,
-    "vpn": false,
-    "httpSocksProxy": false,
-    "defaultRouteTunnel": false
+  "acceptance": {
+    "rebaseOntoLatestOriginMain": "PASS_BASE_V1_2_1",
+    "routerGatewayContract": "PASS",
+    "windowsPayloadAndRegression": "PASS",
+    "windowsInstaller": "PASS",
+    "finalWpfUiAutomation": "PASS",
+    "linuxContractAndRuntime": "PASS",
+    "linuxDeterministicCrossHost": "PASS",
+    "publication": "PENDING"
   },
-  "github": {
-    "repo": "GOD13emad/DirectInternetMethod",
-    "tag": "v1.2.1",
-    "status": "FINAL_PUBLISHED_VERIFIED_GITHUB_HARDENED",
-    "branch": "hotfix/v1.2.1-linux-eol-github-hardening",
-    "actionsBaselineCommit": "27940bdaf436dbc6d4c92a070f899b0eff0fce74",
-    "actionsBaselineStatus": "PASS",
-    "finalCommitActions": "PASS",
-    "mainProtection": "PASS",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.2.1",
-    "publishedAt": "2026-10-01T01:50:38Z",
-    "tagCommit": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
-    "latest": "v1.2.1",
-    "releaseTagProtection": "PASS_RULESET_24283722",
-    "v120LinuxReleaseAnnotatedSuperseded": true
+  "validationBoundary": {
+    "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
+    "explanation": "Profile generation, UI, packaging, reachability and DNS-interception behavior are verified. An authenticated L2TP/IPsec/PPTP tunnel on every router model/firmware is not claimed."
   },
-  "limitations": [
-    "Windows installer is not Authenticode-signed.",
-    "Repository license remains an explicit owner/legal choice; none was invented during audit.",
-    "Effectiveness may vary if network filtering behavior changes."
-  ],
-  "evidence": {
-    "releaseReady": "evidence/DIM_121_RELEASE_READY_ACCEPTANCE_20261001.json",
-    "releaseReadySha256": "B70FF0F478E98B44A6F47EEE826E79F30C7E9726DDEC120EA9E15C3A91FCC89F",
-    "v120LinuxFailure": "evidence/GITHUB_V120_LINUX_EOL_RELEASE_FAILURE_20261001.json",
-    "linux121": "evidence/LINUX_121_EOL_DETERMINISTIC_ACCEPTANCE_20261001.json",
-    "windows121": "evidence/WINDOWS_121_SANDBOX_IDENTITY_ACCEPTANCE_20261001.json",
-    "actions121": "evidence/GITHUB_ACTIONS_121_HOTFIX_ACCEPTANCE_20261001.json",
-    "concurrentWriterIsolation": "evidence/GITHUB_AUDIT_CONCURRENT_WRITER_ISOLATION_20261001.json",
-    "publication121": "evidence/DIM_121_GITHUB_PUBLICATION_VERIFY_20261001.json",
-    "linuxPublic121": "evidence/LINUX_121_PUBLIC_RELEASE_VERIFY_20261001.json",
-    "windowsPublic121": "evidence/WINDOWS_121_HOST_PUBLIC_UPDATE_VERIFY_20261001.json",
-    "githubFinalAudit": "evidence/GITHUB_121_FINAL_AUDIT_20261001.json",
-    "githubFinalAuditSha256": "9E314C8A5ABE3E33996296B7E6EF9039C90B254BD3A3D331D90F572B92B5CB2F"
+  "superseded": {
+    "preRebaseV130Hashes": true,
+    "reason": "origin/main advanced to authoritative v1.2.1 during work; v1.3 was rebased and rebuilt from the new authority."
   },
-  "hotfix": {
-    "reason": "Public v1.2.0 Linux ZIP contains CRLF shell scripts and fails bash -n.",
-    "confirmed": true,
-    "v120LinuxStatus": "FAILED_SUPERSEDED",
-    "networkLogicChanged": false,
-    "safeguards": [
-      ".gitattributes LF policy",
-      "package-byte LF normalization for text payloads",
-      "GitHub Actions source/archive shell syntax gates",
-      "cross-host deterministic ZIP gate"
-    ]
-  }
+  "exactNextAction": "Commit/push v1.3.0, run GitHub contracts, tag/release exact assets, then public-redownload and hash-verify before FINAL."
 }

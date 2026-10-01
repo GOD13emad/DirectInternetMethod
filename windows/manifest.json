@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "product": "Direct Internet Method",
-  "version": "1.2.1",
-  "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; owned ctrld SCM service + Loopback ULA + DoH + NRPT + zapret/WinDivert; service-mediated verified direct updater",
+  "version": "1.3.0",
+  "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; accepted direct DNS/DPI path plus non-privileged Router Gateway profile manager",
   "offlineRuntime": true,
   "normalRunRequiresAdmin": false,
   "installOrPrivilegedUpgradeRequiresAdmin": true,
@@ -19,8 +19,8 @@
       "scope": "user",
       "file": "app/DirectInternetMethod.exe",
       "source": "app/DirectInternetMethod.exe",
-      "bytes": 161778760,
-      "sha256": "D7AFA238E8E7CCD31D7B6C48DDDBA30C7F6E2DECBAF519B7FA111E611DF5BAE3"
+      "bytes": 161807432,
+      "sha256": "83594B60BBA67F84175F1287EB12E6921A14C883E83BF2CCF566A8A4A698728B"
     },
     {
       "scope": "user",
@@ -35,6 +35,13 @@
       "source": "app/Status.ps1",
       "bytes": 6394,
       "sha256": "EC4B00233C1A0BD462D7AD674E54254F02BF462A6D3D53ACED47888CEE4A3447"
+    },
+    {
+      "scope": "user",
+      "file": "app/router_gateway/providers.json",
+      "source": "../router_gateway/providers.json",
+      "bytes": 6015,
+      "sha256": "2AF7033C90D6924FFD171A33C6443DD9F8998A4FA7B123BAB42B50FFCC284388"
     },
     {
       "scope": "user",
@@ -54,15 +61,15 @@
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 2120,
-      "sha256": "A994CBCEB52F2A892406FBA8AE5323F3911C92BBB35E3D39893F59375FB6A517"
+      "bytes": 2216,
+      "sha256": "72208BF6F2B6B895D358745CDA9FEC3A19A5F4E5600E7DA5C911B84D3C65B707"
     },
     {
       "scope": "privileged",
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
       "bytes": 67588813,
-      "sha256": "B2E7AFC2733B4466C55807C435DD779C6270D6C5F72E85D7B3FBC834FE24D87A"
+      "sha256": "034CA29CF4CB3968AAB37CEABDB8D78C84F0B7355659F312D119A19E61C163D4"
     },
     {
       "scope": "privileged",
@@ -96,15 +103,15 @@
       "scope": "privileged",
       "file": "bin/ctrld/ctrld.toml",
       "source": "bin/ctrld/ctrld.toml",
-      "bytes": 506,
-      "sha256": "336486FD10E941BB46DE053B5CDAA86A452D17761C4C97FEDF0392E20E8963B7"
+      "bytes": 477,
+      "sha256": "2E1AF2EF934367465B15284DE93016B839849D717F9A8DC4AC18858FC123EAE2"
     },
     {
       "scope": "privileged",
       "file": "bin/ctrld/LICENSE.txt",
       "source": "bin/ctrld/LICENSE.txt",
-      "bytes": 1122,
-      "sha256": "5B166F4937F5D1ADED9C6D90675524ABAB6A6F0EBA1E226FA30119F37DBAB754"
+      "bytes": 1101,
+      "sha256": "55D82D13FE55D4B2AEC42166FCCD3C16C267B7131ECF2FBD7C3C6C3463494501"
     },
     {
       "scope": "privileged",
@@ -145,8 +152,8 @@
       "scope": "privileged",
       "file": "bin/zapret/LICENSE.txt",
       "source": "bin/zapret/LICENSE.txt",
-      "bytes": 1090,
-      "sha256": "1FACB290FF6425CF6AB61FC882E71FFB0DF50FDA527FEF90D4098935097BD984"
+      "bytes": 1069,
+      "sha256": "DCF5ABD3E5D876C1065982871C0CEC7368C0E61FC795C541798729516BB6B54F"
     },
     {
       "scope": "privileged",

@@ -1,8 +1,23 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: FINAL_V1_2_1_PUBLISHED_VERIFIED_GITHUB_HARDENED
+Status: RELEASE_READY_V1_3_0_ROUTER_GATEWAY_PUBLICATION_PENDING
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
+
+
+## CURRENT v1.3.0 Router Gateway delta
+- **Previous Accepted State:** v1.2.1 remains FINAL/PUBLISHED_VERIFIED at tag `v1.2.1`, commit `ffc81193cd484e50c0855d2ad18e69629fedb63c`.
+- **Current Delta:** Router Gateway is integrated into the existing Windows WPF and Linux GTK/Adwaita apps. L2TP/IPsec is preferred; PPTP is explicitly legacy fallback. The module supplies copy-ready router/modem configuration, offline snapshot/cache/refresh, vendor guidance and non-mutating endpoint health tests.
+- **Authority:** canonical Git root `C:\Users\Aa.Emad\source\repos\DirectInternetMethod`; branch `feature/router-gateway-v1.3.0` rebased on authoritative `origin/main` v1.2.1 after concurrent main movement was detected.
+- **Windows release-ready artifact:** `delivery/DirectInternetMethod_1.3.0_Windows_Setup.exe`, 157,098,906 bytes, SHA-256 `04EBFD968146A7122A0695DB36A01DBACB5F91B69104D6D1DEA6D1964BB99263`; Authenticode NotSigned.
+- **Windows payload:** GUI `83594B60BBA67F84175F1287EB12E6921A14C883E83BF2CCF566A8A4A698728B`; service `034CA29CF4CB3968AAB37CEABDB8D78C84F0B7355659F312D119A19E61C163D4`; 678-file manifest `15D6A96AB4ECA44B70F9C4A6855BAEEC2F03411E8F54233003940B1027BFEFAE`.
+- **Linux release-ready artifact:** `delivery/DirectInternetMethod_1.3.0_Linux_x86_64.zip`, 8,156,742 bytes, SHA-256 `14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824`; byte-identical Windows/Linux reproduction PASS.
+- **Checksums:** `delivery/SHA256SUMS.txt`, SHA-256 `A56DB90964085A0D8452691D70DCEFF74D888DB65B634B370926A3BB38596ABE`.
+- **V&V:** Router Gateway contract PASS; Windows compile 0 warnings/0 errors; service self-test + full regression contract PASS; final release WPF UI automation PASS; 8-profile Test All completed; DNS interception `10.10.34.35` rejected fail-closed; Linux contract/runtime smoke PASS; deterministic cross-host ZIP PASS.
+- **Failure prevention:** adding `providers.json` exposed a deterministic-build gap because JSON EOL was not normalized; `.json` is now normalized and cross-host hash is identical.
+- **Validation boundary:** full authenticated tunnel success on an arbitrary physical router remains **UNPROVEN / model-dependent**. The release does not claim universal router compatibility.
+- **Open Gate / Critical Path:** final Git commit → verify `origin/main` unchanged → push/CI → tag/release exact assets → public re-download/hash verification.
+- **Brain Status:** CURRENT. v1.3.0 becomes FINAL/PUBLISHED_VERIFIED only after the public publication verification gate closes.
 
 ## Authoritative current state
 - **CURRENT release candidate:** v1.2.1 GitHub/Linux-EOL hotfix. No DNS/DPI/network runtime logic changed from accepted Windows v1.2.0 / Linux architecture.
@@ -22,8 +37,8 @@ Completed: Windows v1.2.0 Sandbox E2E direct-update acceptance from restricted u
 Completed: Linux v1.2.0 compatibility/version package; contract audits PASS on Windows/Linux and deterministic cross-host ZIP reproduction PASS.
 Completed: exact Windows v1.2.0 host bootstrap; installed GUI/service/manifest hashes match candidate; control 131 host regression PASS.
 Completed: Windows v1.2.0 host Start/ACTIVE/Stop/exact rollback/Recovery regression PASS.
-← CURRENT: maintenance/monitoring only; v1.2.1 release and GitHub governance gates are closed.
-Open release gate: none.
+← CURRENT: v1.3.0 Router Gateway release-ready → final commit/push → CI/tag/release → public re-download/hash verification.
+Open release gate: v1.3.0 publication + public re-download/hash verification.
 Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
@@ -49,6 +64,12 @@ Deferred: trusted Authenticode signing.
 20. Initial v1.2.1 Linux ZIP remained cross-host non-deterministic after shell-only normalization → README/license/hosts text EOL differed across hosts; normalize all package text payloads (.sh/.py/.md/.txt/.svg) before hashing/packing; Windows/Linux v1.2.1 ZIP hash now identical.
 21. Concurrent writer switched original checkout to Router Gateway branch during GitHub audit → hotfix commit briefly landed on local Router branch. Prevention: recovered hotfix ref and isolated all subsequent work to dedicated Git worktree; Router Gateway tracked/untracked work preserved.
 All earlier harness failures remain preserved; no product runtime failure is hidden.
+
+23. Router Gateway provider websites were unreliable/blocked during development → offline-first bundled manifest + cache + non-fatal refresh; regression PASS.
+24. PPTP hostname resolved to private `10.10.34.35` and was initially falsely reachable → fail closed on non-global DNS results on both platforms; final UI regression PASS.
+25. Concurrent `origin/main` advanced to v1.2.1 during Router Gateway work → checkpoint, fetch/audit, rebase on authoritative v1.2.1, discard pre-rebase artifact hashes and rebuild all release artifacts; PASS.
+26. v1.3 Linux ZIP differed cross-host after adding `providers.json` → root cause was JSON EOL omitted from deterministic text normalization; add `.json` normalization; Windows/Linux ZIP SHA now identical.
+27. One post-rebase UI probe returned no endpoint results after a fixed 9-second wait → harness window was shorter than sequential 8-endpoint worst-case; completion-based bounded polling replaced fixed delay; final release UI smoke PASS with process stable.
 
 ## Evidence / Knowledge
 - Cross-platform final: `evidence/DIM_110_FINAL_ACCEPTANCE_20260930.json` — SHA-256 `5610C74C0265D9F614A8619A4E6C6E008DEC7CCEC0774EF0720B8616E1A89D2C`.
@@ -144,3 +165,7 @@ No release or GitHub gate remains for v1.2.1. Keep tag/release assets immutable.
 - 2026-10-01: v1.2.1 published. Public Linux ZIP SHA-256 CAF93659… passed LF-only + bash -n on aliemad-Labtop. Windows host updated 1.2.0→1.2.1 via public GitHub latest/control 131 without UAC; installed hashes matched release authority; state/pending remained absent. Public redownload of Windows/Linux/SHA256SUMS matched exact hashes. Main protection remains the sole open GitHub gate.
 
 - 2026-10-01: deep GitHub finalization completed. v1.2.1 latest/public assets verified; Linux public ZIP passed LF-only + bash -n; Windows host updated 1.2.0→1.2.1 through public control 131 without UAC. main now requires strict linux-source/windows-source checks, linear history, admin enforcement, no force-push/delete, conversation resolution. Active tag ruleset protects v* tags from update/delete with no bypass. Historical v1.2.0 release was annotated as Linux-superseded without changing tag/assets. Root LICENSE remains an explicit owner/legal choice.
+
+- 2026-10-01: v1.3.0 Router Gateway release-ready delta finalized on top of authoritative v1.2.1 after concurrent-main audit/rebase. Windows/Linux local gates PASS.
+- 2026-10-01: live endpoint testing found DNS interception to private 10.10.34.35; reachability logic now fails closed on non-global addresses; final WPF UI regression PASS.
+- 2026-10-01: deterministic Linux builder extended EOL normalization to JSON after cross-host providers.json mismatch; final ZIP is byte-identical across Windows/Linux.
