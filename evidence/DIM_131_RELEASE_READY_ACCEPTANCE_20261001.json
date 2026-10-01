@@ -3,7 +3,7 @@
   "date": "2026-10-01",
   "project": "Direct Internet Method",
   "version": "1.3.1",
-  "status": "PASS_LOCAL_RELEASE_READY_WITH_EXTERNAL_GATES",
+  "status": "PASS_RELEASE_READY_LOCAL_AND_CROSS_HOST",
   "previousAccepted": "v1.3.0",
   "mutationObjective": "Fix Windows default startup size and prevent footer control/text overlap without changing connectivity behavior.",
   "artifacts": {
@@ -17,7 +17,7 @@
       "path": "delivery/DirectInternetMethod_1.3.1_Linux_x86_64.zip",
       "bytes": 8156742,
       "sha256": "4AB0D082A43F524A7F6C60D69F243BE81CE5ADCC3B211010F50D0141B86BED5C",
-      "crossHost": "PENDING"
+      "crossHost": "PASS_EXACT_SHA_MATCH"
     }
   },
   "gates": {
@@ -32,7 +32,8 @@
     "routerGatewayContract": "PASS",
     "releaseMetadataAudit": "PASS",
     "powershellSyntax": "PASS",
-    "gitDiffCheck": "PASS"
+    "gitDiffCheck": "PASS",
+    "linuxCrossHost": "PASS_EXACT_SHA_MATCH"
   },
   "regressionScope": {
     "directDnsDpiLogicChanged": false,
@@ -44,14 +45,14 @@
   "evidence": [
     "evidence/WINDOWS_131_UI_LAYOUT_ROOT_CAUSE_ACCEPTANCE_20261001.json",
     "evidence/WINDOWS_131_PAYLOAD_BUILD_20261001.json",
-    "evidence/WINDOWS_131_INSTALLER_BUILD_20261001.json"
+    "evidence/WINDOWS_131_INSTALLER_BUILD_20261001.json",
+    "evidence/LINUX_131_CROSS_HOST_ACCEPTANCE_20261001.json"
   ],
   "openGates": [
-    "Linux cross-host exact archive reproduction on aliemad-Labtop",
     "protected branch linux-source/windows-source CI",
     "protected PR merge",
     "v1.3.1 immutable tag/release and public asset hash redownload",
     "installed Windows public update and final 1289x632 UI verification"
   ],
-  "exactNextAction": "Commit and push the isolated hotfix branch, use the pushed branch for independent Linux reproduction and protected CI, then publish only after all gates pass."
+  "exactNextAction": "Push the evidence closure commit, pass protected linux-source/windows-source CI and PR merge, then publish and verify v1.3.1 before installed-host promotion."
 }

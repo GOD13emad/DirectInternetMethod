@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.3.1",
+  "status": "PASS_LINUX_1_3_1_CROSS_HOST_REPRODUCTION",
+  "provenance": {
+    "host": "aliemad-Labtop",
+    "checkout": "fresh clone",
+    "path": "/home/aliemad/.cache/dim131-crosshost-37ecdf3",
+    "branch": "hotfix/v1.3.1-ui-layout",
+    "commit": "37ecdf30c70db3e1d414c7ddd0b881f8e0281a58"
+  },
+  "gates": {
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "routerGatewayRuntimeSmoke": "PASS",
+    "shellSyntax": "PASS_6_FILES",
+    "crlfGuard": "PASS_ZERO_CR"
+  },
+  "runtimeSmoke": {
+    "profiles": 8,
+    "configFields": "PASS",
+    "privateDnsGuard": "PASS",
+    "liveEndpointInformational": "reachable TCP/443 219.100.37.213"
+  },
+  "artifact": {
+    "path": "delivery/DirectInternetMethod_1.3.1_Linux_x86_64.zip",
+    "bytes": 8156742,
+    "sha256": "4AB0D082A43F524A7F6C60D69F243BE81CE5ADCC3B211010F50D0141B86BED5C",
+    "windowsBuildSha256": "4AB0D082A43F524A7F6C60D69F243BE81CE5ADCC3B211010F50D0141B86BED5C",
+    "exactCrossHostMatch": true
+  },
+  "networkBackendChangedFrom130": false,
+  "exactNextAction": "Close the cross-host gate in release metadata/Brain, then pass protected GitHub CI and PR merge before publication."
+}
