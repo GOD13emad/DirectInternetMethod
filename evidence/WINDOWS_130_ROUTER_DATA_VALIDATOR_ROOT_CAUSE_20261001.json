@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_HARNESS_ROOT_CAUSE_CLOSED",
+  "context": "Windows v1.2.1 -> v1.3.0 public updater post-install validation",
+  "failure": "Initial validator reported missing router_gateway/providers.json.",
+  "rootCause": "Validator looked under {app}\\\\router_gateway while installer intentionally installs to {app}\\\\app\\\\router_gateway and WPF AppContext.BaseDirectory is {app}\\\\app.",
+  "productFailure": false,
+  "productEvidence": {
+    "installedPath": "C:\\Users\\Aa.Emad\\AppData\\Local\\Programs\\DirectInternetMethod\\app\\router_gateway\\providers.json",
+    "installedSha256": "2AF7033C90D6924FFD171A33C6443DD9F8998A4FA7B123BAB42B50FFCC284388",
+    "expectedSha256": "2AF7033C90D6924FFD171A33C6443DD9F8998A4FA7B123BAB42B50FFCC284388"
+  },
+  "prevention": "Post-install validation now derives the router data path from the executable directory contract ({InstallLocation}\\\\app\\\\router_gateway).",
+  "regressionEvidence": [
+    "evidence/WINDOWS_130_HOST_PUBLIC_UPDATE_VERIFY_20261001.json",
+    "evidence/WINDOWS_130_INSTALLED_ROUTER_GATEWAY_UI_VERIFY_20261001.json"
+  ]
+}

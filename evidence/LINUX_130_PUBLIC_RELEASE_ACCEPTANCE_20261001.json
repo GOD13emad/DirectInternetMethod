@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_PUBLIC_LINUX_V1_3_0_ARCHIVE",
+  "tag": "v1.3.0",
+  "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+  "artifact": "DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+  "sha256": "14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824",
+  "publicRedownload": true,
+  "shellFiles": 6,
+  "bashSyntax": "PASS",
+  "crlfGuard": "PASS_ZERO_CR",
+  "freshClone": {
+    "routerGatewayContract": "PASS",
+    "routerGatewayRuntimeSmoke": "PASS",
+    "linuxContract": "PASS",
+    "archiveBuildSha256": "14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824"
+  },
+  "provenance": "aliemad-Labtop fresh clone of public tag and public release asset"
+}

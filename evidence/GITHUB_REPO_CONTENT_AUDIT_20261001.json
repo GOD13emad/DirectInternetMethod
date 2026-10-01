@@ -1,5 +1,5 @@
 {
-  "trackedCount": 140,
+  "trackedCount": 179,
   "totalTrackedBytes": null,
   "largest": [
     {
@@ -22,11 +22,19 @@
   "extensions": [
     {
       "Name": ".json",
-      "Count": 63
+      "Count": 90
     },
     {
       "Name": ".ps1",
-      "Count": 30
+      "Count": 34
+    },
+    {
+      "Name": ".py",
+      "Count": 9
+    },
+    {
+      "Name": ".cs",
+      "Count": 7
     },
     {
       "Name": ".txt",
@@ -37,24 +45,16 @@
       "Count": 6
     },
     {
-      "Name": ".py",
-      "Count": 6
-    },
-    {
       "Name": ".md",
       "Count": 5
     },
     {
-      "Name": ".cs",
-      "Count": 5
+      "Name": ".xaml",
+      "Count": 3
     },
     {
       "Name": ".exe",
       "Count": 3
-    },
-    {
-      "Name": ".xaml",
-      "Count": 2
     },
     {
       "Name": "",
@@ -69,11 +69,19 @@
       "Count": 2
     },
     {
+      "Name": ".yml",
+      "Count": 1
+    },
+    {
       "Name": ".ico",
       "Count": 1
     },
     {
       "Name": ".gitignore",
+      "Count": 1
+    },
+    {
+      "Name": ".gitattributes",
       "Count": 1
     },
     {
@@ -102,9 +110,12 @@
   "pythonFiles": [
     "build_linux_package.py",
     "linux/app/direct_internet_method.py",
+    "linux/app/router_gateway.py",
     "tests/build_windows_manifest.py",
     "tests/fast_netmon.py",
     "tests/linux_contract_audit.py",
+    "tests/router_gateway_contract_audit.py",
+    "tests/router_gateway_runtime_smoke.py",
     "tests/windows_contract_audit.py"
   ],
   "powershellFiles": [
@@ -113,6 +124,10 @@
     "tests/build_windows_110_installer.ps1",
     "tests/build_windows_120_installer.ps1",
     "tests/build_windows_120_payload.ps1",
+    "tests/build_windows_121_installer.ps1",
+    "tests/build_windows_121_payload.ps1",
+    "tests/build_windows_130_installer.ps1",
+    "tests/build_windows_130_payload.ps1",
     "tests/build_windows_installer.ps1",
     "tests/build_windows_service_110.ps1",
     "tests/capture_window.ps1",
@@ -147,8 +162,11 @@
     "linux/system/uninstall_system.sh",
     "linux/uninstall.sh"
   ],
-  "yamlFiles": [],
+  "yamlFiles": [
+    ".github/workflows/ci.yml"
+  ],
   "rootFiles": [
+    ".gitattributes",
     ".gitignore",
     "PROJECT_BRAIN.md",
     "README.md",
@@ -157,5 +175,5 @@
     "SHA256SUMS.txt",
     "build_linux_package.py"
   ],
-  "gitignore": "*.tmp\r\n*.log\r\n__pycache__/\r\nwindows/app/DirectInternetMethod.exe\r\nwindows/app/publish-*/\r\nwindows/gui/bin/\r\nwindows/gui/obj/\r\ndelivery/DirectInternetMethod_1.0.1_*\r\n.cache/\r\nwindows/vendor/pwsh/\r\nwindows/**/bin/\r\nwindows/**/obj/\r\nwindows/app/DirectInternetMethod.Service.exe\r\ndelivery/DirectInternetMethod_1.1.0_*\r\n\r\n# Local validation/sandbox residue\r\nsandbox*/\r\ntmp/\r\nwindows/evidence/\r\nevidence/raw/\r\nevidence/*.err\r\nevidence/*.out\r\nevidence/ctrld-*.toml\r\nevidence/v-*.err\r\nevidence/v-*.out\r\ntests/_*.ps1\r\nevidence/WINDOWS_UI_LIVE.png\r\ndelivery/DirectInternetMethod_1.2.0_*\r\ndelivery/DIM_120_HOST_BOOTSTRAP_RUNNER.zip\r\n"
+  "gitignore": "*.tmp\r\n*.log\r\n__pycache__/\r\nwindows/app/DirectInternetMethod.exe\r\nwindows/app/publish-*/\r\nwindows/gui/bin/\r\nwindows/gui/obj/\r\ndelivery/DirectInternetMethod_1.0.1_*\r\n.cache/\r\nwindows/vendor/pwsh/\r\nwindows/**/bin/\r\nwindows/**/obj/\r\nwindows/app/DirectInternetMethod.Service.exe\r\ndelivery/DirectInternetMethod_1.1.0_*\r\n# Local validation/sandbox residue\r\nsandbox*/\r\ntmp/\r\nwindows/evidence/\r\nevidence/raw/\r\nevidence/*.err\r\nevidence/*.out\r\nevidence/ctrld-*.toml\r\nevidence/v-*.err\r\nevidence/v-*.out\r\ntests/_*.ps1\r\nevidence/WINDOWS_UI_LIVE.png\r\ndelivery/DirectInternetMethod_1.2.1_*\r\ndelivery/DIM_120_HOST_BOOTSTRAP_RUNNER.zip\r\ndelivery/DirectInternetMethod_1.2.0_*\r\nevidence/_*.ps1\r\ndelivery/DirectInternetMethod_1.3.0_*\r\ndelivery/SHA256SUMS.txt\r\n"
 }

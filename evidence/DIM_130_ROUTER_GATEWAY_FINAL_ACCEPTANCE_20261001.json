@@ -52,7 +52,13 @@
     "linuxRuntimeSmoke": "PASS",
     "linuxDeterministicBuild": "PASS_CROSS_HOST",
     "publication": "PASS_PUBLIC_REDOWLOAD_VERIFIED",
-    "windowsPublicUpdateHost": "PASS"
+    "windowsPublicUpdateHost": "PASS",
+    "linuxPublicFreshClone": "PASS",
+    "windowsInstalledRouterGatewayUiRefresh": "PASS",
+    "routerDataValidatorHarnessRootCause": "PASS_CLOSED_NOT_PRODUCT_FAILURE",
+    "githubFinalAudit": "PASS_FINAL_GITHUB_AUDIT_V1_3_0",
+    "repoContentAudit": "PASS_NO_SECRET_HITS_NO_JSON_ERRORS",
+    "allTrackedSyntaxAudit": "PASS"
   },
   "finalUiSmoke": {
     "configFields": [
@@ -130,5 +136,43 @@
     "installedServiceSha256": "034CA29CF4CB3968AAB37CEABDB8D78C84F0B7355659F312D119A19E61C163D4",
     "installedManifestSha256": "15D6A96AB4ECA44B70F9C4A6855BAEEC2F03411E8F54233003940B1027BFEFAE",
     "residualNetworkState": "PASS_NONE"
+  },
+  "linuxPublicFreshClone": {
+    "evidence": "evidence/LINUX_130_PUBLIC_RELEASE_ACCEPTANCE_20261001.json",
+    "publicRedownload": true,
+    "bashSyntax": "PASS",
+    "crlfGuard": "PASS_ZERO_CR",
+    "freshCloneRouterGatewayContract": "PASS",
+    "freshCloneRouterGatewayRuntimeSmoke": "PASS",
+    "freshCloneLinuxContract": "PASS",
+    "rebuiltArchiveSha256": "14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824"
+  },
+  "windowsInstalledRouterGatewayUi": {
+    "evidence": "evidence/WINDOWS_130_INSTALLED_ROUTER_GATEWAY_UI_VERIFY_20261001.json",
+    "status": "PASS_INSTALLED_ROUTER_GATEWAY_UI_REFRESH",
+    "profiles": 8,
+    "refresh": "PASS_REFRESHED_CACHE",
+    "networkStateUnchanged": true,
+    "broadStateUnchanged": true,
+    "dnsUnchanged": true
+  },
+  "harnessRootCause": {
+    "evidence": "evidence/WINDOWS_130_ROUTER_DATA_VALIDATOR_ROOT_CAUSE_20261001.json",
+    "status": "PASS_HARNESS_ROOT_CAUSE_CLOSED",
+    "productFailure": false,
+    "rootCause": "Validator checked {app}\\\\router_gateway instead of the installer/UI contract {app}\\\\app\\\\router_gateway.",
+    "prevention": "Validator derives router data path from executable directory contract."
+  },
+  "githubFinalAudit": {
+    "evidence": "evidence/GITHUB_130_FINAL_AUDIT_20261001.json",
+    "sha256": "943C6F7880CAD38B5DF0ABBF528AC14EE4BDA2A49703B6EE93A881C125AAEF72",
+    "status": "PASS_FINAL_GITHUB_AUDIT_V1_3_0"
+  },
+  "evidenceHashes": {
+    "windowsPublicUpdate": "5C0B93D4796E225BCA918C4B61A2024CEC9903D477C1D3C9C4591D78FA2A865D",
+    "windowsInstalledRouterGatewayUi": "31CC1F9D91F08AE4F2E092B7E9149F8E1F76393D71CC8A9221D1F3E5BE16A2DC",
+    "linuxPublicRelease": "D24B9182DB9E814E96C48CA5FD95C3F496403974BA29CF4C5BA9B1D8E0B86C95",
+    "routerDataValidatorRootCause": "B2D8CED5D05CF14E970955D4BE28F1C6921AAB671A50BA6F0BA3C94DC4E874B2",
+    "githubFinalAudit": "943C6F7880CAD38B5DF0ABBF528AC14EE4BDA2A49703B6EE93A881C125AAEF72"
   }
 }

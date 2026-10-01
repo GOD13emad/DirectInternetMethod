@@ -18,15 +18,20 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - **Validation boundary:** full authenticated tunnel success on an arbitrary physical router remains **UNPROVEN / model-dependent**. The release does not claim universal router compatibility.
 - **Open Gate / Critical Path:** none for v1.3.0 publication. Optional future gate only: physical-router model-specific authenticated tunnel E2E when a concrete model is available.
 - **Windows public-update host verification:** PASS. Installed v1.3.0 hashes match release payload; update action reports done/exit 0; no pending update or residual winws/ULA/NRPT/broad DNS state remains; physical DNS state is clean.
-- **Brain Status:** CURRENT / FINAL for v1.3.0. GitHub tag/release, public asset hashes and Windows public-update host verification are all verified.
+- **Linux public fresh-clone acceptance:** PASS. Public v1.3.0 tag + public ZIP were revalidated on aliemad-Labtop; Bash syntax/LF guard, Linux contract, Router Gateway contract/runtime smoke and deterministic archive SHA all PASS.
+- **Installed Windows Router Gateway UI refresh:** PASS. Installed app shows 8 profiles, refreshes to cache, and state/broad/DNS remain unchanged.
+- **Validator root cause:** CLOSED / harness-only. Initial post-install validator looked in `{app}\router_gateway`; installer and WPF correctly use `{app}\app\router_gateway`. Validator now derives path from executable directory contract.
+- **Final GitHub governance audit:** PASS. Public repo, strict main protection, required Linux/Windows checks, secret scanning/push protection, immutable release-tag ruleset, exact release assets and feature/main/tag CI all verify. The v1.3.0 tag is correctly an ancestor of post-release evidence commits on main.
+- **License:** `OWNER_LEGAL_DECISION_OPEN`; not a technical release blocker. No software license was selected on the owner's behalf.
+- **Brain Status:** CURRENT / FINAL for v1.3.0. GitHub tag/release, public asset hashes, Windows public-update host verification, installed UI refresh, Linux public fresh-clone acceptance and final governance audit are verified.
 
 ## Authoritative current state
-- **CURRENT release candidate:** v1.2.1 GitHub/Linux-EOL hotfix. No DNS/DPI/network runtime logic changed from accepted Windows v1.2.0 / Linux architecture.
+- **CURRENT release authority:** v1.3.0 is FINAL/PUBLISHED_VERIFIED at immutable tag `v1.3.0` (`1fc9a04`); post-publication evidence continues on `main`. v1.2.1 is the previous accepted/superseded release.
 - Windows v1.2.1 exact artifact: `DirectInternetMethod_1.2.1_Windows_Setup.exe`, 157,077,755 bytes, SHA-256 `B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA`; final Sandbox identity PASS; GUI `D7AFA238…`, service `B2E7AFC2…`, manifest `292D1ABA…`.
 - Linux v1.2.1 exact artifact: `DirectInternetMethod_1.2.1_Linux_x86_64.zip`, 8,139,783 bytes, SHA-256 `CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65`; source/archive shell syntax PASS, CR bytes=0, Windows/Linux builds identical.
 - **v1.2.0 Linux public artifact is CONFIRMED FAILED/SUPERSEDED:** public ZIP SHA-256 `BBCDAD…` contains CRLF shell scripts; all six packaged shell files fail `bash -n` after public download. Windows v1.2.0 runtime/lifecycle acceptance remains valid.
-- GitHub workflow `Source and Release Contracts` is active; run `36801264553` on commit `27940bd` passed Linux and Windows source jobs. Final release-ready commit Actions is still an open gate.
-- GitHub secret scanning and push protection are enabled. Main branch force-push/deletion protection remains to be applied after the hotfix is promoted.
+- GitHub workflow `Source and Release Contracts` is active; feature run `36810382473`, main run `36810460241`, and tag run `36810544835` all PASS on release commit `1fc9a04`.
+- GitHub secret scanning and push protection are enabled. `main` protection is strict and enforced for admins; required contexts are `linux-source` and `windows-source`; force-push/deletion are blocked; linear history and conversation resolution are required. Release tags `v*` are protected by the active tag ruleset.
 - Repository LICENSE is MISSING; this is an explicit owner/legal choice and no license was invented during the audit.
 - Concurrent Router Gateway work was detected in the original Project Root. v1.2.1 work was isolated into `C:\Users\Aa.Emad\source\repos\DirectInternetMethod_hotfix121`; original Router Gateway work was not overwritten or deleted.
 
@@ -65,6 +70,7 @@ Deferred: trusted Authenticode signing.
 20. Initial v1.2.1 Linux ZIP remained cross-host non-deterministic after shell-only normalization → README/license/hosts text EOL differed across hosts; normalize all package text payloads (.sh/.py/.md/.txt/.svg) before hashing/packing; Windows/Linux v1.2.1 ZIP hash now identical.
 21. Concurrent writer switched original checkout to Router Gateway branch during GitHub audit → hotfix commit briefly landed on local Router branch. Prevention: recovered hotfix ref and isolated all subsequent work to dedicated Git worktree; Router Gateway tracked/untracked work preserved.
 All earlier harness failures remain preserved; no product runtime failure is hidden.
+28. Initial v1.3 post-install validator checked `{app}\\router_gateway` and falsely reported missing Router Gateway data → installer/UI contract actually uses `{app}\\app\\router_gateway`; corrected validator derives the path from executable directory; installed hash and UI refresh regression PASS.
 
 23. Router Gateway provider websites were unreliable/blocked during development → offline-first bundled manifest + cache + non-fatal refresh; regression PASS.
 24. PPTP hostname resolved to private `10.10.34.35` and was initially falsely reachable → fail closed on non-global DNS results on both platforms; final UI regression PASS.
@@ -119,8 +125,14 @@ All earlier harness failures remain preserved; no product runtime failure is hid
 
 - GitHub v1.2.1 final audit: `evidence/GITHUB_121_FINAL_AUDIT_20261001.json` — SHA-256 `9E314C8A5ABE3E33996296B7E6EF9039C90B254BD3A3D331D90F572B92B5CB2F`; PASS_FINAL_GITHUB_AUDIT_V1_2_1.
 
+- v1.3 GitHub final governance audit: `evidence/GITHUB_130_FINAL_AUDIT_20261001.json` — PASS_FINAL_GITHUB_AUDIT_V1_3_0.
+- v1.3 Windows public update: `evidence/WINDOWS_130_HOST_PUBLIC_UPDATE_VERIFY_20261001.json` — PASS, exact installed hashes, CLEAN_OFF.
+- v1.3 installed Router Gateway UI/refresh: `evidence/WINDOWS_130_INSTALLED_ROUTER_GATEWAY_UI_VERIFY_20261001.json` — PASS, 8 profiles, refreshed-cache, no DNS/route/state mutation.
+- v1.3 Linux public fresh-clone/archive: `evidence/LINUX_130_PUBLIC_RELEASE_ACCEPTANCE_20261001.json` — PASS, public SHA, `bash -n`, zero CR, runtime/contract/deterministic rebuild.
+- v1.3 validator false-negative root cause: `evidence/WINDOWS_130_ROUTER_DATA_VALIDATOR_ROOT_CAUSE_20261001.json` — harness-only; product path/hash verified.
+
 ## Exact Next Action
-No release or GitHub gate remains for v1.2.1. Keep tag/release assets immutable. Future release commits must pass protected-main status checks; future v* tags are server-side protected against update/delete. Continue Router Gateway/v1.3 work only from its isolated writer/branch and rebase against protected main when ready.
+No release or GitHub gate remains for v1.3.0. Keep tag `v1.3.0` and its three release assets immutable. Maintenance only; any future version must pass protected-main CI, protected-tag publication, public re-download/hash verification, and platform-specific post-update regression.
 
 ## HISTORY
 - 2026-09-29: v1.0.0 Windows and Linux PASS_FINAL_RELEASE; GitHub v1.0.0 published and verified.
@@ -172,3 +184,7 @@ No release or GitHub gate remains for v1.2.1. Keep tag/release assets immutable.
 - 2026-10-01: deterministic Linux builder extended EOL normalization to JSON after cross-host providers.json mismatch; final ZIP is byte-identical across Windows/Linux.
 - 2026-10-01: v1.3.0 tag `1fc9a04` published as GitHub release. Feature/main/tag Source and Release Contracts PASS. All public assets re-downloaded from direct GitHub release URLs and SHA-256 matched; v1.3.0 promoted to FINAL/PUBLISHED_VERIFIED.
 - 2026-10-01: Windows host public-update verification PASS for v1.3.0; installed GUI/service/manifest/router hashes match and no residual network state remains.
+- 2026-10-01: Linux public v1.3.0 tag/archive fresh-clone acceptance PASS; rebuilt ZIP matches published SHA exactly.
+- 2026-10-01: Installed Windows Router Gateway UI refresh PASS with 8 profiles and unchanged network/DNS state.
+- 2026-10-01: Post-install router-data validator false negative traced to harness path error ({app}\router_gateway vs actual {app}\app\router_gateway); product path/hash were correct and validator prevention added.
+- 2026-10-01: Corrected GitHub final audit PASS. Release tag ancestry, branch protection, tag rules, exact asset digests and CI verified; repository license remains an explicit owner legal decision, not a technical release gate.

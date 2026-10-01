@@ -1,0 +1,157 @@
+{
+  "schema": 2,
+  "date": "2026-10-01T07:07:37.7734232+03:30",
+  "status": "PASS_FINAL_GITHUB_AUDIT_V1_3_0",
+  "repository": {
+    "fullName": "GOD13emad/DirectInternetMethod",
+    "visibility": "public",
+    "defaultBranch": "main",
+    "securityAndAnalysis": {
+      "secret_scanning": {
+        "status": "enabled"
+      },
+      "secret_scanning_push_protection": {
+        "status": "enabled"
+      },
+      "dependabot_security_updates": {
+        "status": "disabled"
+      },
+      "secret_scanning_non_provider_patterns": {
+        "status": "disabled"
+      },
+      "secret_scanning_validity_checks": {
+        "status": "disabled"
+      }
+    }
+  },
+  "mainProtection": {
+    "strict": true,
+    "contexts": [
+      "linux-source",
+      "windows-source"
+    ],
+    "enforceAdmins": true,
+    "linearHistory": true,
+    "allowForcePushes": false,
+    "allowDeletions": false,
+    "conversationResolution": true
+  },
+  "releaseSource": {
+    "tag": "v1.3.0",
+    "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+    "mainHeadObserved": "5a95d390a276c70127ad8309a70f4955af2f4f45",
+    "tagIsAncestorOfMain": true,
+    "note": "Post-release evidence/governance commits may advance main; immutable release tag remains on the validated release source."
+  },
+  "tagRuleset": [
+    {
+      "id": 24283722,
+      "name": "Protect release tags",
+      "target": "tag",
+      "source_type": "Repository",
+      "source": "GOD13emad/DirectInternetMethod",
+      "enforcement": "active",
+      "node_id": "RRS_lACqUmVwb3NpdG9yec5TKcXxzgFyiko",
+      "_links": {
+        "self": {
+          "href": "https://api.github.com/repos/GOD13emad/DirectInternetMethod/rulesets/24283722"
+        },
+        "html": {
+          "href": "https://github.com/GOD13emad/DirectInternetMethod/rules/24283722"
+        }
+      },
+      "created_at": "2026-10-01T05:28:03.16+03:30",
+      "updated_at": "2026-10-01T05:28:03.189+03:30"
+    }
+  ],
+  "release": {
+    "tag": "v1.3.0",
+    "name": "Direct Internet Method v1.3.0 ظ¤ Router Gateway",
+    "draft": false,
+    "prerelease": false,
+    "publishedAt": "2026-10-01T03:28:18Z",
+    "url": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.3.0",
+    "assets": [
+      {
+        "name": "DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+        "size": 8156742,
+        "state": "uploaded",
+        "digest": "sha256:14ce381d589482fb8dbf437c12b351b5f232653f2c6512f871139fb5f3809824"
+      },
+      {
+        "name": "DirectInternetMethod_1.3.0_Windows_Setup.exe",
+        "size": 157098906,
+        "state": "uploaded",
+        "digest": "sha256:04ebfd968146a7122a0695db36a01dbacb5f91b69104d6d1dea6d1964bb99263"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "size": 221,
+        "state": "uploaded",
+        "digest": "sha256:a56db90964085a0d8452691d70dceff74d888db65b634b370926a3bb38596abe"
+      }
+    ]
+  },
+  "actions": [
+    {
+      "conclusion": "success",
+      "databaseId": 36810544835,
+      "event": "push",
+      "headBranch": "v1.3.0",
+      "headSha": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+      "name": "Source and Release Contracts",
+      "status": "completed",
+      "url": "https://github.com/GOD13emad/DirectInternetMethod/actions/runs/36810544835"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 36810460241,
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+      "name": "Source and Release Contracts",
+      "status": "completed",
+      "url": "https://github.com/GOD13emad/DirectInternetMethod/actions/runs/36810460241"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 36810382473,
+      "event": "push",
+      "headBranch": "feature/router-gateway-v1.3.0",
+      "headSha": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+      "name": "Source and Release Contracts",
+      "status": "completed",
+      "url": "https://github.com/GOD13emad/DirectInternetMethod/actions/runs/36810382473"
+    }
+  ],
+  "checks": {
+    "publicRepo": true,
+    "defaultMain": true,
+    "secretScanning": true,
+    "pushProtection": true,
+    "mainStrict": true,
+    "mainRequiredLinux": true,
+    "mainRequiredWindows": true,
+    "enforceAdmins": true,
+    "linearHistory": true,
+    "forcePushBlocked": true,
+    "deletionBlocked": true,
+    "conversations": true,
+    "tagRuleActive": true,
+    "tagCommit": true,
+    "tagIsAncestorOfMain": true,
+    "releasePublic": true,
+    "releaseAssetCount": true,
+    "releaseWin": true,
+    "releaseLinux": true,
+    "releaseSums": true,
+    "tagActions": true,
+    "mainActions": true,
+    "featureActions": true
+  },
+  "license": {
+    "status": "OWNER_LEGAL_DECISION_OPEN",
+    "releaseBlocker": false,
+    "note": "No software license was selected by the assistant. Repository publication and binary release are technically final; reuse/licensing terms remain an owner legal choice."
+  }
+}

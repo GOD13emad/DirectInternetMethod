@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "date": "2026-10-01T07:04:05.0811918+03:30",
+  "status": "PASS_INSTALLED_ROUTER_GATEWAY_UI_REFRESH",
+  "version": "1.3.0",
+  "beforeOrigin": "bundled · 2026-10-01 02:30 UTC",
+  "afterOrigin": "refreshed-cache · 2026-10-01 02:30 UTC",
+  "refreshResult": "Refresh completed. If an upstream provider was blocked, the verified repository snapshot was retained.",
+  "rows": 8,
+  "checks": {
+    "windowVisible": true,
+    "profiles8": true,
+    "config": true,
+    "refreshCompleted": true,
+    "refreshedCache": true,
+    "stateUnchanged": true,
+    "broadUnchanged": true,
+    "dnsUnchanged": true
+  }
+}
