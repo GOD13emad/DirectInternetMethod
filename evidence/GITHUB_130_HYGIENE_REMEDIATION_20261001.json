@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_LOCAL_GITHUB_HYGIENE_REMEDIATION_READY_FOR_PR",
+  "scope": "Post-v1.3.0 deep GitHub repository audit",
+  "findings": [
+    {
+      "id": "ROOT_CHECKSUM_STALE",
+      "status": "CONFIRMED",
+      "before": "Root SHA256SUMS.txt still listed v1.2.1 while README and current release authority are v1.3.0.",
+      "risk": "Repository-level checksum authority was ambiguous although published v1.3.0 release asset/checksums were correct.",
+      "remediation": "Root SHA256SUMS.txt synchronized to exact v1.3.0 Windows/Linux release hashes; release_metadata_audit.py added and wired into required linux-source CI."
+    },
+    {
+      "id": "PRIVATE_VULNERABILITY_REPORTING_DISABLED",
+      "status": "CONFIRMED_FIXED",
+      "remediation": "GitHub Private Vulnerability Reporting enabled; SECURITY.md directs reporters to the private Security workflow without inventing contact details."
+    },
+    {
+      "id": "MERGED_BRANCH_AUTO_DELETE_DISABLED",
+      "status": "CONFIRMED_FIXED",
+      "remediation": "delete_branch_on_merge enabled. Existing historical remote branches are all confirmed ancestors of main and will be cleaned after PR finalization."
+    }
+  ],
+  "controlsAlreadyPassing": {
+    "publicRepo": true,
+    "mainStrictProtection": true,
+    "requiredChecks": [
+      "linux-source",
+      "windows-source"
+    ],
+    "enforceAdmins": true,
+    "linearHistory": true,
+    "forcePushBlocked": true,
+    "deletionBlocked": true,
+    "conversationResolution": true,
+    "tagRuleset": "v* update/delete protected, active, no bypass",
+    "secretScanning": true,
+    "secretScanningPushProtection": true,
+    "workflow": "Source and Release Contracts active",
+    "latestMainCi": "PASS",
+    "latestTagCi": "PASS"
+  },
+  "localValidation": {
+    "releaseMetadataAudit": "PASS",
+    "windowsContract": "PASS",
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "diffCheck": "PASS",
+    "trackedSecretPatternHits": 0,
+    "jsonErrors": 0,
+    "powershellParseErrors": 0,
+    "pythonCompileErrors": 0,
+    "dotnetWarnings": 0,
+    "dotnetErrors": 0
+  },
+  "deferred": [
+    "Repository LICENSE remains an explicit owner/legal decision; no license was selected automatically.",
+    "Required signed commits remain disabled because enabling them without an established signing workflow would add operational risk without evidence of proportional benefit.",
+    "Dependabot security updates remain disabled; current project dependency model is dominated by hash-pinned bundled binaries and CI action versions rather than a normal package dependency graph."
+  ]
+}

@@ -34,6 +34,7 @@ jobs:
         run: |
           python3 tests/linux_contract_audit.py
           python3 tests/router_gateway_contract_audit.py
+          python3 tests/release_metadata_audit.py
       - name: Build Linux archive
         run: python3 build_linux_package.py
       - name: Validate shell syntax inside built archive
