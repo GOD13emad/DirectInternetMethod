@@ -7,8 +7,8 @@ Standalone connectivity application for Windows and Linux. It is independent of 
 ## Direct Method
 The original Direct Method remains a direct DNS + DPI-bypass path. It does **not** create a VPN, HTTP/SOCKS proxy, or default-route tunnel.
 
-## Router Gateway — v1.3.0
-v1.3.0 adds a separate, non-privileged Router Gateway panel for configuring compatible modems/routers.
+## Router Gateway — v1.3.1
+v1.3.1 retains the non-privileged Router Gateway panel introduced in v1.3.0 and includes provider-catalog revision 2.
 
 - L2TP/IPsec profiles are preferred.
 - PPTP is available only as a legacy compatibility fallback.

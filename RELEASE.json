@@ -1,153 +1,98 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "date": "2026-10-01",
-  "status": "FINAL_V1_3_0_PUBLISHED_VERIFIED",
+  "status": "RELEASE_READY_V1_3_1_POST_REBASE",
   "previousAccepted": {
-    "version": "1.2.1",
-    "tag": "v1.2.1",
-    "tagCommit": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
-    "publishedGovernanceMain": "ad5f019503ab46d7dc0434e2e8e89f9517d172d2",
-    "status": "FINAL_PUBLISHED_VERIFIED_GITHUB_HARDENED"
+    "version": "1.3.0",
+    "tag": "v1.3.0",
+    "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
+    "status": "FINAL_PUBLISHED_VERIFIED"
   },
-  "feature": "Router Gateway — L2TP/IPsec preferred + PPTP legacy fallback configuration data for compatible routers/modems",
+  "authority": {
+    "baseMain": "8d5fb149992ee1bdac3e73940b23ad6f0e873a4e",
+    "branch": "hotfix/v1.3.1-ui-layout",
+    "note": "Rebased onto current protected main after concurrent provider-catalog and GitHub-hardening work; main provider catalog revision 2 preserved."
+  },
+  "feature": "Windows startup-size/footer collision hotfix + provider-catalog revision 2 integration",
   "platforms": {
     "windows": {
-      "status": "PASS_FINAL_WINDOWS_1_3_0_PUBLISHED_VERIFIED",
-      "artifact": "delivery/DirectInternetMethod_1.3.0_Windows_Setup.exe",
-      "bytes": 157098906,
-      "sha256": "04EBFD968146A7122A0695DB36A01DBACB5F91B69104D6D1DEA6D1964BB99263",
-      "guiSha256": "83594B60BBA67F84175F1287EB12E6921A14C883E83BF2CCF566A8A4A698728B",
-      "serviceSha256": "034CA29CF4CB3968AAB37CEABDB8D78C84F0B7355659F312D119A19E61C163D4",
-      "manifestSha256": "15D6A96AB4ECA44B70F9C4A6855BAEEC2F03411E8F54233003940B1027BFEFAE",
+      "status": "PASS_RELEASE_READY_WINDOWS_1_3_1_POST_REBASE",
+      "artifact": "delivery/DirectInternetMethod_1.3.1_Windows_Setup.exe",
+      "bytes": 157096702,
+      "sha256": "4F70C372E6B8CE7152D9501E5C4A70F4B2F650638CFDD3014B18EB6E3C123093",
+      "guiSha256": "8F3A410CCD97D1E0C83BC90E2A079CC76BDA53729FD7954E1152836874A1110E",
+      "serviceSha256": "1A8A235A15602C861B561E3EDD3DE4C3E34A53623C868B047129B461742829E6",
+      "manifestSha256": "B0A1B32844262EF38ACE6B9ED2FAC01AA3EF9E7C92347316AFE401FC2ADA1207",
       "manifestFiles": 678,
       "authenticode": "NotSigned",
-      "finalUiAutomationSmoke": "PASS",
-      "privateDnsInterceptionRegression": "PASS",
-      "hostPublicUpdate": "PASS_1_2_1_TO_1_3_0_NO_UAC",
-      "installedRouterGatewayUi": "PASS_REFRESHED_CACHE_NON_MUTATING",
-      "finalState": "CLEAN_OFF"
+      "startupGeometry": "1289x632 DIP",
+      "dynamicUi": "PASS_1289x632_NO_OVERLAP",
+      "reducedUi": "PASS_1000x632_NO_OVERLAP",
+      "physicalRefreshInput": "PASS_MOUSE_KEYBOARD",
+      "routerGatewayOpen": "PASS_PHYSICAL_MOUSE"
     },
     "linux": {
-      "status": "PASS_FINAL_LINUX_1_3_0_PUBLISHED_VERIFIED",
-      "artifact": "delivery/DirectInternetMethod_1.3.0_Linux_x86_64.zip",
-      "bytes": 8156742,
-      "sha256": "14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824",
-      "contractAudit": "PASS",
-      "runtimeSmoke": "PASS",
-      "deterministicBuild": "PASS_CROSS_HOST",
-      "networkLogicChangedFrom121": false,
-      "publicFreshClone": "PASS",
-      "publicArchiveShellSyntax": "PASS_ZERO_CR"
+      "status": "PASS_LOCAL_CANDIDATE_PENDING_POST_REBASE_CROSS_HOST",
+      "artifact": "delivery/DirectInternetMethod_1.3.1_Linux_x86_64.zip",
+      "bytes": 8158158,
+      "sha256": "B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34",
+      "networkBackendChangedFrom130": false,
+      "protectedBackendCompatibility": "1.2.1",
+      "crossHostDeterministic": "PENDING_POST_REBASE_FINAL_COMMIT"
     }
   },
   "checksums": {
     "artifact": "delivery/SHA256SUMS.txt",
-    "sha256": "A56DB90964085A0D8452691D70DCEFF74D888DB65B634B370926A3BB38596ABE"
+    "sha256": "AED6215219CAEC8AA2D3E5FD78D79BEFA9ECBF0F8ABAF6CC38D13823C09EFA28"
   },
   "routerGateway": {
+    "version": "1.3.1",
+    "dataRevision": 2,
+    "profileCount": 9,
+    "providerCount": 3,
+    "providers": [
+      "VPN Gate",
+      "VPNBook",
+      "Pilovali"
+    ],
     "preferred": "L2TP/IPsec",
     "legacyFallback": "PPTP",
     "autoRouterMutation": false,
-    "offlineFirst": true,
-    "profileCount": 8,
-    "routerGuides": [
-      "Generic VPN Client",
-      "TP-Link VPN Client",
-      "ASUS VPN Fusion",
-      "MikroTik RouterOS"
-    ],
-    "healthTest": "reachability heuristic only",
     "privateDnsFailClosed": true
   },
   "acceptance": {
-    "rebaseOntoLatestOriginMain": "PASS_BASE_V1_2_1",
-    "routerGatewayContract": "PASS",
-    "windowsPayloadAndRegression": "PASS",
+    "rebaseOntoLatestOriginMain": "PASS_BASE_8D5FB14",
+    "windowsContract": "PASS",
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS_INCLUDES_PILOVALI",
+    "windowsFinalUiAutomation": "PASS",
     "windowsInstaller": "PASS",
-    "finalWpfUiAutomation": "PASS",
-    "linuxContractAndRuntime": "PASS",
-    "linuxDeterministicCrossHost": "PASS",
-    "publication": "PASS_PUBLIC_REDOWLOAD_VERIFIED",
-    "windowsPublicUpdateHost": "PASS",
-    "installedRouterGatewayUi": "PASS",
-    "linuxPublicFreshClone": "PASS",
-    "githubGovernanceFinalAudit": "PASS",
-    "repoContentAudit": "PASS_NO_SECRET_HITS_NO_JSON_ERRORS",
-    "allTrackedSyntaxAudit": "PASS"
+    "linuxLocalDeterministicBuild": "PASS",
+    "publication": "PENDING",
+    "linuxPostRebaseCrossHost": "PENDING",
+    "protectedCiPrMerge": "PENDING",
+    "windowsInstalledPublicUpdate": "PENDING"
+  },
+  "superseded": {
+    "preRebaseWindowsInstallerSha256": "E805F7F10890AD5954750639C8BE10B52D74723900BABB6BC8115AB4FA39CAA0",
+    "preRebaseLinuxSha256": [
+      "4AB0D082A43F524A7F6C60D69F243BE81CE5ADCC3B211010F50D0141B86BED5C",
+      "A2B74521A3BDEC2A3B88076D616B865782E5D171E9EAA90B9E29649A064AF3D6"
+    ],
+    "reason": "Protected main advanced with provider catalog revision 2 and GitHub hardening; v1.3.1 branch was rebased and release artifacts were rebuilt."
   },
   "validationBoundary": {
     "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
-    "explanation": "Profile generation, UI, packaging, reachability and DNS-interception behavior are verified. An authenticated L2TP/IPsec/PPTP tunnel on every router model/firmware is not claimed."
-  },
-  "superseded": {
-    "preRebaseV130Hashes": true,
-    "reason": "origin/main advanced to authoritative v1.2.1 during work; v1.3 was rebased and rebuilt from the new authority."
-  },
-  "exactNextAction": "No v1.3.0 product/release/GitHub gate remains. Keep tag/assets immutable. Active v1.3.1 provider/UI worktrees are separate unreleased development and must pass a new versioned release gate before publication.",
-  "publication": {
-    "tag": "v1.3.0",
-    "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.3.0",
-    "publishedAt": "2026-10-01T03:28:18Z",
-    "featureCiRun": 36810382473,
-    "mainCiRun": 36810460241,
-    "tagCiRun": 36810544835,
-    "publicRedownloadHashVerification": "PASS_ALL_ASSETS"
-  },
-  "githubGovernance": {
-    "status": "PASS_FINAL_GITHUB_LINE_BY_LINE_AUDIT_V1_3_0",
-    "mainProtection": "strict required linux-source + windows-source; enforce admins; full Windows contract pre-merge; linear history; force-push/deletion blocked; conversation resolution required",
-    "tagRuleset": "Protect release tags active; v* update/deletion blocked; no bypass actors; current user cannot bypass",
-    "secretScanning": "enabled",
-    "pushProtection": "enabled",
-    "license": "MISSING_OWNER_LEGAL_CHOICE",
-    "rootChecksumAuthority": "PASS_ROOT_EQUALS_PUBLIC_RELEASE_SHA256SUMS",
-    "releaseMetadataCiGuard": "PASS_REQUIRED_LINUX_SOURCE",
-    "privateVulnerabilityReporting": "enabled",
-    "deleteBranchOnMerge": true,
-    "remoteBranches": [
-      "main",
-      "feature/router-providers-v1.3.1"
-    ],
-    "finalAuditEvidence": "evidence/GITHUB_130_LINE_BY_LINE_FINAL_AUDIT_20261001.json",
-    "finalAuditSha256": "5F14FE447285028DDA7DB5581978E69A6AAF9051F6A00D1A9B6890661869C385",
-    "actions": {
-      "checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
-      "setupDotnet": "a98b56852c35b8e3190ac28c8c2271da59106c68",
-      "floatingUses": 0
-    },
-    "dependabotActions": "enabled_weekly_github-actions_only",
-    "advancedSecretScanning": {
-      "nonProviderPatterns": "UNAVAILABLE_OR_UNSUPPORTED_CURRENT_REPO_CONFIGURATION_API_REMAINS_DISABLED",
-      "validityChecks": "UNAVAILABLE_OR_UNSUPPORTED_CURRENT_REPO_CONFIGURATION_API_REMAINS_DISABLED"
-    },
-    "requiredCommitSignatures": "DEFERRED_NO_SIGNING_INFRASTRUCTURE",
-    "packageDependabot": "NOT_APPLICABLE_NO_PACKAGE_MANIFESTS",
-    "activePostReleaseDevelopment": "feature/router-providers-v1.3.1 is an active v1.3.1 worktree branch and is explicitly outside immutable v1.3.0 release authority",
-    "metadataConsistency": "PASS_WINDOWS_RELEASE_PUBLICATION_SYNC_AND_ROOT_DELIVERY_CHECKSUM_GUARD",
-    "pr4": {
-      "mergeCommit": "30a471ca41ede70c2d6e39c79a6ecb6615dee737",
-      "prCiRun": 36816103907,
-      "mainCiRun": 36816213011,
-      "status": "PASS"
-    },
-    "pr5": {
-      "mergeCommit": "b6cfc5e49cf074c2a74f79b19beca45350f67ea0",
-      "prCiRun": 36816869694,
-      "mainCiRun": 36816987358,
-      "status": "PASS"
-    }
+    "authenticode": "NOT_SIGNED",
+    "license": "OWNER_LEGAL_DECISION_OPEN"
   },
   "evidence": {
-    "githubFinalAudit": "evidence/GITHUB_130_FINAL_AUDIT_20261001.json",
-    "windowsHostPublicUpdate": "evidence/WINDOWS_130_HOST_PUBLIC_UPDATE_VERIFY_20261001.json",
-    "windowsInstalledRouterGatewayUi": "evidence/WINDOWS_130_INSTALLED_ROUTER_GATEWAY_UI_VERIFY_20261001.json",
-    "linuxPublicReleaseAcceptance": "evidence/LINUX_130_PUBLIC_RELEASE_ACCEPTANCE_20261001.json",
-    "routerDataValidatorRootCause": "evidence/WINDOWS_130_ROUTER_DATA_VALIDATOR_ROOT_CAUSE_20261001.json",
-    "repoContentAudit": "evidence/GITHUB_REPO_CONTENT_AUDIT_20261001.json",
-    "allTrackedSyntaxAudit": "evidence/GITHUB_ALL_TRACKED_SYNTAX_AUDIT_20261001.json",
-    "githubLineByLineFinalAudit": "evidence/GITHUB_130_LINE_BY_LINE_FINAL_AUDIT_20261001.json"
-  }
+    "windowsUi": "evidence/WINDOWS_131_UI_LAYOUT_ROOT_CAUSE_ACCEPTANCE_20261001.json",
+    "windowsPayload": "evidence/WINDOWS_131_PAYLOAD_BUILD_20261001.json",
+    "windowsInstaller": "evidence/WINDOWS_131_INSTALLER_BUILD_20261001.json",
+    "releaseReady": "evidence/DIM_131_RELEASE_READY_ACCEPTANCE_20261001.json"
+  },
+  "exactNextAction": "Commit post-rebase artifact authority, force-with-lease the hotfix branch, independently reproduce Linux ZIP on aliemad-Labtop, then pass protected PR CI/merge before v1.3.1 publication."
 }

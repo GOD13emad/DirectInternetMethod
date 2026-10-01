@@ -3,21 +3,21 @@
   "date": "2026-10-01",
   "project": "Direct Internet Method",
   "version": "1.3.1",
-  "status": "PASS_RELEASE_READY_LOCAL_AND_CROSS_HOST",
+  "status": "PASS_POST_REBASE_LOCAL_PENDING_CROSS_HOST",
   "previousAccepted": "v1.3.0",
   "mutationObjective": "Fix Windows default startup size and prevent footer control/text overlap without changing connectivity behavior.",
   "artifacts": {
     "windows": {
       "path": "delivery/DirectInternetMethod_1.3.1_Windows_Setup.exe",
-      "bytes": 157106087,
-      "sha256": "E805F7F10890AD5954750639C8BE10B52D74723900BABB6BC8115AB4FA39CAA0",
+      "bytes": 157096702,
+      "sha256": "4F70C372E6B8CE7152D9501E5C4A70F4B2F650638CFDD3014B18EB6E3C123093",
       "authenticode": "NotSigned"
     },
     "linux": {
       "path": "delivery/DirectInternetMethod_1.3.1_Linux_x86_64.zip",
-      "bytes": 8156742,
-      "sha256": "4AB0D082A43F524A7F6C60D69F243BE81CE5ADCC3B211010F50D0141B86BED5C",
-      "crossHost": "PASS_EXACT_SHA_MATCH"
+      "bytes": 8158158,
+      "sha256": "B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34",
+      "crossHost": "PENDING_POST_REBASE"
     }
   },
   "gates": {
@@ -29,30 +29,36 @@
     "serviceSelftest": "PASS",
     "windowsContract": "PASS",
     "linuxContract": "PASS",
-    "routerGatewayContract": "PASS",
+    "routerGatewayContract": "PASS_PROVIDER_CATALOG_R2_9_PROFILES",
     "releaseMetadataAudit": "PASS",
     "powershellSyntax": "PASS",
     "gitDiffCheck": "PASS",
-    "linuxCrossHost": "PASS_EXACT_SHA_MATCH"
+    "linuxCrossHost": "PENDING_POST_REBASE"
   },
   "regressionScope": {
     "directDnsDpiLogicChanged": false,
     "routeDnsRollbackLogicChanged": false,
     "serviceActionLogicChanged": false,
-    "routerGatewayBehaviorChanged": false,
-    "linuxNetworkBackendChanged": false
+    "routerGatewayBehaviorChanged": true,
+    "linuxNetworkBackendChanged": false,
+    "routerGatewayChange": "Concurrent main provider-catalog revision 2 preserved; catalog expanded to VPN Gate + VPNBook + Pilovali while auto-router mutation remains false."
   },
   "evidence": [
     "evidence/WINDOWS_131_UI_LAYOUT_ROOT_CAUSE_ACCEPTANCE_20261001.json",
     "evidence/WINDOWS_131_PAYLOAD_BUILD_20261001.json",
-    "evidence/WINDOWS_131_INSTALLER_BUILD_20261001.json",
-    "evidence/LINUX_131_CROSS_HOST_ACCEPTANCE_20261001.json"
+    "evidence/WINDOWS_131_INSTALLER_BUILD_20261001.json"
   ],
   "openGates": [
+    "post-rebase Linux cross-host exact SHA reproduction",
     "protected branch linux-source/windows-source CI",
     "protected PR merge",
     "v1.3.1 immutable tag/release and public asset hash redownload",
     "installed Windows public update and final 1289x632 UI verification"
   ],
-  "exactNextAction": "Push the evidence closure commit, pass protected linux-source/windows-source CI and PR merge, then publish and verify v1.3.1 before installed-host promotion."
+  "exactNextAction": "Commit/push the post-rebase artifact authority, independently reproduce B21BD0D5... on aliemad-Labtop, then close CI/PR/publication/installed-host gates.",
+  "authority": {
+    "baseMain": "8d5fb149992ee1bdac3e73940b23ad6f0e873a4e",
+    "branch": "hotfix/v1.3.1-ui-layout",
+    "providerCatalogRevision": 2
+  }
 }

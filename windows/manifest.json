@@ -40,8 +40,8 @@
       "scope": "user",
       "file": "app/router_gateway/providers.json",
       "source": "../router_gateway/providers.json",
-      "bytes": 6015,
-      "sha256": "D0C00C727195D27279410664273E04DCA90866D873398F66B2C0646D9BBE6816"
+      "bytes": 6950,
+      "sha256": "C18B6AC37B54A2013B219D245394AFEE7AAF747C94633694A78ABD2C37DA8D82"
     },
     {
       "scope": "user",
@@ -61,8 +61,8 @@
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 2270,
-      "sha256": "369FBEE48FA8FA8DEC2669D389A01D1B8EA0CF7B7AC0DEDA950E8FB73F379753"
+      "bytes": 2326,
+      "sha256": "EB12AEDD0FD9C9BC3392547AB64EE222F6B8F86E532F2A1AE3E1AC2D9DA28B62"
     },
     {
       "scope": "privileged",
