@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.4.0",
+  "status": "PASS_LOCAL_RELEASE_CANDIDATE_FINAL_BUILD",
+  "authority": {
+    "baseMain": "930db926a15d1688f95892905f4352cfebe46c39",
+    "branch": "feature/direct-multiprotocol-v1.4.0"
+  },
+  "changeObjective": "Add minimum-sufficient non-VPN/non-proxy direct methods while preserving route/DNS/proxy ownership and exact rollback.",
+  "methods": [
+    "encrypted-dns-doh",
+    "http-host-split-tcp80",
+    "tls-sni-desync-tcp443",
+    "quic-desync-udp443"
+  ],
+  "gates": {
+    "powershellSyntax": "PASS",
+    "bashSyntax": "PASS_SOURCE_LEVEL_AND_PREVIOUS_LINUX_DRY_RUN",
+    "pythonSyntax": "PASS",
+    "linuxContract": "PASS",
+    "windowsContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "windowsServiceSelftest": "PASS",
+    "windowsPayloadBuild": "PASS",
+    "windowsInstallerBuild": "PASS",
+    "windowsStartupUi": "PASS_1289x632_NO_OVERLAP",
+    "windowsPhysicalRefresh": "PASS_MOUSE_KEYBOARD",
+    "linuxNfqwsDryRun": "PASS_3_PROFILES_6_HOSTS",
+    "linuxCrossHost": "PENDING",
+    "linuxLiveProtectedBackend": "PENDING",
+    "protectedCi": "PENDING",
+    "publication": "PENDING",
+    "secureDnsNoOsLeak": "PASS",
+    "windowsRouterGatewayUi": "PASS_9_VISIBLE_PROFILES"
+  },
+  "artifacts": {
+    "windows": {
+      "bytes": 157103781,
+      "sha256": "69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93"
+    },
+    "linux": {
+      "bytes": 8159881,
+      "sha256": "4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E"
+    },
+    "checksums": {
+      "sha256": "7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609"
+    },
+    "gui": {
+      "sha256": "BF1E18CE478724EBD1464C03728C1180A2F4DF31CF4B4BB1AACBA5C62A1B354C"
+    },
+    "service": {
+      "sha256": "770D5D1CAACD51DB1E2AFC5C7991F099FFA1BBA6488D96224725A696762AF130"
+    },
+    "manifest": {
+      "sha256": "7FFD3C000E35CA3B7C4344B82B30DF8271BCEA82166DC3431886B3DB0CB716DF"
+    }
+  },
+  "failurePrevention": [
+    "Linux no longer globally rejects UDP/443; bounded hostlist-scoped QUIC is queued to nfqws.",
+    "HTTP/TLS/QUIC profiles remain hostlist-scoped; no global all-domain interception.",
+    "Physical adapter DNS, WinHTTP proxy and broad-route invariants remain contract-protected.",
+    "ctrld leak_on_upstream_failure=false prevents silent OS-resolver fallback if encrypted DNS fails.",
+    "DoH3/DoQ/DoT were not promoted after isolated live tests failed to resolve on the current network.",
+    "Protected Linux backend version is 1.4.0 because privileged nft/nfqws rules changed."
+  ],
+  "exactNextAction": "Push exact candidate; fresh-clone and reproduce Linux SHA; install protected Linux 1.4.0 backend and validate live lifecycle; then protected CI/PR/release/public hashes/installed-host update.",
+  "secureDns": {
+    "active": "direct-IP DoH https://76.76.10.11/p0",
+    "leakOnUpstreamFailure": false,
+    "liveIsolated": {
+      "doh": "PASS",
+      "doh3": "FAIL_NO_DNS_ANSWER_NOT_ENABLED",
+      "doq": "FAIL_NO_DNS_ANSWER_NOT_ENABLED",
+      "dot": "FAIL_NO_DNS_ANSWER_NOT_ENABLED",
+      "alternateDoH76_76_2_11": "FAIL_NO_DNS_ANSWER_NOT_ENABLED"
+    }
+  }
+}

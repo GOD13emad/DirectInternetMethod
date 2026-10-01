@@ -1,8 +1,8 @@
 {
   "schema": 2,
   "product": "Direct Internet Method",
-  "version": "1.3.2",
-  "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; accepted direct DNS/DPI path plus non-privileged Router Gateway profile manager",
+  "version": "1.4.0",
+  "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + hostlist-scoped zapret/WinDivert multiprotocol direct engine",
   "offlineRuntime": true,
   "normalRunRequiresAdmin": false,
   "installOrPrivilegedUpgradeRequiresAdmin": true,
@@ -20,7 +20,7 @@
       "file": "app/DirectInternetMethod.exe",
       "source": "app/DirectInternetMethod.exe",
       "bytes": 161807432,
-      "sha256": "F9FDE9A0A75754EFC6B2573571373E2AB1CD3C3EED6470CD6947D4AD300C5BBD"
+      "sha256": "BF1E18CE478724EBD1464C03728C1180A2F4DF31CF4B4BB1AACBA5C62A1B354C"
     },
     {
       "scope": "user",
@@ -41,7 +41,7 @@
       "file": "app/router_gateway/providers.json",
       "source": "../router_gateway/providers.json",
       "bytes": 6950,
-      "sha256": "2B0C8BDF25DDE80A34104B56E5ED64194FC71899006556D60B017D4D53E2885F"
+      "sha256": "E538058D4614F0418C1120BFE26E15420D5E0C266D32AB0A85E42AB41DD1C295"
     },
     {
       "scope": "user",
@@ -61,22 +61,22 @@
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 2971,
-      "sha256": "8D7F0F05658C44CA2DD86D1A1BEE899B7CB1E9EA414EABEDD74A480EA1ED2B41"
+      "bytes": 2713,
+      "sha256": "F1872A7D2786E30C504236D7D086FDEAF3850188B3CC0A0A1C5E04B4295007DE"
     },
     {
       "scope": "privileged",
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
       "bytes": 67588813,
-      "sha256": "CF2D1FBF3ACB24613CE317B31F3B70A9ADA8C01EC39989A90811F49543D06D5D"
+      "sha256": "770D5D1CAACD51DB1E2AFC5C7991F099FFA1BBA6488D96224725A696762AF130"
     },
     {
       "scope": "privileged",
       "file": "app/Start-Direct.ps1",
       "source": "app/Start-Direct.ps1",
-      "bytes": 18793,
-      "sha256": "A9AB5ACD9891459305A858C8903D729C32E4DFFD24A83B4B308D6E94B98ACD24"
+      "bytes": 19529,
+      "sha256": "37DA253B73D0CCB69BEDE8A31F1FE5866209A78510F0939D324CA7B203499E90"
     },
     {
       "scope": "privileged",
@@ -103,8 +103,8 @@
       "scope": "privileged",
       "file": "bin/ctrld/ctrld.toml",
       "source": "bin/ctrld/ctrld.toml",
-      "bytes": 506,
-      "sha256": "336486FD10E941BB46DE053B5CDAA86A452D17761C4C97FEDF0392E20E8963B7"
+      "bytes": 540,
+      "sha256": "B056AD8A51078208AED39744D48C4F4369AE5BA1E76F7D6F84B027C34CE1314B"
     },
     {
       "scope": "privileged",

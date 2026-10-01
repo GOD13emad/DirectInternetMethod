@@ -16,7 +16,7 @@ def check(name,cond):
     D["checks"][name]=bool(cond)
     if not cond:D["status"]="FAIL"
 
-check("version_132_backend_121_compat", 'VERSION="1.3.2"' in ui and '"version":"1.3.2"' in install and '"version":"1.2.1"' in sysinstall and 'd.get("version")=="1.2.1"' in install)
+check("version_140_backend_140", 'VERSION="1.4.0"' in ui and '"version":"1.4.0"' in install and '"version":"1.4.0"' in sysinstall and 'd.get("version")=="1.4.0"' in install)
 check("no_default_route_mutation", not re.search(r'ip\s+route\s+(add|del|replace).*default|nmcli\s+.*ipv4\.gateway',helper,re.I))
 check("no_physical_dns_mutation", "nmcli connection modify" not in helper and "resolvectl dns enp" not in helper and "resolvectl dns eth" not in helper)
 check("dedicated_dns_link", all(x in helper for x in ('DNS_IF="dimdns0"','ip link add "$DNS_IF" type dummy','ip addr add "$DNS_IP/32" dev "$DNS_IF"','SetLinkDNS','SetLinkDomains','RevertLink','ip link del "$DNS_IF"')))
@@ -24,6 +24,20 @@ listener=re.search(r"\[listener\.0\](.*?)\[listener\.0\.policy\]",helper,re.S)
 check("ctrld_listener_owned_link", listener is not None and 'ip = "192.0.2.53"' in listener.group(1) and "allow_wan_clients = true" in listener.group(1) and 'ip = "0.0.0.0"' not in listener.group(1))
 check("external_tun_fail_closed_before_mutation", "EXTERNAL_TUNNEL_ACTIVE" in helper and helper.index("EXTERNAL_TUNNEL_ACTIVE") < helper.index('ip link add "$DNS_IF" type dummy'))
 check("nft_owned_table", 'TABLE="directinternetmethod"' in helper and 'nft add table inet "$TABLE"' in helper and 'nft delete table inet "$TABLE"' in helper)
+check("multiprotocol_nft_queue_scope", all(x in helper for x in (
+    'tcp dport 80 ct original packets 1-6 queue num "$QNUM" bypass',
+    'tcp dport 443 ct original packets 1-6 queue num "$QNUM" bypass',
+    'udp dport 443 ct original packets 1-6 queue num "$QNUM" bypass'
+)) and 'udp dport 443 reject' not in helper)
+check("multiprotocol_nfqws_profiles", all(x in helper for x in (
+    '--filter-tcp=80','--dpi-desync-split-pos=method+2','--dpi-desync-fooling=md5sig',
+    '--new --filter-tcp=443','--dpi-desync=fake,multidisorder','--dpi-desync-split-pos=1,midsld',
+    '--new --filter-udp=443 --filter-l7=quic','--dpi-desync-repeats=6'
+)))
+check("multiprotocol_state_methods", all(x in helper for x in (
+    '"encrypted-dns-doh"','"http-host-split-tcp80"','"tls-sni-desync-tcp443"','"quic-desync-udp443"'
+)))
+check("secure_dns_no_os_leak", 'leak_on_upstream_failure = false' in helper)
 check("nft_ownership_guard", "nft_table_owned()" in helper and "NFT_TABLE_OWNERSHIP_MISMATCH" in helper and 'queue num "$QNUM" bypass' in helper)
 check("nft_queue_canonical_guard", "queue (num 200.*bypass|flags bypass to 200)" in helper)
 check("dns_link_ownership_guard", "dns_link_owned()" in helper and "DNS_LINK_OWNERSHIP_MISMATCH" in helper)
@@ -37,6 +51,7 @@ check("ui_identity", 'APP_ID="io.github.god13emad.DirectInternetMethod"' in ui a
 check("ui_explicit_window_controls", all(x in ui for x in ("self.minimize()","self.maximize()","self.unmaximize()","self.close()","Gtk.WindowHandle")))
 check("ui_live_verify_rollback", 'LIVE_VERIFY_FAILED_ROLLED_BACK' in ui and 'run_system_action("stop")' in ui)
 check("ui_fixed_systemd_actions", 'unit=f"directinternetmethod-{action}.service"' in ui and 'subprocess.run(["systemctl","start",unit]' in ui)
+check("ui_multiprotocol_label", "Encrypted DNS (DoH) + HTTP/TLS/QUIC DPI bypass" in ui)
 check("ui_online_update_hash_gate", "SHA256SUMS.txt" in ui and "hashlib.sha256" in ui and "Unsafe update archive path." in ui)
 check("install_no_network_start", 'systemctl start directinternetmethod-start.service' not in install and 'direct_method_helper.sh" start' not in install)
 check("install_active_state_guard", "Stop/Recovery it before installing or upgrading." in install)

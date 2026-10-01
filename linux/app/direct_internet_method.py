@@ -19,7 +19,7 @@ from gi.repository import Gtk, Adw, GLib, Gdk
 from router_gateway import RouterGatewayWindow
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
-VERSION="1.3.2"
+VERSION="1.4.0"
 GLib.set_prgname("DirectInternetMethod")
 GLib.set_application_name("Direct Internet Method")
 try:
@@ -88,7 +88,7 @@ def load_state():
     ctrld_ok=_systemd_unit_matches(s.get("ctrldUnit"),s.get("ctrldPid"),f"directinternetmethod-ctrld-{uid}.service")
     nfqws_ok=_systemd_unit_matches(s.get("nfqwsUnit"),s.get("nfqwsPid"),f"directinternetmethod-nfqws-{uid}.service")
     if ctrld_ok and nfqws_ok:
-        detail=f"Physical: {s.get('physicalInterface','?')}  DNS link: {s.get('dnsInterface','?')}  DNS: {s.get('dnsIp','?')}"
+        detail=f"Physical: {s.get('physicalInterface','?')}  DNS link: {s.get('dnsInterface','?')}  DNS: {s.get('dnsIp','?')}  Methods: DoH + HTTP + TLS/SNI + QUIC"
         if _external_tunnel_active():
             return {"mode":"CONFLICT","detail":detail+"  External VPN/tunnel is also active."}
         return {"mode":"ACTIVE","detail":detail}
@@ -117,13 +117,16 @@ def verify_live():
                          text=True,capture_output=True)
         return {"exit":p.returncode,"meta":p.stdout.strip(),"error":p.stderr.strip()}
     d=subprocess.run(["getent","ahostsv4","www.youtube.com"],text=True,capture_output=True)
+    h=curl("http://www.youtube.com/")
     y=curl("https://www.youtube.com/generate_204")
     o=curl("https://api.openai.com/v1/models")
     g=curl("https://github.com/")
-    ok=(not _external_tunnel_active() and d.returncode==0 and y["exit"]==0 and y["meta"].startswith(("200|","204|"))
+    ok=(not _external_tunnel_active() and d.returncode==0
+        and h["exit"]==0 and h["meta"].startswith(("200|","301|","302|","303|","307|","308|"))
+        and y["exit"]==0 and y["meta"].startswith(("200|","204|"))
         and o["exit"]==0 and o["meta"].startswith(("401|","403|"))
         and g["exit"]==0 and g["meta"].startswith(("200|")))
-    return {"ok":ok,"physicalInterface":physical,"youtube":y,"openai":o,"github":g}
+    return {"ok":ok,"physicalInterface":physical,"directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"],"youtubeHttp80":h,"youtube":y,"openai":o,"github":g}
 
 def _version_tuple(text):
     s=text.strip().lstrip("vV")
@@ -230,7 +233,7 @@ class Window(Adw.ApplicationWindow):
         htxt=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=3)
         title=Gtk.Label(label="Direct Internet Method",xalign=0);title.add_css_class("title-1");htxt.append(title)
         slogan=Gtk.Label(label="زن زندگی آزادی",xalign=0);slogan.add_css_class("title-2");htxt.append(slogan)
-        sub=Gtk.Label(label="Direct DNS + DPI bypass without VPN, proxy or default-route tunnel",xalign=0)
+        sub=Gtk.Label(label="Encrypted DNS (DoH) + HTTP/TLS/QUIC DPI bypass without VPN, proxy or default-route tunnel",xalign=0)
         sub.add_css_class("dim-label");htxt.append(sub)
         hero.append(htxt);box.append(hero)
 

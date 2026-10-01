@@ -13,7 +13,7 @@
 </Canvas>
 </Viewbox>
 </Border>
-<StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0"><TextBlock Text="Direct Internet Method" FontSize="30" FontWeight="Bold"/><TextBlock Text="زن زندگی آزادی" HorizontalAlignment="Left" FontSize="21" FontWeight="SemiBold" Margin="0,4,0,0"/><TextBlock Text="Direct DNS + DPI bypass — without VPN, proxy, or default-route tunnel" Foreground="{StaticResource Muted}" FontSize="14" Margin="0,6,0,0"/></StackPanel>
+<StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0"><TextBlock Text="Direct Internet Method" FontSize="30" FontWeight="Bold"/><TextBlock Text="زن زندگی آزادی" HorizontalAlignment="Left" FontSize="21" FontWeight="SemiBold" Margin="0,4,0,0"/><TextBlock Text="Encrypted DNS (DoH) + HTTP/TLS/QUIC DPI bypass — without VPN, proxy, or default-route tunnel" Foreground="{StaticResource Muted}" FontSize="14" Margin="0,6,0,0"/></StackPanel>
 <Border Grid.Column="2" Background="#153729" CornerRadius="14" Padding="14,8" VerticalAlignment="Center"><TextBlock x:Name="StatusBadge" Text="OFF" Foreground="#68E8A6" FontSize="15" FontWeight="Bold"/></Border></Grid>
 <Border Grid.Row="2" Background="{StaticResource Card}" CornerRadius="18" Padding="18"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
 <StackPanel><TextBlock Text="Physical interface" Foreground="{StaticResource Muted}" FontSize="12"/><TextBlock x:Name="InterfaceText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,5,0,0"/><TextBlock x:Name="IpText" Text="—" Foreground="{StaticResource Muted}" Margin="0,3,0,0"/></StackPanel>

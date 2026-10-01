@@ -1,8 +1,24 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: FINAL_V1_3_2_ROUTER_GRID_PUBLISHED_INSTALLED_VERIFIED
+Status: V1_4_0_DIRECT_MULTIPROTOCOL_RELEASE_CANDIDATE
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
+
+## CURRENT v1.4.0 Direct multi-protocol engine
+- **Previous Accepted Release:** v1.3.2 is FINAL/PUBLISHED/INSTALLED_VERIFIED at immutable tag `v1.3.2` / commit `a0bf6bb`.
+- **Current Authority:** isolated worktree `C:\Users\Aa.Emad\source\repos\DirectInternetMethod_v140`, branch `feature/direct-multiprotocol-v1.4.0`, based on protected main `930db926a15d1688f95892905f4352cfebe46c39`.
+- **Mutation Objective:** add the minimum-sufficient direct methods that are neither VPN nor application proxy while preserving route/DNS/proxy ownership and exact rollback.
+- **Methods:** encrypted DNS/DoH; hostlist-scoped HTTP/80 fake+multisplit; hostlist-scoped TLS/SNI TCP/443 fake+multidisorder; hostlist-scoped QUIC UDP/443 fake desync. Windows uses ctrld + winws/WinDivert; Linux uses ctrld + owned nft/NFQUEUE + nfqws.
+- **Safety invariants:** no physical adapter DNS mutation, no default-route or broad /1 route creation, no WinHTTP proxy, no global all-domain interception, no second DPI-bypass runtime.
+- **Evidence-first exclusions:** IP fragmentation remains deferred because official zapret documentation describes unreliable modern-network delivery; wssize/window tricks remain deferred because official docs warn of site slowdown/latency. DoH3/DoQ/DoT were isolated-tested with ctrld v1.5.7 on aliemad-Labtop but produced no DNS answer on the current network, so they are not enabled. The proven direct-IP DoH path remains active and `leak_on_upstream_failure=false` now prevents silent fallback to the physical OS resolver.
+- **Linux privileged backend:** bumped from 1.2.1 to 1.4.0 because privileged nft/nfqws rules changed. This intentionally requires one protected-backend upgrade authorization instead of silently reusing stale privileged code.
+- **Local V&V:** Windows contract PASS including multiprotocol/hostlist and leak-closed DoH invariants; Linux contract PASS including TCP80/TCP443/UDP443 queue scope, no UDP443 reject and leak-closed DoH; Router Gateway contract PASS; PowerShell parse PASS; Linux nfqws exact 3-profile command `--dry-run` PASS with 6 hosts; Windows GUI/service publish + service self-test PASS; direct-IP DoH isolated live test PASS.
+- **Windows UI:** final local candidate preserves exact 1289×632 startup geometry at 96 DPI, all six actions visible, zero overlap, Refresh physical mouse + keyboard PASS; Router Gateway physical open PASS with all 9 DataItems visible.
+- **Local artifacts:** Windows installer 157,103,781 bytes, SHA-256 `69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93`; GUI `BF1E18CE…B354C`; service `770D5D1C…AF130`; manifest `7FFD3C00…716DF`. Linux ZIP 8,159,881 bytes, SHA-256 `4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E`; checksum file SHA-256 `7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609`.
+- **Open Gates / Critical Path:** exact branch commit → Linux fresh-clone cross-host reproduction → one-time Linux protected-backend 1.4.0 authorization → Linux live Start/ACTIVE/Stop/exact-clean rollback regression → protected CI/PR → immutable v1.4.0 release/public hash verification → installed-host update verification. Windows live network mutation remains deferred unless explicitly safe because the active Windows host should not be disrupted.
+- **Validation Boundary:** QUIC config/runtime ownership is verifiable, but current host curl builds do not expose HTTP/3, so no curl-based QUIC application E2E claim is made. DoH3/DoQ/DoT are software-supported but not promoted because current-network live tests failed; ECH is browser/server negotiated rather than a Direct Internet Method toggle.
+- **Knowledge/Evidence:** `evidence/DIM_140_DIRECT_METHOD_SELECTION_20261001.json`; `evidence/DIM_140_SECURE_DNS_TRANSPORT_AUDIT_20261001.json`; `evidence/DIM_140_LOCAL_RELEASE_CANDIDATE_20261001.json`; Windows payload/installer build evidence.
+- **Brain Status:** CURRENT / RELEASE CANDIDATE; not FINAL until remaining gates close.
 
 ## CURRENT v1.3.2 Router Gateway visibility hotfix
 - **Previous Accepted Release:** v1.3.1 is the immutable published baseline at tag `v1.3.1` / commit `3b9fa6e7953e7d18068b8a0b574e0282411584ab`.
@@ -82,8 +98,9 @@ Completed: Linux v1.2.0 compatibility/version package; contract audits PASS on W
 Completed: exact Windows v1.2.0 host bootstrap; installed GUI/service/manifest hashes match candidate; control 131 host regression PASS.
 Completed: Windows v1.2.0 host Start/ACTIVE/Stop/exact rollback/Recovery regression PASS.
 Completed: immutable v1.3.0 release/publication gates remain closed as previous accepted authority.
-← CURRENT: v1.3.2 release-ready → final metadata/source audits → protected CI/main → tag/release → public hash verification → installed-host updates.
-Open v1.3.1 gates: protected PR #7 CI/merge; tag/release/public hash verification; installed Windows public-update/final UI verification.
+Completed: v1.3.2 FINAL/PUBLISHED/INSTALLED_VERIFIED.
+← CURRENT: v1.4.0 direct multi-protocol candidate → Linux cross-host + protected-backend live lifecycle → protected CI/publication.
+Open v1.4.0 gates: Linux cross-host deterministic build; owner-authorized protected backend 1.4.0 install/live lifecycle; protected CI/PR; publication/public hashes; installed-host updates.
 Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
@@ -176,9 +193,11 @@ All earlier harness failures remain preserved; no product runtime failure is hid
 - v1.3 validator false-negative root cause: `evidence/WINDOWS_130_ROUTER_DATA_VALIDATOR_ROOT_CAUSE_20261001.json` — harness-only; product path/hash verified.
 
 ## Exact Next Action
-Push the post-rebase Linux cross-host closure evidence, pass PR #7 required `linux-source`/`windows-source` checks and protected merge, publish immutable v1.3.1 Windows/Linux/SHA256SUMS assets, publicly redownload/hash-verify them, then update/verify the installed Windows app at exact 1289×632.
+Commit/push the exact v1.4.0 candidate, reproduce Linux ZIP SHA `4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E` and source contracts from a fresh aliemad-Labtop clone, then upgrade the Linux protected backend to 1.4.0 and run Start→ACTIVE→Stop→Recovery clean rollback. Only after those gates pass, merge through protected CI/PR, publish v1.4.0, public-redownload/hash-verify all assets, and verify both installed hosts.
 
 ## HISTORY
+- 2026-10-01: v1.4 method audit expanded beyond VPN/proxy: bounded HTTP/80, TLS/SNI TCP/443 and QUIC UDP/443 zapret profiles added; direct-IP DoH retained and hardened with `leak_on_upstream_failure=false`. DoH3/DoQ/DoT were isolated-tested but failed to resolve on the current Linux network, so they were not promoted. ECH classified as browser/server negotiated rather than an app-level method toggle.
+- 2026-10-01: v1.4.0 direct multi-protocol candidate created from final v1.3.2. Added bounded encrypted DNS + HTTP/80 + TLS/SNI TCP/443 + QUIC UDP/443 methods; removed Linux UDP/443 blanket reject; preserved no-VPN/no-proxy/no-default-route/physical-DNS invariants. Local source/build/UI gates PASS; Linux live protected-backend gate remains open.
 - 2026-10-01: aliemad-Labtop fresh clone of pushed post-rebase commit `b0b34aa` reproduced Linux v1.3.1 ZIP SHA `B21BD0D5…23A34` exactly; Linux/Router contracts, Router runtime smoke with 9 profiles, LF guard and six-file Bash syntax PASS. Post-rebase cross-host gate CLOSED.
 - 2026-10-01: user-reported Windows crowding traced to 980×620 startup geometry + non-wrapping six-action footer. v1.3.1 sets 1289×632 preferred startup geometry and responsive footer; dynamic 1289×632 and 1000×632 zero-overlap regressions PASS.
 - 2026-10-01: protected main advanced during v1.3.1 work with provider catalog revision 2 and GitHub hardening. Hotfix branch rebased onto `8d5fb14`; concurrent 9-profile/3-provider catalog and Linux installer hardening preserved. Pre-rebase artifacts superseded; Windows manifest/installer and Linux archive rebuilt from new authority.

@@ -74,8 +74,9 @@ nft_table_owned(){
   out="$(nft list table inet "$TABLE" 2>/dev/null)" || return 1
   grep -Fq 'chain output' <<<"$out" || return 1
   grep -Eq 'hook output priority (mangle|[-]?[0-9]+)' <<<"$out" || return 1
-  grep -Eq 'udp dport 443 reject' <<<"$out" || return 1
+  grep -Eq 'tcp dport 80.*queue (num 200.*bypass|flags bypass to 200)' <<<"$out" || return 1
   grep -Eq 'tcp dport 443.*queue (num 200.*bypass|flags bypass to 200)' <<<"$out" || return 1
+  grep -Eq 'udp dport 443.*queue (num 200.*bypass|flags bypass to 200)' <<<"$out" || return 1
   if [ -n "$physical" ]; then
     grep -Fq "oifname \"$physical\"" <<<"$out" || grep -Fq "oifname $physical" <<<"$out" || return 1
   fi
@@ -295,6 +296,7 @@ log_level = "warn"
 cache_enable = true
 cache_size = 4096
 cache_serve_stale = true
+leak_on_upstream_failure = false
 
 [network.0]
 cidrs = ["0.0.0.0/0"]
@@ -337,11 +339,15 @@ EOF
     nft add table inet "$TABLE"
     CREATED_TABLE=1
     nft "add chain inet $TABLE output { type filter hook output priority mangle; policy accept; }"
-    nft add rule inet "$TABLE" output oifname "$PHY" udp dport 443 reject
+    nft add rule inet "$TABLE" output oifname "$PHY" tcp dport 80 ct original packets 1-6 queue num "$QNUM" bypass
     nft add rule inet "$TABLE" output oifname "$PHY" tcp dport 443 ct original packets 1-6 queue num "$QNUM" bypass
+    nft add rule inet "$TABLE" output oifname "$PHY" udp dport 443 ct original packets 1-6 queue num "$QNUM" bypass
 
     NFQWS_UNIT="directinternetmethod-nfqws-${USER_UID}.service"
-    systemd-run --quiet --collect --unit="$NFQWS_UNIT" --service-type=exec --property=Restart=no -- "$NFQWS" --qnum="$QNUM" --filter-tcp=443 --hostlist="$RUN_HOSTS" --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1
+    systemd-run --quiet --collect --unit="$NFQWS_UNIT" --service-type=exec --property=Restart=no -- "$NFQWS" --qnum="$QNUM" \
+      --filter-tcp=80 --hostlist="$RUN_HOSTS" --dpi-desync=fake,multisplit --dpi-desync-split-pos=method+2 --dpi-desync-fooling=md5sig \
+      --new --filter-tcp=443 --hostlist="$RUN_HOSTS" --dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld --dpi-desync-fooling=badseq,md5sig \
+      --new --filter-udp=443 --filter-l7=quic --hostlist="$RUN_HOSTS" --dpi-desync=fake --dpi-desync-repeats=6
     NPID="$(systemctl show "$NFQWS_UNIT" -p MainPID --value)"
     case "$NPID" in ''|0|*[!0-9]*) echo '{"ok":false,"error":"NFQWS_TRANSIENT_PID_MISSING"}'; exit 76;; esac
     sleep .5
@@ -351,9 +357,10 @@ EOF
 import json,os,sys,time
 p=sys.argv[1]
 d={
-  "schema":2,
+  "schema":3,
   "status":"ACTIVE",
-  "architecture":"LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS",
+  "architecture":"LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS_MULTIPROTOCOL",
+  "directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"],
   "ctrldPid":int(sys.argv[2]),
   "nfqwsPid":int(sys.argv[3]),
   "physicalInterface":sys.argv[4],

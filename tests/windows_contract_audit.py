@@ -7,7 +7,7 @@ def txt(rel): return (W/rel).read_text(encoding="utf-8-sig")
 start,stop,recovery,status,iss=map(txt,["app/Start-Direct.ps1","app/Stop-Direct.ps1","app/Recovery.ps1","app/Status.ps1","installer/DirectInternetMethod.iss"])
 gui=txt("gui/MainWindow.xaml.cs"); xaml=txt("gui/MainWindow.xaml")
 svc=txt("service/Program.cs"); client=txt("gui/ServiceClient.cs"); updater=txt("gui/UpdateClient.cs")
-manifest=json.loads(txt("manifest.json"))
+manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml")
 D={"schema":2,"status":"PASS","checks":{},"hashes":{}}
 def check(name,cond):
     D["checks"][name]=bool(cond)
@@ -18,6 +18,13 @@ check("start_refuses_broad_tunnel_before_mutation", idx(start,"REFUSE_BROAD_TUNN
 check("loopback_index_dynamic", all("DestinationPrefix '::1/128'" in x and "$LoopbackIndex=[int]$LoopbackRoute.InterfaceIndex" in x and "$LoopbackIndex=1" not in x for x in (start,stop,recovery)) and "DestinationPrefix '::1/128'" in status and "InterfaceIndex 1" not in status)
 check("no_adapter_dns_set", "Set-DnsClientServerAddress" not in start+stop+recovery)
 check("no_default_route_create", not re.search(r'(New-NetRoute|route\.exe\s+add|netsh\s+interface\s+ipv4\s+add\s+route)',start,re.I))
+check("direct_multiprotocol_engine", all(x in start for x in (
+    "$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443')",
+    "'--wf-tcp=80,443'","'--wf-udp=443'","'--filter-tcp=80'","'--filter-tcp=443'","'--filter-udp=443'","'--filter-l7=quic'",
+    "'--dpi-desync-split-pos=method+2'","'--dpi-desync-split-pos=1,midsld'","'--dpi-desync-repeats=6'","'--new'"
+)))
+check("direct_multiprotocol_hostlist_scoped", start.count("('--hostlist='+$HostList)") >= 3 and "--hostlist-auto=" not in start)
+check("secure_dns_no_os_leak", 'leak_on_upstream_failure = false' in ctrldcfg)
 check("start_adapter_dns_regression", "ADAPTER_DNS_CHANGED" in start)
 check("start_winhttp_regression", "WINHTTP_PROXY_CHANGED" in start)
 check("start_ics_regression", "ICS_CHANGED_LIVE" in start and "ICS_CHANGED_DURING_DNS_STAGE" in start)
@@ -79,7 +86,7 @@ check("installer_bundled_pwsh", '..\\vendor\\pwsh\\*' in iss and 'Privileged\\ru
 check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Recovery did not complete" in iss)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.3.2")
+check("manifest_version", manifest.get("version")=="1.4.0")
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)

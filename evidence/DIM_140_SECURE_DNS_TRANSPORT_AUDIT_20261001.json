@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "version": "1.4.0",
+  "context": "Encrypted-DNS transport expansion audit; decide which non-VPN/non-proxy DNS transports are justified for release.",
+  "status": "PASS_DOH_RETAINED_OTHER_TRANSPORTS_NOT_PROMOTED",
+  "methodChoice": {
+    "officialCapabilities": [
+      "DoH",
+      "DoH3",
+      "DoQ",
+      "DoT"
+    ],
+    "officialSources": [
+      "https://github.com/Control-D-Inc/ctrld/blob/main/docs/config.md",
+      "https://docs.controld.com/docs/free-dns",
+      "https://docs.controld.com/docs/control-d-ip-ranges"
+    ],
+    "projectDecision": "Use proven direct-IP DoH only; set leak_on_upstream_failure=false; do not add transports that failed current-network live validation."
+  },
+  "liveIsolatedValidation": {
+    "host": "aliemad-Labtop",
+    "ctrldVersion": "1.5.7",
+    "query": "github.com A via isolated localhost high-port ctrld listener",
+    "results": [
+      {
+        "transport": "DoH",
+        "endpoint": "https://76.76.10.11/p0",
+        "result": "PASS",
+        "answer": "140.82.121.3"
+      },
+      {
+        "transport": "DoH3",
+        "endpoint": "https://freedns.controld.com/p0",
+        "result": "FAIL_NO_DNS_ANSWER",
+        "note": "QUIC receive-buffer warning observed; no successful DNS answer."
+      },
+      {
+        "transport": "DoQ",
+        "endpoint": "p0.freedns.controld.com",
+        "result": "FAIL_NO_DNS_ANSWER",
+        "note": "QUIC receive-buffer warning observed; no successful DNS answer."
+      },
+      {
+        "transport": "DoT",
+        "endpoint": "p0.freedns.controld.com",
+        "result": "FAIL_NO_DNS_ANSWER"
+      },
+      {
+        "transport": "DoH",
+        "endpoint": "https://76.76.2.11/p0",
+        "result": "FAIL_NO_DNS_ANSWER"
+      }
+    ]
+  },
+  "securityGuard": {
+    "change": "ctrld service setting leak_on_upstream_failure=false on Windows template and Linux generated config",
+    "rationale": "Official ctrld documentation states desktop platforms can otherwise fall back to the OS resolver if upstream fails, which could re-enter the filtered physical DNS path.",
+    "windowsContract": "PASS_secure_dns_no_os_leak",
+    "linuxContract": "PASS_secure_dns_no_os_leak"
+  },
+  "rejectedOptions": [
+    {
+      "option": "Enable DoH3/DoQ/DoT by default",
+      "status": "REJECTED_FOR_V1_4_0",
+      "reason": "Software support alone is insufficient; current-network reproducible DNS resolution failed."
+    },
+    {
+      "option": "Use OS DNS fallback",
+      "status": "REJECTED",
+      "reason": "Would weaken the direct encrypted-DNS objective and could leak into filtered physical DNS."
+    }
+  ],
+  "confidence": "CONFIRMED_FOR_CURRENT_NETWORK_AND_CONFIG",
+  "reuseTargets": [
+    "architecture",
+    "release notes",
+    "limitations",
+    "future transport fallback work"
+  ],
+  "exactNextAction": "Preserve direct-IP DoH as release transport, carry leak-closed guard into cross-host/live lifecycle validation, and revisit other transports only with reproducible network evidence."
+}

@@ -1,75 +1,73 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.3.2",
-  "status": "PASS_RELEASE_READY_WINDOWS_1_3_2",
+  "version": "1.4.0",
+  "status": "PASS_RELEASE_READY_WINDOWS_1_4_0_DIRECT_MULTIPROTOCOL",
   "date": "2026-10-01",
   "previousAccepted": {
-    "version": "1.3.1",
-    "tag": "v1.3.1",
-    "commit": "3b9fa6e7953e7d18068b8a0b574e0282411584ab"
+    "version": "1.3.2",
+    "tag": "v1.3.2",
+    "commit": "a0bf6bbce1932a0f4dd405f0cfbffeeb68ec63e6"
   },
-  "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; accepted direct DNS/DPI path plus non-privileged Router Gateway profile manager",
+  "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + hostlist-scoped zapret/WinDivert multiprotocol direct engine",
   "features": {
     "directDnsDpi": true,
+    "directMethods": [
+      "encrypted-dns-doh",
+      "http-host-split-tcp80",
+      "tls-sni-desync-tcp443",
+      "quic-desync-udp443"
+    ],
+    "noVpn": true,
+    "noProxy": true,
+    "noDefaultRouteTunnel": true,
+    "noPhysicalAdapterDnsMutation": true,
+    "hostlistScoped": true,
     "routerGateway": true,
     "routerGatewayProtocols": [
       "L2TP/IPsec",
       "PPTP"
     ],
-    "routerGatewayPreferred": "L2TP/IPsec",
-    "routerGatewayPptpPolicy": "legacy-fallback",
-    "routerGatewayNetworkMutation": false,
-    "routerGatewayOfflineSnapshot": true,
-    "routerGatewayRefresh": "GitHub manifest + best-effort rotating credential refresh",
-    "routerGatewayPrivateDnsGuard": true,
-    "preferredStartupWindow": "1289x632 DIP",
-    "responsiveFooterWrap": true,
     "routerGatewayProfileCount": 9,
     "routerGatewayIndependentProviders": 3,
-    "routerGatewayReadableDarkRows": true
+    "preferredStartupWindow": "1289x632 DIP",
+    "responsiveFooterWrap": true,
+    "secureDnsTransports": [
+      "DoH"
+    ],
+    "secureDnsLeakToOsResolver": false,
+    "secureDnsPrimary": "DoH direct IP 76.76.10.11/p0",
+    "researchedButNotEnabledDnsTransports": [
+      "DoH3",
+      "DoQ",
+      "DoT"
+    ]
   },
   "usage": {
     "chatgptRequired": false,
     "offlineRuntime": true,
     "adminRequiredAtInstallOrPrivilegedUpgrade": true,
     "adminRequiredForNormalRun": false,
-    "adminRequiredForRouterGateway": false,
     "controlPanel": "app/DirectInternetMethod.exe",
     "privilegedService": "DirectInternetMethodSvc",
-    "onlineUpdate": "Service-mediated GitHub latest release update with GitHub asset digest + SHA256SUMS + downloaded-file SHA-256 verification.",
     "externalPowerShellRequired": false,
     "bundledPowerShell": "7.6.6"
   },
   "acceptance": {
-    "inheritedDirectRuntimeFrom131": "PASS_NO_PRIVILEGED_NETWORK_LOGIC_CHANGE",
-    "inheritedStartupLayoutFrom131": "PASS_1289x632_NO_OVERLAP",
-    "routerGatewayContract": "PASS",
-    "routerGatewayReadableDarkRowsContract": "PASS",
-    "windowsCompile": "PASS_0_WARNINGS_0_ERRORS",
-    "windowsRegressionContract": "PASS",
-    "runtimeGridRows": "PASS_9_ROWS_7_COLUMNS_9_DATAITEMS",
-    "publication": "PENDING"
+    "windowsContract": "PASS",
+    "serviceSelftest": "PASS",
+    "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
+    "startupLayout": "PASS_1289x632_96DPI_NO_OVERLAP",
+    "linuxIndependentValidation": "PENDING",
+    "publication": "PENDING",
+    "secureDnsContract": "PASS_DOH_LEAK_CLOSED",
+    "physicalRefreshInput": "PASS_MOUSE_KEYBOARD",
+    "routerGatewayUi": "PASS_PHYSICAL_OPEN_9_VISIBLE_PROFILES"
   },
-  "limitations": [
-    "PPTP is a legacy compatibility fallback; prefer L2TP/IPsec or OpenVPN.",
-    "Router VPN Client capability varies by exact model and firmware.",
-    "Endpoint reachability tests are health heuristics, not complete authenticated tunnel handshakes.",
+  "validationBoundary": [
+    "Windows live Start/Stop for the changed packet engine is deferred to avoid disrupting the active Windows host; Linux is the live-network validation host for v1.4.0.",
+    "QUIC profile syntax/runtime ownership can be verified without an HTTP/3-capable curl; full HTTP/3 application success is a separate validation.",
+    "DoH3, DoQ and DoT were researched and isolated-tested but are not enabled because they did not resolve on the current Linux network; proven direct-IP DoH is retained with OS-resolver leakage disabled.",
     "Windows installer is not Authenticode-signed."
-  ],
-  "validation": {
-    "rootCause": "v1.3.1 loaded all Router Gateway profiles, but unselected WPF DataGrid rows inherited a white background while text foreground was white.",
-    "fix": "Explicit dark row, alternating-row, cell and column-header styles with high-contrast selected row.",
-    "runtime": {
-      "rows": 9,
-      "columns": 7,
-      "dataItems": 9,
-      "providers": [
-        "VPN Gate",
-        "VPNBook",
-        "Pilovali"
-      ]
-    },
-    "startupLayout": "PASS_1289x632_96DPI_SIX_BUTTONS_NO_OVERLAP"
-  }
+  ]
 }
