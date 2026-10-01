@@ -22,6 +22,7 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - **Installed Windows Router Gateway UI refresh:** PASS. Installed app shows 8 profiles, refreshes to cache, and state/broad/DNS remain unchanged.
 - **Validator root cause:** CLOSED / harness-only. Initial post-install validator looked in `{app}\router_gateway`; installer and WPF correctly use `{app}\app\router_gateway`. Validator now derives path from executable directory contract.
 - **Final GitHub governance audit:** PASS. Public repo, strict main protection, required Linux/Windows checks, secret scanning/push protection, immutable release-tag ruleset, exact release assets and feature/main/tag CI all verify. The v1.3.0 tag is correctly an ancestor of post-release evidence commits on main.
+- **Post-hygiene GitHub final audit:** PASS. Root `SHA256SUMS.txt` now exactly matches the public v1.3.0 release checksum asset; generic release-metadata CI guard added; Private Vulnerability Reporting enabled; `SECURITY.md` added; merged branches auto-delete enabled; all historical merged remote branches removed so only `main` remains.
 - **License:** `OWNER_LEGAL_DECISION_OPEN`; not a technical release blocker. No software license was selected on the owner's behalf.
 - **Brain Status:** CURRENT / FINAL for v1.3.0. GitHub tag/release, public asset hashes, Windows public-update host verification, installed UI refresh, Linux public fresh-clone acceptance and final governance audit are verified.
 
@@ -126,6 +127,7 @@ All earlier harness failures remain preserved; no product runtime failure is hid
 - GitHub v1.2.1 final audit: `evidence/GITHUB_121_FINAL_AUDIT_20261001.json` — SHA-256 `9E314C8A5ABE3E33996296B7E6EF9039C90B254BD3A3D331D90F572B92B5CB2F`; PASS_FINAL_GITHUB_AUDIT_V1_2_1.
 
 - v1.3 GitHub final governance audit: `evidence/GITHUB_130_FINAL_AUDIT_20261001.json` — PASS_FINAL_GITHUB_AUDIT_V1_3_0.
+- v1.3 post-hygiene GitHub final audit: `evidence/GITHUB_130_POST_HYGIENE_FINAL_AUDIT_20261001.json` — SHA-256 `57D22DDF65DE3F63795076CFC3827725B4A7744F4684078FBCF1554FDE449E18`; root/public checksum equality, PR #2 + post-merge main CI PASS, PVR enabled, only remote branch `main`.
 - v1.3 Windows public update: `evidence/WINDOWS_130_HOST_PUBLIC_UPDATE_VERIFY_20261001.json` — PASS, exact installed hashes, CLEAN_OFF.
 - v1.3 installed Router Gateway UI/refresh: `evidence/WINDOWS_130_INSTALLED_ROUTER_GATEWAY_UI_VERIFY_20261001.json` — PASS, 8 profiles, refreshed-cache, no DNS/route/state mutation.
 - v1.3 Linux public fresh-clone/archive: `evidence/LINUX_130_PUBLIC_RELEASE_ACCEPTANCE_20261001.json` — PASS, public SHA, `bash -n`, zero CR, runtime/contract/deterministic rebuild.
@@ -188,3 +190,5 @@ No release or GitHub gate remains for v1.3.0. Keep tag `v1.3.0` and its three re
 - 2026-10-01: Installed Windows Router Gateway UI refresh PASS with 8 profiles and unchanged network/DNS state.
 - 2026-10-01: Post-install router-data validator false negative traced to harness path error ({app}\router_gateway vs actual {app}\app\router_gateway); product path/hash were correct and validator prevention added.
 - 2026-10-01: Corrected GitHub final audit PASS. Release tag ancestry, branch protection, tag rules, exact asset digests and CI verified; repository license remains an explicit owner legal decision, not a technical release gate.
+
+- 2026-10-01: final GitHub hygiene remediation merged through protected PR #2. Root checksum authority synchronized to public v1.3.0 release, release-metadata CI guard added, Private Vulnerability Reporting and merged-branch auto-delete enabled, SECURITY.md added, stale merged remote branches removed. Post-merge main run 36812693607 passed linux-source/windows-source. Final post-hygiene audit PASS.

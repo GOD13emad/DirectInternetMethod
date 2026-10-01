@@ -85,7 +85,7 @@
     "preRebaseV130Hashes": true,
     "reason": "origin/main advanced to authoritative v1.2.1 during work; v1.3 was rebased and rebuilt from the new authority."
   },
-  "exactNextAction": "Maintenance/monitoring only; model-specific physical-router E2E is optional future validation when a concrete router is available.",
+  "exactNextAction": "Maintenance/monitoring only; no product, release, or GitHub gate remains. Keep v1.3.0 tag/assets immutable.",
   "publication": {
     "tag": "v1.3.0",
     "tagCommit": "1fc9a04b4cd488887ae1902bc66206a3079d0893",
@@ -97,12 +97,21 @@
     "publicRedownloadHashVerification": "PASS_ALL_ASSETS"
   },
   "githubGovernance": {
-    "status": "PASS_FINAL_GITHUB_AUDIT_V1_3_0",
+    "status": "PASS_FINAL_GITHUB_POST_HYGIENE_AUDIT_V1_3_0",
     "mainProtection": "strict required linux-source + windows-source; enforce admins; linear history; force-push/deletion blocked; conversation resolution required",
     "tagRuleset": "Protect release tags active",
     "secretScanning": "enabled",
     "pushProtection": "enabled",
-    "license": "MISSING_OWNER_LEGAL_CHOICE"
+    "license": "MISSING_OWNER_LEGAL_CHOICE",
+    "rootChecksumAuthority": "PASS_ROOT_EQUALS_PUBLIC_RELEASE_SHA256SUMS",
+    "releaseMetadataCiGuard": "PASS_REQUIRED_LINUX_SOURCE",
+    "privateVulnerabilityReporting": "enabled",
+    "deleteBranchOnMerge": true,
+    "remoteBranches": [
+      "main"
+    ],
+    "finalAuditEvidence": "evidence/GITHUB_130_POST_HYGIENE_FINAL_AUDIT_20261001.json",
+    "finalAuditSha256": "57D22DDF65DE3F63795076CFC3827725B4A7744F4684078FBCF1554FDE449E18"
   },
   "evidence": {
     "githubFinalAudit": "evidence/GITHUB_130_FINAL_AUDIT_20261001.json",
