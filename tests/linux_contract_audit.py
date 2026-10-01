@@ -16,7 +16,7 @@ def check(name,cond):
     D["checks"][name]=bool(cond)
     if not cond:D["status"]="FAIL"
 
-check("version_120", 'VERSION="1.2.0"' in ui and '"version":"1.2.0"' in install and '"version":"1.2.0"' in sysinstall)
+check("version_121", 'VERSION="1.2.1"' in ui and '"version":"1.2.1"' in install and '"version":"1.2.1"' in sysinstall)
 check("no_default_route_mutation", not re.search(r'ip\s+route\s+(add|del|replace).*default|nmcli\s+.*ipv4\.gateway',helper,re.I))
 check("no_physical_dns_mutation", "nmcli connection modify" not in helper and "resolvectl dns enp" not in helper and "resolvectl dns eth" not in helper)
 check("dedicated_dns_link", all(x in helper for x in ('DNS_IF="dimdns0"','ip link add "$DNS_IF" type dummy','ip addr add "$DNS_IP/32" dev "$DNS_IF"','SetLinkDNS','SetLinkDomains','RevertLink','ip link del "$DNS_IF"')))

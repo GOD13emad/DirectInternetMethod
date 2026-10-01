@@ -2,8 +2,8 @@
 from __future__ import annotations
 import hashlib,json,pathlib,zipfile,tempfile,os
 R=pathlib.Path(__file__).resolve().parent
-OUT=R/"delivery"/"DirectInternetMethod_1.2.0_Linux_x86_64.zip"
-ROOT="DirectInternetMethod_1.2.0_Linux_x86_64"
+OUT=R/"delivery"/"DirectInternetMethod_1.2.1_Linux_x86_64.zip"
+ROOT="DirectInternetMethod_1.2.1_Linux_x86_64"
 FILES=[
  ("README.md","README.md"),
  ("linux/install.sh","install.sh"),
@@ -20,13 +20,20 @@ FILES=[
  ("linux/licenses/LICENSE-ctrld.txt","licenses/LICENSE-ctrld.txt"),
  ("linux/licenses/LICENSE-zapret.txt","licenses/LICENSE-zapret.txt")
 ]
-def sha(p):return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest().upper()
+def sha_bytes(data:bytes)->str:return hashlib.sha256(data).hexdigest().upper()
+def sha(p):return sha_bytes(pathlib.Path(p).read_bytes())
+def payload_bytes(src:str,dst:str)->bytes:
+ data=(R/src).read_bytes()
+ if dst.endswith(".sh"):
+  data=data.replace(b"\r\n",b"\n").replace(b"\r",b"\n")
+ return data
 rows=[]
 for src,dst in FILES:
  p=R/src
  if not p.is_file(): raise SystemExit("MISSING:"+src)
- rows.append({"file":dst,"bytes":p.stat().st_size,"sha256":sha(p)})
-manifest={"schema":1,"product":"Direct Internet Method","version":"1.2.0","platform":"linux-x86_64","files":rows}
+ data=payload_bytes(src,dst)
+ rows.append({"file":dst,"bytes":len(data),"sha256":sha_bytes(data)})
+manifest={"schema":1,"product":"Direct Internet Method","version":"1.2.1","platform":"linux-x86_64","files":rows}
 OUT.parent.mkdir(parents=True,exist_ok=True)
 fd,tmp_name=tempfile.mkstemp(prefix="dim-build-",suffix=".zip",dir=OUT.parent)
 os.close(fd)
@@ -34,7 +41,7 @@ tmp=pathlib.Path(tmp_name)
 try:
  with zipfile.ZipFile(tmp,"w",compression=zipfile.ZIP_STORED) as z:
   for src,dst in sorted(FILES,key=lambda x:x[1]):
-   data=(R/src).read_bytes()
+   data=payload_bytes(src,dst)
    zi=zipfile.ZipInfo(f"{ROOT}/{dst}",date_time=(2026,9,29,0,0,0))
    zi.create_system=3
    zi.external_attr=((0o755 if dst.endswith((".sh",".py")) or dst in ("runtime/ctrld","runtime/nfqws") else 0o644)&0xFFFF)<<16

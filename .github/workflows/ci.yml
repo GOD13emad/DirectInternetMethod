@@ -1,0 +1,89 @@
+name: Source and Release Contracts
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-source:
+    name: linux-source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python syntax
+        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py tests/linux_contract_audit.py
+      - name: Shell syntax and LF guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r f; do
+            if grep -q $'\r' "$f"; then
+              echo "CRLF detected in $f" >&2
+              exit 1
+            fi
+            bash -n "$f"
+          done < <(find linux -type f -name '*.sh' -print | sort)
+      - name: Linux contract audit
+        run: python3 tests/linux_contract_audit.py
+      - name: Build Linux archive
+        run: python3 build_linux_package.py
+      - name: Validate shell syntax inside built archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$(mktemp -d)"
+          trap 'rm -rf "$d"' EXIT
+          unzip -q delivery/DirectInternetMethod_1.2.1_Linux_x86_64.zip -d "$d"
+          while IFS= read -r f; do
+            if grep -q $'\r' "$f"; then
+              echo "CRLF detected in packaged shell: $f" >&2
+              exit 1
+            fi
+            bash -n "$f"
+          done < <(find "$d" -type f -name '*.sh' -print | sort)
+
+  windows-source:
+    name: windows-source
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Python syntax
+        shell: pwsh
+        run: python -m py_compile tests/windows_contract_audit.py tests/build_windows_manifest.py
+      - name: PowerShell syntax
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $bad=@()
+          Get-ChildItem -Recurse -File -Filter *.ps1 | ForEach-Object {
+            $tokens=$null;$errors=$null
+            [Management.Automation.Language.Parser]::ParseFile($_.FullName,[ref]$tokens,[ref]$errors)|Out-Null
+            if($errors){$bad += $errors}
+          }
+          if($bad.Count){$bad | Format-List | Out-String | Write-Error}
+      - name: Build service
+        run: dotnet build windows/service/DirectInternetMethod.Service.csproj -c Release --nologo
+      - name: Build GUI
+        run: dotnet build windows/gui/DirectInternetMethod.csproj -c Release --nologo
+
+  windows-release-contract:
+    name: windows-release-contract
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore pinned PowerShell runtime
+        shell: pwsh
+        run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
+      - name: Full Windows contract audit
+        run: python tests/windows_contract_audit.py

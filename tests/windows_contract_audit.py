@@ -76,7 +76,7 @@ check("installer_bundled_pwsh", '..\\vendor\\pwsh\\*' in iss and 'Privileged\\ru
 check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Recovery did not complete" in iss)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.2.0")
+check("manifest_version", manifest.get("version")=="1.2.1")
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_service", ("privileged","app/DirectInternetMethod.Service.exe") in files)

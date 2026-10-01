@@ -18,7 +18,7 @@ gi.require_version("Adw","1")
 from gi.repository import Gtk, Adw, GLib, Gdk
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
-VERSION="1.2.0"
+VERSION="1.2.1"
 GLib.set_prgname("DirectInternetMethod")
 GLib.set_application_name("Direct Internet Method")
 try:

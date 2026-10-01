@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "files": [
+    {
+      "path": "linux/app/direct_method_helper.sh",
+      "bytes": 11897,
+      "crlf": 0,
+      "cr": 0
+    },
+    {
+      "path": "linux/install.sh",
+      "bytes": 5439,
+      "crlf": 0,
+      "cr": 0
+    },
+    {
+      "path": "linux/system/control.sh",
+      "bytes": 799,
+      "crlf": 0,
+      "cr": 0
+    },
+    {
+      "path": "linux/system/install_system.sh",
+      "bytes": 3488,
+      "crlf": 0,
+      "cr": 0
+    },
+    {
+      "path": "linux/system/uninstall_system.sh",
+      "bytes": 435,
+      "crlf": 0,
+      "cr": 0
+    },
+    {
+      "path": "linux/uninstall.sh",
+      "bytes": 1142,
+      "crlf": 0,
+      "cr": 0
+    }
+  ]
+}

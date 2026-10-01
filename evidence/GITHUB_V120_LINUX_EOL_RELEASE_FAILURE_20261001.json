@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "FAIL_PUBLIC_LINUX_V1_2_0_SHELL_EOL",
+  "release": "v1.2.0",
+  "publicAsset": {
+    "name": "DirectInternetMethod_1.2.0_Linux_x86_64.zip",
+    "sha256": "BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC"
+  },
+  "finding": "All six packaged .sh files contain CRLF and fail bash -n on Linux after public re-download/extract.",
+  "affected": [
+    "app/direct_method_helper.sh",
+    "install.sh",
+    "system/control.sh",
+    "system/install_system.sh",
+    "system/uninstall_system.sh",
+    "uninstall.sh"
+  ],
+  "rootCause": "Repository has no .gitattributes EOL policy; tracked shell files were committed with CRLF. build_linux_package.py writes source bytes verbatim into the ZIP and therefore preserved CRLF.",
+  "impact": "Linux v1.2.0 release archive is not safely executable as shell source on Linux. Prior contract audit was semantic/text based and did not execute bash -n against the public release archive.",
+  "prevention": [
+    "Add .gitattributes with *.sh text eol=lf.",
+    "Normalize shell payload bytes to LF inside build_linux_package.py before hashing/packing.",
+    "Add GitHub Actions Linux job that runs bash -n on tracked shell scripts and on extracted built archive.",
+    "Patch release v1.2.1 with both Windows and Linux assets so shared latest-updater channel remains cross-platform complete."
+  ],
+  "evidenceSource": "Public GitHub v1.2.0 asset downloaded on aliemad-Labtop; bash -n failed for all six .sh files.",
+  "confidence": "CONFIRMED"
+}

@@ -1,15 +1,13 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "date": "2026-10-01",
-  "status": "FINAL_PUBLISHED_VERIFIED",
+  "status": "CANDIDATE_GITHUB_AUDIT_HOTFIX",
   "platforms": {
     "windows": {
-      "status": "PASS_FINAL_WINDOWS_1_2_0_PUBLISHED_VERIFIED",
-      "artifact": "delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe",
-      "sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
-      "bytes": 157093296,
+      "status": "CANDIDATE_VERSION_SYNC_NO_NETWORK_LOGIC_CHANGE",
+      "artifact": "delivery/DirectInternetMethod_1.2.1_Windows_Setup.exe",
       "sandboxAcceptance": "PASS",
       "directUpdateSandbox": "PASS",
       "hostAcceptance": "PASS_FINAL_WINDOWS_1_2_0",
@@ -23,10 +21,8 @@
       "finalState": "CLEAN_OFF"
     },
     "linux": {
-      "status": "PASS_COMPAT_DETERMINISTIC",
-      "artifact": "delivery/DirectInternetMethod_1.2.0_Linux_x86_64.zip",
-      "sha256": "BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC",
-      "bytes": 8140827,
+      "status": "CANDIDATE_EOL_REPAIR",
+      "artifact": "delivery/DirectInternetMethod_1.2.1_Linux_x86_64.zip",
       "liveAcceptance": "Inherited unchanged network architecture from accepted 1.1.0",
       "contractAudit": "PASS_WINDOWS_AND_LINUX",
       "deterministicBuild": "PASS_CROSS_HOST",
@@ -52,17 +48,11 @@
   },
   "github": {
     "repo": "GOD13emad/DirectInternetMethod",
-    "tag": "v1.2.0",
-    "status": "PUBLISHED_VERIFIED",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.2.0",
-    "publishedAt": "2026-10-01T00:50:24Z",
-    "tagCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
-    "releaseArtifactCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
-    "publicationEvidenceCommit": "6de3010c8719364290f0edee20b096e235214e91"
+    "tag": "v1.2.1",
+    "status": "NOT_PUBLISHED"
   },
   "limitations": [
     "Windows installer is not Authenticode-signed.",
-    "The one-time transition from Windows v1.1.0 to v1.2.0 may require UAC; later in-app updates are designed to require no UAC.",
     "Effectiveness may vary if network filtering behavior changes."
   ],
   "evidence": {
@@ -80,5 +70,14 @@
     "finalCleanStateSha256": "2E8766F75C6AF16AA9F3B1CB6B0DB7E68C340DAD020EEB8DBCA31AAE8ADDEE27",
     "publicationFinal": "evidence/DIM_120_PUBLICATION_FINAL_20261001.json",
     "publicationFinalSha256": "00635FD814E151D94D5B512DA3F750E6E6BD880A7EDAD6C1C03554A6BA0B14B7"
+  },
+  "hotfix": {
+    "reason": "Public v1.2.0 Linux ZIP contains CRLF shell scripts and fails bash -n.",
+    "networkLogicChanged": false,
+    "safeguards": [
+      ".gitattributes *.sh eol=lf",
+      "Linux package builder normalizes shell payload bytes to LF",
+      "GitHub Actions shell/package syntax gates"
+    ]
   }
 }

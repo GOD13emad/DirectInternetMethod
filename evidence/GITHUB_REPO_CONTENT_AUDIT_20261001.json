@@ -1,0 +1,161 @@
+{
+  "trackedCount": 140,
+  "totalTrackedBytes": null,
+  "largest": [
+    {
+      "path": "delivery/DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+      "bytes": 7951455
+    },
+    {
+      "path": "delivery/DirectInternetMethod_1.0.0_Windows_Setup.exe",
+      "bytes": 10609007
+    },
+    {
+      "path": "linux/runtime/ctrld",
+      "bytes": 7961828
+    },
+    {
+      "path": "windows/bin/ctrld/ctrld.exe",
+      "bytes": 7602136
+    }
+  ],
+  "extensions": [
+    {
+      "Name": ".json",
+      "Count": 63
+    },
+    {
+      "Name": ".ps1",
+      "Count": 30
+    },
+    {
+      "Name": ".txt",
+      "Count": 7
+    },
+    {
+      "Name": ".sh",
+      "Count": 6
+    },
+    {
+      "Name": ".py",
+      "Count": 6
+    },
+    {
+      "Name": ".md",
+      "Count": 5
+    },
+    {
+      "Name": ".cs",
+      "Count": 5
+    },
+    {
+      "Name": ".exe",
+      "Count": 3
+    },
+    {
+      "Name": ".xaml",
+      "Count": 2
+    },
+    {
+      "Name": "",
+      "Count": 2
+    },
+    {
+      "Name": ".dll",
+      "Count": 2
+    },
+    {
+      "Name": ".csproj",
+      "Count": 2
+    },
+    {
+      "Name": ".ico",
+      "Count": 1
+    },
+    {
+      "Name": ".gitignore",
+      "Count": 1
+    },
+    {
+      "Name": ".svg",
+      "Count": 1
+    },
+    {
+      "Name": ".sys",
+      "Count": 1
+    },
+    {
+      "Name": ".toml",
+      "Count": 1
+    },
+    {
+      "Name": ".iss",
+      "Count": 1
+    },
+    {
+      "Name": ".zip",
+      "Count": 1
+    }
+  ],
+  "secretHits": [],
+  "jsonErrors": [],
+  "pythonFiles": [
+    "build_linux_package.py",
+    "linux/app/direct_internet_method.py",
+    "tests/build_windows_manifest.py",
+    "tests/fast_netmon.py",
+    "tests/linux_contract_audit.py",
+    "tests/windows_contract_audit.py"
+  ],
+  "powershellFiles": [
+    "tests/build_installer.ps1",
+    "tests/build_windows_101_installer.ps1",
+    "tests/build_windows_110_installer.ps1",
+    "tests/build_windows_120_installer.ps1",
+    "tests/build_windows_120_payload.ps1",
+    "tests/build_windows_installer.ps1",
+    "tests/build_windows_service_110.ps1",
+    "tests/capture_window.ps1",
+    "tests/ctrld_home_test.ps1",
+    "tests/ctrld_listener_test.ps1",
+    "tests/ctrld_systemprofile_test.ps1",
+    "tests/dump_ui_tree.ps1",
+    "tests/exact_psi_test.ps1",
+    "tests/monitor_port53.ps1",
+    "tests/monitor_windows_lifetime.ps1",
+    "tests/observe_ctrld_fast.ps1",
+    "tests/observe_ctrld_listener.ps1",
+    "tests/parse_windows_ps1.ps1",
+    "tests/prepare_powershell_runtime.ps1",
+    "tests/print_window.ps1",
+    "tests/profile_status.ps1",
+    "tests/profile_status_commands.ps1",
+    "tests/windows_click_button.ps1",
+    "tests/windows_start_exactprocess_regression.ps1",
+    "tests/windows_ui_input_test.ps1",
+    "tests/windows_uia_state.ps1",
+    "windows/app/Recovery.ps1",
+    "windows/app/Start-Direct.ps1",
+    "windows/app/Status.ps1",
+    "windows/app/Stop-Direct.ps1"
+  ],
+  "shellFiles": [
+    "linux/app/direct_method_helper.sh",
+    "linux/install.sh",
+    "linux/system/control.sh",
+    "linux/system/install_system.sh",
+    "linux/system/uninstall_system.sh",
+    "linux/uninstall.sh"
+  ],
+  "yamlFiles": [],
+  "rootFiles": [
+    ".gitignore",
+    "PROJECT_BRAIN.md",
+    "README.md",
+    "RELEASE.json",
+    "RELEASE_NOTES.md",
+    "SHA256SUMS.txt",
+    "build_linux_package.py"
+  ],
+  "gitignore": "*.tmp\r\n*.log\r\n__pycache__/\r\nwindows/app/DirectInternetMethod.exe\r\nwindows/app/publish-*/\r\nwindows/gui/bin/\r\nwindows/gui/obj/\r\ndelivery/DirectInternetMethod_1.0.1_*\r\n.cache/\r\nwindows/vendor/pwsh/\r\nwindows/**/bin/\r\nwindows/**/obj/\r\nwindows/app/DirectInternetMethod.Service.exe\r\ndelivery/DirectInternetMethod_1.1.0_*\r\n\r\n# Local validation/sandbox residue\r\nsandbox*/\r\ntmp/\r\nwindows/evidence/\r\nevidence/raw/\r\nevidence/*.err\r\nevidence/*.out\r\nevidence/ctrld-*.toml\r\nevidence/v-*.err\r\nevidence/v-*.out\r\ntests/_*.ps1\r\nevidence/WINDOWS_UI_LIVE.png\r\ndelivery/DirectInternetMethod_1.2.0_*\r\ndelivery/DIM_120_HOST_BOOTSTRAP_RUNNER.zip\r\n"
+}

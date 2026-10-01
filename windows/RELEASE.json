@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.2.0",
-  "status": "PASS_FINAL_WINDOWS_1_2_0_PUBLISHED_VERIFIED",
+  "version": "1.2.1",
+  "status": "CANDIDATE_1_2_1_GITHUB_LINUX_EOL_HOTFIX",
   "date": "2026-10-01",
   "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; owned ctrld SCM service + Loopback ULA + DoH + NRPT + zapret/WinDivert; service-mediated verified direct updater",
   "usage": {
@@ -22,40 +22,18 @@
     "adminRequiredForOnlineUpdate": false
   },
   "acceptance": {
-    "sandbox": "PASS",
-    "hostWindows": "PASS",
-    "normalUserStartStopRecovery": "PASS",
-    "youtubeActive": 204,
-    "openaiActive": 401,
-    "githubActive": 200,
-    "exactRollback": "PASS",
-    "recoveryNoState": "PASS",
-    "directUpdate": "PASS_SANDBOX_E2E_AND_HOST_CONTROL",
-    "hostWindows120": "PASS_FINAL",
-    "directUpdateRestrictedUserControl131": "PASS",
-    "directUpdateExactArtifactIdentity": "PASS",
-    "directUpdateNetworkClean": "PASS",
-    "directUpdateProductionServiceNoop": "PASS_REAL_GITHUB_LATEST",
-    "hostBootstrapExactPayload": "PASS",
-    "hostActive120": "PASS",
-    "hostExactRollback120": "PASS",
-    "hostRecoveryNoState120": "PASS",
-    "directUpdateHostControl131": "PASS_DONE_0",
-    "directUpdatePublicRelease": "PASS",
-    "directUpdatePublicLatestTag": "v1.2.0",
-    "directUpdatePublicHostControl131": "PASS_DONE_0_ALREADY_UP_TO_DATE",
-    "finalCleanOff120": "PASS"
+    "inheritedWindowsRuntimeFrom120": "PASS_NO_NETWORK_LOGIC_CHANGE",
+    "sourceEolGuard": "PENDING",
+    "linuxPackageEolGuard": "PENDING",
+    "githubActions": "PENDING",
+    "windowsBuild": "PENDING",
+    "windowsHostUpdate": "PENDING"
   },
   "limitations": [
-    "One-time transition from v1.1.0 to v1.2.0 may request UAC because v1.1.0 predates the service-mediated updater; subsequent normal in-app updates require no UAC.",
     "Installer is not Authenticode-signed.",
     "Effectiveness may vary if the network filtering implementation changes."
   ],
   "publication": {
-    "tag": "v1.2.0",
-    "tagCommit": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.2.0",
-    "status": "PUBLISHED_VERIFIED",
-    "publishedAt": "2026-10-01T00:50:24Z"
+    "status": "NOT_PUBLISHED"
   }
 }

@@ -1,0 +1,191 @@
+{
+  "captured": "2026-10-01T04:41:55.5874939+03:30",
+  "repo": {
+    "full_name": "GOD13emad/DirectInternetMethod",
+    "private": false,
+    "visibility": "public",
+    "default_branch": "main",
+    "archived": false,
+    "disabled": false,
+    "fork": false,
+    "has_issues": true,
+    "has_projects": true,
+    "has_wiki": true,
+    "has_discussions": false,
+    "delete_branch_on_merge": false,
+    "allow_squash_merge": true,
+    "allow_merge_commit": true,
+    "allow_rebase_merge": true,
+    "web_commit_signoff_required": false,
+    "security_and_analysis": {
+      "secret_scanning": {
+        "status": "enabled"
+      },
+      "secret_scanning_push_protection": {
+        "status": "enabled"
+      },
+      "dependabot_security_updates": {
+        "status": "disabled"
+      },
+      "secret_scanning_non_provider_patterns": {
+        "status": "disabled"
+      },
+      "secret_scanning_validity_checks": {
+        "status": "disabled"
+      }
+    },
+    "pushed_at": "2026-10-01T01:06:25Z",
+    "updated_at": "2026-10-01T01:06:29Z"
+  },
+  "branches": [
+    {
+      "name": "feature/v1.2-direct-update",
+      "sha": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
+      "protected": false
+    },
+    {
+      "name": "main",
+      "sha": "2d968b49bc9067da98a43002d1a59ccf2d9df140",
+      "protected": false
+    },
+    {
+      "name": "release/v1.1.0-candidate",
+      "sha": "dd296c89ec23d434650b8001131d98e526d45f84",
+      "protected": false
+    }
+  ],
+  "tags": [
+    {
+      "name": "v1.2.0",
+      "sha": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e"
+    },
+    {
+      "name": "v1.1.0",
+      "sha": "dd296c89ec23d434650b8001131d98e526d45f84"
+    },
+    {
+      "name": "v1.0.0",
+      "sha": "e0402f21d9069b3d73946f35416da70f5883834a"
+    }
+  ],
+  "releases": [
+    {
+      "tag": "v1.2.0",
+      "name": "Direct Internet Method v1.2.0",
+      "draft": false,
+      "prerelease": false,
+      "published_at": "2026-10-01T00:50:24Z",
+      "target_commitish": "main",
+      "assets": [
+        {
+          "name": "DirectInternetMethod_1.2.0_Linux_x86_64.zip",
+          "size": 8140827,
+          "state": "uploaded",
+          "digest": "sha256:bbcdad529d242987eac74dc4ec4ea02435fab9755d6736ecabe84133fc3dabdc",
+          "downloads": 0
+        },
+        {
+          "name": "DirectInternetMethod_1.2.0_Windows_Setup.exe",
+          "size": 157093296,
+          "state": "uploaded",
+          "digest": "sha256:e1d774b29bee29b15632adbed9b6137738e4d297daf1a3b216d5b27de9559fc1",
+          "downloads": 0
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size": 223,
+          "state": "uploaded",
+          "digest": "sha256:4b416c53361a9dfc7196f50c3d46927f23b10e6b83a4c6bed0d61b65d9c1d9a0",
+          "downloads": 0
+        }
+      ]
+    },
+    {
+      "tag": "v1.1.0",
+      "name": "Direct Internet Method v1.1.0",
+      "draft": false,
+      "prerelease": false,
+      "published_at": "2026-09-30T19:51:47Z",
+      "target_commitish": "main",
+      "assets": [
+        {
+          "name": "DirectInternetMethod_1.1.0_Linux_x86_64.zip",
+          "size": 8139344,
+          "state": "uploaded",
+          "digest": "sha256:621ad8512fdf4e53dff283ddfbeb620ddd80631c2db4785536f8523eaa0ac861",
+          "downloads": 2
+        },
+        {
+          "name": "DirectInternetMethod_1.1.0_Windows_Setup.exe",
+          "size": 157078634,
+          "state": "uploaded",
+          "digest": "sha256:e59b61c4e17f30afba3f2e0234b42759435a114b7f4264bca7c1d253a950c9b0",
+          "downloads": 4
+        },
+        {
+          "name": "SHA256SUMS.txt",
+          "size": 223,
+          "state": "uploaded",
+          "digest": "sha256:08c01f849cff3178a68323dc1a88b684969f0df7aedab9264796a0d470cf2e29",
+          "downloads": 4
+        }
+      ]
+    },
+    {
+      "tag": "v1.0.0",
+      "name": "Direct Internet Method v1.0.0",
+      "draft": false,
+      "prerelease": false,
+      "published_at": "2026-09-29T13:28:45Z",
+      "target_commitish": "main",
+      "assets": [
+        {
+          "name": "DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+          "size": 7951455,
+          "state": "uploaded",
+          "digest": "sha256:4f6c80d3406055a0a956082e76b211206d1cffbd2e7398ee84db62d155f52b98",
+          "downloads": 0
+        },
+        {
+          "name": "DirectInternetMethod_1.0.0_Windows_Setup.exe",
+          "size": 10609007,
+          "state": "uploaded",
+          "digest": "sha256:1d32d0619edc85c5b11405218087154d53907c06d650843f7375092b2fc7c602",
+          "downloads": 0
+        }
+      ]
+    }
+  ],
+  "workflows": {
+    "total": 0,
+    "items": []
+  },
+  "runs": [],
+  "mainProtection": null,
+  "rulesets": null,
+  "community": {
+    "health_percentage": 28,
+    "description": "Standalone direct-connect application for Windows and Linux",
+    "documentation": null,
+    "files": {
+      "code_of_conduct": null,
+      "code_of_conduct_file": null,
+      "contributing": null,
+      "issue_template": null,
+      "pull_request_template": null,
+      "license": null,
+      "readme": {
+        "url": "https://api.github.com/repos/GOD13emad/DirectInternetMethod/contents/README.md",
+        "html_url": "https://github.com/GOD13emad/DirectInternetMethod/blob/main/README.md"
+      }
+    },
+    "updated_at": null
+  },
+  "local": {
+    "head": "2d968b49bc9067da98a43002d1a59ccf2d9df140",
+    "originMain": "2d968b49bc9067da98a43002d1a59ccf2d9df140",
+    "tag120": "6c30dbfaa5596285ac42c2dba08fb0c8b259901e",
+    "status": "",
+    "branches": "feature/v1.2-direct-update\r\nmain\r\nrelease/v1.1.0-candidate\r\norigin\r\norigin/feature/v1.2-direct-update\r\norigin/main\r\norigin/release/v1.1.0-candidate"
+  }
+}

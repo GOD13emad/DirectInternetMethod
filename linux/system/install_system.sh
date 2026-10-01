@@ -80,7 +80,7 @@ test -f /etc/polkit-1/rules.d/49-directinternetmethod.rules
 test "$(cat /etc/directinternetmethod.uid)" = "$USER_UID"
 mkdir -p /var/lib/directinternetmethod
 cat > /var/lib/directinternetmethod/install.json <<EOF
-{"schema":1,"version":"1.2.0","user":"$USER_NAME","uid":$USER_UID,"home":"$HOME_DIR"}
+{"schema":1,"version":"1.2.1","user":"$USER_NAME","uid":$USER_UID,"home":"$HOME_DIR"}
 EOF
 chmod 0644 /var/lib/directinternetmethod/install.json
-echo '{"ok":true,"systemBackend":"installed","version":"1.2.0"}'
+echo '{"ok":true,"systemBackend":"installed","version":"1.2.1"}'

@@ -12,7 +12,6 @@ windows/**/bin/
 windows/**/obj/
 windows/app/DirectInternetMethod.Service.exe
 delivery/DirectInternetMethod_1.1.0_*
-
 # Local validation/sandbox residue
 sandbox*/
 tmp/
@@ -25,5 +24,7 @@ evidence/v-*.err
 evidence/v-*.out
 tests/_*.ps1
 evidence/WINDOWS_UI_LIVE.png
-delivery/DirectInternetMethod_1.2.0_*
+delivery/DirectInternetMethod_1.2.1_*
 delivery/DIM_120_HOST_BOOTSTRAP_RUNNER.zip
+delivery/DirectInternetMethod_1.2.0_*
+evidence/_*.ps1
