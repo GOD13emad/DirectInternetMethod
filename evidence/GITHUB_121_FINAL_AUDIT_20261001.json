@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_FINAL_GITHUB_AUDIT_V1_2_1",
+  "repository": "GOD13emad/DirectInternetMethod",
+  "release": {
+    "latest": "v1.2.1",
+    "tagCommit": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
+    "publishedAt": "2026-10-01T01:50:38Z",
+    "windows": {
+      "bytes": 157077755,
+      "sha256": "B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA"
+    },
+    "linux": {
+      "bytes": 8139783,
+      "sha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65"
+    },
+    "sums": {
+      "bytes": 221,
+      "sha256": "7BC424244CB7261BF1E055A21034A621FE0D247938FAFF4520F5D04550FC3A83"
+    },
+    "publicRedownload": "PASS",
+    "linuxPublicBashSyntax": "PASS",
+    "windowsPublicUpdate120to121": "PASS_NO_UAC",
+    "v120LinuxHistoricalReleaseAnnotatedSuperseded": true
+  },
+  "actions": {
+    "workflow": "Source and Release Contracts",
+    "tagRun": {
+      "id": 36802594175,
+      "sha": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
+      "conclusion": "success",
+      "jobs": [
+        "linux-source",
+        "windows-source",
+        "windows-release-contract"
+      ]
+    },
+    "publicationEvidenceHotfixRun": {
+      "id": 36803325908,
+      "sha": "71fe403b0657287558737975ee11f69ac0d96c1b",
+      "conclusion": "success"
+    },
+    "publicationEvidenceMainRun": {
+      "id": 36803501504,
+      "sha": "71fe403b0657287558737975ee11f69ac0d96c1b",
+      "conclusion": "success"
+    }
+  },
+  "mainProtection": {
+    "enabled": true,
+    "strictStatusChecks": true,
+    "requiredContexts": [
+      "linux-source",
+      "windows-source"
+    ],
+    "enforceAdmins": true,
+    "requiredLinearHistory": true,
+    "allowForcePushes": false,
+    "allowDeletions": false,
+    "requiredConversationResolution": true
+  },
+  "tagProtection": {
+    "rulesetId": 24283722,
+    "name": "Protect release tags",
+    "target": "tag",
+    "pattern": "refs/tags/v*",
+    "enforcement": "active",
+    "blockUpdate": true,
+    "blockDeletion": true,
+    "bypass": "none"
+  },
+  "security": {
+    "secretScanning": "enabled",
+    "secretScanningPushProtection": "enabled",
+    "dependencySecurityUpdates": "disabled",
+    "rationale": "No PackageReference/requirements dependency surface was introduced by this hotfix; no extra control added without proportional evidence."
+  },
+  "repositoryContent": {
+    "trackedSourceAudit": "PASS",
+    "powershellParsed": 30,
+    "pythonCompiled": 6,
+    "dotnetBuilds": "PASS_0_WARNINGS_0_ERRORS",
+    "jsonParse": "PASS",
+    "secretPatternScan": "NO_HITS",
+    "mergeConflictMarkers": 0,
+    "todoFixmeMarkers": 0,
+    "rootLicense": "MISSING_OWNER_LEGAL_CHOICE"
+  },
+  "rootCauseClosed": {
+    "failure": "Public Linux v1.2.0 ZIP contained CRLF shell scripts; all six shell files failed bash -n.",
+    "prevention": [
+      ".gitattributes *.sh eol=lf",
+      "package builder text-byte LF normalization",
+      "GitHub Actions source and built-archive LF/bash gates",
+      "public Linux re-download/bash validation"
+    ],
+    "regression": "PASS_PUBLIC_V1_2_1"
+  },
+  "concurrentWorkIsolation": "Original DirectInternetMethod checkout is being used by Router Gateway v1.3 work; v1.2.1 GitHub audit/finalization used dedicated worktree DirectInternetMethod_hotfix121 and did not overwrite the concurrent writer.",
+  "limitations": [
+    "Windows installer is not Authenticode-signed.",
+    "Repository root LICENSE intentionally remains unset pending owner/legal choice.",
+    "Network filtering effectiveness can vary with external filtering changes."
+  ]
+}

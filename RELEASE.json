@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.2.1",
   "date": "2026-10-01",
-  "status": "PASS_PUBLISHED_VERIFIED_V1_2_1_GITHUB_PROTECTION_PENDING",
+  "status": "FINAL_PUBLISHED_VERIFIED_GITHUB_HARDENED_V1_2_1",
   "platforms": {
     "windows": {
       "status": "PASS_PUBLIC_UPDATE_WINDOWS_1_2_1",
@@ -54,16 +54,18 @@
   "github": {
     "repo": "GOD13emad/DirectInternetMethod",
     "tag": "v1.2.1",
-    "status": "PUBLISHED_VERIFIED_PROTECTION_PENDING",
+    "status": "FINAL_PUBLISHED_VERIFIED_GITHUB_HARDENED",
     "branch": "hotfix/v1.2.1-linux-eol-github-hardening",
     "actionsBaselineCommit": "27940bdaf436dbc6d4c92a070f899b0eff0fce74",
     "actionsBaselineStatus": "PASS",
     "finalCommitActions": "PASS",
-    "mainProtection": "PENDING_POST_MERGE",
+    "mainProtection": "PASS",
     "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.2.1",
     "publishedAt": "2026-10-01T01:50:38Z",
     "tagCommit": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
-    "latest": "v1.2.1"
+    "latest": "v1.2.1",
+    "releaseTagProtection": "PASS_RULESET_24283722",
+    "v120LinuxReleaseAnnotatedSuperseded": true
   },
   "limitations": [
     "Windows installer is not Authenticode-signed.",
@@ -80,7 +82,9 @@
     "concurrentWriterIsolation": "evidence/GITHUB_AUDIT_CONCURRENT_WRITER_ISOLATION_20261001.json",
     "publication121": "evidence/DIM_121_GITHUB_PUBLICATION_VERIFY_20261001.json",
     "linuxPublic121": "evidence/LINUX_121_PUBLIC_RELEASE_VERIFY_20261001.json",
-    "windowsPublic121": "evidence/WINDOWS_121_HOST_PUBLIC_UPDATE_VERIFY_20261001.json"
+    "windowsPublic121": "evidence/WINDOWS_121_HOST_PUBLIC_UPDATE_VERIFY_20261001.json",
+    "githubFinalAudit": "evidence/GITHUB_121_FINAL_AUDIT_20261001.json",
+    "githubFinalAuditSha256": "9E314C8A5ABE3E33996296B7E6EF9039C90B254BD3A3D331D90F572B92B5CB2F"
   },
   "hotfix": {
     "reason": "Public v1.2.0 Linux ZIP contains CRLF shell scripts and fails bash -n.",

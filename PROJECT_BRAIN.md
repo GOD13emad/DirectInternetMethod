@@ -1,6 +1,6 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: V1_2_1_PUBLISHED_VERIFIED_GITHUB_PROTECTION_PENDING
+Status: FINAL_V1_2_1_PUBLISHED_VERIFIED_GITHUB_HARDENED
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
@@ -22,8 +22,8 @@ Completed: Windows v1.2.0 Sandbox E2E direct-update acceptance from restricted u
 Completed: Linux v1.2.0 compatibility/version package; contract audits PASS on Windows/Linux and deterministic cross-host ZIP reproduction PASS.
 Completed: exact Windows v1.2.0 host bootstrap; installed GUI/service/manifest hashes match candidate; control 131 host regression PASS.
 Completed: Windows v1.2.0 host Start/ACTIVE/Stop/exact rollback/Recovery regression PASS.
-← CURRENT: final post-publication evidence commit → exact-commit CI PASS → apply minimal main protection → fast-forward protected main to that already-tested commit.
-Open release gate: GitHub main protection + final governance verification only.
+← CURRENT: maintenance/monitoring only; v1.2.1 release and GitHub governance gates are closed.
+Open release gate: none.
 Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
@@ -95,8 +95,10 @@ All earlier harness failures remain preserved; no product runtime failure is hid
 - Concurrent-writer isolation: `evidence/GITHUB_AUDIT_CONCURRENT_WRITER_ISOLATION_20261001.json` — SHA-256 `92F6A20D4338BB02FAFDD6CEF84EFC13F75EADE52D1A67B7DE602E90A7EA7996`.
 - v1.2.1 release-ready aggregate: `evidence/DIM_121_RELEASE_READY_ACCEPTANCE_20261001.json` — SHA-256 `B70FF0F478E98B44A6F47EEE826E79F30C7E9726DDEC120EA9E15C3A91FCC89F`.
 
+- GitHub v1.2.1 final audit: `evidence/GITHUB_121_FINAL_AUDIT_20261001.json` — SHA-256 `9E314C8A5ABE3E33996296B7E6EF9039C90B254BD3A3D331D90F572B92B5CB2F`; PASS_FINAL_GITHUB_AUDIT_V1_2_1.
+
 ## Exact Next Action
-Wait for GitHub Actions on the exact release-ready v1.2.1 commit. If PASS, fast-forward remote main, tag v1.2.1, require tag workflow PASS (including Windows release contract), publish the exact Windows/Linux artifacts plus SHA256SUMS, public-redownload/hash both assets, run bash syntax on the public Linux ZIP, then update the installed Windows host through control 131 and apply minimal main branch force-push/deletion protection.
+No release or GitHub gate remains for v1.2.1. Keep tag/release assets immutable. Future release commits must pass protected-main status checks; future v* tags are server-side protected against update/delete. Continue Router Gateway/v1.3 work only from its isolated writer/branch and rebase against protected main when ready.
 
 ## HISTORY
 - 2026-09-29: v1.0.0 Windows and Linux PASS_FINAL_RELEASE; GitHub v1.0.0 published and verified.
@@ -140,3 +142,5 @@ Wait for GitHub Actions on the exact release-ready v1.2.1 commit. If PASS, fast-
 - 2026-10-01: deep GitHub audit found public Linux v1.2.0 release defect: all six packaged shell scripts retained CRLF and failed bash -n. v1.2.0 tag/assets left immutable; patch v1.2.1 created with LF Git policy, package-byte normalization, GitHub Actions, and cross-host deterministic ZIP. Windows network logic unchanged. Concurrent Router Gateway writer was isolated via dedicated worktree. v1.2.1 Windows exact Sandbox identity and Linux source/archive syntax gates PASS; release is READY, not yet published.
 
 - 2026-10-01: v1.2.1 published. Public Linux ZIP SHA-256 CAF93659… passed LF-only + bash -n on aliemad-Labtop. Windows host updated 1.2.0→1.2.1 via public GitHub latest/control 131 without UAC; installed hashes matched release authority; state/pending remained absent. Public redownload of Windows/Linux/SHA256SUMS matched exact hashes. Main protection remains the sole open GitHub gate.
+
+- 2026-10-01: deep GitHub finalization completed. v1.2.1 latest/public assets verified; Linux public ZIP passed LF-only + bash -n; Windows host updated 1.2.0→1.2.1 through public control 131 without UAC. main now requires strict linux-source/windows-source checks, linear history, admin enforcement, no force-push/delete, conversation resolution. Active tag ruleset protects v* tags from update/delete with no bypass. Historical v1.2.0 release was annotated as Linux-superseded without changing tag/assets. Root LICENSE remains an explicit owner/legal choice.

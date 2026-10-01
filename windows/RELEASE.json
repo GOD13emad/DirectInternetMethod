@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.2.1",
-  "status": "PASS_PUBLISHED_VERIFIED_WINDOWS_1_2_1",
+  "status": "FINAL_PUBLISHED_VERIFIED_WINDOWS_1_2_1",
   "date": "2026-10-01",
   "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; owned ctrld SCM service + Loopback ULA + DoH + NRPT + zapret/WinDivert; service-mediated verified direct updater",
   "usage": {
@@ -30,14 +30,15 @@
     "linuxPackageEolGuard": "PASS",
     "linuxCrossHostDeterminism": "PASS",
     "githubActionsBranch": "PASS",
-    "windowsHostUpdate": "PASS_PUBLIC_1_2_0_TO_1_2_1_NO_UAC"
+    "windowsHostUpdate": "PASS_PUBLIC_1_2_0_TO_1_2_1_NO_UAC",
+    "githubFinalAudit": "PASS"
   },
   "limitations": [
     "Installer is not Authenticode-signed.",
     "Effectiveness may vary if the network filtering implementation changes."
   ],
   "publication": {
-    "status": "PUBLISHED_VERIFIED",
+    "status": "FINAL_PUBLISHED_VERIFIED",
     "tag": "v1.2.1",
     "tagCommit": "ffc81193cd484e50c0855d2ad18e69629fedb63c",
     "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.2.1",
