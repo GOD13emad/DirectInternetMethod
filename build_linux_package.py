@@ -24,7 +24,7 @@ def sha_bytes(data:bytes)->str:return hashlib.sha256(data).hexdigest().upper()
 def sha(p):return sha_bytes(pathlib.Path(p).read_bytes())
 def payload_bytes(src:str,dst:str)->bytes:
  data=(R/src).read_bytes()
- if dst.endswith(".sh"):
+ if pathlib.PurePosixPath(dst).suffix.lower() in {".sh",".py",".md",".txt",".svg"}:
   data=data.replace(b"\r\n",b"\n").replace(b"\r",b"\n")
  return data
 rows=[]
