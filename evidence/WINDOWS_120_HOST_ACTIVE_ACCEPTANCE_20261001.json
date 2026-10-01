@@ -1,0 +1,266 @@
+{
+  "schema": 1,
+  "status": "PASS_ACTIVE_HOST",
+  "date": "2026-10-01T04:10:27.5990598+03:30",
+  "host": "EMAD-PC-ULTIMAT",
+  "statePhase": "ACTIVE",
+  "interface": "Ethernet 3",
+  "ctrld": {
+    "serviceState": "Running",
+    "servicePid": 16376,
+    "statePid": 16376,
+    "servicePath": "\"C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\ctrld\\ctrld.exe\" run -s -c \"C:\\ProgramData\\DirectDnsDpiHarness\\ctrld\\ctrld.toml\"",
+    "processName": "ctrld",
+    "udp53": 1,
+    "tcp53": 1
+  },
+  "winws": {
+    "statePid": 44640,
+    "processName": "winws"
+  },
+  "dns": {
+    "preV4": [
+      "192.168.20.1"
+    ],
+    "activeV4": [
+      "192.168.20.1"
+    ],
+    "preV6": [],
+    "activeV6": [],
+    "unchanged": true
+  },
+  "broadRoutes": [],
+  "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+  "winHttpUnchanged": true,
+  "ics": {
+    "preState": "Running",
+    "activeState": "Running",
+    "unchanged": true
+  },
+  "dnsProbe": [
+    {
+      "name": "www.youtube.com",
+      "ok": true,
+      "answers": [
+        "142.251.151.4",
+        "142.251.154.4",
+        "142.251.152.4",
+        "142.251.153.4",
+        "142.251.155.4",
+        "142.251.157.4",
+        "142.251.156.4",
+        "142.251.150.4",
+        "2001:4860:4827:400::",
+        "2001:4860:4828:400::",
+        "2001:4860:482a:400::",
+        "2001:4860:482b:400::",
+        "2001:4860:4829:400::",
+        "2001:4860:482d:400::",
+        "2001:4860:482c:400::",
+        "2001:4860:4826:400::"
+      ]
+    },
+    {
+      "name": "api.openai.com",
+      "ok": true,
+      "answers": [
+        "162.159.140.245",
+        "172.66.0.243",
+        "2a06:98c1:58::f3",
+        "2606:4700:7::f3"
+      ]
+    },
+    {
+      "name": "github.com",
+      "ok": true,
+      "answers": [
+        "140.82.121.3"
+      ]
+    }
+  ],
+  "youtube": {
+    "exit": 0,
+    "meta": "204|142.251.151.4|0.096400|0.265210"
+  },
+  "openai": {
+    "exit": 0,
+    "meta": "401|162.159.140.245|0.034861|0.323979"
+  },
+  "github": {
+    "exit": 0,
+    "meta": "200|140.82.121.3|0.087371|0.694580"
+  },
+  "runtimeEvidence": {
+    "schema": 3,
+    "status": "PASS_ACTIVE",
+    "architecture": "LOOPBACK_ULA_CTRLD_DOH_NRPT_PLUS_ZAPRET",
+    "pre": {
+      "dnsV4": [
+        "192.168.20.1"
+      ],
+      "dnsV6": [],
+      "nrpt": [],
+      "ulaExists": false,
+      "ics": {
+        "exists": true,
+        "state": "Running",
+        "pid": 5184
+      },
+      "broadRouteCount": 0,
+      "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server)."
+    },
+    "dnsStage": {
+      "ula": {
+        "IPAddress": "fd53:4444:48::53",
+        "PrefixLength": 128,
+        "AddressState": 4,
+        "SkipAsSource": true
+      },
+      "ctrldPid": 16376,
+      "udp": 1,
+      "tcp": 1,
+      "nrptRule": {
+        "Name": "{9989591F-A605-40DF-BCA7-C89D81600A9F}",
+        "DisplayName": "DirectDnsDpiHarness",
+        "Namespace": [
+          "."
+        ],
+        "NameServers": {
+          "AddressFamily": 23,
+          "ScopeId": 0,
+          "IsIPv6Multicast": false,
+          "IsIPv6LinkLocal": false,
+          "IsIPv6SiteLocal": false,
+          "IsIPv6Teredo": false,
+          "IsIPv6UniqueLocal": true,
+          "IsIPv4MappedToIPv6": false,
+          "Address": null,
+          "IPAddressToString": "fd53:4444:48::53"
+        },
+        "Comment": "Owned by DirectDnsDpiHarness; safe to remove only by this harness."
+      },
+      "dns": [
+        {
+          "name": "www.youtube.com",
+          "ok": true,
+          "ms": 119,
+          "answers": [
+            "142.251.151.4",
+            "142.251.154.4",
+            "142.251.152.4",
+            "142.251.153.4",
+            "142.251.155.4",
+            "142.251.157.4",
+            "142.251.156.4",
+            "142.251.150.4"
+          ],
+          "private": []
+        },
+        {
+          "name": "github.com",
+          "ok": true,
+          "ms": 90,
+          "answers": [
+            "140.82.121.4"
+          ],
+          "private": []
+        },
+        {
+          "name": "api.openai.com",
+          "ok": true,
+          "ms": 91,
+          "answers": [
+            "162.159.140.245",
+            "172.66.0.243"
+          ],
+          "private": []
+        }
+      ],
+      "adapterDns": [
+        "192.168.20.1"
+      ],
+      "controlD": {
+        "url": "https://76.76.10.11/p0",
+        "exit": 0,
+        "meta": "400|76.76.10.11|0.088626|0.179836|0.259212"
+      },
+      "ics": {
+        "exists": true,
+        "state": "Running",
+        "pid": 5184
+      }
+    },
+    "live": {
+      "ctrldPid": 16376,
+      "winwsPid": 44640,
+      "dns": {
+        "name": "www.youtube.com",
+        "ok": true,
+        "ms": 9,
+        "answers": [
+          "142.251.151.4",
+          "142.251.154.4",
+          "142.251.152.4",
+          "142.251.153.4",
+          "142.251.155.4",
+          "142.251.157.4",
+          "142.251.156.4",
+          "142.251.150.4"
+        ],
+        "private": []
+      },
+      "youtube": {
+        "url": "https://www.youtube.com/generate_204",
+        "exit": 0,
+        "meta": "204|142.251.151.4|0.094228|0.187011|0.262963"
+      },
+      "openai": {
+        "url": "https://api.openai.com/v1/models",
+        "exit": 0,
+        "meta": "401|162.159.140.245|0.038236|0.066892|0.277548"
+      },
+      "github": {
+        "url": "https://github.com/",
+        "exit": 0,
+        "meta": "200|140.82.121.4|0.091411|0.175398|0.713827"
+      },
+      "ics": {
+        "exists": true,
+        "state": "Running",
+        "pid": 5184
+      },
+      "proxy": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+      "broadRouteCount": 0,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys"
+        }
+      ]
+    },
+    "error": ""
+  },
+  "checks": {
+    "stateActive": true,
+    "ctrldRunning": true,
+    "ctrldPid": true,
+    "udp53": true,
+    "tcp53": true,
+    "ctrldServiceOwned": true,
+    "ctrldProcessName": true,
+    "winwsProcessName": true,
+    "runtimeCtrldPid": true,
+    "runtimeWinwsPid": true,
+    "protectedWinDivert": true,
+    "adapterDnsUnchanged": true,
+    "noBroadRoutes": true,
+    "winHttpUnchanged": true,
+    "icsUnchanged": true,
+    "dnsClean": true,
+    "youtube": true,
+    "openai": true,
+    "github": true,
+    "privilegedRuntime": true
+  }
+}

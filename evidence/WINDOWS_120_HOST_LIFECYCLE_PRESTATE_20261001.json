@@ -1,0 +1,347 @@
+{
+  "schema": 1,
+  "date": "2026-10-01T04:08:58.0933832+03:30",
+  "host": "EMAD-PC-ULTIMAT",
+  "user": "Aa.Emad",
+  "stateExists": false,
+  "serviceQc": "[SC] OpenService FAILED 5:\r\n\r\nAccess is denied.",
+  "serviceSddl": "[SC] OpenService FAILED 5:\r\n\r\nAccess is denied.",
+  "ctrldQc": "[SC] QueryServiceConfig SUCCESS\r\n\r\nSERVICE_NAME: ctrld\r\n        TYPE               : 10  WIN32_OWN_PROCESS \r\n        START_TYPE         : 3   DEMAND_START\r\n        ERROR_CONTROL      : 1   NORMAL\r\n        BINARY_PATH_NAME   : \"C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\ctrld\\ctrld.exe\" run -s -c \"C:\\ProgramData\\DirectDnsDpiHarness\\ctrld\\ctrld.toml\"\r\n        LOAD_ORDER_GROUP   : \r\n        TAG                : 0\r\n        DISPLAY_NAME       : Direct Internet Method DNS Helper\r\n        DEPENDENCIES       : \r\n        SERVICE_START_NAME : LocalSystem",
+  "installedServiceExists": true,
+  "installedServiceSha256": "432740243AE381EAAAA6431B3404B8D3652DF62A103FFAAC4C6C943424F381FE",
+  "installedStartSha256": "A9AB5ACD9891459305A858C8903D729C32E4DFFD24A83B4B308D6E94B98ACD24",
+  "candidateInstallerSha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
+  "candidateServiceSha256": "432740243AE381EAAAA6431B3404B8D3652DF62A103FFAAC4C6C943424F381FE",
+  "candidateStartSha256": "A9AB5ACD9891459305A858C8903D729C32E4DFFD24A83B4B308D6E94B98ACD24",
+  "defaults": [
+    {
+      "ifIndex": 18,
+      "alias": "Ethernet 3",
+      "description": "Intel(R) Ethernet Controller I226-V",
+      "status": "Up",
+      "nextHop": "192.168.20.1",
+      "routeMetric": 0,
+      "interfaceMetric": 25,
+      "state": "Alive"
+    }
+  ],
+  "broadRoutes": [],
+  "dns": [
+    {
+      "ifIndex": 1,
+      "alias": "Loopback Pseudo-Interface 1",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 1,
+      "alias": "Loopback Pseudo-Interface 1",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 7,
+      "alias": "Wi-Fi 4",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 7,
+      "alias": "Wi-Fi 4",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 10,
+      "alias": "Bluetooth Network Connection",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 10,
+      "alias": "Bluetooth Network Connection",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 11,
+      "alias": "Local Area Connection",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 11,
+      "alias": "Local Area Connection",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 12,
+      "alias": "Ethernet 6",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 12,
+      "alias": "Ethernet 6",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 13,
+      "alias": "Wi-Fi 3",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 13,
+      "alias": "Wi-Fi 3",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 14,
+      "alias": "Ethernet 4",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 14,
+      "alias": "Ethernet 4",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 15,
+      "alias": "Wi-Fi 5",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 15,
+      "alias": "Wi-Fi 5",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 18,
+      "alias": "Ethernet 3",
+      "family": "2",
+      "servers": [
+        "192.168.20.1"
+      ]
+    },
+    {
+      "ifIndex": 18,
+      "alias": "Ethernet 3",
+      "family": "23",
+      "servers": []
+    },
+    {
+      "ifIndex": 19,
+      "alias": "OpenVPN Connect DCO Adapter",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 19,
+      "alias": "OpenVPN Connect DCO Adapter",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 25,
+      "alias": "Ethernet 2",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 25,
+      "alias": "Ethernet 2",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 27,
+      "alias": "Local Area Connection 2",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 27,
+      "alias": "Local Area Connection 2",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 29,
+      "alias": "Ethernet 5",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 29,
+      "alias": "Ethernet 5",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 32,
+      "alias": "Wi-Fi",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 32,
+      "alias": "Wi-Fi",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 33,
+      "alias": "Ethernet",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 33,
+      "alias": "Ethernet",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 34,
+      "alias": "VPN - VPN Client",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 34,
+      "alias": "VPN - VPN Client",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 36,
+      "alias": "Local Area Connection 3",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 36,
+      "alias": "Local Area Connection 3",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 41,
+      "alias": "vEthernet (Default Switch)",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 41,
+      "alias": "vEthernet (Default Switch)",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    },
+    {
+      "ifIndex": 102,
+      "alias": "vEthernet (WSL (Hyper-V firewall))",
+      "family": "2",
+      "servers": []
+    },
+    {
+      "ifIndex": 102,
+      "alias": "vEthernet (WSL (Hyper-V firewall))",
+      "family": "23",
+      "servers": [
+        "fec0:0:0:ffff::1",
+        "fec0:0:0:ffff::2",
+        "fec0:0:0:ffff::3"
+      ]
+    }
+  ],
+  "nrpt": [],
+  "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+  "ics": {
+    "state": "Running",
+    "pid": 5184
+  },
+  "ownedCtrldProc": [],
+  "ownedWinwsProc": [],
+  "ula": [],
+  "baseline": {
+    "youtube": "The request was canceled due to the configured HttpClient.Timeout of 8 seconds elapsing.",
+    "openai": "401",
+    "github": "200"
+  }
+}

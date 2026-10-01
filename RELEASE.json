@@ -3,21 +3,22 @@
   "product": "Direct Internet Method",
   "version": "1.2.0",
   "date": "2026-10-01",
-  "status": "CANDIDATE_HOST_GATE",
+  "status": "PASS_FINAL_RELEASE_READY",
   "platforms": {
     "windows": {
-      "status": "PASS_SANDBOX_DIRECT_UPDATE_HOST_GATE_OPEN",
+      "status": "PASS_FINAL_WINDOWS_1_2_0",
       "artifact": "delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe",
       "sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
       "bytes": 157093296,
       "sandboxAcceptance": "PASS",
       "directUpdateSandbox": "PASS",
-      "hostAcceptance": "UNPROVEN_1_2_0",
-      "rollback": "Inherited from 1.1 core; host 1.2 retest pending",
-      "recovery": "Inherited from 1.1 core; host 1.2 retest pending",
+      "hostAcceptance": "PASS_FINAL_WINDOWS_1_2_0",
+      "rollback": "PASS_EXACT_ROLLBACK_HOST",
+      "recovery": "PASS_NO_STATE_HOST",
       "normalRunRequiresAdmin": false,
       "normalOnlineUpdateRequiresAdmin": false,
-      "authenticode": "NotSigned"
+      "authenticode": "NotSigned",
+      "directUpdateHostControl131": "PASS_DONE_0"
     },
     "linux": {
       "status": "PASS_COMPAT_DETERMINISTIC",
@@ -50,11 +51,19 @@
   "github": {
     "repo": "GOD13emad/DirectInternetMethod",
     "tag": "v1.2.0",
-    "status": "NOT_PUBLISHED_HOST_GATE_OPEN"
+    "status": "READY_TO_PUBLISH"
   },
   "limitations": [
     "Windows installer is not Authenticode-signed.",
     "The one-time transition from Windows v1.1.0 to v1.2.0 may require UAC; later in-app updates are designed to require no UAC.",
     "Effectiveness may vary if network filtering behavior changes."
-  ]
+  ],
+  "evidence": {
+    "windowsHostFinal": "evidence/WINDOWS_120_HOST_FINAL_ACCEPTANCE_20261001.json",
+    "windowsDirectUpdateSandbox": "evidence/WINDOWS_120_DIRECT_UPDATE_SANDBOX_E2E_20261001.json",
+    "linuxCompatibility": "evidence/LINUX_120_COMPAT_ACCEPTANCE_20261001.json",
+    "crossPlatformFinal": "evidence/DIM_120_FINAL_ACCEPTANCE_20261001.json",
+    "crossPlatformFinalSha256": "399053A0806A3D2EA9A71DEC6D0027444CAD08EFF2910020A1268354EDB1B1AC",
+    "windowsHostFinalSha256": "9BE7D268491860622C355C45A28D3DEC45261EF6F71EECB7A45C0E58BC32C06A"
+  }
 }

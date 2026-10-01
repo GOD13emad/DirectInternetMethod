@@ -1,11 +1,11 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: WINDOWS_1_2_DIRECT_UPDATE_SANDBOX_PASS_HOST_UPGRADE_OPEN
+Status: V1_2_RELEASE_READY_PUBLICATION_CURRENT
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
 ## Authoritative current state
-- Source authority: working tree on branch `release/v1.1.0-candidate`; pre-promotion HEAD was `8ffe1627e45045e083a3d86e4e3dfd0902262725`.
+- Source authority: Git working tree on `feature/v1.2-direct-update`; latest pushed baseline before final host evidence was `76d3f0d`, with current final-host evidence/metadata delta pending commit.
 - Cross-platform 1.1.0 product acceptance is **PASS_FINAL_RELEASE** and GitHub publication/update verification is **PUBLISHED_VERIFIED**.
 - Windows final artifact:
   - `delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe`
@@ -38,8 +38,10 @@ Completed: v1.1.0 Windows/Linux live lifecycle, rollback/recovery, deterministic
 Completed: v1.2.0 Windows service-mediated direct updater implementation: SCM control 131, clean-OFF gate, GitHub latest release, triple SHA-256 agreement, atomic download, registered-install-path preservation, silent installer handoff, installer completion marker.
 Completed: Windows v1.2.0 Sandbox E2E direct-update acceptance from restricted user; exact candidate install and installed payload hash verification PASS.
 Completed: Linux v1.2.0 compatibility/version package; contract audits PASS on Windows/Linux and deterministic cross-host ZIP reproduction PASS.
-← CURRENT: exact Windows v1.2.0 candidate host install + Start/Stop/Recovery/direct-update-control regression.
-Open release gate: publish/tag v1.2.0 only after host Windows exact artifact PASS.
+Completed: exact Windows v1.2.0 host bootstrap; installed GUI/service/manifest hashes match candidate; control 131 host regression PASS.
+Completed: Windows v1.2.0 host Start/ACTIVE/Stop/exact rollback/Recovery regression PASS.
+← CURRENT: commit/promote feature branch → main → tag `v1.2.0` → GitHub release Windows+Linux+SHA256SUMS → latest/download verification.
+Open release gate: publication verification only.
 Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
@@ -60,6 +62,7 @@ Deferred: trusted Authenticode signing.
 15. LocalSystem updater could otherwise install user payload into SYSTEM profile → resolve all-users Inno Setup `InstallLocation` from HKLM, require expected app/manifest, and pass explicit `/DIR`; Sandbox path-preservation PASS.
 16. Update completion originally depended on target service startup → installer now writes `action-status=done/0` and deletes pending marker at post-install; fresh Sandbox seeded-pending regression PASS.
 17. Linux v1.2 deterministic package initially mismatched due stale non-Git Linux workspace inputs → reconcile package inputs from Git-controlled authority; Windows/Linux ZIP hash now identical.
+18. Host bootstrap Runner helper name `H` collided with PowerShell alias `h/Get-History` before elevation → rename to `Get-Sha256`, pin runner/script hashes, and require final host bootstrap evidence; fixed Runner PASS.
 All three validator failures were harness defects; product runtime remained healthy and their failing evidence is preserved.
 
 ## Evidence / Knowledge
@@ -83,13 +86,21 @@ All three validator failures were harness defects; product runtime remained heal
 - Final clean-state stabilization: `evidence/DIM_110_FINAL_CLEAN_STATE_20261001.json` — SHA-256 `7751A356EF1FFB00BEC0C20E594A12534068D8EA9980964D094A7E90E1584788`; Stop/Recovery done/0, state absent, ctrld stopped, winws/ULA/owned NRPT zero.
 - Windows v1.2 direct-update Sandbox acceptance: `evidence/WINDOWS_120_DIRECT_UPDATE_ACCEPTANCE_20261001.json` — SHA-256 `F2DDB33F715EFDB98FD96F6E2F6C69C6E254241847C417A9680407F5238041FC`.
 - Linux v1.2 compatibility/deterministic acceptance: `evidence/LINUX_120_COMPAT_ACCEPTANCE_20261001.json` — SHA-256 `298E36F0A88529BD17C74E99C75893F485C3D10B788D4FD02E32AB0CEB5D293A`.
+- Windows v1.2 host lifecycle prestate: `evidence/WINDOWS_120_HOST_LIFECYCLE_PRESTATE_20261001.json` — SHA-256 `579D8164F632AEF6BC865DBC2E68BD3AB3E3BB932463A79238E965217FDF1008`.
+- Windows v1.2 host bootstrap result: `evidence/WINDOWS_120_HOST_BOOTSTRAP_RESULT_20261001.json` — SHA-256 `87E527185370F4156CC60D04A0A352CA79A1FD14C481B57195FBEBB76699D302`.
+- Windows v1.2 host ACTIVE acceptance: `evidence/WINDOWS_120_HOST_ACTIVE_ACCEPTANCE_20261001.json` — SHA-256 `F65CD416A117178A7CF2FA4AC11230E8FA2D9FA6724797D78F78C09869EC8833`; YouTube=204/OpenAI=401/GitHub=200, physical DNS/routes/WinHTTP/ICS preserved.
+- Windows v1.2 exact rollback: `evidence/WINDOWS_120_HOST_ROLLBACK_ACCEPTANCE_20261001.json` — SHA-256 `52A8235BC1CE59155D35A52CA1254C98617463D2389265B798E392EA38D7A3A4`.
+- Windows v1.2 recovery/no-state: `evidence/WINDOWS_120_HOST_RECOVERY_ACCEPTANCE_20261001.json` — SHA-256 `F86DE943DCBF27FDDF6D2C18DAA6BAD0889A75F2194F274CD6A0CA14C7FF8743`.
+- Windows v1.2 host final acceptance: `evidence/WINDOWS_120_HOST_FINAL_ACCEPTANCE_20261001.json` — SHA-256 `9BE7D268491860622C355C45A28D3DEC45261EF6F71EECB7A45C0E58BC32C06A`; PASS_FINAL_WINDOWS_1_2_0.
+- Windows v1.2 bootstrap Runner fix: `evidence/WINDOWS_120_HOST_BOOTSTRAP_RUNNER_FIX_20261001.json` — SHA-256 `89AF020D5DDCC47CD6403CF40FC2FEE80222B3AB6F1A540C7CC58E7E2D423C42`; final local Runner ZIP SHA-256 `DB13BD5F72DFFD244B657442C3411C65ADD962F8D6D675C71C444B65AE842071`, script SHA-256 `1CD853F5ED1F255B2DDEAF82508E65C6523B042B6E1687848E266D7A9E724C42`.
+- Cross-platform v1.2 final acceptance: `evidence/DIM_120_FINAL_ACCEPTANCE_20261001.json` — SHA-256 `399053A0806A3D2EA9A71DEC6D0027444CAD08EFF2910020A1268354EDB1B1AC`; release gate = publication only.
 - Windows v1.2 candidate: `delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe`, 157,093,296 bytes, SHA-256 `E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1`; GUI `FAB82346…`, service `43274024…`, manifest `FA254338…`.
 - Linux v1.2 candidate: `delivery/DirectInternetMethod_1.2.0_Linux_x86_64.zip`, 8,140,827 bytes, SHA-256 `BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC`; identical on Windows and Linux.
 - Candidate-cycle evidence was copied to immutable `WINDOWS_110_HOST_CANDIDATE_*` records before final-artifact retest.
 - Earlier stale parallel hashes `D6AF…/A011…/5AEF…` are superseded and must not be used as release authority.
 
 ## Exact Next Action
-Install the exact v1.2.0 Windows candidate on the real Windows host; verify installed payload hashes, normal-user Start/Stop/Recovery, ACTIVE DNS/HTTPS invariants, exact rollback, and control 131 behavior. If PASS, promote branch to main, tag/release v1.2.0 with both Windows/Linux assets + SHA256SUMS, verify /releases/latest and downloaded hashes, then leave host in clean OFF state.
+Commit the final host evidence/metadata delta, promote `feature/v1.2-direct-update` to `main`, tag `v1.2.0`, publish the exact Windows/Linux artifacts plus `SHA256SUMS.txt`, then verify GitHub `/releases/latest`, redownload both assets, compare SHA-256, and leave the Windows host clean OFF.
 
 ## HISTORY
 - 2026-09-29: v1.0.0 Windows and Linux PASS_FINAL_RELEASE; GitHub v1.0.0 published and verified.
@@ -125,3 +136,5 @@ Install the exact v1.2.0 Windows candidate on the real Windows host; verify inst
 - 2026-10-01: Windows v1.2 direct updater reached Sandbox E2E PASS. A restricted user triggered control 131; exact v1.2.0 installer was verified and installed silently by the privileged service; completion returned done/0; exact GUI/service/manifest hashes matched; network state remained clean. Production v1.2 service then returned Already up to date/done0 from the same restricted control against real GitHub latest.
 
 - 2026-10-01: host v1.2 bootstrap attempted from clean v1.1.0. Windows UAC consent appeared, but Commander secure-desktop control was unavailable; no install occurred and host remained clean v1.1.0. Classified as owner UAC gate, not product failure.
+
+- 2026-10-01: exact Windows v1.2.0 candidate installed on EMAD-PC-ULTIMAT. Payload hashes matched; control 131 host regression done/0. Live Start restored YouTube=204 while OpenAI=401/GitHub=200; adapter DNS, default route, WinHTTP and ICS were preserved. Stop exact rollback and Recovery/no-state PASS; host left clean OFF. Windows v1.2 host gate closed.

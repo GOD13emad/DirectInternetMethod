@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_FINAL_WINDOWS_1_2_0",
+  "host": "EMAD-PC-ULTIMAT",
+  "version": "1.2.0",
+  "artifact": {
+    "path": "delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe",
+    "bytes": 157093296,
+    "sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
+    "guiSha256": "FAB82346A17DCF08FC7EC8E3C7859F87EC8228D0B5A33C6CC6BF2004D12A5D50",
+    "serviceSha256": "432740243AE381EAAAA6431B3404B8D3652DF62A103FFAAC4C6C943424F381FE",
+    "manifestSha256": "FA25433883B8D2FBE040951C14B375A32B201FDDEBFFFFC1D944E4BDC14C4C78"
+  },
+  "bootstrap": {
+    "status": "PASS",
+    "exactInstalledPayload": true,
+    "networkPrePostPreserved": true,
+    "directUpdateControl131": {
+      "phase": "done",
+      "exitCode": 0,
+      "message": "Already up to date."
+    },
+    "evidence": "evidence/WINDOWS_120_HOST_BOOTSTRAP_RESULT_20261001.json",
+    "sha256": "87E527185370F4156CC60D04A0A352CA79A1FD14C481B57195FBEBB76699D302"
+  },
+  "lifecycle": {
+    "start": {
+      "controlRc": 0,
+      "phase": "done",
+      "exitCode": 0
+    },
+    "active": {
+      "status": "PASS_ACTIVE_HOST",
+      "youtube": 204,
+      "openai": 401,
+      "github": 200,
+      "ctrldUdp53": true,
+      "ctrldTcp53": true,
+      "winws": true,
+      "protectedWinDivert": true,
+      "adapterDnsPreserved": true,
+      "broadRoutes": 0,
+      "winHttpPreserved": true,
+      "icsPreserved": true,
+      "evidence": "evidence/WINDOWS_120_HOST_ACTIVE_ACCEPTANCE_20261001.json",
+      "sha256": "F65CD416A117178A7CF2FA4AC11230E8FA2D9FA6724797D78F78C09869EC8833"
+    },
+    "stop": {
+      "controlRc": 0,
+      "phase": "done",
+      "exitCode": 0
+    },
+    "rollback": {
+      "status": "PASS_EXACT_ROLLBACK_HOST",
+      "noState": true,
+      "noOwnedNrpt": true,
+      "noUla": true,
+      "ctrldStopped": true,
+      "noCtrldProcess": true,
+      "noWinwsProcess": true,
+      "noOwnedDriver": true,
+      "dnsPreserved": true,
+      "defaultRoutesPreserved": true,
+      "noBroadRoutes": true,
+      "winHttpPreserved": true,
+      "icsPreserved": true,
+      "evidence": "evidence/WINDOWS_120_HOST_ROLLBACK_ACCEPTANCE_20261001.json",
+      "sha256": "52A8235BC1CE59155D35A52CA1254C98617463D2389265B798E392EA38D7A3A4"
+    },
+    "recovery": {
+      "status": "PASS",
+      "controlRc": 0,
+      "phase": "done",
+      "exitCode": 0,
+      "stateExists": false,
+      "evidence": "evidence/WINDOWS_120_HOST_RECOVERY_ACCEPTANCE_20261001.json",
+      "sha256": "F86DE943DCBF27FDDF6D2C18DAA6BAD0889A75F2194F274CD6A0CA14C7FF8743"
+    }
+  },
+  "finalState": "CLEAN_OFF",
+  "limitations": [
+    "Windows installer is not Authenticode-signed.",
+    "Effectiveness may vary if network filtering behavior changes."
+  ]
+}

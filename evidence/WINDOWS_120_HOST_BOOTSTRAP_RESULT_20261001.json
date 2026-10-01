@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "date": "2026-10-01T04:07:30.1202587+03:30",
+  "status": "PASS_WINDOWS_1_2_HOST_BOOTSTRAP_AND_DIRECT_UPDATE_CONTROL",
+  "host": "EMAD-PC-ULTIMAT",
+  "version": "1.2.0",
+  "artifactSha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
+  "hashes": {
+    "service": "432740243AE381EAAAA6431B3404B8D3652DF62A103FFAAC4C6C943424F381FE",
+    "gui": "FAB82346A17DCF08FC7EC8E3C7859F87EC8228D0B5A33C6CC6BF2004D12A5D50",
+    "manifest": "FA25433883B8D2FBE040951C14B375A32B201FDDEBFFFFC1D944E4BDC14C4C78"
+  },
+  "checks": {
+    "installerHash": true,
+    "serviceHash": true,
+    "guiHash": true,
+    "manifestHash": true,
+    "registryVersion": true,
+    "stateClean": true,
+    "winwsClean": true,
+    "ulaClean": true,
+    "nrptClean": true,
+    "broadRoutesClean": true,
+    "ctrldStopped": true,
+    "dnsPreserved": true,
+    "defaultRoutesPreserved": true,
+    "winHttpPreserved": true,
+    "icsStatePreserved": true
+  },
+  "updateControl131": {
+    "phase": "done",
+    "exitCode": 0,
+    "message": "Already up to date."
+  }
+}

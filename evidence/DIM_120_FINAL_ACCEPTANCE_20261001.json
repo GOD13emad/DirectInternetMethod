@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_FINAL_CROSS_PLATFORM_1_2_0_RELEASE_READY",
+  "version": "1.2.0",
+  "windows": {
+    "status": "PASS_FINAL_WINDOWS_1_2_0",
+    "artifact": {
+      "path": "delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe",
+      "bytes": 157093296,
+      "sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1"
+    },
+    "hostFinalEvidence": {
+      "path": "evidence/WINDOWS_120_HOST_FINAL_ACCEPTANCE_20261001.json",
+      "sha256": "9BE7D268491860622C355C45A28D3DEC45261EF6F71EECB7A45C0E58BC32C06A"
+    },
+    "directUpdateSandboxEvidence": {
+      "path": "evidence/WINDOWS_120_DIRECT_UPDATE_SANDBOX_E2E_20261001.json",
+      "sha256": "8A79264D3FA588F9B5F6896110B3DBDD90207433093CC09E92DF8DE0819026CB"
+    },
+    "live": {
+      "youtube": 204,
+      "openai": 401,
+      "github": 200,
+      "exactRollback": true,
+      "recoveryNoState": true,
+      "normalUserControls": true,
+      "directUpdateControl131": true
+    },
+    "finalState": "CLEAN_OFF"
+  },
+  "linux": {
+    "status": "PASS_COMPAT_DETERMINISTIC",
+    "artifact": {
+      "path": "delivery/DirectInternetMethod_1.2.0_Linux_x86_64.zip",
+      "bytes": 8140827,
+      "sha256": "BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC"
+    },
+    "evidence": {
+      "path": "evidence/LINUX_120_COMPAT_ACCEPTANCE_20261001.json",
+      "sha256": "298E36F0A88529BD17C74E99C75893F485C3D10B788D4FD02E32AB0CEB5D293A"
+    },
+    "networkArchitectureChangedFromAccepted110": false,
+    "deterministicCrossHost": true
+  },
+  "audits": {
+    "windowsContract": "PASS",
+    "linuxContract": "PASS"
+  },
+  "checksums": {
+    "path": "SHA256SUMS.txt",
+    "windowsMatch": true,
+    "linuxMatch": true
+  },
+  "releaseGate": "PUBLICATION_ONLY",
+  "limitations": [
+    "Windows installer is not Authenticode-signed.",
+    "Effectiveness may vary if network filtering behavior changes."
+  ]
+}
