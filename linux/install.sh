@@ -29,7 +29,7 @@ backend_matches_current() {
   python3 - /var/lib/directinternetmethod/install.json "$uid" <<'PY' >/dev/null 2>&1 || return 1
 import json,sys
 d=json.load(open(sys.argv[1],encoding="utf-8"))
-raise SystemExit(0 if d.get("version")=="1.1.0" and str(d.get("uid"))==sys.argv[2] else 1)
+raise SystemExit(0 if d.get("version")=="1.2.0" and str(d.get("uid"))==sys.argv[2] else 1)
 PY
   [ "$(cat /etc/directinternetmethod.uid 2>/dev/null || true)" = "$uid" ] || return 1
   for action in start stop recovery; do
@@ -52,7 +52,7 @@ EOF
 
 # Administrative authorization is required only when the protected backend is absent or differs.
 if backend_matches_current; then
-  echo "Protected backend 1.1.0 already matches current package; skipping admin authorization."
+  echo "Protected backend 1.2.0 already matches current package; skipping admin authorization."
 else
   pkexec /bin/bash "$HERE/system/install_system.sh" "$HERE" "$(id -u)"
 fi
@@ -112,7 +112,7 @@ import json,pathlib,sys,time
 pathlib.Path(sys.argv[1]).write_text(json.dumps({
   "schema":2,
   "product":"Direct Internet Method",
-  "version":"1.1.0",
+  "version":"1.2.0",
   "platform":"linux-x86_64",
   "installedUtc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
   "networkMutationOnInstall":False,
@@ -122,6 +122,6 @@ pathlib.Path(sys.argv[1]).write_text(json.dumps({
 },indent=2)+"\n")
 PY
 
-echo "Installed Direct Internet Method 1.1.0."
+echo "Installed Direct Internet Method 1.2.0."
 echo "Normal Start / Stop / Recovery do not require an admin password."
 echo "Install/update/uninstall of the protected backend may authenticate once."

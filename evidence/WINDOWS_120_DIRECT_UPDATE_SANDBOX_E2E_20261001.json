@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "status": "PASS_WINDOWS_1_2_DIRECT_UPDATE_SANDBOX_E2E",
+  "scope": "Fresh Windows Sandbox. Exact v1.2.0 installer; updater logic identical to production except test service LatestReleaseApi redirected to localhost mock endpoint. Production v1.2.0 service re-tested afterward against real GitHub latest.",
+  "artifact": {
+    "installer": "delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe",
+    "bytes": 157093296,
+    "sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
+    "guiSha256": "FAB82346A17DCF08FC7EC8E3C7859F87EC8228D0B5A33C6CC6BF2004D12A5D50",
+    "serviceSha256": "432740243AE381EAAAA6431B3404B8D3652DF62A103FFAAC4C6C943424F381FE",
+    "manifestSha256": "FA25433883B8D2FBE040951C14B375A32B201FDDEBFFFFC1D944E4BDC14C4C78"
+  },
+  "pre": {
+    "serviceVersion": "1.1.0 test build",
+    "installLocation": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Programs\\DirectInternetMethod\\",
+    "networkState": false,
+    "mockLatestHttp": 200
+  },
+  "unprivilegedTrigger": {
+    "method": "runas /trustlevel:0x20000 restricted token; BUILTIN\\Administrators deny-only",
+    "scControl": 131,
+    "controlRc": 0
+  },
+  "update": {
+    "handoff": {
+      "phase": "handoff",
+      "exitCode": 0,
+      "message": "Verified v1.2.0; installing directly without UAC."
+    },
+    "final": {
+      "phase": "done",
+      "exitCode": 0,
+      "message": "Updated to v1.2.0."
+    },
+    "downloadedSha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
+    "downloadedBytes": 157093296,
+    "pendingExists": false
+  },
+  "post": {
+    "registryVersion": "1.2.0",
+    "installLocation": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\Programs\\DirectInternetMethod\\",
+    "serviceVersion": "1.2.0",
+    "serviceSha256": "432740243AE381EAAAA6431B3404B8D3652DF62A103FFAAC4C6C943424F381FE",
+    "guiVersion": "1.2.0",
+    "guiSha256": "FAB82346A17DCF08FC7EC8E3C7859F87EC8228D0B5A33C6CC6BF2004D12A5D50",
+    "manifestVersion": "1.2.0",
+    "manifestSha256": "FA25433883B8D2FBE040951C14B375A32B201FDDEBFFFFC1D944E4BDC14C4C78",
+    "directStateExists": false,
+    "winwsCount": 0,
+    "ulaCount": 0,
+    "ownedNrptCount": 0,
+    "broadRouteCount": 0,
+    "ctrld": {
+      "state": "Stopped",
+      "pid": 0,
+      "startMode": "Manual"
+    }
+  },
+  "productionServiceRegression": {
+    "control131FromRestrictedUserRc": 0,
+    "realGitHubLatestResult": {
+      "phase": "done",
+      "exitCode": 0,
+      "message": "Already up to date."
+    }
+  },
+  "failuresConvertedToRegression": [
+    "CTRL_UPDATE constant existed without Handler case -> contract now requires case CTRL_UPDATE and Task.Run(RunUpdateAsync).",
+    "HttpClient release-asset body stalled in Sandbox while API/checksum succeeded -> Windows system curl.exe used only as transport; trust remains independent dual SHA-256 gate.",
+    "LocalSystem updater could otherwise install user payload under system profile -> updater requires registered HKLM InstallLocation, validates expected user app/manifest, and passes explicit /DIR.",
+    "Initial identity validator serialized a large PowerShell object -> scalar bounded validator used; product outcome unaffected."
+  ],
+  "limitations": [
+    "v1.2.0 is not published yet; GitHub v1.1.0 remains the public release.",
+    "Existing v1.1.0 Windows installations require one privileged upgrade to v1.2.0 because v1.1.0 does not contain update control 131.",
+    "Installer is not Authenticode-signed."
+  ]
+}

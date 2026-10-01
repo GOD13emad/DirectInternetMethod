@@ -1,11 +1,17 @@
 {
   "schema": 2,
   "product": "Direct Internet Method",
-  "version": "1.1.0",
-  "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend",
+  "version": "1.2.0",
+  "architecture": "Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend; owned ctrld SCM service + Loopback ULA + DoH + NRPT + zapret/WinDivert; service-mediated verified direct updater",
   "offlineRuntime": true,
   "normalRunRequiresAdmin": false,
   "installOrPrivilegedUpgradeRequiresAdmin": true,
+  "directUpdate": {
+    "transport": "GitHub latest release HTTPS",
+    "privilegeModel": "DirectInternetMethodSvc performs download/verification/installer handoff",
+    "userUacRequired": false,
+    "integrity": "GitHub asset SHA-256 digest must equal SHA256SUMS.txt and downloaded installer SHA-256"
+  },
   "bundledPowerShellVersion": "7.6.6",
   "bundledPowerShellArchiveSha256": "02FE458BE20493FBDF43F61EA20610B811EE6C738AB1676C61B9CFCD1A33C860",
   "files": [
@@ -14,7 +20,7 @@
       "file": "app/DirectInternetMethod.exe",
       "source": "app/DirectInternetMethod.exe",
       "bytes": 161778760,
-      "sha256": "9A9F293DE2EDD23B4CE8EEABF82DAD3B24E4207F47DE034E980601C3B8C5BE01"
+      "sha256": "FAB82346A17DCF08FC7EC8E3C7859F87EC8228D0B5A33C6CC6BF2004D12A5D50"
     },
     {
       "scope": "user",
@@ -27,57 +33,57 @@
       "scope": "user",
       "file": "app/Status.ps1",
       "source": "app/Status.ps1",
-      "bytes": 6226,
-      "sha256": "744BC96C36AE80B729DC821638A773147FA1FE9FA6C12696EDC48D14FA16CC1A"
+      "bytes": 6394,
+      "sha256": "EC4B00233C1A0BD462D7AD674E54254F02BF462A6D3D53ACED47888CEE4A3447"
     },
     {
       "scope": "user",
       "file": "docs/README-FA.md",
       "source": "docs/README-FA.md",
-      "bytes": 2156,
-      "sha256": "1C4860A4ED2EA501B25BD05ABC0A25727637FD377C11C879C094F9571BCB36FD"
+      "bytes": 2191,
+      "sha256": "81C4242367FB6E15EBB2E03F0B4424EFD173091A46FE724AAEB1E9F22DD1B491"
     },
     {
       "scope": "user",
       "file": "docs/ARCHITECTURE.md",
       "source": "docs/ARCHITECTURE.md",
-      "bytes": 1820,
-      "sha256": "F2B7B49A5545AF6A82F1696340A76E2D3047B782B63585EF102E5B5AEAA58569"
+      "bytes": 1863,
+      "sha256": "E4AC239D27A060B5CA0EF55C46B99FC9196725B44E07AB16F67C35E162C86BB8"
     },
     {
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 1549,
-      "sha256": "70F16928211852A2DF83CD3869E02B551C46B5AFBF4A110661B2BAFA75AE2703"
+      "bytes": 1871,
+      "sha256": "8971E829505F3690D5A17B85A60084D29A4D17A6EB609853AF3395D01C5F25DC"
     },
     {
       "scope": "privileged",
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
-      "bytes": 67568333,
-      "sha256": "F1BF7D8FC5A7F1DEF093CC635A4B5204882418A755ADFBF6774685DC58037F68"
+      "bytes": 67588813,
+      "sha256": "432740243AE381EAAAA6431B3404B8D3652DF62A103FFAAC4C6C943424F381FE"
     },
     {
       "scope": "privileged",
       "file": "app/Start-Direct.ps1",
       "source": "app/Start-Direct.ps1",
-      "bytes": 18410,
-      "sha256": "44CBC85C243B33B115E3187DFAD2088D06B986D60A3BA7C5C6CDC5DA35587464"
+      "bytes": 18793,
+      "sha256": "A9AB5ACD9891459305A858C8903D729C32E4DFFD24A83B4B308D6E94B98ACD24"
     },
     {
       "scope": "privileged",
       "file": "app/Stop-Direct.ps1",
       "source": "app/Stop-Direct.ps1",
-      "bytes": 10197,
-      "sha256": "96F129F89563E1F2F18A7C135442CD350D5A557E2CEFEDC12A76FA99A18045A2"
+      "bytes": 10426,
+      "sha256": "4E113237768506F940870CA7550EB3DD6A1B41C51879DD01D944A5E77BD96327"
     },
     {
       "scope": "privileged",
       "file": "app/Recovery.ps1",
       "source": "app/Recovery.ps1",
-      "bytes": 6039,
-      "sha256": "6B3A5A21F105FDC03A14F839BC07406BA8BD59A8B5BB8F1E32A4B4B5CF1E2F2E"
+      "bytes": 6157,
+      "sha256": "A406F1B23EF95C77C6B2FB4ECDB6337E582AB06D9A7927DEB31E916F06C870E1"
     },
     {
       "scope": "privileged",

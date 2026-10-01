@@ -1,5 +1,5 @@
 #define MyAppName "Direct Internet Method"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "Direct Internet Method"
 #define MyAppExeName "DirectInternetMethod.exe"
 
@@ -13,7 +13,7 @@ UsePreviousAppDir=yes
 DefaultGroupName=Direct Internet Method
 DisableProgramGroupPage=yes
 OutputDir=..\..\delivery
-OutputBaseFilename=DirectInternetMethod_1.1.0_Windows_Setup
+OutputBaseFilename=DirectInternetMethod_1.2.0_Windows_Setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -227,12 +227,36 @@ begin
   Result := '';
 end;
 
+procedure CompletePendingDirectUpdate();
+var
+  PendingPath: String;
+  StatusPath: String;
+  TempPath: String;
+  Payload: String;
+begin
+  PendingPath := ExpandConstant('{commonappdata}\DirectInternetMethod\pending-update.json');
+  if not FileExists(PendingPath) then
+    exit;
+
+  StatusPath := ExpandConstant('{commonappdata}\DirectInternetMethod\action-status.json');
+  TempPath := StatusPath + '.tmp';
+  Payload := '{"schema":1,"action":"update","phase":"done","exitCode":0,"message":"Updated to v{#MyAppVersion}.","updatedUtc":"installer-postinstall"}';
+  if not SaveStringToFile(TempPath, Payload, False) then
+    RaiseException('Unable to write direct-update completion status.');
+  if FileExists(StatusPath) then
+    DeleteFile(StatusPath);
+  if not RenameFile(TempPath, StatusPath) then
+    RaiseException('Unable to promote direct-update completion status.');
+  DeleteFile(PendingPath);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
     InstallOrUpdateCtrldService();
     InstallOrUpdateService();
+    CompletePendingDirectUpdate();
   end;
 end;
 

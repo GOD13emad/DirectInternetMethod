@@ -35,14 +35,21 @@ for scope,src,dst in FILES:
  p=W/src
  if not p.is_file(): raise SystemExit("MISSING:"+src)
  rows.append({"scope":scope,"file":dst,"source":src,"bytes":p.stat().st_size,"sha256":h(p)})
+release=json.loads((W/"RELEASE.json").read_text(encoding="utf-8-sig"))
 m={
  "schema":2,
  "product":"Direct Internet Method",
- "version":"1.1.0",
- "architecture":"Native WPF UI + fixed-command Windows service + bundled protected PowerShell 7.6.6 backend",
+ "version":release["version"],
+ "architecture":release["architecture"],
  "offlineRuntime":True,
  "normalRunRequiresAdmin":False,
  "installOrPrivilegedUpgradeRequiresAdmin":True,
+ "directUpdate":{
+   "transport":"GitHub latest release HTTPS",
+   "privilegeModel":"DirectInternetMethodSvc performs download/verification/installer handoff",
+   "userUacRequired":False,
+   "integrity":"GitHub asset SHA-256 digest must equal SHA256SUMS.txt and downloaded installer SHA-256"
+ },
  "bundledPowerShellVersion":"7.6.6",
  "bundledPowerShellArchiveSha256":"02FE458BE20493FBDF43F61EA20610B811EE6C738AB1676C61B9CFCD1A33C860",
  "files":rows

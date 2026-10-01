@@ -205,7 +205,7 @@ public partial class MainWindow : Window
                     var actual = root.TryGetProperty("action", out var ae) ? ae.GetString() ?? "" : "";
                     var phase = root.TryGetProperty("phase", out var pe) ? pe.GetString() ?? "" : "";
                     if (actual.Equals(action, StringComparison.OrdinalIgnoreCase) &&
-                        phase is "done" or "error" or "busy")
+                        phase is "done" or "error" or "busy" or "handoff")
                     {
                         int? exit = root.TryGetProperty("exitCode", out var ee) && ee.ValueKind == JsonValueKind.Number ? ee.GetInt32() : null;
                         var message = root.TryGetProperty("message", out var me) ? me.GetString() ?? "" : "";
@@ -296,11 +296,41 @@ public partial class MainWindow : Window
 
         try
         {
-            SetBusy(true, $"Downloading v{availableUpdate.Version}…");
-            var installer = await UpdateClient.DownloadVerifiedAsync(availableUpdate);
-            HealthText.Text = "Update verified; opening installer";
-            UpdateClient.LaunchInstaller(installer);
-            Close();
+            SetBusy(true, $"Preparing direct update to v{availableUpdate.Version}…");
+
+            var recoveryWrite = File.Exists(actionStatusPath) ? File.GetLastWriteTimeUtc(actionStatusPath) : DateTime.MinValue;
+            ServiceClient.Send("recovery");
+            var recovery = await WaitForActionAsync("recovery", recoveryWrite);
+            if (recovery.Phase != "done" || recovery.ExitCode != 0)
+                throw new InvalidOperationException(string.IsNullOrWhiteSpace(recovery.Message)
+                    ? "Unable to prepare a clean OFF state for update."
+                    : recovery.Message);
+
+            HealthText.Text = $"Downloading and verifying v{availableUpdate.Version}…";
+            var updateWrite = File.Exists(actionStatusPath) ? File.GetLastWriteTimeUtc(actionStatusPath) : DateTime.MinValue;
+            ServiceClient.Send("update");
+            var result = await WaitForActionAsync("update", updateWrite, 300000);
+
+            if (result.Phase == "handoff" && result.ExitCode == 0)
+            {
+                HealthText.Text = result.Message;
+                await Task.Delay(600);
+                Close();
+                return;
+            }
+
+            if (result.Phase == "done" && result.ExitCode == 0)
+            {
+                availableUpdate = null;
+                HealthText.Text = result.Message;
+                UpdateButton.Content = "Up to date";
+                SetBusy(false, "");
+                return;
+            }
+
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(result.Message)
+                ? $"Direct update failed ({result.ExitCode?.ToString() ?? result.Phase})."
+                : result.Message);
         }
         catch (Exception ex)
         {

@@ -2,8 +2,8 @@
 from __future__ import annotations
 import hashlib,json,pathlib,zipfile,tempfile,os
 R=pathlib.Path(__file__).resolve().parent
-OUT=R/"delivery"/"DirectInternetMethod_1.1.0_Linux_x86_64.zip"
-ROOT="DirectInternetMethod_1.1.0_Linux_x86_64"
+OUT=R/"delivery"/"DirectInternetMethod_1.2.0_Linux_x86_64.zip"
+ROOT="DirectInternetMethod_1.2.0_Linux_x86_64"
 FILES=[
  ("README.md","README.md"),
  ("linux/install.sh","install.sh"),
@@ -26,7 +26,7 @@ for src,dst in FILES:
  p=R/src
  if not p.is_file(): raise SystemExit("MISSING:"+src)
  rows.append({"file":dst,"bytes":p.stat().st_size,"sha256":sha(p)})
-manifest={"schema":1,"product":"Direct Internet Method","version":"1.1.0","platform":"linux-x86_64","files":rows}
+manifest={"schema":1,"product":"Direct Internet Method","version":"1.2.0","platform":"linux-x86_64","files":rows}
 OUT.parent.mkdir(parents=True,exist_ok=True)
 fd,tmp_name=tempfile.mkstemp(prefix="dim-build-",suffix=".zip",dir=OUT.parent)
 os.close(fd)

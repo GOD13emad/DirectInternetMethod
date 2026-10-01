@@ -12,6 +12,7 @@ internal static class ServiceClient
     const uint CTRL_START = 128;
     const uint CTRL_STOP = 129;
     const uint CTRL_RECOVERY = 130;
+    const uint CTRL_UPDATE = 131;
 
     [StructLayout(LayoutKind.Sequential)]
     struct SERVICE_STATUS
@@ -44,6 +45,7 @@ internal static class ServiceClient
             "start" => CTRL_START,
             "stop" => CTRL_STOP,
             "recovery" => CTRL_RECOVERY,
+            "update" => CTRL_UPDATE,
             _ => throw new ArgumentOutOfRangeException(nameof(action))
         };
 

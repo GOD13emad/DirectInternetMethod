@@ -1,6 +1,6 @@
 # PROJECT BRAIN — Direct Internet Method
 
-Status: FINAL_PUBLISHED_VERIFIED_1_1_0
+Status: WINDOWS_1_2_DIRECT_UPDATE_SANDBOX_PASS_HOST_UPGRADE_OPEN
 Final Objective: standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery must not require administrator authorization.
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
@@ -33,16 +33,13 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - `SHA256SUMS.txt` contains the exact final Windows/Linux artifact hashes.
 
 ## Roadmap
-Completed: v1.0.0 Windows/Linux final release and publication.
-Completed: Windows 1.1.0 native WPF + privilege-separated service + bundled PowerShell 7.6.6.
-Completed: Windows owned demand-start ctrld SCM lifecycle, collision guard, completion/timeout regression.
-Completed: Windows fresh Sandbox normal-user Start/Stop/Recovery acceptance.
-Completed: Windows real-host final-artifact install/ACTIVE/Stop/exact rollback/Recovery acceptance.
-Completed: Linux protected backend, no-admin actions, live network, rollback/recovery, deterministic build.
-Completed: release docs/metadata reconciled to 1.1.0 and final Windows installer rebuilt/tested.
-Completed: cross-platform final acceptance + SHA256SUMS.
-Completed: main/tag `v1.1.0` + GitHub release assets + latest endpoint + full downloaded SHA-256 update verification.
-← CURRENT: no release blocker remains; maintenance/compatibility monitoring only.
+Completed: v1.0.0 and v1.1.0 Windows/Linux final releases and publication.
+Completed: v1.1.0 Windows/Linux live lifecycle, rollback/recovery, deterministic Linux build and published updater verification.
+Completed: v1.2.0 Windows service-mediated direct updater implementation: SCM control 131, clean-OFF gate, GitHub latest release, triple SHA-256 agreement, atomic download, registered-install-path preservation, silent installer handoff, installer completion marker.
+Completed: Windows v1.2.0 Sandbox E2E direct-update acceptance from restricted user; exact candidate install and installed payload hash verification PASS.
+Completed: Linux v1.2.0 compatibility/version package; contract audits PASS on Windows/Linux and deterministic cross-host ZIP reproduction PASS.
+← CURRENT: exact Windows v1.2.0 candidate host install + Start/Stop/Recovery/direct-update-control regression.
+Open release gate: publish/tag v1.2.0 only after host Windows exact artifact PASS.
 Deferred: trusted Authenticode signing.
 
 ## Failure → Root Cause → Prevention → Regression
@@ -59,6 +56,10 @@ Deferred: trusted Authenticode signing.
 11. Host validator could not read SYSTEM `Process.Path` as normal user → validate ctrld service ImagePath/PID/listeners + privileged runtime evidence; harness regression PASS.
 12. Host validator boolean-array aggregation produced false-negative → named boolean map; all active checks PASS.
 13. Rollback validator compared different default-route schemas → normalize route fields; exact rollback PASS.
+14. Windows update control 131 constant/client mapping initially existed without a service Handler case → add explicit `case CTRL_UPDATE` and regression requiring `Task.Run(RunUpdateAsync)`; Sandbox regression PASS.
+15. LocalSystem updater could otherwise install user payload into SYSTEM profile → resolve all-users Inno Setup `InstallLocation` from HKLM, require expected app/manifest, and pass explicit `/DIR`; Sandbox path-preservation PASS.
+16. Update completion originally depended on target service startup → installer now writes `action-status=done/0` and deletes pending marker at post-install; fresh Sandbox seeded-pending regression PASS.
+17. Linux v1.2 deterministic package initially mismatched due stale non-Git Linux workspace inputs → reconcile package inputs from Git-controlled authority; Windows/Linux ZIP hash now identical.
 All three validator failures were harness defects; product runtime remained healthy and their failing evidence is preserved.
 
 ## Evidence / Knowledge
@@ -77,12 +78,17 @@ All three validator failures were harness defects; product runtime remained heal
 - Published update-flow verification: `evidence/DIM_110_GITHUB_PUBLICATION_VERIFY_20261001.json` — SHA-256 `461A4CD7C270F18F1E4B732A6AF308BD6B23FFDA2D2AA003AED2C89ADC8CE130`.
 - Additional host exact-rollback revalidation: `evidence/WINDOWS_110_HOST_LIVE_POSTROLLBACK_20261001.json` — SHA-256 `DFB518795599780DBF960791B4ED3F435F77CD2C5C0816B5006210ABAB74B566`.
 - Post-final transient custom Start observation: `evidence/WINDOWS_110_POSTFINAL_REACTIVATION_20261001.json` — SHA-256 `84AF92E5DA8DF1FEA549D57B9687950C3BAFC1E12DDFA4A7FE72AB16D55BF142`; source attribution UNPROVEN, not classified as product auto-start defect.
+- Windows 1.2 direct-update Sandbox E2E: `evidence/WINDOWS_120_DIRECT_UPDATE_SANDBOX_E2E_20261001.json` — SHA-256 `8A79264D3FA588F9B5F6896110B3DBDD90207433093CC09E92DF8DE0819026CB`; restricted-user control 131, dual SHA-256 verification, exact v1.2 installer, done/0, exact installed payload identity, preserved user install path, and zero DIM network residue.
 - Final clean-state stabilization: `evidence/DIM_110_FINAL_CLEAN_STATE_20261001.json` — SHA-256 `7751A356EF1FFB00BEC0C20E594A12534068D8EA9980964D094A7E90E1584788`; Stop/Recovery done/0, state absent, ctrld stopped, winws/ULA/owned NRPT zero.
+- Windows v1.2 direct-update Sandbox acceptance: `evidence/WINDOWS_120_DIRECT_UPDATE_ACCEPTANCE_20261001.json` — SHA-256 `F2DDB33F715EFDB98FD96F6E2F6C69C6E254241847C417A9680407F5238041FC`.
+- Linux v1.2 compatibility/deterministic acceptance: `evidence/LINUX_120_COMPAT_ACCEPTANCE_20261001.json` — SHA-256 `298E36F0A88529BD17C74E99C75893F485C3D10B788D4FD02E32AB0CEB5D293A`.
+- Windows v1.2 candidate: `delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe`, 157,093,296 bytes, SHA-256 `E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1`; GUI `FAB82346…`, service `43274024…`, manifest `FA254338…`.
+- Linux v1.2 candidate: `delivery/DirectInternetMethod_1.2.0_Linux_x86_64.zip`, 8,140,827 bytes, SHA-256 `BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC`; identical on Windows and Linux.
 - Candidate-cycle evidence was copied to immutable `WINDOWS_110_HOST_CANDIDATE_*` records before final-artifact retest.
 - Earlier stale parallel hashes `D6AF…/A011…/5AEF…` are superseded and must not be used as release authority.
 
 ## Exact Next Action
-No release-critical action remains. Keep v1.1.0 immutable; future changes require a new version. Optional deferred work: Authenticode signing when trusted signing credentials are available.
+Install the exact v1.2.0 Windows candidate on the real Windows host; verify installed payload hashes, normal-user Start/Stop/Recovery, ACTIVE DNS/HTTPS invariants, exact rollback, and control 131 behavior. If PASS, promote branch to main, tag/release v1.2.0 with both Windows/Linux assets + SHA256SUMS, verify /releases/latest and downloaded hashes, then leave host in clean OFF state.
 
 ## HISTORY
 - 2026-09-29: v1.0.0 Windows and Linux PASS_FINAL_RELEASE; GitHub v1.0.0 published and verified.
@@ -111,3 +117,8 @@ No release-critical action remains. Keep v1.1.0 immutable; future changes requir
 - 2026-10-01: GitHub v1.1.0 publication verified end-to-end. `/releases/latest` returned v1.1.0; Windows and Linux release assets were downloaded and matched published `SHA256SUMS.txt` exactly. Release state promoted to FINAL/PUBLISHED_VERIFIED.
 
 - 2026-10-01: one unattributed custom Start control appeared after release verification; it completed normally. Stop/Recovery restored clean OFF state and no recurrence was observed during the final stabilization window. No product auto-start defect was proven.
+
+- 2026-10-01: v1.2 Windows service-mediated direct updater implemented and Sandbox E2E accepted. Restricted user control 131 rc=0; verified public release download/install path exercised; fresh v1.2 installer wrote completion done/0 and preserved registered user install location.
+- 2026-10-01: Linux v1.2 compatibility package rebuilt from Git-controlled source; stale Linux workspace drift reconciled; Windows/Linux deterministic ZIP hash matched at BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC.
+
+- 2026-10-01: Windows v1.2 direct updater reached Sandbox E2E PASS. A restricted user triggered control 131; exact v1.2.0 installer was verified and installed silently by the privileged service; completion returned done/0; exact GUI/service/manifest hashes matched; network state remained clean. Production v1.2 service then returned Already up to date/done0 from the same restricted control against real GitHub latest.

@@ -1,37 +1,44 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.1.0",
-  "date": "2026-09-30",
-  "status": "PASS_FINAL_RELEASE_PUBLISHED_VERIFIED",
+  "version": "1.2.0",
+  "date": "2026-10-01",
+  "status": "CANDIDATE_HOST_GATE",
   "platforms": {
     "windows": {
-      "status": "PASS_FINAL_RELEASE",
-      "artifact": "delivery/DirectInternetMethod_1.1.0_Windows_Setup.exe",
-      "sha256": "E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0",
-      "bytes": 157078634,
+      "status": "PASS_SANDBOX_DIRECT_UPDATE_HOST_GATE_OPEN",
+      "artifact": "delivery/DirectInternetMethod_1.2.0_Windows_Setup.exe",
+      "sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
+      "bytes": 157093296,
       "sandboxAcceptance": "PASS",
-      "hostAcceptance": "PASS",
-      "rollback": "PASS",
-      "recovery": "PASS",
+      "directUpdateSandbox": "PASS",
+      "hostAcceptance": "UNPROVEN_1_2_0",
+      "rollback": "Inherited from 1.1 core; host 1.2 retest pending",
+      "recovery": "Inherited from 1.1 core; host 1.2 retest pending",
       "normalRunRequiresAdmin": false,
+      "normalOnlineUpdateRequiresAdmin": false,
       "authenticode": "NotSigned"
     },
     "linux": {
-      "status": "PASS_FINAL_RELEASE",
-      "artifact": "delivery/DirectInternetMethod_1.1.0_Linux_x86_64.zip",
-      "sha256": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
-      "bytes": 8139344,
-      "liveAcceptance": "PASS",
-      "rollback": "PASS",
-      "recovery": "PASS",
-      "normalRunRequiresAdmin": false,
-      "deterministicBuild": "PASS"
+      "status": "PASS_COMPAT_DETERMINISTIC",
+      "artifact": "delivery/DirectInternetMethod_1.2.0_Linux_x86_64.zip",
+      "sha256": "BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC",
+      "bytes": 8140827,
+      "liveAcceptance": "Inherited unchanged network architecture from accepted 1.1.0",
+      "contractAudit": "PASS_WINDOWS_AND_LINUX",
+      "deterministicBuild": "PASS_CROSS_HOST",
+      "normalRunRequiresAdmin": false
     }
   },
   "architecture": {
-    "windows": "Native WPF + fixed-command Windows service + bundled PowerShell 7.6.6 + owned demand-start ctrld + Loopback ULA/NRPT + zapret/WinDivert",
+    "windows": "Native WPF + fixed-command Windows service + bundled PowerShell 7.6.6 + owned demand-start ctrld + Loopback ULA/NRPT + zapret/WinDivert + service-mediated verified direct updater",
     "linux": "GTK/Adwaita + protected backend + ctrld/systemd-resolved + nftables/NFQUEUE + nfqws"
+  },
+  "directUpdate": {
+    "windows": "SCM control 131 -> LocalSystem service -> GitHub latest -> GitHub digest == SHA256SUMS == file SHA256 -> silent Inno Setup /DIR registered install path -> installer completion marker",
+    "windowsNormalUserUac": false,
+    "initialTransitionFrom110": "One privileged 1.2.0 install is required because v1.1.0 predates the service-mediated updater.",
+    "linux": "Existing verified GitHub latest + SHA256SUMS flow"
   },
   "independence": {
     "freeNetHub": false,
@@ -42,14 +49,12 @@
   },
   "github": {
     "repo": "GOD13emad/DirectInternetMethod",
-    "tag": "v1.1.0",
-    "status": "PUBLISHED_VERIFIED",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.1.0",
-    "publishedAt": "2026-09-30T19:51:47Z",
-    "updateFlow": "PASS_PUBLISHED_UPDATE_FLOW"
+    "tag": "v1.2.0",
+    "status": "NOT_PUBLISHED_HOST_GATE_OPEN"
   },
   "limitations": [
     "Windows installer is not Authenticode-signed.",
+    "The one-time transition from Windows v1.1.0 to v1.2.0 may require UAC; later in-app updates are designed to require no UAC.",
     "Effectiveness may vary if network filtering behavior changes."
   ]
 }

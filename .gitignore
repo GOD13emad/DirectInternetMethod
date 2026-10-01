@@ -25,3 +25,4 @@ evidence/v-*.err
 evidence/v-*.out
 tests/_*.ps1
 evidence/WINDOWS_UI_LIVE.png
+delivery/DirectInternetMethod_1.2.0_*
