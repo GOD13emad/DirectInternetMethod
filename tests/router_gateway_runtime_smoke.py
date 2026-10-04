@@ -2,7 +2,7 @@
 from __future__ import annotations
 import importlib.util, json, pathlib, queue, socket, sys, threading
 R=pathlib.Path(__file__).resolve().parents[1]
-mod_path=R/"linux/app/router_gateway.py"
+mod_path=R/"linux/app/router_gateway_core.py"
 spec=importlib.util.spec_from_file_location("router_gateway_smoke",mod_path)
 rg=importlib.util.module_from_spec(spec);spec.loader.exec_module(rg)
 rg.DATA_PATH=R/"router_gateway/providers.json"
