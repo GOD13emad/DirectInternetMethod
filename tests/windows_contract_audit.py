@@ -7,7 +7,7 @@ def txt(rel): return (W/rel).read_text(encoding="utf-8-sig")
 start,stop,recovery,status,iss=map(txt,["app/Start-Direct.ps1","app/Stop-Direct.ps1","app/Recovery.ps1","app/Status.ps1","installer/DirectInternetMethod.iss"])
 gui=txt("gui/MainWindow.xaml.cs"); xaml=txt("gui/MainWindow.xaml")
 svc=txt("service/Program.cs"); client=txt("gui/ServiceClient.cs"); updater=txt("gui/UpdateClient.cs")
-manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml")
+manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt")
 D={"schema":2,"status":"PASS","checks":{},"hashes":{}}
 def check(name,cond):
     D["checks"][name]=bool(cond)
@@ -53,6 +53,10 @@ check("ui_vector_hero", "<Viewbox" in xaml and "زن زندگی آزادی" in x
 check("ui_preferred_startup_size_1289x632", 'Width="1289"' in xaml and 'Height="632"' in xaml and 'SizeToContent="Manual"' in xaml)
 check("ui_layout_rounding", 'UseLayoutRounding="True"' in xaml and 'SnapsToDevicePixels="True"' in xaml)
 check("ui_footer_responsive_no_stack_overflow", '<WrapPanel Orientation="Horizontal">' in xaml and 'TextWrapping="Wrap"' in xaml and '<ColumnDefinition Width="360"/>' in xaml)
+check("target_hostlist_scope", all(x in hostlist.splitlines() for x in ("^gemini.google.com","pornhub.com","phncdn.com")))
+check("ui_gemini_adult_live_checks", all(x in xaml for x in ('Text="Gemini"','Text="Adult site"','x:Name="AdultSiteCheckToggle"','x:Name="GeminiText"','x:Name="AdultSiteText"')) and "pornhub" not in xaml.lower())
+check("ui_adult_check_default_off_persisted", all(x in gui for x in ("adultSiteLiveCheck","settings.json","AdultSiteCheckToggle_Changed")) and "bool adultCheckEnabled;" in gui)
+check("ui_live_probe_semantics", "REACHABLE" in gui and 'https://gemini.google.com/' in gui and 'https://www.pornhub.com/' in gui and "adultTask is not null" in gui)
 check("ui_direct_update_service_handoff", 'ServiceClient.Send("update")' in gui and 'ServiceClient.Send("recovery")' in gui and '"handoff"' in gui and "300000" in gui and "DownloadVerifiedAsync" not in gui and "LaunchInstaller" not in gui)
 check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "digest" in updater and "SHA256SUMS.txt" in updater and "DownloadVerifiedAsync" not in updater and "Process.Start" not in updater)
 
@@ -86,7 +90,7 @@ check("installer_bundled_pwsh", '..\\vendor\\pwsh\\*' in iss and 'Privileged\\ru
 check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Recovery did not complete" in iss)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.4.0")
+check("manifest_version", manifest.get("version")=="1.5.0")
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)

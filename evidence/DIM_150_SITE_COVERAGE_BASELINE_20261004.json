@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "date": "2026-10-04",
+  "project": "Direct Internet Method",
+  "targetVersion": "1.5.0",
+  "changeObjective": "Expand bounded non-VPN/non-proxy Direct Method coverage for Gemini and an optional adult-site live check, while preserving hostlist scoping, rollback and no-default-route/no-proxy invariants.",
+  "status": "DEVELOPMENT_IMPLEMENTED_PENDING_FULL_LIVE_PROMOTION",
+  "baseline": {
+    "host": "aliemad-Labtop",
+    "directMethodOff": {
+      "gemini": {
+        "url": "https://gemini.google.com/",
+        "httpCode": 403,
+        "remoteIp": "142.251.156.2",
+        "tlsVerify": 0,
+        "totalSeconds": 0.361568,
+        "classification": "NETWORK_REACHABLE_APPLICATION_FORBIDDEN"
+      },
+      "adultSite": {
+        "url": "https://www.pornhub.com/",
+        "curlExit": 28,
+        "stage": "TCP_CONNECT_TIMEOUT",
+        "classification": "TRANSPORT_BLOCKED_OR_UNREACHABLE"
+      }
+    },
+    "v140DirectMethodActive": {
+      "gemini": {
+        "httpCode": 403,
+        "remoteIp": "142.251.151.2",
+        "classification": "NETWORK_REACHABLE_APPLICATION_FORBIDDEN_UNCHANGED"
+      },
+      "adultSite": {
+        "curlExit": 28,
+        "remoteIp": "66.254.114.41",
+        "stage": "TLS_CONNECTION_TIMEOUT",
+        "classification": "CURRENT_HOSTLIST_DID_NOT_APPLY_TARGETED_TLS_DESYNC"
+      }
+    },
+    "currentBuiltInHostlist": [
+      "youtube.com",
+      "youtube-nocookie.com",
+      "youtu.be",
+      "googlevideo.com",
+      "ytimg.com",
+      "youtubei.googleapis.com"
+    ]
+  },
+  "evidenceFirstRationale": [
+    {
+      "claim": "zapret --hostlist applies DPI desync only to listed hosts and subdomains are automatically included unless the entry is prefixed with ^.",
+      "source": "https://github.com/bol-van/zapret/blob/master/docs/readme.en.md",
+      "status": "CONFIRMED_OFFICIAL"
+    },
+    {
+      "claim": "zapret supports auto-hostlist, but it requires broader failure detection/incoming traffic handling; it is not promoted in this change set because explicit host-scoped coverage is simpler and sufficient for the concrete failing target unless testing proves otherwise.",
+      "source": "https://github.com/bol-van/zapret/blob/master/docs/readme.en.md",
+      "status": "CONFIRMED_OFFICIAL_PROPORTIONAL_RIGOR_DECISION"
+    },
+    {
+      "claim": "Gemini web app is officially available in Azerbaijan; a curl HTTP 403 demonstrates reachability but does not prove browser usability or a network block.",
+      "source": "https://support.google.com/gemini/answer/13575153",
+      "status": "CONFIRMED_OFFICIAL"
+    }
+  ],
+  "plannedMutation": {
+    "builtInHostlistAdditions": [
+      "^gemini.google.com",
+      "pornhub.com",
+      "phncdn.com"
+    ],
+    "windowsLiveChecks": [
+      "YouTube",
+      "OpenAI",
+      "GitHub",
+      "Gemini",
+      "Adult site (toggleable, default off)"
+    ],
+    "linuxLiveChecks": [
+      "Gemini",
+      "Adult site (toggleable, default off)"
+    ],
+    "semantics": "2xx/3xx = PASS; successful HTTP transport with non-success status such as 403 = REACHABLE but not PASS; curl/network failure = FAIL.",
+    "adultUiPrivacy": "UI label is Adult site; explicit domain is not displayed in the application UI.",
+    "startGate": "Gemini/adult checks are diagnostics only and do not cause Start rollback; existing core YouTube/OpenAI/GitHub live gate remains authoritative."
+  },
+  "invariants": [
+    "No VPN",
+    "No HTTP/SOCKS application proxy",
+    "No default-route tunnel",
+    "No physical-adapter DNS mutation",
+    "DPI handling remains hostlist-scoped",
+    "Adult live check is user-toggleable and defaults off"
+  ],
+  "exactNextAction": "Rebuild final Windows installer/Linux ZIP from current v1.5 source, validate in Windows Sandbox, push exact candidate for independent Linux rebuild, then close the one-time Linux protected-backend install/live-site gate before protected release.",
+  "implemented": {
+    "hostlistAdditions": [
+      "^gemini.google.com",
+      "pornhub.com",
+      "phncdn.com"
+    ],
+    "windowsUi": {
+      "geminiLiveCheck": true,
+      "adultSiteLabelOnly": true,
+      "adultSiteToggleable": true,
+      "adultSiteDefaultOff": true,
+      "perUserPersistence": true,
+      "dynamicUiAudit": "PASS_1289x632_NO_OVERLAP",
+      "dynamicToggleAudit": "PASS_DEFAULT_OFF_ON_OFF_PERSIST_NO_BRAND_IN_UI"
+    },
+    "linuxUi": {
+      "geminiLiveCheck": true,
+      "adultSiteLabelOnly": true,
+      "adultSiteToggleable": true,
+      "adultSiteDefaultOff": true,
+      "perUserPersistence": true
+    },
+    "liveCheckSemantics": "PASS=allowed 2xx/3xx; REACHABLE=HTTP transport completed but application rejected/non-success; FAIL=transport failure",
+    "linuxUpdaterHardening": "exact-one expected Linux asset + exact-one SHA256SUMS + GitHub API digest == checksum file == downloaded ZIP",
+    "routerGatewayDiagnostics": "PPTP TCP/1723 control reachability explicitly does not prove GRE/auth; L2TP/IPsec generic TCP/443 fallback explicitly does not prove UDP 500/4500/authenticated tunnel"
+  },
+  "additionalDecisions": [
+    {
+      "date": "2026-10-04",
+      "claim": "Do not enable zapret auto-hostlist in v1.5.0 before explicit target live validation.",
+      "evidence": "Official zapret documentation states nfqws auto-hostlist requires both incoming and outgoing traffic redirection and recommends connbytes filtering to avoid processing large incoming traffic volumes.",
+      "source": "https://github.com/bol-van/zapret/blob/master/docs/readme.en.md",
+      "confidence": "CONFIRMED_OFFICIAL",
+      "status": "ACCEPTED_PROPORTIONAL_RIGOR",
+      "reuseTargets": [
+        "architecture",
+        "release notes",
+        "future adaptive-mode roadmap"
+      ]
+    },
+    {
+      "date": "2026-10-04",
+      "claim": "Linux updater uses three-way digest agreement before executing a downloaded update.",
+      "evidence": "GitHub release API supplies asset digest; v1.5 code requires API digest, SHA256SUMS entry and downloaded ZIP SHA-256 to match exactly.",
+      "confidence": "CONFIRMED_IMPLEMENTED_CONTRACT_PASS",
+      "status": "ACCEPTED",
+      "reuseTargets": [
+        "security",
+        "release governance",
+        "failure prevention"
+      ]
+    }
+  ]
+}

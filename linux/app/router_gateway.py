@@ -46,14 +46,17 @@ def _config(data,p,guide_id):
 
 def _test(p):
     host=_server(p)
-    port=1723 if str(p.get("protocol","")).startswith("PPTP") else 443
+    pptp=str(p.get("protocol","")).startswith("PPTP")
+    port=1723 if pptp else 443
     try:
         ip=socket.gethostbyname(host)
         if not ipaddress.ip_address(ip).is_global:
             return False,f"DNS intercepted/private address {ip}"
         s=socket.create_connection((ip,port),timeout=2.0)
         s.close()
-        return True,f"reachable TCP/{port} {ip}"
+        if pptp:
+            return True,f"PPTP control TCP/1723 reachable {ip}; GRE/authentication not verified"
+        return True,f"Generic endpoint TCP/443 reachable {ip}; L2TP/IPsec UDP 500/4500/authentication not verified"
     except Exception as e:
         return False,str(e)
 

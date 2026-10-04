@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "date": "2026-10-04",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "ENVIRONMENT_BLOCKED_NOT_PRODUCT_FAILURE",
+  "context": "Attempted installed-host isolation test using Windows Sandbox before release.",
+  "host": "Emad Windows host",
+  "sandbox": {
+    "executablePresent": true,
+    "remoteSessionProcess": "WindowsSandboxRemoteSession.exe",
+    "uiErrorTitle": "Error",
+    "uiError": "Windows Sandbox failed to initialize. Unexpected HRESULT has been returned from a call to a COM component.",
+    "hcsdiag": "Only SavedAsTemplate CmService VM was visible; no active sandbox VM entered a state usable by hcsdiag exec.",
+    "resultFileProduced": false
+  },
+  "productEvidenceUnaffected": [
+    "Final Windows payload build PASS",
+    "Windows contract audit PASS",
+    "Dynamic candidate GUI 1289x632 no-overlap PASS",
+    "Dynamic Adult site toggle default-off/on/off persistence PASS",
+    "Refresh physical mouse + keyboard PASS"
+  ],
+  "classification": "HOST_SANDBOX_INFRASTRUCTURE_BLOCKER",
+  "releaseImpact": "Does not invalidate source/payload evidence; installed Windows validation must move to the real installed-host/public-update gate after protected publication unless another isolated Windows host becomes available.",
+  "exactNextAction": "Use protected branch CI plus Linux cross-host/live acceptance before publication; after release, use the existing verified service updater to update the real Windows installation and perform final installed lifecycle/UI regression."
+}

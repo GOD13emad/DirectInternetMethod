@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "product": "Direct Internet Method",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + hostlist-scoped zapret/WinDivert multiprotocol direct engine",
   "offlineRuntime": true,
   "normalRunRequiresAdmin": false,
@@ -19,8 +19,8 @@
       "scope": "user",
       "file": "app/DirectInternetMethod.exe",
       "source": "app/DirectInternetMethod.exe",
-      "bytes": 161807432,
-      "sha256": "BF1E18CE478724EBD1464C03728C1180A2F4DF31CF4B4BB1AACBA5C62A1B354C"
+      "bytes": 161811528,
+      "sha256": "7B0AAFE9216471B59863EE94BD4E9EC9743B0BA78E313463D9BA77A45529C89D"
     },
     {
       "scope": "user",
@@ -41,7 +41,7 @@
       "file": "app/router_gateway/providers.json",
       "source": "../router_gateway/providers.json",
       "bytes": 6950,
-      "sha256": "E538058D4614F0418C1120BFE26E15420D5E0C266D32AB0A85E42AB41DD1C295"
+      "sha256": "E6FF8848FC9E251B14CE695360013ED1EA7D0DFDFF5F2D05D38D851CD015D5C0"
     },
     {
       "scope": "user",
@@ -61,22 +61,22 @@
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 3167,
-      "sha256": "C77FDF0968E60A217C2E44BE3BD94A1B0EC9FF243EAA23CF09B189F57B439132"
+      "bytes": 2949,
+      "sha256": "7DAE06D86CB45F6566B978C0C73DCD2A864248CA47DB67C529A6F34EF7FFD0E5"
     },
     {
       "scope": "privileged",
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
       "bytes": 67588813,
-      "sha256": "770D5D1CAACD51DB1E2AFC5C7991F099FFA1BBA6488D96224725A696762AF130"
+      "sha256": "DCF9A4833025C0A0F41F272BB754EE1C03C88EA1C9D6DCAEFFE6DC2801241B8E"
     },
     {
       "scope": "privileged",
       "file": "app/Start-Direct.ps1",
       "source": "app/Start-Direct.ps1",
-      "bytes": 19529,
-      "sha256": "37DA253B73D0CCB69BEDE8A31F1FE5866209A78510F0939D324CA7B203499E90"
+      "bytes": 19548,
+      "sha256": "DB725CF07D26A2D05D5C86DD3F8B35A7C837523087BE80B864A7F850D6C537D3"
     },
     {
       "scope": "privileged",
@@ -145,8 +145,8 @@
       "scope": "privileged",
       "file": "bin/zapret/hosts.txt",
       "source": "bin/zapret/hosts.txt",
-      "bytes": 98,
-      "sha256": "9C8DBCC6FCFA607BEE4AE16F2DFDEB8D025D66FFD94208A53ED480C2B6892D4B"
+      "bytes": 143,
+      "sha256": "4006D6A698D4DF2E235EBC98FA178E3D1322D6A6406F0D2CD5355DDD865FD160"
     },
     {
       "scope": "privileged",
