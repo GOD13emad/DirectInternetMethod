@@ -113,7 +113,8 @@
       "contractAudit": "PASS",
       "updaterThreeWayDigestContract": "PASS",
       "installedHostCurrentBeforeUpgrade": "1.4.0",
-      "installedLive": "PENDING_ONE_TIME_PRIVILEGED_BACKEND_UPGRADE"
+      "installedLive": "PENDING_ONE_TIME_PRIVILEGED_BACKEND_UPGRADE",
+      "crossHostDeterministic": "PASS_EXACT_SHA_MATCH"
     }
   },
   "checksums": {
@@ -133,7 +134,7 @@
     "windowsAdultToggle": "PASS_DYNAMIC",
     "linuxLocalBuild": "PASS_FINAL_LOCAL",
     "linuxUpdaterThreeWayDigest": "PASS_CONTRACT",
-    "crossHostLinux": "PENDING_EXACT_COMMIT_REPRODUCTION",
+    "crossHostLinux": "PASS_EXACT_SHA_MATCH",
     "windowsSandboxInstalledLive": "BLOCKED_HOST_SANDBOX_INITIALIZATION_ENVIRONMENT",
     "linuxInstalledLiveSiteCoverage": "PENDING_ONE_TIME_ADMIN",
     "protectedCi": "PENDING",
@@ -152,7 +153,8 @@
     "siteCoverage": "evidence/DIM_150_SITE_COVERAGE_BASELINE_20261004.json",
     "windowsPayload": "evidence/WINDOWS_150_PAYLOAD_BUILD_20261004.json",
     "windowsInstaller": "evidence/WINDOWS_150_INSTALLER_BUILD_20261004.json",
-    "windowsSandboxEnvironment": "evidence/WINDOWS_150_SANDBOX_ENVIRONMENT_BLOCKER_20261004.json"
+    "windowsSandboxEnvironment": "evidence/WINDOWS_150_SANDBOX_ENVIRONMENT_BLOCKER_20261004.json",
+    "linuxCrossHost": "evidence/LINUX_150_CROSS_HOST_ACCEPTANCE_20261004.json"
   },
-  "exactNextAction": "Push exact v1.5.0 candidate, independently reproduce Linux ZIP, perform one-time protected Linux backend upgrade and live target lifecycle, then complete Windows installed-host regression and protected release gates."
+  "exactNextAction": "Complete one-time protected Linux 1.5 backend install and live Gemini/adult Start->Stop->Recovery; then close Windows installed-host regression and protected release gates."
 }
