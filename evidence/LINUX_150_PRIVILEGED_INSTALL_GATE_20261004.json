@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "date": "2026-10-04",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "OWNER_AUTH_GATE_OPEN",
+  "context": "One-time Linux protected-backend upgrade required before installed live site lifecycle validation.",
+  "attempt": {
+    "host": "aliemad-Labtop",
+    "artifact": "DirectInternetMethod_1.5.0_Linux_x86_64.zip",
+    "artifactSha256": "00124169E12C60117CE2C70EAFAA3FF0D90C23EEA4440F873AB0931B8722F185",
+    "packageHashVerifiedBeforeInstall": true,
+    "currentInstalledApp": "1.4.0",
+    "currentProtectedBackend": "1.4.0",
+    "directMethodStateBeforeAttempt": "OFF",
+    "action": "./install.sh -> pkexec system/install_system.sh",
+    "result": "WAITED_FOR_LOCAL_POLKIT_AUTHENTICATION_THEN_TERMINATED_WITHOUT_INSTALL",
+    "productFailure": false
+  },
+  "reason": "Protected backend lives under /usr/lib and /etc and intentionally requires one local administrator authentication when version/hash differs. Normal Start/Stop/Recovery remains non-admin by design.",
+  "evidence": {
+    "crossHost": "evidence/LINUX_150_CROSS_HOST_ACCEPTANCE_20261004.json",
+    "polkitDesign": "linux/system/install_system.sh + linux/install.sh",
+    "branchCi": "PR #12 required linux-source/windows-source PASS at head 762e76e"
+  },
+  "prevention": "Do not weaken the protected-backend trust boundary or create a passwordless arbitrary install path merely to automate this gate.",
+  "exactNextAction": "User approves the one local Linux authentication prompt; immediately verify backend 1.5 hashes, run Start -> Gemini/Adult-site diagnostics -> Stop -> Recovery, and record exact rollback."
+}
