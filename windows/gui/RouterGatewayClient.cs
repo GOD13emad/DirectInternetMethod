@@ -202,13 +202,16 @@ internal static class RouterGatewayClient
             }
             catch { }
 
-            var port = p.Protocol.StartsWith("PPTP", StringComparison.OrdinalIgnoreCase) ? 1723 : 443;
+            var pptp = p.Protocol.StartsWith("PPTP", StringComparison.OrdinalIgnoreCase);
+            var port = pptp ? 1723 : 443;
             using var tcp = new TcpClient(address.AddressFamily);
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeout.CancelAfter(1800);
             await tcp.ConnectAsync(address, port, timeout.Token);
             sw.Stop();
-            return (true, sw.ElapsedMilliseconds, $"TCP/{port} health heuristic {address}");
+            return pptp
+                ? (true, sw.ElapsedMilliseconds, $"PPTP control TCP/1723 reachable {address}; GRE/authentication not verified")
+                : (true, sw.ElapsedMilliseconds, $"Generic endpoint TCP/443 reachable {address}; L2TP/IPsec UDP 500/4500/authentication not verified");
         }
         catch (Exception ex)
         {

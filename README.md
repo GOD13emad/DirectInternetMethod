@@ -4,9 +4,15 @@
 
 Standalone direct-connect application for Windows and Linux. It is independent of FreeNetHub and does not require ChatGPT for normal use.
 
-## Direct Method — v1.4.0
+## Direct Method — v1.5.0
 
-v1.4.0 expands the direct path without creating a VPN, HTTP/SOCKS proxy, or default-route tunnel.
+v1.5.0 keeps the bounded v1.4 direct engine and expands explicit host-scoped coverage and diagnostics without creating a VPN, HTTP/SOCKS proxy, or default-route tunnel.
+
+Built-in target coverage now includes the existing YouTube set plus exact Gemini web-app targeting and an adult-site/CDN target. The application UI never exposes the adult brand name: it shows **Adult site**, and its live check is **off by default** and can be enabled or disabled by the user.
+
+Live-check results distinguish **PASS** (successful 2xx/3xx), **REACHABLE** (HTTP transport succeeded but the site returned an application response such as 403), and **FAIL** (transport did not complete). This matters because the Direct Method can address DNS/DPI interference but does not change public egress IP, account state, or server-side country/product policy.
+
+Linux online update hardening in v1.5.0 requires three-way agreement between the GitHub API asset digest, the exact SHA256SUMS.txt entry, and the downloaded ZIP hash, with exact-one expected asset selection. Router Gateway health diagnostics also state their protocol boundary explicitly: PPTP TCP/1723 checks do not verify GRE/authentication, and L2TP/IPsec generic endpoint fallback does not claim UDP 500/4500 or authenticated tunnel success.
 
 The engine is intentionally bounded to the existing host list and uses four direct method families:
 
@@ -34,7 +40,7 @@ Router Gateway remains a separate non-privileged configuration panel for compati
 - Provider catalog revision 2: 9 ready profiles from VPN Gate, VPNBook and Pilovali.
 - Router support and authenticated tunnel success remain model/firmware-dependent.
 
-## Windows 1.4.0
+## Windows 1.5.0
 
 - Native WPF application; preferred startup geometry remains 1289 × 632 DIP with responsive footer.
 - Fixed-command privileged Windows service; normal Start/Stop/Recovery do not prompt for administrator rights after install.
@@ -44,19 +50,19 @@ Router Gateway remains a separate non-privileged configuration panel for compati
 - Service-mediated in-app update with GitHub release digest + SHA256SUMS + downloaded-file SHA-256 verification.
 - Installer is not Authenticode-signed.
 
-## Linux 1.4.0
+## Linux 1.5.0
 
 - Dedicated temporary DNS link + leak-closed ctrld DoH + systemd-resolved.
 - Owned nftables table queues only host traffic classes needed by nfqws: TCP/80, TCP/443 and UDP/443.
 - zapret/nfqws multi-profile direct engine for HTTP, TLS/SNI and QUIC.
-- Protected backend is versioned 1.4.0 because the privileged packet-interception rules changed.
+- Protected backend is versioned 1.5.0 because the protected hostlist/version contract changed.
 - GTK/Adwaita UI with Router Gateway integrated.
 - After the one-time protected-backend upgrade, normal Start/Stop/Recovery remain non-interactive.
 
 ## Release artifacts
 
-- `DirectInternetMethod_1.4.0_Windows_Setup.exe`
-- `DirectInternetMethod_1.4.0_Linux_x86_64.zip`
+- `DirectInternetMethod_1.5.0_Windows_Setup.exe`
+- `DirectInternetMethod_1.5.0_Linux_x86_64.zip`
 - `SHA256SUMS.txt`
 
 Acceptance and provenance evidence are stored under `evidence/`.

@@ -11,12 +11,13 @@ uninstall=txt("uninstall.sh")
 sysinstall=txt("system/install_system.sh")
 control=txt("system/control.sh")
 svg=txt("app/direct-internet-method.svg")
+hostlist=txt("app/hosts.txt")
 D={"schema":2,"status":"PASS","checks":{},"hashes":{}}
 def check(name,cond):
     D["checks"][name]=bool(cond)
     if not cond:D["status"]="FAIL"
 
-check("version_140_backend_140", 'VERSION="1.4.0"' in ui and '"version":"1.4.0"' in install and '"version":"1.4.0"' in sysinstall and 'd.get("version")=="1.4.0"' in install)
+check("version_150_backend_150", 'VERSION="1.5.0"' in ui and '"version":"1.5.0"' in install and '"version":"1.5.0"' in sysinstall and 'd.get("version")=="1.5.0"' in install)
 check("no_default_route_mutation", not re.search(r'ip\s+route\s+(add|del|replace).*default|nmcli\s+.*ipv4\.gateway',helper,re.I))
 check("no_physical_dns_mutation", "nmcli connection modify" not in helper and "resolvectl dns enp" not in helper and "resolvectl dns eth" not in helper)
 check("dedicated_dns_link", all(x in helper for x in ('DNS_IF="dimdns0"','ip link add "$DNS_IF" type dummy','ip addr add "$DNS_IP/32" dev "$DNS_IF"','SetLinkDNS','SetLinkDomains','RevertLink','ip link del "$DNS_IF"')))
@@ -53,6 +54,11 @@ check("ui_live_verify_rollback", 'LIVE_VERIFY_FAILED_ROLLED_BACK' in ui and 'run
 check("ui_fixed_systemd_actions", 'unit=f"directinternetmethod-{action}.service"' in ui and 'subprocess.run(["systemctl","start",unit]' in ui)
 check("ui_multiprotocol_label", "Encrypted DNS (DoH) + HTTP/TLS/QUIC DPI bypass" in ui)
 check("ui_online_update_hash_gate", "SHA256SUMS.txt" in ui and "hashlib.sha256" in ui and "Unsafe update archive path." in ui)
+check("ui_online_update_three_way_digest_gate", all(x in ui for x in ("GitHub release asset digest is missing/invalid","SHA256SUMS.txt must contain exactly one valid checksum","Linux update checksum disagrees with GitHub asset digest","three-way SHA-256 verification","expected_linux=f\"DirectInternetMethod_{release_version}_Linux_x86_64.zip\"")))
+check("target_hostlist_scope", all(x in hostlist.splitlines() for x in ("^gemini.google.com","pornhub.com","phncdn.com")))
+check("ui_gemini_adult_live_checks", all(x in ui for x in ('Gemini','Adult site','adultSiteLiveCheck','Gtk.Switch','https://gemini.google.com/','https://www.pornhub.com/','probe_url')))
+check("ui_adult_check_default_off_persisted", 'get("adultSiteLiveCheck",False)' in ui and 'self.adult_check_enabled=load_adult_site_check()' in ui)
+check("ui_live_probe_non_gating", 'g=curl("https://github.com/")' in ui and 'm=curl("https://gemini.google.com/")' in ui and 'and g["exit"]==0' in ui and 'and m["exit"]==0' not in ui)
 check("install_no_network_start", 'systemctl start directinternetmethod-start.service' not in install and 'direct_method_helper.sh" start' not in install)
 check("install_active_state_guard", "Stop/Recovery it before installing or upgrading." in install)
 check("install_backup_excludes_runtime_state", 'for f in direct_internet_method.py router_gateway.py direct-internet-method.svg uninstall.sh INSTALL.json' in install and 'cp -a "$APP" "$BACKUP"' not in install)

@@ -17,11 +17,17 @@ public partial class MainWindow : Window
     readonly Brush warn = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFD166"));
     readonly Brush bad = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7A85"));
     readonly Brush neutral = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9FB1C3"));
+    readonly string settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DirectInternetMethod", "settings.json");
     UpdateInfo? availableUpdate;
+    bool adultCheckEnabled;
 
     public MainWindow()
     {
         InitializeComponent();
+        adultCheckEnabled = LoadAdultSiteCheckSetting();
+        AdultSiteCheckToggle.IsChecked = adultCheckEnabled;
+        AdultSiteCheckToggle.Checked += AdultSiteCheckToggle_Changed;
+        AdultSiteCheckToggle.Unchecked += AdultSiteCheckToggle_Changed;
         Loaded += async (_, _) =>
         {
             await RefreshStatusAsync();
@@ -30,6 +36,26 @@ public partial class MainWindow : Window
     }
 
     Version CurrentVersion => Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 1, 0, 0);
+
+    bool LoadAdultSiteCheckSetting()
+    {
+        try
+        {
+            if (!File.Exists(settingsPath)) return false;
+            using var doc = JsonDocument.Parse(File.ReadAllText(settingsPath));
+            return doc.RootElement.TryGetProperty("adultSiteLiveCheck", out var value) && value.ValueKind == JsonValueKind.True;
+        }
+        catch { return false; }
+    }
+
+    void SaveAdultSiteCheckSetting()
+    {
+        var dir = Path.GetDirectoryName(settingsPath)!;
+        Directory.CreateDirectory(dir);
+        var temp = settingsPath + ".tmp";
+        File.WriteAllText(temp, JsonSerializer.Serialize(new { adultSiteLiveCheck = adultCheckEnabled }));
+        File.Move(temp, settingsPath, true);
+    }
 
     async Task<string> RunPwshCaptureAsync(string script, string args = "")
     {
@@ -67,7 +93,7 @@ public partial class MainWindow : Window
         return "—";
     }
 
-    sealed record ProbeResult(bool Ok, string Code, string RemoteIp, long Ms);
+    sealed record ProbeResult(bool Ok, bool Reached, string Code, string RemoteIp, long Ms);
 
     async Task<ProbeResult> ProbeAsync(string url, string localIp, string[] allowed)
     {
@@ -75,7 +101,7 @@ public partial class MainWindow : Window
         try
         {
             var psi = new ProcessStartInfo("curl.exe",
-                $"-4 --interface {localIp} --noproxy * -sS -o NUL -w \"%{{http_code}}|%{{remote_ip}}|%{{time_total}}\" --max-time 5 \"{url}\"")
+                $"-4 --interface {localIp} --noproxy * -A \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36\" -sS -o NUL -w \"%{{http_code}}|%{{remote_ip}}|%{{time_total}}\" --connect-timeout 5 --max-time 8 \"{url}\"")
             {
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -90,17 +116,20 @@ public partial class MainWindow : Window
             var parts = stdout.Trim().Split('|');
             var code = parts.Length > 0 ? parts[0] : "";
             var remote = parts.Length > 1 ? parts[1] : "";
-            return new ProbeResult(p.ExitCode == 0 && allowed.Contains(code), code, remote, sw.ElapsedMilliseconds);
+            var reached = p.ExitCode == 0 && !string.IsNullOrWhiteSpace(code) && code != "000";
+            return new ProbeResult(reached && allowed.Contains(code), reached, code, remote, sw.ElapsedMilliseconds);
         }
         catch
         {
             sw.Stop();
-            return new ProbeResult(false, "", "", sw.ElapsedMilliseconds);
+            return new ProbeResult(false, false, "", "", sw.ElapsedMilliseconds);
         }
     }
 
     static string FmtHttp(ProbeResult p) =>
-        p.Ok ? $"PASS · HTTP {p.Code} · {p.Ms} ms" : $"FAIL{(string.IsNullOrWhiteSpace(p.Code) ? "" : $" · HTTP {p.Code}")}";
+        p.Ok ? $"PASS · HTTP {p.Code} · {p.Ms} ms" :
+        p.Reached ? $"REACHABLE · HTTP {p.Code} · {p.Ms} ms" :
+        "FAIL · transport";
 
     async Task RefreshStatusAsync()
     {
@@ -148,16 +177,25 @@ public partial class MainWindow : Window
             else RouteText.Text = "External tunnel routes: 0";
 
             bool ownedHealthy = r.TryGetProperty("ownedResourcesHealthy", out var oh) && oh.GetBoolean();
-            YoutubeText.Text = OpenAiText.Text = GithubText.Text = mode == "CONFLICT" ? "Suspended by external tunnel" : ownedHealthy ? "Checking…" : "Available when Direct Method is healthy";
+            YoutubeText.Text = OpenAiText.Text = GithubText.Text = GeminiText.Text = mode == "CONFLICT" ? "Suspended by external tunnel" : ownedHealthy ? "Checking…" : "Available when Direct Method is healthy";
+            AdultSiteText.Text = adultCheckEnabled ? (mode == "CONFLICT" ? "Suspended by external tunnel" : ownedHealthy ? "Checking…" : "Available when Direct Method is healthy") : "Disabled";
             if (ownedHealthy && mode == "ACTIVE" && !string.IsNullOrWhiteSpace(IpText.Text) && IpText.Text != "—")
             {
                 var ytTask = ProbeAsync("https://www.youtube.com/generate_204", IpText.Text, new[] { "200", "204" });
                 var oaTask = ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401", "403" });
                 var ghTask = ProbeAsync("https://github.com/", IpText.Text, new[] { "200", "301", "302" });
-                await Task.WhenAll(ytTask, oaTask, ghTask);
+                var geminiTask = ProbeAsync("https://gemini.google.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" });
+                Task<ProbeResult>? adultTask = adultCheckEnabled
+                    ? ProbeAsync("https://www.pornhub.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" })
+                    : null;
+                var tasks = new List<Task> { ytTask, oaTask, ghTask, geminiTask };
+                if (adultTask is not null) tasks.Add(adultTask);
+                await Task.WhenAll(tasks);
                 YoutubeText.Text = FmtHttp(await ytTask);
                 OpenAiText.Text = FmtHttp(await oaTask);
                 GithubText.Text = FmtHttp(await ghTask);
+                GeminiText.Text = FmtHttp(await geminiTask);
+                AdultSiteText.Text = adultTask is null ? "Disabled" : FmtHttp(await adultTask);
             }
 
             HealthText.Text = mode switch
@@ -181,7 +219,8 @@ public partial class MainWindow : Window
             HealthText.Text = "Status error";
             StatusBadge.Text = "ERROR";
             StatusBadge.Foreground = bad;
-            YoutubeText.Text = OpenAiText.Text = GithubText.Text = ex.Message;
+            YoutubeText.Text = OpenAiText.Text = GithubText.Text = GeminiText.Text = ex.Message;
+            AdultSiteText.Text = adultCheckEnabled ? ex.Message : "Disabled";
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = false;
             RecoveryButton.IsEnabled = true;
@@ -337,6 +376,14 @@ public partial class MainWindow : Window
             HealthText.Text = "Update failed: " + ex.Message;
             SetBusy(false, "");
         }
+    }
+
+    async void AdultSiteCheckToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        adultCheckEnabled = AdultSiteCheckToggle.IsChecked == true;
+        try { SaveAdultSiteCheckSetting(); }
+        catch (Exception ex) { AdultSiteText.Text = "Settings error: " + ex.Message; return; }
+        await RefreshStatusAsync();
     }
 
     void RouterGateway_Click(object sender, RoutedEventArgs e)

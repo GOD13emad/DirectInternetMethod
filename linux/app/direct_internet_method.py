@@ -19,7 +19,7 @@ from gi.repository import Gtk, Adw, GLib, Gdk
 from router_gateway import RouterGatewayWindow
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
-VERSION="1.4.0"
+VERSION="1.5.0"
 GLib.set_prgname("DirectInternetMethod")
 GLib.set_application_name("Direct Internet Method")
 try:
@@ -30,12 +30,48 @@ except Exception:
 APP_HOME=pathlib.Path.home()/".local/share/DirectInternetMethod"
 PRIV_HOME=pathlib.Path("/usr/lib/directinternetmethod")
 STATE=APP_HOME/"directmethod/state.json"
+PREFS=APP_HOME/"settings.json"
 LATEST_API="https://api.github.com/repos/GOD13emad/DirectInternetMethod/releases/latest"
 
 def ui_test_log(message):
     p=os.environ.get("DIM_UI_TEST_LOG")
     if p:
         pathlib.Path(p).open("a",encoding="utf-8").write(message+"\n")
+
+def load_adult_site_check():
+    try:
+        return bool(json.loads(PREFS.read_text(encoding="utf-8")).get("adultSiteLiveCheck",False))
+    except Exception:
+        return False
+
+def save_adult_site_check(enabled):
+    PREFS.parent.mkdir(parents=True,exist_ok=True)
+    temp=PREFS.with_suffix(".tmp")
+    temp.write_text(json.dumps({"adultSiteLiveCheck":bool(enabled)},separators=(",",":"))+"\n",encoding="utf-8")
+    os.replace(temp,PREFS)
+
+def probe_url(url,physical,allowed):
+    try:
+        p=subprocess.run(["curl","-4","--interface",physical,"--noproxy","*","-A",
+                          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+                          "-sS","-o","/dev/null","--connect-timeout","5","--max-time","8",
+                          "-w","%{http_code}|%{remote_ip}|%{time_total}",url],
+                         text=True,capture_output=True,timeout=10)
+        parts=p.stdout.strip().split("|")
+        code=parts[0] if parts else ""
+        reached=(p.returncode==0 and bool(code) and code!="000")
+        return {"ok":reached and code in allowed,"reached":reached,"code":code,
+                "remote":parts[1] if len(parts)>1 else "","meta":p.stdout.strip(),
+                "exit":p.returncode,"error":p.stderr.strip()}
+    except Exception as e:
+        return {"ok":False,"reached":False,"code":"","remote":"","meta":"","exit":-1,"error":str(e)}
+
+def format_probe(name,result):
+    if result.get("ok"):
+        return f"{name}: PASS · HTTP {result.get('code','')}"
+    if result.get("reached"):
+        return f"{name}: REACHABLE · HTTP {result.get('code','')}"
+    return f"{name}: FAIL · transport"
 
 def _systemd_unit_matches(unit_value, pid_value, expected_unit):
     try:
@@ -113,7 +149,9 @@ def verify_live():
     if _external_tunnel_active():
         return {"ok":False,"error":"EXTERNAL_TUNNEL_APPEARED_AFTER_START"}
     def curl(url):
-        p=subprocess.run(["curl","-4","--interface",physical,"--noproxy","*","-sS","-o","/dev/null","--max-time","12","-w","%{http_code}|%{remote_ip}|%{time_total}",url],
+        p=subprocess.run(["curl","-4","--interface",physical,"--noproxy","*","-A",
+                          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
+                          "-sS","-o","/dev/null","--connect-timeout","5","--max-time","12","-w","%{http_code}|%{remote_ip}|%{time_total}",url],
                          text=True,capture_output=True)
         return {"exit":p.returncode,"meta":p.stdout.strip(),"error":p.stderr.strip()}
     d=subprocess.run(["getent","ahostsv4","www.youtube.com"],text=True,capture_output=True)
@@ -121,12 +159,13 @@ def verify_live():
     y=curl("https://www.youtube.com/generate_204")
     o=curl("https://api.openai.com/v1/models")
     g=curl("https://github.com/")
+    m=curl("https://gemini.google.com/")
     ok=(not _external_tunnel_active() and d.returncode==0
         and h["exit"]==0 and h["meta"].startswith(("200|","301|","302|","303|","307|","308|"))
         and y["exit"]==0 and y["meta"].startswith(("200|","204|"))
         and o["exit"]==0 and o["meta"].startswith(("401|","403|"))
         and g["exit"]==0 and g["meta"].startswith(("200|")))
-    return {"ok":ok,"physicalInterface":physical,"directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"],"youtubeHttp80":h,"youtube":y,"openai":o,"github":g}
+    return {"ok":ok,"physicalInterface":physical,"directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"],"youtubeHttp80":h,"youtube":y,"openai":o,"github":g,"gemini":m}
 
 def _version_tuple(text):
     s=text.strip().lstrip("vV")
@@ -142,18 +181,26 @@ def check_update_sync():
     tag=str(data.get("tag_name") or "")
     if _version_tuple(tag) <= _version_tuple(VERSION):
         return None
-    linux_asset=None
-    sums_asset=None
+    release_version=tag.lstrip("vV")
+    expected_linux=f"DirectInternetMethod_{release_version}_Linux_x86_64.zip"
+    linux_assets=[]
+    sums_assets=[]
     for a in data.get("assets") or []:
         name=str(a.get("name") or "")
         url=str(a.get("browser_download_url") or "")
-        if name.endswith("_Linux_x86_64.zip"):
-            linux_asset={"name":name,"url":url}
+        digest=str(a.get("digest") or "")
+        item={"name":name,"url":url,"digest":digest}
+        if name==expected_linux:
+            linux_assets.append(item)
         elif name=="SHA256SUMS.txt":
-            sums_asset={"name":name,"url":url}
-    if not linux_asset or not sums_asset:
-        raise RuntimeError("Latest release is missing Linux ZIP or SHA256SUMS.txt.")
-    return {"tag":tag,"version":tag.lstrip("vV"),"asset":linux_asset,"sums":sums_asset}
+            sums_assets.append(item)
+    if len(linux_assets)!=1 or len(sums_assets)!=1:
+        raise RuntimeError("Latest release must contain exactly one expected Linux ZIP and one SHA256SUMS.txt.")
+    linux_asset=linux_assets[0]; sums_asset=sums_assets[0]
+    for item in (linux_asset,sums_asset):
+        if not re.fullmatch(r"sha256:[0-9A-Fa-f]{64}",item["digest"]):
+            raise RuntimeError(f"GitHub release asset digest is missing/invalid for {item['name']}.")
+    return {"tag":tag,"version":release_version,"asset":linux_asset,"sums":sums_asset}
 
 def _download(url,path):
     req=urllib.request.Request(url,headers={"User-Agent":f"DirectInternetMethod/{VERSION}"})
@@ -166,19 +213,27 @@ def download_and_install_update(info):
     sums_path=cache/"SHA256SUMS.txt"
     zip_path=cache/info["asset"]["name"]
     _download(info["sums"]["url"],sums_path)
-    expected=None
+    sums_actual=hashlib.sha256(sums_path.read_bytes()).hexdigest().upper()
+    sums_api=str(info["sums"]["digest"]).split(":",1)[1].upper()
+    if sums_actual!=sums_api:
+        sums_path.unlink(missing_ok=True)
+        raise RuntimeError("Downloaded SHA256SUMS.txt does not match GitHub asset digest.")
+    matches=[]
     for raw in sums_path.read_text(encoding="utf-8").splitlines():
         parts=raw.strip().split()
         if len(parts)>=2 and parts[-1].lstrip("*")==info["asset"]["name"]:
-            expected=parts[0].upper()
-            break
-    if not expected or len(expected)!=64:
-        raise RuntimeError("No checksum found for Linux update.")
+            matches.append(parts[0].upper())
+    if len(matches)!=1 or not re.fullmatch(r"[0-9A-F]{64}",matches[0]):
+        raise RuntimeError("SHA256SUMS.txt must contain exactly one valid checksum for the Linux update.")
+    expected=matches[0]
+    api_expected=str(info["asset"]["digest"]).split(":",1)[1].upper()
+    if expected!=api_expected:
+        raise RuntimeError("Linux update checksum disagrees with GitHub asset digest.")
     _download(info["asset"]["url"],zip_path)
     actual=hashlib.sha256(zip_path.read_bytes()).hexdigest().upper()
-    if actual!=expected:
+    if actual!=expected or actual!=api_expected:
         zip_path.unlink(missing_ok=True)
-        raise RuntimeError("Downloaded Linux update failed SHA-256 verification.")
+        raise RuntimeError("Downloaded Linux update failed three-way SHA-256 verification.")
 
     temp=pathlib.Path(tempfile.mkdtemp(prefix="dim-update-",dir=str(cache)))
     with zipfile.ZipFile(zip_path) as z:
@@ -199,10 +254,12 @@ def download_and_install_update(info):
 class Window(Adw.ApplicationWindow):
     def __init__(self,app):
         super().__init__(application=app,title="Direct Internet Method")
-        self.set_default_size(860,510)
-        self.set_size_request(760,460)
+        self.set_default_size(900,590)
+        self.set_size_request(780,540)
         self.set_resizable(True)
         self.available_update=None
+        self.adult_check_enabled=load_adult_site_check()
+        self.live_check_generation=0
 
         header=Adw.HeaderBar()
         title_widget=Gtk.Label(label="Direct Internet Method")
@@ -242,6 +299,18 @@ class Window(Adw.ApplicationWindow):
         self.status=Gtk.Label(xalign=0);self.status.add_css_class("title-3")
         self.detail=Gtk.Label(xalign=0,wrap=True);self.detail.add_css_class("dim-label")
         card.append(self.status);card.append(self.detail);box.append(card)
+
+        live=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=6);live.add_css_class("card")
+        live_header=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=10)
+        live_title=Gtk.Label(label="Live checks",xalign=0);live_title.add_css_class("heading");live_title.set_hexpand(True)
+        live_header.append(live_title)
+        adult_toggle_label=Gtk.Label(label="Adult site",xalign=1);adult_toggle_label.add_css_class("dim-label");live_header.append(adult_toggle_label)
+        self.adult_switch=Gtk.Switch(active=self.adult_check_enabled);live_header.append(self.adult_switch)
+        self.adult_switch.connect("notify::active",self.on_adult_toggle)
+        live.append(live_header)
+        self.gemini_live=Gtk.Label(label="Gemini: —",xalign=0);self.gemini_live.add_css_class("dim-label");live.append(self.gemini_live)
+        self.adult_live=Gtk.Label(label="Adult site: "+("Checking…" if self.adult_check_enabled else "Disabled"),xalign=0);self.adult_live.add_css_class("dim-label");live.append(self.adult_live)
+        box.append(live)
 
         buttons=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8);buttons.set_homogeneous(True)
         self.buttons={}
@@ -285,6 +354,44 @@ class Window(Adw.ApplicationWindow):
         self.buttons["recovery"].remove_css_class("destructive-action")
         if start_ok:self.buttons["start"].add_css_class("suggested-action")
         if recovery_ok:self.buttons["recovery"].add_css_class("destructive-action")
+        self.live_check_generation+=1
+        generation=self.live_check_generation
+        if mode=="ACTIVE":
+            self.gemini_live.set_text("Gemini: Checking…")
+            self.adult_live.set_text("Adult site: Checking…" if self.adult_check_enabled else "Adult site: Disabled")
+            threading.Thread(target=self.live_checks_worker,args=(generation,),daemon=True).start()
+        else:
+            self.gemini_live.set_text("Gemini: Available when Direct Method is active")
+            self.adult_live.set_text("Adult site: Disabled" if not self.adult_check_enabled else "Adult site: Available when Direct Method is active")
+
+    def live_checks_worker(self,generation):
+        try:
+            state=json.loads(STATE.read_text(encoding="utf-8"))
+            physical=str(state.get("physicalInterface") or "")
+        except Exception:
+            physical=""
+        if not physical:
+            GLib.idle_add(self.finish_live_checks,generation,{"ok":False,"reached":False},{"ok":False,"reached":False} if self.adult_check_enabled else None)
+            return
+        gemini=probe_url("https://gemini.google.com/",physical,{"200","301","302","303","307","308"})
+        adult=probe_url("https://www.pornhub.com/",physical,{"200","301","302","303","307","308"}) if self.adult_check_enabled else None
+        GLib.idle_add(self.finish_live_checks,generation,gemini,adult)
+
+    def finish_live_checks(self,generation,gemini,adult):
+        if generation!=self.live_check_generation:
+            return False
+        self.gemini_live.set_text(format_probe("Gemini",gemini))
+        self.adult_live.set_text(format_probe("Adult site",adult) if adult is not None else "Adult site: Disabled")
+        return False
+
+    def on_adult_toggle(self,switch,_pspec):
+        self.adult_check_enabled=bool(switch.get_active())
+        try:
+            save_adult_site_check(self.adult_check_enabled)
+        except Exception as e:
+            self.adult_live.set_text("Adult site: settings error · "+str(e))
+            return
+        self.refresh()
 
     def on_key(self,_controller,keyval,_keycode,state):
         if keyval==Gdk.KEY_F5 or (keyval in (Gdk.KEY_r,Gdk.KEY_R) and bool(state & Gdk.ModifierType.CONTROL_MASK)):
@@ -326,8 +433,10 @@ class Window(Adw.ApplicationWindow):
         if r.get("ok"):
             if "verify" in r:
                 v=r["verify"]
-                self.result.set_text("PASS — YouTube %s · OpenAI %s · GitHub %s" % (
-                    v["youtube"]["meta"].split("|")[0],v["openai"]["meta"].split("|")[0],v["github"]["meta"].split("|")[0]))
+                gemini_code=v.get("gemini",{}).get("meta","").split("|")[0] if v.get("gemini") else ""
+                gemini_state=("PASS" if gemini_code in ("200","301","302","303","307","308") else "REACHABLE "+gemini_code if gemini_code and gemini_code!="000" else "FAIL")
+                self.result.set_text("PASS — YouTube %s · OpenAI %s · GitHub %s · Gemini %s" % (
+                    v["youtube"]["meta"].split("|")[0],v["openai"]["meta"].split("|")[0],v["github"]["meta"].split("|")[0],gemini_state))
             else:self.result.set_text("Completed.")
         else:self.result.set_text("Failed: "+str(r.get("error") or r.get("stderr") or r))
         return False

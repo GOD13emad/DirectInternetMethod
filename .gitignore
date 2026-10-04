@@ -34,6 +34,7 @@ delivery/SHA256SUMS.txt
 delivery/DirectInternetMethod_1.3.1_*
 delivery/DirectInternetMethod_1.3.2_*
 delivery/DirectInternetMethod_1.4.0_*
+delivery/DirectInternetMethod_1.5.0_*
 # Local deep-audit archive: large machine snapshots/bundles stay local; index is tracked.
 archive/*
 !archive/README.md
