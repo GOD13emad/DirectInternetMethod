@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, pathlib, re
+import hashlib, json, pathlib, re
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 release = json.loads((ROOT / 'RELEASE.json').read_text(encoding='utf-8-sig'))
@@ -36,6 +36,18 @@ if delivery_sums.exists():
     if delivery_text != root_text:
         raise SystemExit('root SHA256SUMS.txt differs from delivery/SHA256SUMS.txt')
 
+checksum_meta = release.get('checksums', {})
+checksum_rel = str(checksum_meta.get('artifact',''))
+checksum_expected = str(checksum_meta.get('sha256','')).upper()
+if not checksum_rel or not re.fullmatch(r'[0-9A-F]{64}', checksum_expected):
+    raise SystemExit('RELEASE.json checksums metadata is missing or invalid')
+checksum_path = ROOT / checksum_rel
+if not checksum_path.is_file():
+    raise SystemExit(f'checksum artifact missing: {checksum_rel}')
+checksum_actual = hashlib.sha256(checksum_path.read_bytes()).hexdigest().upper()
+if checksum_actual != checksum_expected:
+    raise SystemExit(f'checksum artifact hash mismatch: expected={checksum_expected} actual={checksum_actual}')
+
 readme = (ROOT / 'README.md').read_text(encoding='utf-8-sig')
 for name in expected:
     if ('`' + name + '`') not in readme:
@@ -56,15 +68,21 @@ if str(win_release.get('version')) != version:
     raise SystemExit(f"windows/RELEASE.json version {win_release.get('version')} != {version}")
 
 root_status = str(release.get('status',''))
-if 'PUBLISHED_VERIFIED' in root_status:
+root_published = ('PUBLISHED' in root_status and 'VERIFIED' in root_status) or str(release.get('acceptance',{}).get('publication','')).startswith('PASS_PUBLIC')
+if root_published:
     win_status = str(win_release.get('status',''))
-    if 'PUBLISHED_VERIFIED' not in win_status:
+    if not ('PUBLISHED' in win_status and 'VERIFIED' in win_status):
         raise SystemExit(f'windows/RELEASE.json status is stale after publication: {win_status!r}')
     publication_state = str(win_release.get('acceptance',{}).get('publication',''))
     if publication_state not in {'PASS_PUBLIC_REDOWNLOAD_VERIFIED','PUBLISHED_VERIFIED'}:
         raise SystemExit(f'windows/RELEASE.json publication state is stale: {publication_state!r}')
     root_pub = release.get('publication',{})
     win_pub = win_release.get('publication',{})
+    required_pub = ('tag','tagCommit','releaseUrl','publishedAt')
+    if any(not str(root_pub.get(key,'')) for key in required_pub):
+        raise SystemExit('RELEASE.json publication metadata is incomplete')
+    if any(not str(win_pub.get(key,'')) for key in required_pub):
+        raise SystemExit('windows/RELEASE.json publication metadata is incomplete')
     for key in ('tag','tagCommit','releaseUrl','publishedAt'):
         if str(win_pub.get(key,'')) != str(root_pub.get(key,'')):
             raise SystemExit(f'windows/RELEASE.json publication {key} != RELEASE.json')

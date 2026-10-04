@@ -1,0 +1,27 @@
+[
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\archive\\machine-snapshots\\crashdumps\\DirectInternetMethod.exe.67464.dmp",
+    "Bytes": 6219229,
+    "Sha256": "0714E2BC3407266ACDE55C7C9DB0F215DD634662ABDB0E2D0A49EFFAA7AE4162"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\archive\\worktree-history\\DirectInternetMethod_all_refs_precleanup_20261001.bundle",
+    "Bytes": 45355308,
+    "Sha256": "5308BF413E17241CB4421137C7F4E5077E4F9734518FB132D90DD83282D0F415"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.4.0_Windows_Setup.exe",
+    "Bytes": 157103781,
+    "Sha256": "69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.4.0_Linux_x86_64.zip",
+    "Bytes": 8159881,
+    "Sha256": "4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\SHA256SUMS.txt",
+    "Bytes": 223,
+    "Sha256": "7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609"
+  }
+]

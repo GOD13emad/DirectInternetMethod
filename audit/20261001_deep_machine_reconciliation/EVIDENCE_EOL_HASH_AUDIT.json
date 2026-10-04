@@ -1,0 +1,38 @@
+{
+  "schema": 2,
+  "date": "2026-10-01",
+  "status": "CLASSIFIED_WORKTREE_SERIALIZATION_NOT_CONTENT_DRIFT",
+  "decision": "Use Git blob/commit identity for tracked text; treat raw worktree SHA as serialization-specific unless EOL/bytes are explicitly pinned.",
+  "rows": [
+    {
+      "file": "WINDOWS_140_HOST_FINAL_ACCEPTANCE_20261001.json",
+      "currentWorktreeRawSha256": "F443C6AD0096C9B0BE8250036255D6B35B2D0DA4D6DD72E6CF6F3CAD0E609440",
+      "finalizationWorktreeRawSha256": "4453FAE1733A84BA8900F3FB89467AEAC60E14C1DBEADF3065158522559047CB",
+      "brainHistoricalRawSha256": "4453FAE1733A84BA8900F3FB89467AEAC60E14C1DBEADF3065158522559047CB",
+      "finalizationRawMatchesBrain": true,
+      "gitContentEqualMainVsFinalization": true,
+      "gitBlobOid": "0f5864f28edd504cd910b65a1741f302cac432a8",
+      "classification": "WORKTREE_SERIALIZATION_VARIANCE"
+    },
+    {
+      "file": "LINUX_140_PUBLIC_INSTALLED_FINAL_ACCEPTANCE_20261001.json",
+      "currentWorktreeRawSha256": "E508B23BEA032A3127DFE52059870CC6A64671016E78CCD3249E36C494677D3A",
+      "finalizationWorktreeRawSha256": "7D987E1838CA1BAE0F609F631972655C354F5AB8D09510C91DDAAB9D5F00A0E2",
+      "brainHistoricalRawSha256": "7D987E1838CA1BAE0F609F631972655C354F5AB8D09510C91DDAAB9D5F00A0E2",
+      "finalizationRawMatchesBrain": true,
+      "gitContentEqualMainVsFinalization": true,
+      "gitBlobOid": "e5b01fa734e33a94dc11472b3ee9a57ecd0d6ea6",
+      "classification": "WORKTREE_SERIALIZATION_VARIANCE"
+    },
+    {
+      "file": "DIM_140_PUBLICATION_INSTALLED_FINAL_20261001.json",
+      "currentWorktreeRawSha256": "FC77B0472B86FECE251FBA8E970FF93E80A82FAAEAB9E01FD13EEE500261E0CD",
+      "finalizationWorktreeRawSha256": "09137E037CDD10C30140EDE1909F56D3029B68D8BBC811E620FE8B08BF9DBACA",
+      "brainHistoricalRawSha256": "09137E037CDD10C30140EDE1909F56D3029B68D8BBC811E620FE8B08BF9DBACA",
+      "finalizationRawMatchesBrain": true,
+      "gitContentEqualMainVsFinalization": true,
+      "gitBlobOid": "f81ee8cdbd7f331d7f8fa3aa38ef31e4a07debb3",
+      "classification": "WORKTREE_SERIALIZATION_VARIANCE"
+    }
+  ]
+}

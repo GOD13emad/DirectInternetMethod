@@ -1,8 +1,8 @@
 {
   "status": "PASS",
-  "powershellParsed": 34,
+  "powershellParsed": 47,
   "powershellErrors": [],
-  "pythonCompiled": 9,
+  "pythonCompiled": 11,
   "pythonErrors": [],
   "mergeConflictMarkers": [],
   "todoMarkers": [],
@@ -12,14 +12,14 @@
       "exit": 0,
       "tail": [
         "  Determining projects to restore...",
-        "  Restored C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\windows\\service\\DirectInternetMethod.Service.csproj (in 112 ms).",
+        "  All projects are up-to-date for restore.",
         "  DirectInternetMethod.Service -> C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\windows\\service\\bin\\Release\\net8.0-windows\\DirectInternetMethod.Service.dll",
         "",
         "Build succeeded.",
         "    0 Warning(s)",
         "    0 Error(s)",
         "",
-        "Time Elapsed 00:00:02.89"
+        "Time Elapsed 00:00:01.17"
       ]
     },
     {
@@ -27,22 +27,24 @@
       "exit": 0,
       "tail": [
         "  Determining projects to restore...",
-        "  Restored C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\windows\\gui\\DirectInternetMethod.csproj (in 77 ms).",
+        "  All projects are up-to-date for restore.",
         "  DirectInternetMethod -> C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\windows\\gui\\bin\\Release\\net8.0-windows\\DirectInternetMethod.dll",
         "",
         "Build succeeded.",
         "    0 Warning(s)",
         "    0 Error(s)",
         "",
-        "Time Elapsed 00:00:01.63"
+        "Time Elapsed 00:00:01.26"
       ]
     }
   ],
   "gitFsck": [
     "dangling blob 1f80a110d91377cc4e9123cab8a92985d4ad242f",
+    "dangling tree e108594f60c69318ede4b1f7694aa21207e0434f",
     "dangling blob 0723da7f6ee9a27eee2190cd78935569bc6cee2a",
     "dangling blob 52bb54a9922e4ae46cfb35afab2bc7bd55e17726",
     "dangling blob 56830994c2504783be400061ed0e1c548a3b260e",
+    "dangling tree 58f3ebd958fb9fe7889c818856f43fb73cb63dff",
     "dangling tree 7afbdfc3e2503e1c0ed730f0a7e83bfec6e6e3da",
     "dangling blob 0ba5d0ad537adcb05c199fb6e55d71980c0fcff2",
     "dangling tree cdbeb36888a6439d7482b17971d0b0dcf20a0aa4"
