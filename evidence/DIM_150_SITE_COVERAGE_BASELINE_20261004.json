@@ -160,5 +160,12 @@
       "path": "delivery/SHA256SUMS.txt",
       "sha256": "C4EBDB019E2786DCCECD9B70500B9BBAFA294C6DCDBC20139B5DFA68718CC927"
     }
+  },
+  "runtimeSmokeHardening": {
+    "status": "PASS_CONTRACT_LOCAL_PENDING_LINUX_RERUN",
+    "failure": "Linux Router Gateway runtime smoke exceeded the synchronous 10s test window because the informational live DNS/endpoint probe was unbounded.",
+    "rootCause": "socket.gethostbyname/live endpoint path can block independently of the intended informational status.",
+    "prevention": "Runtime smoke now executes the informational live probe in a daemon thread and bounds result wait to 5 seconds; timeout is reported informational rather than hanging the regression suite.",
+    "regression": "router_gateway_contract_audit includes runtime_smoke_live_probe_bounded guard."
   }
 }

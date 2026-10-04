@@ -44,5 +44,7 @@ check("linux_protocol_health_truthful","PPTP control TCP/1723 reachable" in lmod
 check("linux_private_dns_guard","ipaddress.ip_address(ip).is_global" in lmod and "DNS intercepted/private address" in lmod)
 check("linux_installer_data",'router_gateway/providers.json' in linstall and 'router_gateway.py' in linstall)
 check("no_router_auto_mutation",all(x not in wclient+lmod for x in ["192.168.0.1/admin","192.168.1.1/admin","selenium","Playwright"]))
+smoke=(R/"tests/router_gateway_runtime_smoke.py").read_text(encoding="utf-8")
+check("runtime_smoke_live_probe_bounded","q.get(timeout=5.0)" in smoke and "threading.Thread" in smoke and "daemon=True" in smoke)
 print(json.dumps(D,indent=2,ensure_ascii=False))
 sys.exit(0 if D["status"]=="PASS" else 20)

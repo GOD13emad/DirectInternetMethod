@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import importlib.util, json, pathlib, socket, sys
+import importlib.util, json, pathlib, queue, socket, sys, threading
 R=pathlib.Path(__file__).resolve().parents[1]
 mod_path=R/"linux/app/router_gateway.py"
 spec=importlib.util.spec_from_file_location("router_gateway_smoke",mod_path)
@@ -21,10 +21,18 @@ try:
 finally:
     socket.gethostbyname=orig
 assert not ok and "DNS intercepted/private address 10.10.34.35" in detail
+q=queue.Queue(maxsize=1)
+def _live_worker():
+    try:
+        q.put(rg._test(l2),block=False)
+    except Exception as e:
+        q.put((False,f"exception:{e}"),block=False)
+t=threading.Thread(target=_live_worker,daemon=True)
+t.start()
 try:
-    live_ok,live_detail=rg._test(l2)
-except Exception as e:
-    live_ok=False;live_detail=f"exception:{e}"
+    live_ok,live_detail=q.get(timeout=5.0)
+except queue.Empty:
+    live_ok=False;live_detail="informational live endpoint probe timed out after 5s"
 print(json.dumps({
  "status":"PASS",
  "profiles":len(profiles),
