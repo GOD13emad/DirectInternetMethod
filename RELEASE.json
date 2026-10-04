@@ -90,13 +90,13 @@
   },
   "platforms": {
     "windows": {
-      "status": "PASS_LOCAL_BUILD_DYNAMIC_UI_SANDBOX_ENV_BLOCKED_PENDING_POST_RELEASE_INSTALLED_LIVE",
+      "status": "PASS_FINAL_LOCAL_BUILD_DYNAMIC_UI_PENDING_INSTALLED_LIVE",
       "artifact": "delivery/DirectInternetMethod_1.5.0_Windows_Setup.exe",
-      "bytes": 157117075,
-      "sha256": "4B3B21E0114884DEB02FF749013AEDC12C3BA0579CEB832D086FA450A43D1E31",
-      "guiSha256": "7B0AAFE9216471B59863EE94BD4E9EC9743B0BA78E313463D9BA77A45529C89D",
-      "serviceSha256": "DCF9A4833025C0A0F41F272BB754EE1C03C88EA1C9D6DCAEFFE6DC2801241B8E",
-      "manifestSha256": "9FFA762CCE8BF517D8453D3DF2235D6C481374A3A69D7BE428B14F8FCA535E43",
+      "bytes": 157106605,
+      "sha256": "27127D74480C65DA0D506E84601F2F106679F23EAAE4393AEE5AC7CD32667394",
+      "guiSha256": "781637F4A27F57A03B1257C7C40D20F7ECBAF1B1B71722ED63C752F038DFEB01",
+      "serviceSha256": "6431B5B0E7616E97BC27215944303D90F1074F5929E8D57C194EC2330B4C39AC",
+      "manifestSha256": "DC83A8651B0C859304102DC21399E96C86BB7F17ACB881583718009D9A380DF3",
       "manifestFiles": 678,
       "authenticode": "NotSigned",
       "startupGeometry": "1289x632 DIP",
@@ -105,7 +105,7 @@
       "adultToggleDynamic": "PASS_DEFAULT_OFF_ON_OFF_PERSIST_NO_BRAND_IN_UI"
     },
     "linux": {
-      "status": "PASS_LOCAL_BUILD_CONTRACT_PENDING_PROTECTED_BACKEND_INSTALL_LIVE",
+      "status": "PASS_FINAL_LOCAL_BUILD_CONTRACT_PENDING_PROTECTED_BACKEND_INSTALL_LIVE",
       "artifact": "delivery/DirectInternetMethod_1.5.0_Linux_x86_64.zip",
       "bytes": 8167832,
       "sha256": "B35052C1C768789154ACD13338DE3B5618DF3A99DE7F46D5653ED0665B8DB0E0",
@@ -118,7 +118,7 @@
   },
   "checksums": {
     "artifact": "delivery/SHA256SUMS.txt",
-    "sha256": "0911C3E2D7221A6FBEB3E7F17CFEF8EBB3936264671E46F5CE6D2237A8E9EB22"
+    "sha256": "C4EBDB019E2786DCCECD9B70500B9BBAFA294C6DCDBC20139B5DFA68718CC927"
   },
   "acceptance": {
     "evidenceFirstMethodSelection": "PASS",
@@ -127,11 +127,11 @@
     "routerGatewayContract": "PASS",
     "windowsGuiBuild": "PASS_0_WARNINGS_0_ERRORS",
     "windowsServiceBuild": "PASS_0_WARNINGS_0_ERRORS",
-    "windowsPayload": "PASS",
-    "windowsInstaller": "PASS",
+    "windowsPayload": "PASS_FINAL_LOCAL",
+    "windowsInstaller": "PASS_FINAL_LOCAL",
     "windowsDynamicUi": "PASS_1289x632_NO_OVERLAP",
     "windowsAdultToggle": "PASS_DYNAMIC",
-    "linuxLocalBuild": "PASS",
+    "linuxLocalBuild": "PASS_FINAL_LOCAL",
     "linuxUpdaterThreeWayDigest": "PASS_CONTRACT",
     "crossHostLinux": "PENDING_EXACT_COMMIT_REPRODUCTION",
     "windowsSandboxInstalledLive": "BLOCKED_HOST_SANDBOX_INITIALIZATION_ENVIRONMENT",
@@ -154,5 +154,5 @@
     "windowsInstaller": "evidence/WINDOWS_150_INSTALLER_BUILD_20261004.json",
     "windowsSandboxEnvironment": "evidence/WINDOWS_150_SANDBOX_ENVIRONMENT_BLOCKER_20261004.json"
   },
-  "exactNextAction": "Commit/push exact candidate; independently reproduce Linux ZIP on aliemad-Labtop; perform the one-time protected backend 1.5 upgrade and live Gemini/adult Start->Stop->Recovery; pass protected CI/PR/merge/tag/release/public-hash verification; then update the real Windows installation through the verified service updater and close installed-host lifecycle/UI regression."
+  "exactNextAction": "Push exact v1.5.0 candidate, independently reproduce Linux ZIP, perform one-time protected Linux backend upgrade and live target lifecycle, then complete Windows installed-host regression and protected release gates."
 }

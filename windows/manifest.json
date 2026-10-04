@@ -20,7 +20,7 @@
       "file": "app/DirectInternetMethod.exe",
       "source": "app/DirectInternetMethod.exe",
       "bytes": 161811528,
-      "sha256": "7B0AAFE9216471B59863EE94BD4E9EC9743B0BA78E313463D9BA77A45529C89D"
+      "sha256": "781637F4A27F57A03B1257C7C40D20F7ECBAF1B1B71722ED63C752F038DFEB01"
     },
     {
       "scope": "user",
@@ -69,7 +69,7 @@
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
       "bytes": 67588813,
-      "sha256": "DCF9A4833025C0A0F41F272BB754EE1C03C88EA1C9D6DCAEFFE6DC2801241B8E"
+      "sha256": "6431B5B0E7616E97BC27215944303D90F1074F5929E8D57C194EC2330B4C39AC"
     },
     {
       "scope": "privileged",
