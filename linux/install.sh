@@ -59,7 +59,7 @@ fi
 backend_matches_current || { echo "Protected backend verification failed." >&2; exit 22; }
 if [ -d "$APP" ]; then
   mkdir -p "$BACKUP"
-  for f in direct_internet_method.py router_gateway.py direct-internet-method.svg uninstall.sh INSTALL.json; do
+  for f in direct_internet_method.py router_gateway.py router_gateway_core.py direct-internet-method.svg uninstall.sh INSTALL.json; do
     [ -f "$APP/$f" ] && cp -a "$APP/$f" "$BACKUP/$f"
   done
 fi
@@ -67,6 +67,7 @@ mkdir -p "$APP/directmethod" "$APP/router_gateway" "$BIN" "$DESKTOP" "$ICONS"
 chmod 0700 "$APP" "$APP/directmethod"
 install -m 0755 "$HERE/app/direct_internet_method.py" "$APP/direct_internet_method.py"
 install -m 0755 "$HERE/app/router_gateway.py" "$APP/router_gateway.py"
+install -m 0644 "$HERE/app/router_gateway_core.py" "$APP/router_gateway_core.py"
 ROUTER_DATA="$HERE/app/router_gateway/providers.json"
 [ -f "$ROUTER_DATA" ] || ROUTER_DATA="$HERE/../router_gateway/providers.json"
 [ -f "$ROUTER_DATA" ] || { echo "Missing Router Gateway provider data." >&2; exit 23; }

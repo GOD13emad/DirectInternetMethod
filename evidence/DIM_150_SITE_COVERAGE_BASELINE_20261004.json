@@ -153,12 +153,13 @@
     },
     "linux": {
       "path": "delivery/DirectInternetMethod_1.5.0_Linux_x86_64.zip",
-      "bytes": 8167832,
-      "sha256": "B35052C1C768789154ACD13338DE3B5618DF3A99DE7F46D5653ED0665B8DB0E0"
+      "bytes": 8168586,
+      "sha256": "00124169E12C60117CE2C70EAFAA3FF0D90C23EEA4440F873AB0931B8722F185",
+      "files": 17
     },
     "checksums": {
       "path": "delivery/SHA256SUMS.txt",
-      "sha256": "C4EBDB019E2786DCCECD9B70500B9BBAFA294C6DCDBC20139B5DFA68718CC927"
+      "sha256": "A5A72FC0D323A3932DBEB1BBAC7472CC64410AEB1151590169747D41099B3850"
     }
   },
   "runtimeSmokeHardening": {
@@ -167,5 +168,12 @@
     "rootCause": "socket.gethostbyname/live endpoint path can block independently of the intended informational status.",
     "prevention": "Runtime smoke now executes the informational live probe in a daemon thread and bounds result wait to 5 seconds; timeout is reported informational rather than hanging the regression suite.",
     "regression": "router_gateway_contract_audit includes runtime_smoke_live_probe_bounded guard."
+  },
+  "packagingHardening": {
+    "status": "PASS",
+    "failure": "After extracting Router Gateway pure core for bounded headless smoke tests, the deterministic Linux package list initially omitted router_gateway_core.py, which would have made the installer fail.",
+    "rootCause": "build_linux_package.py uses an explicit allowlist rather than recursive app packaging.",
+    "prevention": "router_gateway_core.py added to explicit package allowlist and linux_contract_audit now guards linux_package_includes_router_core.",
+    "regression": "17-file deterministic Linux package build PASS"
   }
 }

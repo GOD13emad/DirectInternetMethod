@@ -13,6 +13,7 @@ FILES=[
  ("linux/system/uninstall_system.sh","system/uninstall_system.sh"),
  ("linux/app/direct_internet_method.py","app/direct_internet_method.py"),
  ("linux/app/router_gateway.py","app/router_gateway.py"),
+ ("linux/app/router_gateway_core.py","app/router_gateway_core.py"),
  ("router_gateway/providers.json","app/router_gateway/providers.json"),
  ("linux/app/direct_method_helper.sh","app/direct_method_helper.sh"),
  ("linux/app/hosts.txt","app/hosts.txt"),
