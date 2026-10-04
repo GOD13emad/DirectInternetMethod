@@ -4,7 +4,7 @@
   "project": "Direct Internet Method",
   "targetVersion": "1.5.0",
   "changeObjective": "Expand bounded non-VPN/non-proxy Direct Method coverage for Gemini and an optional adult-site live check, while preserving hostlist scoping, rollback and no-default-route/no-proxy invariants.",
-  "status": "DEVELOPMENT_IMPLEMENTED_PENDING_FULL_LIVE_PROMOTION",
+  "status": "DEVELOPMENT_IMPLEMENTED_LOCAL_ARTIFACTS_FINAL_PENDING_INSTALLED_LIVE",
   "baseline": {
     "host": "aliemad-Labtop",
     "directMethodOff": {
@@ -91,7 +91,7 @@
     "DPI handling remains hostlist-scoped",
     "Adult live check is user-toggleable and defaults off"
   ],
-  "exactNextAction": "Rebuild final Windows installer/Linux ZIP from current v1.5 source, validate in Windows Sandbox, push exact candidate for independent Linux rebuild, then close the one-time Linux protected-backend install/live-site gate before protected release.",
+  "exactNextAction": "Commit/push exact candidate, independently reproduce Linux archive on aliemad-Labtop, perform the one-time protected backend 1.5 upgrade, then execute live Gemini/adult Start->Stop->Recovery before protected release.",
   "implemented": {
     "hostlistAdditions": [
       "^gemini.google.com",
@@ -144,5 +144,21 @@
         "failure prevention"
       ]
     }
-  ]
+  ],
+  "artifacts": {
+    "windowsInstaller": {
+      "path": "delivery/DirectInternetMethod_1.5.0_Windows_Setup.exe",
+      "bytes": 157106605,
+      "sha256": "27127D74480C65DA0D506E84601F2F106679F23EAAE4393AEE5AC7CD32667394"
+    },
+    "linux": {
+      "path": "delivery/DirectInternetMethod_1.5.0_Linux_x86_64.zip",
+      "bytes": 8167832,
+      "sha256": "B35052C1C768789154ACD13338DE3B5618DF3A99DE7F46D5653ED0665B8DB0E0"
+    },
+    "checksums": {
+      "path": "delivery/SHA256SUMS.txt",
+      "sha256": "C4EBDB019E2786DCCECD9B70500B9BBAFA294C6DCDBC20139B5DFA68718CC927"
+    }
+  }
 }

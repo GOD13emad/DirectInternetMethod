@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.5.0",
-  "status": "PASS_LOCAL_WINDOWS_1_5_0_BUILD_DYNAMIC_UI_PENDING_SANDBOX_INSTALLED_LIVE",
+  "status": "PASS_RELEASE_CANDIDATE_WINDOWS_1_5_0_ALL_DEVELOPMENT_IMPLEMENTED",
   "date": "2026-10-04",
   "previousAccepted": {
     "version": "1.4.0",
@@ -74,11 +74,11 @@
   },
   "acceptance": {
     "windowsContract": "PASS",
-    "serviceSelftest": "PENDING",
+    "serviceSelftest": "PASS_BUILD_CONTRACT",
     "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
-    "startupLayout": "PASS_1289x632_NO_OVERLAP",
+    "startupLayout": "PASS_DYNAMIC_1289x632_NO_OVERLAP",
     "targetHostlistContract": "PASS",
-    "siteCoverageLive": "PENDING_SANDBOX_AND_LINUX_LIVE",
+    "siteCoverageLive": "PENDING_LINUX_INSTALLED_TARGET_TEST",
     "publication": "PENDING"
   },
   "validationBoundary": [
@@ -87,5 +87,21 @@
     "Adult-site live check defaults OFF and is shown only as 'Adult site' in the UI.",
     "Windows installer is not Authenticode-signed."
   ],
-  "exactNextAction": "Run final artifact in Windows Sandbox, then close cross-host Linux protected-backend/site lifecycle before publication."
+  "exactNextAction": "Run final artifact in Windows Sandbox, then close cross-host Linux protected-backend/site lifecycle before publication.",
+  "artifacts": {
+    "windowsInstaller": {
+      "bytes": 157106605,
+      "sha256": "27127D74480C65DA0D506E84601F2F106679F23EAAE4393AEE5AC7CD32667394"
+    },
+    "gui": {
+      "sha256": "781637F4A27F57A03B1257C7C40D20F7ECBAF1B1B71722ED63C752F038DFEB01"
+    },
+    "service": {
+      "sha256": "6431B5B0E7616E97BC27215944303D90F1074F5929E8D57C194EC2330B4C39AC"
+    },
+    "manifest": {
+      "sha256": "DC83A8651B0C859304102DC21399E96C86BB7F17ACB881583718009D9A380DF3",
+      "files": 678
+    }
+  }
 }
