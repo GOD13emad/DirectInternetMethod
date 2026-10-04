@@ -3,32 +3,37 @@
   "date": "2026-10-04",
   "project": "Direct Internet Method",
   "version": "1.5.0",
-  "status": "PASS_LINUX_1_5_0_CROSS_HOST_EXACT_REPRODUCTION",
+  "status": "PASS_LINUX_150_CROSS_HOST_EXACT_REPRODUCTION",
   "provenance": {
+    "sourceCommit": "cf012a040c4ab8a2ac51203acd2ab577096423ee",
+    "sourceBranch": "feature/v1.5.0-adaptive-direct-sites",
     "host": "aliemad-Labtop",
-    "checkout": "fresh branch clone/reset from GitHub",
-    "commit": "cf012a040c4ab8a2ac51203acd2ab577096423ee",
-    "branch": "feature/v1.5.0-adaptive-direct-sites",
-    "path": "/home/aliemad/.cache/dim150-e68fffc"
+    "checkout": "fresh GitHub clone",
+    "path": "/home/aliemad/.cache/dim150-final-cf012a0"
   },
   "gates": {
     "linuxContract": "PASS",
     "routerGatewayContract": "PASS",
-    "routerGatewayRuntimeSmoke": "PASS_BOUNDED",
-    "releaseMetadataAudit": "PASS",
-    "shellLfSyntax": "PASS",
-    "deterministicBuild": "PASS_EXACT_WINDOWS_LINUX_BUILD_MATCH"
+    "routerGatewayRuntimeSmoke": "PASS_9_PROFILES_BOUNDED",
+    "packageBuild": "PASS_17_FILES"
   },
   "artifact": {
     "path": "delivery/DirectInternetMethod_1.5.0_Linux_x86_64.zip",
     "bytes": 8168586,
     "sha256": "00124169E12C60117CE2C70EAFAA3FF0D90C23EEA4440F873AB0931B8722F185",
-    "sourceFiles": 17,
+    "windowsBuildSha256": "00124169E12C60117CE2C70EAFAA3FF0D90C23EEA4440F873AB0931B8722F185",
     "exactCrossHostMatch": true
   },
-  "failuresClosed": [
-    "Unbounded informational Router Gateway runtime smoke probe replaced by bounded pure-core smoke.",
-    "First core-split package omitted router_gateway_core.py; explicit package allowlist and contract guard fixed the omission before install/release."
-  ],
-  "exactNextAction": "Complete the one-time protected backend 1.5 install on aliemad-Labtop, then perform live Gemini/adult Start->Stop->Recovery and rollback validation."
+  "runtimeSmoke": {
+    "profiles": 9,
+    "configFields": "PASS",
+    "privateDnsGuard": "PASS",
+    "liveEndpointInformational": "Generic endpoint TCP/443 reachable; L2TP/IPsec UDP 500/4500/authentication explicitly unverified."
+  },
+  "rootCauseClosure": {
+    "priorFailure": "router_gateway_runtime_smoke could exceed synchronous transport window on headless Linux because importing GTK/Adwaita could block before the bounded network probe.",
+    "prevention": "Router Gateway pure data/config/test/refresh functions were split into headless router_gateway_core.py; runtime smoke imports only the core module.",
+    "regression": "Fresh headless laptop clone runtime smoke PASS within bounded execution."
+  },
+  "exactNextAction": "Perform the one-time protected Linux 1.5 backend upgrade, then run Start -> Gemini/Adult-site live diagnostics -> Stop -> Recovery and exact rollback verification."
 }
