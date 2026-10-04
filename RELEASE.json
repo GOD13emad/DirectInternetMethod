@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.0",
   "date": "2026-10-04",
-  "status": "RELEASE_CANDIDATE_V1_5_0_ALL_DEVELOPMENT_IMPLEMENTED_PENDING_INSTALLED_LIVE",
+  "status": "RELEASE_CANDIDATE_V1_5_0_DEVELOPMENT_COMPLETE_OWNER_AUTH_GATE_OPEN",
   "previousAccepted": {
     "version": "1.4.0",
     "tag": "v1.4.0",
@@ -136,7 +136,7 @@
     "linuxUpdaterThreeWayDigest": "PASS_CONTRACT",
     "crossHostLinux": "PASS_EXACT_SHA_MATCH",
     "windowsSandboxInstalledLive": "BLOCKED_HOST_SANDBOX_INITIALIZATION_ENVIRONMENT",
-    "linuxInstalledLiveSiteCoverage": "PENDING_ONE_TIME_ADMIN",
+    "linuxInstalledLiveSiteCoverage": "BLOCKED_OWNER_LOCAL_AUTH_REQUIRED",
     "protectedCi": "PENDING",
     "publication": "PENDING"
   },
@@ -154,7 +154,8 @@
     "windowsPayload": "evidence/WINDOWS_150_PAYLOAD_BUILD_20261004.json",
     "windowsInstaller": "evidence/WINDOWS_150_INSTALLER_BUILD_20261004.json",
     "windowsSandboxEnvironment": "evidence/WINDOWS_150_SANDBOX_ENVIRONMENT_BLOCKER_20261004.json",
-    "linuxCrossHost": "evidence/LINUX_150_CROSS_HOST_ACCEPTANCE_20261004.json"
+    "linuxCrossHost": "evidence/LINUX_150_CROSS_HOST_ACCEPTANCE_20261004.json",
+    "linuxPrivilegedInstallGate": "evidence/LINUX_150_PRIVILEGED_INSTALL_GATE_20261004.json"
   },
-  "exactNextAction": "Complete one-time protected Linux 1.5 backend install and live Gemini/adult Start->Stop->Recovery; then close Windows installed-host regression and protected release gates."
+  "exactNextAction": "Approve the one local Linux protected-backend authentication prompt; then execute installed 1.5 Start->Gemini/Adult-site->Stop->Recovery validation before PR promotion/release."
 }

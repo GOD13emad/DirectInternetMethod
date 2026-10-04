@@ -17,8 +17,9 @@ DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback valida
 - **Failure→Prevention:** Router Gateway runtime smoke hung on an unbounded informational DNS/endpoint probe. The live probe is now daemon-thread bounded to 5 s and the contract audit guards that timeout behavior; timeout is informational, not a release hang.
 - **Failure→Prevention:** extracting a pure headless Router Gateway core exposed an explicit-package-allowlist omission: the first rebuilt Linux ZIP omitted `router_gateway_core.py`. Package allowlist + Linux contract guard now require the core; deterministic 17-file archive rebuild PASS. The incomplete intermediate ZIP is superseded and must not be installed/released.
 - **Cross-host Linux:** aliemad-Labtop fresh GitHub checkout of `cf012a0` reproduced the 17-file Linux ZIP exactly at SHA-256 `00124169E12C60117CE2C70EAFAA3FF0D90C23EEA4440F873AB0931B8722F185`; Linux/Router contracts, bounded runtime smoke and release metadata audit PASS.
-- **Open Gate / Critical Path:** one-time protected Linux 1.5 backend install → live Gemini/adult Start/Stop/Recovery → Windows installed-host regression → protected CI/PR/merge → tag/release/public redownload/hash verification → installed-host promotion.
+- **Open Gate / Critical Path:** OWNER AUTH GATE — the one-time protected Linux 1.5 backend upgrade correctly reached `pkexec` but local authentication was not completed before the attempt terminated. After one local approval: live Gemini/adult Start/Stop/Recovery → Windows installed-host regression → PR #12 promotion/merge → tag/release/public redownload/hash verification → installed-host promotion. Evidence: `evidence/LINUX_150_PRIVILEGED_INSTALL_GATE_20261004.json`.
 - **Boundary:** Direct Method cannot change public egress IP, account state, age/region policy or remote product availability; server-side 403 remains REACHABLE, not PASS.
+- **Manual/Owner Gate:** protected Linux install intentionally cannot be bypassed without weakening the root trust boundary; normal Start/Stop/Recovery remain passwordless after the one-time upgrade.
 - **Brain Status:** CURRENT / RELEASE CANDIDATE / NOT FINAL.
 
 
