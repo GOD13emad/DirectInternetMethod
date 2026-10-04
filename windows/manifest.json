@@ -61,8 +61,8 @@
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 2713,
-      "sha256": "F1872A7D2786E30C504236D7D086FDEAF3850188B3CC0A0A1C5E04B4295007DE"
+      "bytes": 3167,
+      "sha256": "C77FDF0968E60A217C2E44BE3BD94A1B0EC9FF243EAA23CF09B189F57B439132"
     },
     {
       "scope": "privileged",

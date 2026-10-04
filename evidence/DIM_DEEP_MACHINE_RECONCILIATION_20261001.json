@@ -1,0 +1,290 @@
+{
+  "schema": 1,
+  "date": "2026-10-01",
+  "project": "Direct Internet Method",
+  "context": "Final deep machine/project audit, authority reconciliation, artifact consolidation, failure-prevention and maintenance-roadmap classification.",
+  "status": "PASS_FINAL_DEEP_MACHINE_PROJECT_AUDIT_WITH_DOCUMENTED_NONBLOCKING_BOUNDARIES",
+  "finalObjective": "Establish one canonical project-control root with reconstructable origin→current history, evidence-backed current capabilities, classified machine artifacts, authoritative release identity, explicit non-blocking boundaries, and durable controls against authority drift.",
+  "definitionOfDone": {
+    "canonicalRootEstablished": true,
+    "predecessorPreserved": true,
+    "machineFootprintAudited": true,
+    "downloadsAndMyProjectTargetedAudit": true,
+    "historicalReleaseArtifactsConsolidated": true,
+    "supersededArtifactsClassified": true,
+    "publicV140HashesVerified": true,
+    "installedWindowsAuthorityReadBack": true,
+    "githubAuthorityReverified": true,
+    "contractsAndBuildsReverified": true,
+    "metadataDriftClosed": true,
+    "projectBrainUpdated": true,
+    "immutableReleaseAssetsMutated": false
+  },
+  "authority": {
+    "canonicalRoot": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod",
+    "auditBranch": "audit/deep-machine-reconciliation-20261001",
+    "baseMain": "8da94b821bfabf01ef993e730def170f7f5ddbb5",
+    "currentRelease": {
+      "version": "1.4.0",
+      "tag": "v1.4.0",
+      "releaseCommit": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
+      "releaseTree": "db7f8e02ca706ca0c74a54901368a6a61a4733cd",
+      "windows": {
+        "bytes": 157103781,
+        "sha256": "69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93"
+      },
+      "linux": {
+        "bytes": 8159881,
+        "sha256": "4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E"
+      },
+      "checksumAsset": {
+        "bytes": 223,
+        "sha256": "7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609"
+      }
+    }
+  },
+  "machineReconciliation": {
+    "predecessor": {
+      "source": "C:\\Users\\Aa.Emad\\source\\repos\\DirectDnsDpiHarness",
+      "archived": "archive/predecessor/DirectDnsDpiHarness",
+      "classification": "HISTORICAL_AUTHORITATIVE_PREDECESSOR_EVIDENCE_NOT_CURRENT_RELEASE_AUTHORITY"
+    },
+    "downloads": {
+      "directInternetMethodNameHits": 0,
+      "directDnsDpiHarnessNameHits": 0,
+      "myProjectStrongSignatureHits": 0,
+      "limitation": "Downloads/My Project broad content search timed out in some attempts; targeted project-name searches are high-confidence negative evidence but not every-byte proof.",
+      "unrelatedGenericDirectMethodHits": "Scientific RETURN_R013A files; deliberately not moved."
+    },
+    "archivedMachineSnapshots": [
+      "archive/machine-snapshots/windows-appdata-legacy",
+      "archive/machine-snapshots/temp-public-verification",
+      "archive/machine-snapshots/crashdumps/DirectInternetMethod.exe.67464.dmp"
+    ],
+    "crashDump": {
+      "archivedPath": "archive/machine-snapshots/crashdumps/DirectInternetMethod.exe.67464.dmp",
+      "bytes": 6219229,
+      "sha256": "0714E2BC3407266ACDE55C7C9DB0F215DD634662ABDB0E2D0A49EFFAA7AE4162",
+      "originalRetained": true
+    },
+    "remoteCommanderSafetyBackups": {
+      "classification": "EXTERNAL_NON_AUTHORITATIVE_SAFETY_STORE",
+      "fileCount": 920,
+      "uniqueContentCount": 799,
+      "totalBytes": 741236438,
+      "uniqueBytes": 672381380,
+      "evidence": "audit/20261001_deep_machine_reconciliation/REMOTE_COMMANDER_PROJECT_BACKUPS_SUMMARY.json",
+      "rationale": "Duplicating the safety store into the project root would add hundreds of MB without increasing project truth."
+    },
+    "historicalWorktrees": {
+      "count": 6,
+      "status": "CLEAN_REDUNDANT_HISTORICAL_EXTERNAL",
+      "cleanupAttempt": "git worktree remove attempted and failed with Windows Permission denied",
+      "preservationBundle": {
+        "path": "archive/worktree-history/DirectInternetMethod_all_refs_precleanup_20261001.bundle",
+        "bytes": 45355308,
+        "sha256": "5308BF413E17241CB4421137C7F4E5077E4F9734518FB132D90DD83282D0F415",
+        "listHeads": "PASS"
+      }
+    }
+  },
+  "artifactClassification": {
+    "canonicalDeliveryPolicy": "Tagged public-version product artifacts only + README + exact current public checksum asset.",
+    "currentChecksumExactPublicAsset": true,
+    "movedOutOfDelivery": [
+      "v1.0.1 local Windows/Linux artifacts -> archive/superseded-artifacts/v1.0.1-local",
+      "DIM_120_HOST_BOOTSTRAP_RUNNER.zip -> archive/validation-tools"
+    ],
+    "preservedIntermediate": [
+      "v1.3.0 intermediate Linux EFD4... -> archive/superseded-artifacts/v1.3.0-intermediate",
+      "v1.3.1 intermediate Windows C453... and Linux A50F... -> archive/superseded-artifacts/v1.3.1-intermediate"
+    ],
+    "consolidationManifest": "audit/20261001_deep_machine_reconciliation/ARTIFACT_CONSOLIDATION_MANIFEST.json"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "type": "FACT_ROOT_CAUSE_PREVENTION",
+      "claim": "Canonical delivery checksum serialization was stale/misaligned with v1.4.0 exact public checksum asset.",
+      "status": "CLOSED",
+      "evidence": [
+        "delivery/SHA256SUMS.txt",
+        "RELEASE.json",
+        "GitHub v1.4.0 release asset digest"
+      ],
+      "rootCause": "Ignored/local delivery state survived across release worktrees; root text checksum content and exact public CRLF asset serialization were conflated.",
+      "prevention": "Pin exact public checksum asset source/hash in consolidation and verify RELEASE checksums.artifact raw SHA.",
+      "regression": "release_metadata_audit PASS"
+    },
+    {
+      "id": "F2",
+      "type": "FACT_ROOT_CAUSE_PREVENTION",
+      "claim": "windows/RELEASE.json publication state could remain stale because release_metadata_audit used a brittle contiguous status substring.",
+      "status": "CLOSED",
+      "evidence": [
+        "windows/RELEASE.json",
+        "tests/release_metadata_audit.py",
+        "evidence/GITHUB_130_METADATA_CI_DRIFT_FIX_20261001.json"
+      ],
+      "rootCause": "The old guard tested literal PUBLISHED_VERIFIED while current status is PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED_V1_4_0.",
+      "prevention": "Explicit publication metadata in root/platform release records; structural published+verified detection; publication-field comparison; checksum-artifact raw-hash verification.",
+      "regression": "PASS release_metadata_audit v1.4.0: 2 artifacts"
+    },
+    {
+      "id": "F3",
+      "type": "FACT_CLASSIFICATION",
+      "claim": "Three Brain-recorded final-evidence raw SHA-256 values are worktree-byte-serialization specific, not stable tracked-text identities.",
+      "status": "CONTROLLED_NOT_CORRUPTION",
+      "evidence": [
+        "audit/20261001_deep_machine_reconciliation/EVIDENCE_EOL_HASH_AUDIT.json",
+        "git diff main audit/v1.4.0-finalize = no content diff"
+      ],
+      "stableGitBlobIds": {
+        "windowsFinal": "0f5864f28edd504cd910b65a1741f302cac432a8",
+        "linuxFinal": "e5b01fa734e33a94dc11472b3ee9a57ecd0d6ea6",
+        "publicationFinal": "f81ee8cdbd7f331d7f8fa3aa38ef31e4a07debb3"
+      },
+      "prevention": "Use Git blob/commit identity for tracked text; use raw worktree SHA only when serialization/EOL is explicitly pinned."
+    },
+    {
+      "id": "F4",
+      "type": "FACT_PROPOSAL",
+      "claim": "Linux updater checksum verification is sound but has weaker defense-in-depth than Windows because it does not cross-check GitHub API asset digest.",
+      "status": "DEFERRED_FUTURE_HARDENING_NONBLOCKING_V140",
+      "evidence": [
+        "linux/app/direct_internet_method.py:138-197",
+        "windows/service/Program.cs update path"
+      ],
+      "proposal": "Future release: require exact-one Linux asset and SHA256SUMS asset, API digest == SHA256SUMS == downloaded ZIP SHA-256."
+    },
+    {
+      "id": "F5",
+      "type": "FACT_PROPOSAL",
+      "claim": "Router Gateway L2TP/IPsec health fallback uses TCP/443 as a generic endpoint reachability heuristic, not a protocol-aware L2TP/IPsec probe.",
+      "status": "DEFERRED_FUTURE_DIAGNOSTIC_IMPROVEMENT_NONBLOCKING_V140",
+      "evidence": [
+        "windows/gui/RouterGatewayClient.cs:205-211",
+        "linux/app/router_gateway.py _test"
+      ],
+      "proposal": "Relabel as generic endpoint reachability or add bounded UDP 500/4500 diagnostics; do not imply authenticated tunnel success."
+    }
+  ],
+  "verification": {
+    "windowsContract": "PASS",
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "hardenedReleaseMetadataAudit": "PASS",
+    "trackedSyntaxAudit": "PASS_47_POWERSHELL_11_PYTHON_0_ERRORS",
+    "dotnetService": "PASS_0_WARNINGS_0_ERRORS",
+    "dotnetGui": "PASS_0_WARNINGS_0_ERRORS",
+    "mergeConflictMarkers": 0,
+    "todoMarkers": 0,
+    "gitFsck": "PASS_DANGLING_OBJECTS_ONLY_NO_CORRUPTION",
+    "github": {
+      "main": "8da94b821bfabf01ef993e730def170f7f5ddbb5",
+      "mainProtected": true,
+      "requiredChecks": [
+        "linux-source",
+        "windows-source"
+      ],
+      "releaseTagRuleset": "Protect release tags / active",
+      "latestRelease": "v1.4.0 non-draft non-prerelease",
+      "mainCiRun": 36841799782,
+      "mainCiConclusion": "success",
+      "tagCiRun": 36837069912,
+      "tagCiConclusion": "success",
+      "openPullRequestsAtAudit": 0,
+      "limitation": "Full branch-protection administration endpoint returned 403 to the GitHub integration; branch object exposed protected status and required checks."
+    }
+  },
+  "currentCapabilities": {
+    "directMethods": [
+      "encrypted-dns-doh",
+      "http-host-split-tcp80",
+      "tls-sni-desync-tcp443",
+      "quic-desync-udp443"
+    ],
+    "invariants": [
+      "no VPN",
+      "no application proxy",
+      "no default-route tunnel",
+      "no physical-adapter DNS mutation",
+      "hostlist-scoped packet handling",
+      "fail-closed secure DNS upstream"
+    ],
+    "windows": [
+      "native WPF",
+      "fixed-command privileged service",
+      "bundled PowerShell 7.6.6",
+      "normal actions no UAC",
+      "service-mediated verified updater",
+      "exact rollback/recovery"
+    ],
+    "linux": [
+      "GTK/Adwaita",
+      "protected root backend",
+      "narrow polkit fixed actions",
+      "dummy DNS link + ctrld",
+      "nft/NFQUEUE + nfqws",
+      "verified online update checksum gate"
+    ],
+    "routerGateway": [
+      "9 profiles",
+      "3 ready providers",
+      "L2TP/IPsec preferred",
+      "PPTP legacy fallback",
+      "offline snapshot",
+      "online refresh",
+      "copy-ready router configuration",
+      "non-mutating health tests"
+    ]
+  },
+  "validationBoundaries": [
+    "Windows installer is not Authenticode-signed.",
+    "Repository license remains OWNER_LEGAL_DECISION_OPEN.",
+    "Physical-router authenticated tunnel success remains model/firmware dependent.",
+    "HTTP/3 application-level QUIC remains unproven on the validation host; UDP/443 QUIC configuration/runtime is verified.",
+    "DoH3/DoQ/DoT are software-supported but were not promoted because current-network isolated resolution failed."
+  ],
+  "roadmap": {
+    "completed": [
+      "predecessor proof",
+      "v1.0.0",
+      "v1.1.0",
+      "v1.2.0",
+      "v1.2.1",
+      "v1.3.0",
+      "v1.3.1",
+      "v1.3.2",
+      "v1.4.0 publication + installed acceptance",
+      "deep machine/project reconciliation"
+    ],
+    "current": "v1.4.0 maintenance authority; audit/control metadata reconciliation",
+    "deferred": [
+      "Linux updater API-digest symmetry",
+      "protocol-aware L2TP/IPsec diagnostics",
+      "optional signing infrastructure",
+      "owner/legal license decision",
+      "router-model-specific authenticated E2E",
+      "HTTP/3-capable application E2E if required"
+    ],
+    "releaseCriticalOpenGates": []
+  },
+  "report": "audit/20261001_deep_machine_reconciliation/DEEP_AUDIT_REPORT.md",
+  "reuseTargets": [
+    "PROJECT_BRAIN",
+    "maintenance handoff",
+    "future v1.5 planning",
+    "release governance",
+    "failure-prevention regression"
+  ],
+  "exactNextAction": "Commit/push audit and control-metadata reconciliation, pass protected PR checks, merge to main; do not mutate immutable v1.4.0 tag/assets. Runtime improvements belong to a future release branch.",
+  "knowledgeRegistration": {
+    "projectBrain": "PROJECT_BRAIN.md",
+    "detailedReport": "audit/20261001_deep_machine_reconciliation/DEEP_AUDIT_REPORT.md",
+    "statusReport": "audit/20261001_deep_machine_reconciliation/STATUS.md",
+    "artifactManifest": "audit/20261001_deep_machine_reconciliation/ARTIFACT_CONSOLIDATION_MANIFEST.json",
+    "remoteBackupInventory": "audit/20261001_deep_machine_reconciliation/REMOTE_COMMANDER_PROJECT_BACKUPS.json",
+    "keyArchiveHashes": "audit/20261001_deep_machine_reconciliation/KEY_ARCHIVE_HASHES.json"
+  }
+}

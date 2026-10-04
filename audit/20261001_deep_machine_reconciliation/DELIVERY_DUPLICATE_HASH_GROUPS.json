@@ -1,0 +1,196 @@
+[
+  {
+    "Sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+    "Count": 7,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_hotfix121\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_ui131\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v131final\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140final\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe"
+    ]
+  },
+  {
+    "Sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+    "Count": 7,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_hotfix121\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_ui131\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v131final\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140final\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip"
+    ]
+  },
+  {
+    "Sha256": "04EBFD968146A7122A0695DB36A01DBACB5F91B69104D6D1DEA6D1964BB99263",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.3.0_Windows_Setup.exe"
+    ]
+  },
+  {
+    "Sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.2.0_Windows_Setup.exe"
+    ]
+  },
+  {
+    "Sha256": "DB13BD5F72DFFD244B657442C3411C65ADD962F8D6D675C71C444B65AE842071",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DIM_120_HOST_BOOTSTRAP_RUNNER.zip"
+    ]
+  },
+  {
+    "Sha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_hotfix121\\delivery\\DirectInternetMethod_1.2.1_Linux_x86_64.zip"
+    ]
+  },
+  {
+    "Sha256": "C4537112843AF1A8009E7F9A9D03B7377B98EBB3BACA7011D731B0F3E8E0EE02",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.3.1_Windows_Setup.exe"
+    ]
+  },
+  {
+    "Sha256": "BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.2.0_Linux_x86_64.zip"
+    ]
+  },
+  {
+    "Sha256": "B5141A93BDF2C261F54F4C0483128D973A54DEFBCD45C6C701535037B31E6E58",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.3.2_Windows_Setup.exe"
+    ]
+  },
+  {
+    "Sha256": "B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_ui131\\delivery\\DirectInternetMethod_1.3.1_Linux_x86_64.zip"
+    ]
+  },
+  {
+    "Sha256": "B1C49C36E7553D6E34FC6D3185CE6DD37B52DBE04CC6BA2464BD75B6660E2948",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.0.1_Windows_Setup.exe"
+    ]
+  },
+  {
+    "Sha256": "B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_hotfix121\\delivery\\DirectInternetMethod_1.2.1_Windows_Setup.exe"
+    ]
+  },
+  {
+    "Sha256": "AED6215219CAEC8AA2D3E5FD78D79BEFA9ECBF0F8ABAF6CC38D13823C09EFA28",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_ui131\\delivery\\SHA256SUMS.txt"
+    ]
+  },
+  {
+    "Sha256": "A56DB90964085A0D8452691D70DCEFF74D888DB65B634B370926A3BB38596ABE",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\SHA256SUMS.txt"
+    ]
+  },
+  {
+    "Sha256": "E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.1.0_Windows_Setup.exe"
+    ]
+  },
+  {
+    "Sha256": "A50F5BA3C6BB05F0E69EAE9B33B716FCCE8A0CDF7299282E1A9707F10B3A669A",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.3.1_Linux_x86_64.zip"
+    ]
+  },
+  {
+    "Sha256": "8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.3.2_Linux_x86_64.zip"
+    ]
+  },
+  {
+    "Sha256": "7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140\\delivery\\SHA256SUMS.txt"
+    ]
+  },
+  {
+    "Sha256": "69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140\\delivery\\DirectInternetMethod_1.4.0_Windows_Setup.exe"
+    ]
+  },
+  {
+    "Sha256": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.1.0_Linux_x86_64.zip"
+    ]
+  },
+  {
+    "Sha256": "4F70C372E6B8CE7152D9501E5C4A70F4B2F650638CFDD3014B18EB6E3C123093",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_ui131\\delivery\\DirectInternetMethod_1.3.1_Windows_Setup.exe"
+    ]
+  },
+  {
+    "Sha256": "4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140\\delivery\\DirectInternetMethod_1.4.0_Linux_x86_64.zip"
+    ]
+  },
+  {
+    "Sha256": "216A6267F056910E85FF996F5E780B9F5D93F3C71E0B8D4F3B6619376E150745",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\SHA256SUMS.txt"
+    ]
+  },
+  {
+    "Sha256": "14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.3.0_Linux_x86_64.zip"
+    ]
+  },
+  {
+    "Sha256": "AA31786875943900A4AF8216F1A657528AD29856474D0AA8A7F730539D3596E4",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.0.1_Linux_x86_64.zip"
+    ]
+  },
+  {
+    "Sha256": "EFD4C53FD85B8E29093B67B476BF1D2B01E571F48EC224609C36080C43605AE5",
+    "Count": 1,
+    "Paths": [
+      "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.3.0_Linux_x86_64.zip"
+    ]
+  }
+]

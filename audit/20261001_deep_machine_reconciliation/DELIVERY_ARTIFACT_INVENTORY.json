@@ -1,0 +1,268 @@
+[
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DIM_120_HOST_BOOTSTRAP_RUNNER.zip",
+    "Name": "DIM_120_HOST_BOOTSTRAP_RUNNER.zip",
+    "Bytes": 157100168,
+    "Sha256": "DB13BD5F72DFFD244B657442C3411C65ADD962F8D6D675C71C444B65AE842071",
+    "LastWriteTimeUtc": "2026-10-01T00:36:44.6601858Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_hotfix121\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Bytes": 7951455,
+    "Sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+    "LastWriteTimeUtc": "2026-10-01T01:24:49.8547689Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Bytes": 7951455,
+    "Sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+    "LastWriteTimeUtc": "2026-10-01T04:37:39.5018146Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_ui131\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Bytes": 7951455,
+    "Sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+    "LastWriteTimeUtc": "2026-10-01T04:43:30.0251083Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v131final\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Bytes": 7951455,
+    "Sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+    "LastWriteTimeUtc": "2026-10-01T07:32:48.8464371Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Bytes": 7951455,
+    "Sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+    "LastWriteTimeUtc": "2026-10-01T07:42:10.0743493Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140final\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Bytes": 7951455,
+    "Sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+    "LastWriteTimeUtc": "2026-10-01T09:08:02.3768629Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+    "Bytes": 7951455,
+    "Sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98",
+    "LastWriteTimeUtc": "2026-09-29T13:33:46.7319102Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_hotfix121\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Bytes": 10609007,
+    "Sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+    "LastWriteTimeUtc": "2026-10-01T01:24:49.8914703Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Bytes": 10609007,
+    "Sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+    "LastWriteTimeUtc": "2026-10-01T04:37:39.5445444Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_ui131\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Bytes": 10609007,
+    "Sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+    "LastWriteTimeUtc": "2026-10-01T04:43:30.0628757Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v131final\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Bytes": 10609007,
+    "Sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+    "LastWriteTimeUtc": "2026-10-01T07:32:48.8839469Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Bytes": 10609007,
+    "Sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+    "LastWriteTimeUtc": "2026-10-01T07:42:10.1123511Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140final\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Bytes": 10609007,
+    "Sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+    "LastWriteTimeUtc": "2026-10-01T09:08:02.4297697Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.0.0_Windows_Setup.exe",
+    "Bytes": 10609007,
+    "Sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602",
+    "LastWriteTimeUtc": "2026-09-29T12:46:19.1762870Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.0.1_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.0.1_Linux_x86_64.zip",
+    "Bytes": 11312491,
+    "Sha256": "AA31786875943900A4AF8216F1A657528AD29856474D0AA8A7F730539D3596E4",
+    "LastWriteTimeUtc": "2026-09-29T20:53:08.7007194Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.0.1_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.0.1_Windows_Setup.exe",
+    "Bytes": 79715777,
+    "Sha256": "B1C49C36E7553D6E34FC6D3185CE6DD37B52DBE04CC6BA2464BD75B6660E2948",
+    "LastWriteTimeUtc": "2026-09-30T08:43:59.2110676Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.1.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.1.0_Linux_x86_64.zip",
+    "Bytes": 8139344,
+    "Sha256": "621AD8512FDF4E53DFF283DDFBEB620DDD80631C2DB4785536F8523EAA0AC861",
+    "LastWriteTimeUtc": "2026-09-30T15:39:07.4018644Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.1.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.1.0_Windows_Setup.exe",
+    "Bytes": 157078634,
+    "Sha256": "E59B61C4E17F30AFBA3F2E0234B42759435A114B7F4264BCA7C1D253A950C9B0",
+    "LastWriteTimeUtc": "2026-09-30T19:38:29.9043663Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.2.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.2.0_Linux_x86_64.zip",
+    "Bytes": 8140827,
+    "Sha256": "BBCDAD529D242987EAC74DC4EC4EA02435FAB9755D6736ECABE84133FC3DABDC",
+    "LastWriteTimeUtc": "2026-10-01T00:24:42.0765505Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.2.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.2.0_Windows_Setup.exe",
+    "Bytes": 157093296,
+    "Sha256": "E1D774B29BEE29B15632ADBED9B6137738E4D297DAF1A3B216D5B27DE9559FC1",
+    "LastWriteTimeUtc": "2026-10-01T00:18:25.4682913Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_hotfix121\\delivery\\DirectInternetMethod_1.2.1_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.2.1_Linux_x86_64.zip",
+    "Bytes": 8139783,
+    "Sha256": "CAF93659623A5A88DB4ED182B2F6C2EF1E7E1DDC94534896ABB09883EFC25A65",
+    "LastWriteTimeUtc": "2026-10-01T01:28:17.0928914Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_hotfix121\\delivery\\DirectInternetMethod_1.2.1_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.2.1_Windows_Setup.exe",
+    "Bytes": 157077755,
+    "Sha256": "B0CFFC657FC53888954CBE16E63276EE597BD96C57D1FFA7F75A289BE56C28BA",
+    "LastWriteTimeUtc": "2026-10-01T01:37:10.5474587Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+    "Bytes": 8158143,
+    "Sha256": "EFD4C53FD85B8E29093B67B476BF1D2B01E571F48EC224609C36080C43605AE5",
+    "LastWriteTimeUtc": "2026-10-01T04:43:19.4276208Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.3.0_Linux_x86_64.zip",
+    "Bytes": 8156742,
+    "Sha256": "14CE381D589482FB8DBF437C12B351B5F232653F2C6512F871139FB5F3809824",
+    "LastWriteTimeUtc": "2026-10-01T01:54:47.5038445Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\DirectInternetMethod_1.3.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.3.0_Windows_Setup.exe",
+    "Bytes": 157098906,
+    "Sha256": "04EBFD968146A7122A0695DB36A01DBACB5F91B69104D6D1DEA6D1964BB99263",
+    "LastWriteTimeUtc": "2026-10-01T03:18:18.8918203Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.3.1_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.3.1_Linux_x86_64.zip",
+    "Bytes": 8158282,
+    "Sha256": "A50F5BA3C6BB05F0E69EAE9B33B716FCCE8A0CDF7299282E1A9707F10B3A669A",
+    "LastWriteTimeUtc": "2026-10-01T06:59:34.2941569Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_ui131\\delivery\\DirectInternetMethod_1.3.1_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.3.1_Linux_x86_64.zip",
+    "Bytes": 8158158,
+    "Sha256": "B21BD0D5C8B40643F4CF5F07DC13F220B07E71A674F862DFB792D63FD9823A34",
+    "LastWriteTimeUtc": "2026-10-01T07:01:49.4703569Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.3.1_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.3.1_Windows_Setup.exe",
+    "Bytes": 157092680,
+    "Sha256": "C4537112843AF1A8009E7F9A9D03B7377B98EBB3BACA7011D731B0F3E8E0EE02",
+    "LastWriteTimeUtc": "2026-10-01T07:06:49.9523082Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_ui131\\delivery\\DirectInternetMethod_1.3.1_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.3.1_Windows_Setup.exe",
+    "Bytes": 157096702,
+    "Sha256": "4F70C372E6B8CE7152D9501E5C4A70F4B2F650638CFDD3014B18EB6E3C123093",
+    "LastWriteTimeUtc": "2026-10-01T06:59:09.2531350Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.3.2_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.3.2_Linux_x86_64.zip",
+    "Bytes": 8158337,
+    "Sha256": "8D4AB63AC64CF1837C47341D2438617BDF821919AE170BA75B301AA2B661172D",
+    "LastWriteTimeUtc": "2026-10-01T07:19:40.9262016Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\DirectInternetMethod_1.3.2_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.3.2_Windows_Setup.exe",
+    "Bytes": 157107271,
+    "Sha256": "B5141A93BDF2C261F54F4C0483128D973A54DEFBCD45C6C701535037B31E6E58",
+    "LastWriteTimeUtc": "2026-10-01T07:21:24.6633827Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140\\delivery\\DirectInternetMethod_1.4.0_Linux_x86_64.zip",
+    "Name": "DirectInternetMethod_1.4.0_Linux_x86_64.zip",
+    "Bytes": 8159881,
+    "Sha256": "4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E",
+    "LastWriteTimeUtc": "2026-10-01T08:13:56.6730361Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140\\delivery\\DirectInternetMethod_1.4.0_Windows_Setup.exe",
+    "Name": "DirectInternetMethod_1.4.0_Windows_Setup.exe",
+    "Bytes": 157103781,
+    "Sha256": "69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93",
+    "LastWriteTimeUtc": "2026-10-01T08:20:47.8811933Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_provider131\\delivery\\SHA256SUMS.txt",
+    "Name": "SHA256SUMS.txt",
+    "Bytes": 221,
+    "Sha256": "216A6267F056910E85FF996F5E780B9F5D93F3C71E0B8D4F3B6619376E150745",
+    "LastWriteTimeUtc": "2026-10-01T07:21:51.1346918Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_ui131\\delivery\\SHA256SUMS.txt",
+    "Name": "SHA256SUMS.txt",
+    "Bytes": 223,
+    "Sha256": "AED6215219CAEC8AA2D3E5FD78D79BEFA9ECBF0F8ABAF6CC38D13823C09EFA28",
+    "LastWriteTimeUtc": "2026-10-01T07:02:04.3837435Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v140\\delivery\\SHA256SUMS.txt",
+    "Name": "SHA256SUMS.txt",
+    "Bytes": 223,
+    "Sha256": "7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609",
+    "LastWriteTimeUtc": "2026-10-01T08:21:17.0860758Z"
+  },
+  {
+    "Path": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod\\delivery\\SHA256SUMS.txt",
+    "Name": "SHA256SUMS.txt",
+    "Bytes": 221,
+    "Sha256": "A56DB90964085A0D8452691D70DCEFF74D888DB65B634B370926A3BB38596ABE",
+    "LastWriteTimeUtc": "2026-10-01T03:19:54.5432610Z"
+  }
+]

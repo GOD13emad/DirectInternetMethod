@@ -33,3 +33,10 @@ delivery/SHA256SUMS.txt
 delivery/DirectInternetMethod_1.3.1_*
 delivery/DirectInternetMethod_1.3.2_*
 delivery/DirectInternetMethod_1.4.0_*
+# Local deep-audit archive: large machine snapshots/bundles stay local; index is tracked.
+archive/*
+!archive/README.md
+
+# Raw machine inventories stay local; tracked summaries/reports retain project evidence.
+audit/20261001_deep_machine_reconciliation/C_DRIVE_NAME_SWEEP.txt
+audit/20261001_deep_machine_reconciliation/REMOTE_COMMANDER_PROJECT_BACKUPS.json

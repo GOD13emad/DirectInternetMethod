@@ -130,5 +130,12 @@
     "linuxFinal": "evidence/LINUX_140_PUBLIC_INSTALLED_FINAL_ACCEPTANCE_20261001.json",
     "publicationFinal": "evidence/DIM_140_PUBLICATION_INSTALLED_FINAL_20261001.json"
   },
-  "exactNextAction": "Maintenance only. Keep v1.4.0 tag/assets immutable; future releases must repeat protected contracts, deterministic builds, live lifecycle, public hash verification and installed-host update verification."
+  "exactNextAction": "Maintenance only. Keep v1.4.0 tag/assets immutable; future releases must repeat protected contracts, deterministic builds, live lifecycle, public hash verification and installed-host update verification.",
+  "publication": {
+    "tag": "v1.4.0",
+    "tagCommit": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.4.0",
+    "publishedAt": "2026-10-01T08:37:55Z",
+    "publicRedownloadHashVerification": "PASS_ALL_ASSETS"
+  }
 }
