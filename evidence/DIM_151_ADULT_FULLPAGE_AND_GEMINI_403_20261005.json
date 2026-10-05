@@ -3,7 +3,7 @@
   "date": "2026-10-05",
   "project": "Direct Internet Method",
   "changeSet": "adult-fullpage-coverage-151",
-  "status": "SOURCE_HARDENED_FULL_LOCAL_PASS_RUNTIME_PARTIAL_PENDING_CI",
+  "status": "CANDIDATE_1_5_1_LOCAL_ARTIFACTS_PASS_RUNTIME_REPRESENTATIVE_PARTIAL",
   "objective": "Make the existing opt-in Adult control provide real broad adult-domain DPI coverage and validate full HTTP page access instead of merely probing one site.",
   "previousAcceptedState": {
     "main": "b6a7e5434e2056c97ef5abdcb6086bfb9a813bec",
@@ -80,6 +80,26 @@
       "type": "FACT",
       "status": "CONFIRMED",
       "claim": "Official zapret v72.13 release archive was downloaded to the Linux test host and matched upstream SHA-256 25C74E6C5F48963FA244C2955E76694A07C39447245A0457E2EFDC74B3317E68. Its blockcheck tool is ready in /tmp, but full quick-scan requires root firewall mutation; pkexec waits for interactive authorization and sudo -n is not allowed on the laptop connector."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Official zapret v72.13 release archive was downloaded from the upstream release and SHA-256 matched 25C74E6C5F48963FA244C2955E76694A07C39447245A0457E2EFDC74B3317E68 before strategy research."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "When Direct Method is off, the validation network DNS can return interception addresses such as 10.10.34.35; with owned ctrld DoH active, xhamster.com resolved to public Cloudflare addresses 104.16.3.81/104.16.4.81."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "An isolated HTTPS-only zapret v72.13 matrix using a separate nft/NFQUEUE probe found no usable full-page XHamster strategy: several split/sequence-overlap/syndata variants reached HTTP 520 on 104.16.4.81 while 104.16.3.81 remained TLS-failing. HTTP 520 is not accepted as PASS."
+    },
+    {
+      "type": "DECISION",
+      "status": "ACCEPTED",
+      "claim": "Do not add GreenTunnel, SpoofDPI or PowerTunnel runtimes because they use local proxy architectures; do not add GoodbyeDPI because its direct fragmentation/DNS anti-poisoning primitives materially overlap the already accepted zapret/winws runtime without demonstrated incremental benefit."
     }
   ],
   "decision": {
@@ -94,9 +114,10 @@
     "No global Strong/Compatibility promotion because tests showed regressions.",
     "Gemini egress-policy remediation is a separate architecture decision because it requires changing egress.",
     "Do not label Gemini HTTP 403 as PASS/REACHABLE success; usable-page acceptance requires 2xx/3xx.",
-    "Do not claim all adult sites are individually proven merely because a maintained catalog contains them; prove representative families and preserve fallback/custom-site paths."
+    "Do not claim all adult sites are individually proven merely because a maintained catalog contains them; prove representative families and preserve fallback/custom-site paths.",
+    "Broad Adult domain coverage may be promoted with representative proof and truthful limitations; do not claim every remote Adult origin/CDN edge is guaranteed."
   ],
-  "exactNextAction": "Commit/push hardened broad-coverage source, require PR #20 protected CI, then continue the separate privileged XHamster adaptive-strategy runtime gate without changing immutable v1.5.0.",
+  "exactNextAction": "Complete full syntax/security gates, independently rebuild/install exact v1.5.1 on Linux, run installed lifecycle, then protected PR/CI. Publish only after exact artifact acceptance.",
   "implementation": {
     "adultCatalog": {
       "mode": "opt-in",
@@ -161,6 +182,30 @@
     "packaging": {
       "windowsFallbackRequiredInManifest": true,
       "linuxFallbackRequiredInPackage": true
+    },
+    "releaseCandidate": {
+      "version": "1.5.1",
+      "windows": {
+        "bytes": 157104795,
+        "sha256": "F210AD4663757727452BD6A8ADBDF0288EE7F9867EA5F67BE5322C8B6DB7281A",
+        "authenticode": "NotSigned"
+      },
+      "linux": {
+        "bytes": 8186498,
+        "sha256": "EB7BAEA9620DAC8A910E087AD1671FA3941F4739C3B41549BAD7CC65556DA871"
+      },
+      "sourceContracts": "PASS_WINDOWS_LINUX_ROUTER_SECURITY_RELEASE_METADATA_AFTER_VERSION_COHERENCE",
+      "fullTrackedSourceAudit": {
+        "status": "PASS",
+        "powershellParsed": 55,
+        "pythonCompiled": 15,
+        "dotnetGui": "PASS_0_WARNINGS_0_ERRORS",
+        "dotnetService": "PASS_0_WARNINGS_0_ERRORS",
+        "mergeConflictMarkers": 0,
+        "todoMarkers": 0,
+        "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
+      },
+      "defender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME_REALTIME_ON"
     }
   },
   "adaptiveStrategyResearch": {

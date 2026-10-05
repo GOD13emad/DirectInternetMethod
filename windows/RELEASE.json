@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.5.0",
-  "status": "PASS_FINAL_WINDOWS_1_5_0_PUBLISHED_INSTALLED_VERIFIED",
-  "date": "2026-10-04",
+  "version": "1.5.1",
+  "status": "CANDIDATE_1_5_1_ADULT_COVERAGE_PENDING_BUILD_INSTALL_RELEASE",
+  "date": "2026-10-05",
   "previousAccepted": {
-    "version": "1.4.0",
-    "tag": "v1.4.0",
-    "commit": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
-    "status": "FINAL_PUBLISHED_INSTALLED_VERIFIED"
+    "version": "1.5.0",
+    "tag": "v1.5.0",
+    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
+    "status": "PASS_FINAL_WINDOWS_1_5_0_PUBLISHED_INSTALLED_VERIFIED"
   },
   "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + accepted zapret/winws/WinDivert multiprotocol engine with Targeted/All Sites scope control",
   "features": {
@@ -87,6 +87,13 @@
       "maxEntries": 256,
       "normalizesUrlsToDomains": true,
       "exactHostPrefix": "^"
+    },
+    "adultCoverage": {
+      "enabledByDefault": false,
+      "optIn": true,
+      "maintainedCatalog": true,
+      "offlineFallback": true,
+      "usablePageAcceptance": "2xx/3xx only"
     }
   },
   "usage": {
@@ -114,20 +121,13 @@
     "windowsInstalledLive": "PASS_EXACT_INSTALLED_3_CYCLES_SITE_MATRIX_RECOVERY_ROLLBACK"
   },
   "validationBoundary": [
-    "Direct Internet Method does not change the public egress IP, so remote country/account/product restrictions cannot be guaranteed away.",
-    "Targeted is the default scope; experimental All Sites applies DPI strategy broadly to HTTP/TLS/QUIC web traffic and may reduce compatibility or speed.",
-    "A successful HTTP response such as 403 is reported as REACHABLE, not PASS.",
-    "Adult-site live check defaults OFF and is shown only as 'Adult site' in the UI.",
-    "zapret2 v1.0.5.2 Windows/archive remains rejected after local Severe/Concrete Defender detection; no exclusion or restore is used.",
-    "Windows installer is not Authenticode-signed."
+    "Direct Internet Method does not change public egress IP; remote country/account/product restrictions are outside direct DNS/DPI control.",
+    "Adult coverage is broad maintained-domain coverage, not a guarantee that every remote origin or edge will return a usable page.",
+    "HTTP 4xx/5xx is not accepted as usable-page PASS.",
+    "Targeted remains the default scope; All Sites is explicit opt-in.",
+    "Windows installer remains not Authenticode-signed."
   ],
-  "exactNextAction": "No v1.5.0 Windows release-critical gate remains. Immutable public artifact authority is external root RELEASE.json + v1.5.0 release assets; future changes require a new version.",
+  "exactNextAction": "Build and verify exact v1.5.1 Windows payload/installer, run contracts and Defender, then promote only with exact-artifact evidence.",
   "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
-  "publication": {
-    "tag": "v1.5.0",
-    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.0",
-    "publishedAt": "2026-10-05T11:47:58Z",
-    "publicRedownloadHashVerification": "PASS_ALL_ASSETS"
-  }
+  "publication": null
 }

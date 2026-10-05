@@ -22,7 +22,7 @@ from gi.repository import Gtk, Adw, GLib, Gdk
 from router_gateway import RouterGatewayWindow
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
-VERSION="1.5.0"
+VERSION="1.5.1"
 GLib.set_prgname("DirectInternetMethod")
 GLib.set_application_name("Direct Internet Method")
 try:

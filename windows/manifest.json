@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "product": "Direct Internet Method",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + accepted zapret/winws/WinDivert multiprotocol engine with Targeted/All Sites scope control",
   "offlineRuntime": true,
   "normalRunRequiresAdmin": false,
@@ -20,7 +20,7 @@
       "file": "app/DirectInternetMethod.exe",
       "source": "app/DirectInternetMethod.exe",
       "bytes": 161827912,
-      "sha256": "AB39316374AA32F97F0B6D5ECC501B424B10CF69B197CBB529F02E01E3D4490F"
+      "sha256": "692FF64804F71353EB1F610A10324C7EEE402B0F3F8DD0ADA774FC7F77C8EC9D"
     },
     {
       "scope": "user",
@@ -61,15 +61,15 @@
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 4984,
-      "sha256": "3CAB5676C75C6D1EBAEDF9B8DD314BE51C786D6233A1328BA86B0E18AF0D58DA"
+      "bytes": 4561,
+      "sha256": "D0894A4F75E3C7AFAC5515BE50357ECF8B8242C4D357CF0E62AC8DE347A00FB8"
     },
     {
       "scope": "privileged",
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
       "bytes": 67588813,
-      "sha256": "D2491AEF07F7CB7C4AB730A8642F60896CBBC65A31144D7790D6D8D283269DA6"
+      "sha256": "F722FB4926AFE3552AC5DE7BB7B044A14D7808032CE13558AC4471B9E729732F"
     },
     {
       "scope": "privileged",
@@ -152,8 +152,8 @@
       "scope": "privileged",
       "file": "bin/zapret/adult-fallback-hosts.txt",
       "source": "bin/zapret/adult-fallback-hosts.txt",
-      "bytes": 309,
-      "sha256": "FD832F1E1A2376588FE363B8A2A684AAA88E025A5B39AE5716F7E17C4FFCAE00"
+      "bytes": 448,
+      "sha256": "25BA72F6D56EF1C405115C7AA5D6ED1985E8F6D56F306A95D5AD800602A75288"
     },
     {
       "scope": "privileged",
