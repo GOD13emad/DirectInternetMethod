@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.0",
   "date": "2026-10-04",
-  "status": "RELEASE_CANDIDATE_V1_5_0_SOURCE_CI_CROSS_HOST_PASS_PENDING_INSTALLED_OWNER_AUTH",
+  "status": "RELEASE_CANDIDATE_V1_5_0_WINDOWS_INSTALLED_PASS_LINUX_OWNER_AUTH_GATE_OPEN",
   "previousAccepted": {
     "version": "1.4.0",
     "tag": "v1.4.0",
@@ -115,7 +115,7 @@
   },
   "platforms": {
     "windows": {
-      "status": "PASS_FINAL_LOCAL_BUILD_DEFENDER_CLEAN_PENDING_OWNER_UAC_INSTALLED_LIVE",
+      "status": "PASS_INSTALLED_LIVE_EXACT_ARTIFACT_AND_ROLLBACK",
       "artifact": "delivery/DirectInternetMethod_1.5.0_Windows_Setup.exe",
       "bytes": 157112753,
       "sha256": "544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C",
@@ -168,11 +168,19 @@
     "publication": "PENDING",
     "windowsCustomSites": "PASS_DYNAMIC_SAVE_AND_CLEANUP",
     "windowsStrategy": "PASS_DYNAMIC_STRONG_ALL_SITES_SAVE_AND_RESET",
-    "windowsInstalledLive": "PENDING_OWNER_UAC_EXACT_FINAL_ARTIFACT",
+    "windowsInstalledLive": "PASS_EXACT_INSTALLED_3_CYCLES_SITE_MATRIX_RECOVERY_ROLLBACK",
     "dnsResilienceAudit": "PASS_KEEP_ONLY_PROVEN_DIRECT_IP_DOH",
     "windowsDefender": "PASS_EXACT_FINAL_INSTALLER_NO_THREATS",
     "windowsDefenderFinal": "PASS_EXACT_FINAL_CANDIDATE_NO_THREATS",
-    "finalLocalGate": "PASS_50_PS1_13_PY_GUI_SERVICE_DIFF_SECRET_DEFENDER"
+    "finalLocalGate": "PASS_50_PS1_13_PY_GUI_SERVICE_DIFF_SECRET_DEFENDER",
+    "windowsSiteMatrix": {
+      "balancedTargeted": "PASS",
+      "strongTargetedCustom": "PASS",
+      "strongAllSites": "PASS",
+      "adultSite": "PASS_HTTP_200_ALL_3_CYCLES",
+      "reddit": "PASS_HTTP_200_ALL_3_CYCLES",
+      "gemini": "REACHABLE_HTTP_403_SERVER_SIDE"
+    }
   },
   "validationBoundary": {
     "allSitesGuarantee": "UNPROVABLE: remote server/account/region/product policy and unsupported protocols can still deny access",
@@ -202,7 +210,9 @@
     "windowsDefenderAcceptance": "evidence/WINDOWS_150_DEFENDER_ACCEPTANCE_20261005.json",
     "windowsDefenderFinal": "evidence/WINDOWS_150_DEFENDER_ACCEPTANCE_20261005.json",
     "finalLocalCandidate": "evidence/DIM_150_FINAL_LOCAL_CANDIDATE_ACCEPTANCE_20261005.json",
-    "windowsBuildRacePrevention": "evidence/WINDOWS_150_BUILD_RACE_PREVENTION_20261005.json"
+    "windowsBuildRacePrevention": "evidence/WINDOWS_150_BUILD_RACE_PREVENTION_20261005.json",
+    "windowsInstalledLifecycle": "evidence/WINDOWS_150_INSTALLED_LIFECYCLE_20261005.json",
+    "windowsWindivertDiagnostic": "evidence/WINDOWS_150_WINDIVERT_START_DIAGNOSTIC_20261005.json"
   },
-  "exactNextAction": "Owner approves one-time Windows UAC and Linux pkexec prompts for exact final candidate; run installed Start->site matrix->Stop->Recovery on both hosts, then promote PR #12, merge, tag/release, public-redownload and installed-update verification."
+  "exactNextAction": "Close the one-time Linux protected-backend owner-auth gate and installed Start->site matrix->Stop->Recovery; then promote PR #12, merge, tag/release, public-redownload and online-update verification."
 }
