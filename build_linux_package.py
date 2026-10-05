@@ -18,6 +18,7 @@ FILES=[
  ("linux/app/direct_method_helper.sh","app/direct_method_helper.sh"),
  ("linux/app/hosts.txt","app/hosts.txt"),
  ("linux/app/adult_hosts_fallback.txt","app/adult_hosts_fallback.txt"),
+ ("linux/app/strong_override_hosts.txt","app/strong_override_hosts.txt"),
  ("linux/app/direct-internet-method.svg","app/direct-internet-method.svg"),
  ("linux/runtime/ctrld","runtime/ctrld"),
  ("linux/runtime/nfqws","runtime/nfqws"),

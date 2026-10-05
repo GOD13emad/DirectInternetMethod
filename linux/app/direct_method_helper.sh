@@ -15,6 +15,7 @@ STATE="$DM/state.json"
 CTRLD_CFG="$DM/ctrld.toml"
 HOSTS="$APP_HOME/direct_hosts.txt"
 ADULT_FALLBACK="$APP_HOME/adult_hosts_fallback.txt"
+STRONG_OVERRIDE="$APP_HOME/strong_override_hosts.txt"
 CUSTOM_HOSTS="$STATE_BASE/custom-hosts.txt"
 ADULT_ENABLED="$STATE_BASE/adult-enabled.txt"
 ADULT_HOSTS="$STATE_BASE/adult-hosts.txt"
@@ -297,6 +298,7 @@ case "$ACTION" in
     ADULT_ON=0
     if [ -f "$ADULT_ENABLED" ] && [ "$(tr -d '\r\n[:space:]' <"$ADULT_ENABLED")" = "1" ]; then
       ADULT_ON=1
+      [ -f "$STRONG_OVERRIDE" ] || { echo '{"ok":false,"error":"STRONG_OVERRIDE_HOSTLIST_MISSING"}'; exit 74; }
     fi
     ADULT_COUNT="$(
     python3 - "$HOSTS" "$CUSTOM_HOSTS" "$ADULT_FALLBACK" "$ADULT_HOSTS" "$ADULT_ON" "$RUN_HOSTS" <<'PY'
@@ -424,9 +426,15 @@ EOF
       compatibility)
         NFQWS_ARGS+=(
           --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=method+2
-          --new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=1,sniext+1,host+1,midsld,endhost-1
-          --new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=4
         )
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=fake,hostfakesplit --dpi-desync-hostfakesplit-midhost=midsld --dpi-desync-fooling=badseq,md5sig --dpi-desync-repeats=4)
+        fi
+        NFQWS_ARGS+=(--new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=1,sniext+1,host+1,midsld,endhost-1)
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic --hostlist="$STRONG_OVERRIDE" --dpi-desync=fake --dpi-desync-repeats=11)
+        fi
+        NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=4)
         ;;
       strong)
         NFQWS_ARGS+=(
@@ -438,9 +446,15 @@ EOF
       *)
         NFQWS_ARGS+=(
           --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=fake,multisplit --dpi-desync-split-pos=method+2 --dpi-desync-fooling=md5sig
-          --new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld --dpi-desync-fooling=badseq,md5sig
-          --new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=6
         )
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=fake,hostfakesplit --dpi-desync-hostfakesplit-midhost=midsld --dpi-desync-fooling=badseq,md5sig --dpi-desync-repeats=4)
+        fi
+        NFQWS_ARGS+=(--new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld --dpi-desync-fooling=badseq,md5sig)
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic --hostlist="$STRONG_OVERRIDE" --dpi-desync=fake --dpi-desync-repeats=11)
+        fi
+        NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=6)
         ;;
     esac
     "$NFQWS" --dry-run "${NFQWS_ARGS[@]}" >/dev/null 2>&1 || { echo '{"ok":false,"error":"NFQWS_STRATEGY_INVALID"}'; exit 76; }

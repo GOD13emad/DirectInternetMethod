@@ -7,7 +7,7 @@ def txt(rel): return (W/rel).read_text(encoding="utf-8-sig")
 start,stop,recovery,status,iss=map(txt,["app/Start-Direct.ps1","app/Stop-Direct.ps1","app/Recovery.ps1","app/Status.ps1","installer/DirectInternetMethod.iss"])
 gui=txt("gui/MainWindow.xaml.cs"); xaml=txt("gui/MainWindow.xaml")
 svc=txt("service/Program.cs"); client=txt("gui/ServiceClient.cs"); updater=txt("gui/UpdateClient.cs")
-manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt"); adult_fallback=txt("bin/zapret/adult-fallback-hosts.txt")
+manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt"); adult_fallback=txt("bin/zapret/adult-fallback-hosts.txt"); strong_override=txt("bin/zapret/strong-override-hosts.txt")
 payload_builder=(R/"tests"/"build_windows_151_payload.ps1").read_text(encoding="utf-8-sig")
 installer_builder=(R/"tests"/"build_windows_151_installer.ps1").read_text(encoding="utf-8-sig")
 install_registration_guard=(R/"tests"/"windows_install_registration_audit.ps1").read_text(encoding="utf-8-sig")
@@ -65,6 +65,8 @@ check("all_sites_scope_optional_default_targeted", all(x in start for x in ("$Sc
 check("ui_gemini_adult_live_checks", all(x in xaml for x in ('Text="Gemini"','Text="Adult coverage"','x:Name="AdultSiteCheckToggle"','x:Name="GeminiText"','x:Name="AdultSiteText"')) and all(x in gui for x in ("https://www.pornhub.com/","https://www.xvideos.com/","https://www.xnxx.com/","https://xhamster.com/","FmtAdult")) and "pornhub" not in xaml.lower())
 check("ui_adult_check_default_off_persisted", all(x in gui for x in ("adultSiteLiveCheck","settings.json","AdultSiteCheckToggle_Changed")) and "bool adultCheckEnabled;" in gui)
 check("adult_catalog_opt_in", all(x in gui for x in ("adultCoverageEnabled","adult-enabled.txt","adult-hosts.txt","nsfw-onlydomains.txt","EnsureAdultCatalogAsync","Adult catalog is unexpectedly small","xvideos.com","xnxx.com","xhamster.com")) and all(x in start for x in ("$AdultEnabledFile","$AdultHosts","$AdultFallback","adultHostCount","ADULT_CATALOG_INVALID")) and 'adult-fallback-hosts.txt' in iss)
+check("startup_https_health_quorum", all(x in start for x in ("Curl-Probe-Retry","HTTPS_HEALTH_QUORUM_FAIL","$httpsProbePassCount -lt 2","httpsHealth=[ordered]@{required=2")) and all(x not in start for x in ("throw 'YOUTUBE_HTTP80_FAIL'","throw 'YOUTUBE_HTTPS_FAIL'","throw 'OPENAI_HTTPS_FAIL'","throw 'GITHUB_HTTPS_FAIL'")))
+check("adult_strong_override_profile", all(x in strong_override.splitlines() for x in ("xhamster.com","xhamsterlive.com","xhcdn.com","reddit.com","redditstatic.com","redditmedia.com","redd.it")) and all(x in start for x in ("$StrongOverrideHostList","strong-override-hosts.txt","--hostlist='+$StrongOverrideHostList","--dpi-desync=fake,hostfakesplit","--dpi-desync-repeats=11")) and 'strong-override-hosts.txt' in iss)
 check("ui_live_probe_semantics", "FAIL · HTTP" in gui and 'https://gemini.google.com/' in gui and "adultTasks is not null" in gui and "full pages" in gui)
 check("ui_direct_update_service_handoff", 'ServiceClient.Send("update")' in gui and 'ServiceClient.Send("recovery")' in gui and '"handoff"' in gui and "300000" in gui and "DownloadVerifiedAsync" not in gui and "LaunchInstaller" not in gui)
 check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "digest" in updater and "SHA256SUMS.txt" in updater and "DownloadVerifiedAsync" not in updater and "Process.Start" not in updater)
@@ -108,6 +110,7 @@ check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequ
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)
 check("manifest_adult_fallback", ("privileged","bin/zapret/adult-fallback-hosts.txt") in files)
+check("manifest_strong_override", ("privileged","bin/zapret/strong-override-hosts.txt") in files)
 check("manifest_service", ("privileged","app/DirectInternetMethod.Service.exe") in files)
 check("manifest_no_helper", not any(x[1].endswith("Helper.exe") for x in files))
 check("manifest_bundled_pwsh", manifest.get("bundledPowerShellVersion")=="7.6.6" and manifest.get("bundledPowerShellArchiveSha256")=="02FE458BE20493FBDF43F61EA20610B811EE6C738AB1676C61B9CFCD1A33C860" and ("privileged","runtime/pwsh/pwsh.exe") in files)
@@ -123,6 +126,7 @@ pin_paths={
 "cygwin1.dll":"bin/zapret/cygwin1.dll",
 "hosts.txt":"bin/zapret/hosts.txt",
 "adult-fallback-hosts.txt":"bin/zapret/adult-fallback-hosts.txt",
+"strong-override-hosts.txt":"bin/zapret/strong-override-hosts.txt",
 }
 start_pins=dict(re.findall(r"'([^']+)'='([0-9A-F]{64})'",start))
 pin_actual={k:hashlib.sha256((W/v).read_bytes()).hexdigest().upper() for k,v in pin_paths.items()}

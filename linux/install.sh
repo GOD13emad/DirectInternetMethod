@@ -44,6 +44,7 @@ $HERE/system/control.sh|/usr/lib/directinternetmethod/control.sh
 $HERE/system/uninstall_system.sh|/usr/lib/directinternetmethod/uninstall_system.sh
 $HERE/app/hosts.txt|/usr/lib/directinternetmethod/direct_hosts.txt
 $HERE/app/adult_hosts_fallback.txt|/usr/lib/directinternetmethod/adult_hosts_fallback.txt
+$HERE/app/strong_override_hosts.txt|/usr/lib/directinternetmethod/strong_override_hosts.txt
 $HERE/runtime/ctrld|/usr/lib/directinternetmethod/runtime/usr/bin/ctrld
 $HERE/runtime/nfqws|/usr/lib/directinternetmethod/runtime/usr/bin/nfqws
 $HERE/licenses/LICENSE-ctrld.txt|/usr/lib/directinternetmethod/licenses/LICENSE-ctrld.txt
