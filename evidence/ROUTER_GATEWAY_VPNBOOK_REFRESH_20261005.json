@@ -3,7 +3,7 @@
   "date": "2026-10-05",
   "project": "Direct Internet Method",
   "changeSet": "router-gateway-vpnbook-credential-refresh",
-  "status": "PASS_DATA_REFRESH_REGRESSION",
+  "status": "PASS_DATA_REFRESH_MERGED_INSTALLED_PROPAGATED",
   "finding": {
     "type": "FACT",
     "status": "CONFIRMED",
@@ -29,7 +29,7 @@
     "Provider freshness failures must distinguish upstream/network unavailability from stale bundled data.",
     "Revalidate official rotating credentials at finalization and meaningful maintenance milestones."
   ],
-  "exactNextAction": "Commit/push data-authority refresh, require CI, merge to main, then refresh installed caches.",
+  "exactNextAction": "Router Gateway rotating-data Change Set is complete. Maintain provider freshness independently of the immutable v1.5.0 application release.",
   "regression": {
     "routerGatewayContract": "PASS",
     "routerGatewayRuntimeSmoke": "PASS",
@@ -38,5 +38,26 @@
     "releaseMetadata": "PASS",
     "diffCheck": "PASS",
     "liveEndpointInformational": "VPN Gate L2TP profile endpoint TCP/443 reachable; full L2TP/IPsec handshake remains UNPROVEN by design."
+  },
+  "promotion": {
+    "mainCommit": "64e54de2e9dc7d29d22b9b42a4b271f28a6112d0",
+    "pullRequest": 15,
+    "protectedCi": "PASS_SOURCE_AND_RELEASE_CONTRACTS_RUN_37313817546"
+  },
+  "installedPropagation": {
+    "windows": {
+      "path": "C:\\Users\\Aa.Emad\\AppData\\Local\\DirectInternetMethod\\router_gateway\\providers.json",
+      "sha256": "D4E4B3A91252802DF33A46FE4F36067BA02A3E28974EDD23D458127E5224E0CD",
+      "dataRevision": 3,
+      "networkStateExists": false,
+      "ctrldProcesses": 0,
+      "winwsProcesses": 0
+    },
+    "linux": {
+      "path": "/home/aliemad/.local/share/DirectInternetMethod/router_gateway/providers.json",
+      "sha256": "D4E4B3A91252802DF33A46FE4F36067BA02A3E28974EDD23D458127E5224E0CD",
+      "dataRevision": 3,
+      "networkStateExists": false
+    }
   }
 }
