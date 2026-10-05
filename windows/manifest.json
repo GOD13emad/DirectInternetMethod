@@ -19,8 +19,8 @@
       "scope": "user",
       "file": "app/DirectInternetMethod.exe",
       "source": "app/DirectInternetMethod.exe",
-      "bytes": 161819720,
-      "sha256": "055C2F10BFBEEE13496FBC75B3151D08FCC5AAB3E6D2B0ED27A1D3D0E4450A86"
+      "bytes": 161807432,
+      "sha256": "83594B60BBA67F84175F1287EB12E6921A14C883E83BF2CCF566A8A4A698728B"
     },
     {
       "scope": "user",
@@ -61,15 +61,15 @@
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 4405,
-      "sha256": "8B8C44C3588547DEBF83DFF0B8E09CE036FC4827C647371A148F35C3C6B01BD1"
+      "bytes": 4852,
+      "sha256": "88736296D3622AB506D3BDECC805DB993D07E9DF7A1B54E0A4A8338E7C3B4BEB"
     },
     {
       "scope": "privileged",
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
       "bytes": 67588813,
-      "sha256": "E0BAB3C9E97287E31EE920DB137B7B0C6314194F74D79B2918B25804E2445A8C"
+      "sha256": "034CA29CF4CB3968AAB37CEABDB8D78C84F0B7355659F312D119A19E61C163D4"
     },
     {
       "scope": "privileged",
@@ -110,8 +110,8 @@
       "scope": "privileged",
       "file": "bin/ctrld/LICENSE.txt",
       "source": "bin/ctrld/LICENSE.txt",
-      "bytes": 1122,
-      "sha256": "5B166F4937F5D1ADED9C6D90675524ABAB6A6F0EBA1E226FA30119F37DBAB754"
+      "bytes": 1101,
+      "sha256": "55D82D13FE55D4B2AEC42166FCCD3C16C267B7131ECF2FBD7C3C6C3463494501"
     },
     {
       "scope": "privileged",
@@ -152,8 +152,8 @@
       "scope": "privileged",
       "file": "bin/zapret/LICENSE.txt",
       "source": "bin/zapret/LICENSE.txt",
-      "bytes": 1090,
-      "sha256": "1FACB290FF6425CF6AB61FC882E71FFB0DF50FDA527FEF90D4098935097BD984"
+      "bytes": 1069,
+      "sha256": "DCF5ABD3E5D876C1065982871C0CEC7368C0E61FC795C541798729516BB6B54F"
     },
     {
       "scope": "privileged",
