@@ -1,0 +1,357 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "PASS_LIFECYCLE_SITE_MATRIX",
+  "installed": {
+    "appVersion": "1.5.0",
+    "backendVersion": "1.5.0"
+  },
+  "pre": {
+    "defaultRoute": "default via 192.168.20.1 dev enp1s0 proto dhcp src 192.168.20.6 metric 100",
+    "dns": "Global:\nLink 2 (enp1s0): 192.168.20.1\nLink 3 (wlp2s0):",
+    "domains": "Global:\nLink 2 (enp1s0): bwrouter\nLink 3 (wlp2s0):",
+    "defaultRouteDns": "Global\n         Protocols: -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported\n  resolv.conf mode: stub\nLink 2 (enp1s0): yes\nLink 3 (wlp2s0): no",
+    "stateExists": false,
+    "ownedProcesses": ""
+  },
+  "cycles": [
+    {
+      "cycle": "balanced-targeted-builtins",
+      "state": {
+        "phase": null,
+        "strategy": "balanced",
+        "scope": "targeted",
+        "directMethods": [
+          "encrypted-dns-doh",
+          "http-host-split-tcp80",
+          "tls-sni-desync-tcp443",
+          "quic-desync-udp443",
+          "custom-hostlist",
+          "strategy-profile"
+        ]
+      },
+      "rows": [
+        {
+          "name": "YouTube",
+          "url": "https://www.youtube.com/generate_204",
+          "status": "PASS",
+          "http": "204",
+          "remote": "142.251.155.4",
+          "exit": 0,
+          "elapsedMs": 1089,
+          "raw": "204|142.251.155.4|1.081806",
+          "stderr": ""
+        },
+        {
+          "name": "OpenAI",
+          "url": "https://api.openai.com/v1/models",
+          "status": "PASS",
+          "http": "401",
+          "remote": "162.159.140.245",
+          "exit": 0,
+          "elapsedMs": 379,
+          "raw": "401|162.159.140.245|0.372517",
+          "stderr": ""
+        },
+        {
+          "name": "GitHub",
+          "url": "https://github.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "140.82.121.4",
+          "exit": 0,
+          "elapsedMs": 715,
+          "raw": "200|140.82.121.4|0.708805",
+          "stderr": ""
+        },
+        {
+          "name": "Gemini",
+          "url": "https://gemini.google.com/",
+          "status": "REACHABLE",
+          "http": "403",
+          "remote": "142.251.156.2",
+          "exit": 0,
+          "elapsedMs": 793,
+          "raw": "403|142.251.156.2|0.786362",
+          "stderr": ""
+        },
+        {
+          "name": "Adult site",
+          "url": "https://www.pornhub.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "66.254.114.41",
+          "exit": 0,
+          "elapsedMs": 1270,
+          "raw": "200|66.254.114.41|1.263260",
+          "stderr": ""
+        },
+        {
+          "name": "Reddit",
+          "url": "https://www.reddit.com/",
+          "status": "FAIL",
+          "http": "000",
+          "remote": "146.75.121.140",
+          "exit": 35,
+          "elapsedMs": 181,
+          "raw": "000|146.75.121.140|0.175293",
+          "stderr": "curl: (35) OpenSSL/3.0.13: error:0A00010B:SSL routines::wrong version number"
+        },
+        {
+          "name": "Wikipedia",
+          "url": "https://www.wikipedia.org/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "185.15.59.224",
+          "exit": 0,
+          "elapsedMs": 567,
+          "raw": "200|185.15.59.224|0.559478",
+          "stderr": ""
+        },
+        {
+          "name": "Cloudflare",
+          "url": "https://www.cloudflare.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "104.16.123.96",
+          "exit": 0,
+          "elapsedMs": 917,
+          "raw": "200|104.16.123.96|0.910827",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "cycle": "strong-targeted-custom-reddit",
+      "state": {
+        "phase": null,
+        "strategy": "strong",
+        "scope": "targeted",
+        "directMethods": [
+          "encrypted-dns-doh",
+          "http-host-split-tcp80",
+          "tls-sni-desync-tcp443",
+          "quic-desync-udp443",
+          "custom-hostlist",
+          "strategy-profile"
+        ]
+      },
+      "rows": [
+        {
+          "name": "YouTube",
+          "url": "https://www.youtube.com/generate_204",
+          "status": "PASS",
+          "http": "204",
+          "remote": "142.251.156.4",
+          "exit": 0,
+          "elapsedMs": 523,
+          "raw": "204|142.251.156.4|0.514787",
+          "stderr": ""
+        },
+        {
+          "name": "OpenAI",
+          "url": "https://api.openai.com/v1/models",
+          "status": "PASS",
+          "http": "401",
+          "remote": "162.159.140.245",
+          "exit": 0,
+          "elapsedMs": 464,
+          "raw": "401|162.159.140.245|0.456317",
+          "stderr": ""
+        },
+        {
+          "name": "GitHub",
+          "url": "https://github.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "140.82.121.3",
+          "exit": 0,
+          "elapsedMs": 889,
+          "raw": "200|140.82.121.3|0.882128",
+          "stderr": ""
+        },
+        {
+          "name": "Gemini",
+          "url": "https://gemini.google.com/",
+          "status": "REACHABLE",
+          "http": "403",
+          "remote": "142.251.157.2",
+          "exit": 0,
+          "elapsedMs": 773,
+          "raw": "403|142.251.157.2|0.765514",
+          "stderr": ""
+        },
+        {
+          "name": "Adult site",
+          "url": "https://www.pornhub.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "66.254.114.41",
+          "exit": 0,
+          "elapsedMs": 1378,
+          "raw": "200|66.254.114.41|1.369306",
+          "stderr": ""
+        },
+        {
+          "name": "Reddit",
+          "url": "https://www.reddit.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "146.75.121.140",
+          "exit": 0,
+          "elapsedMs": 635,
+          "raw": "200|146.75.121.140|0.627621",
+          "stderr": ""
+        },
+        {
+          "name": "Wikipedia",
+          "url": "https://www.wikipedia.org/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "185.15.59.224",
+          "exit": 0,
+          "elapsedMs": 578,
+          "raw": "200|185.15.59.224|0.568801",
+          "stderr": ""
+        },
+        {
+          "name": "Cloudflare",
+          "url": "https://www.cloudflare.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "104.16.124.96",
+          "exit": 0,
+          "elapsedMs": 931,
+          "raw": "200|104.16.124.96|0.924428",
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "cycle": "strong-all-sites",
+      "state": {
+        "phase": null,
+        "strategy": "strong",
+        "scope": "all-sites",
+        "directMethods": [
+          "encrypted-dns-doh",
+          "http-host-split-tcp80",
+          "tls-sni-desync-tcp443",
+          "quic-desync-udp443",
+          "custom-hostlist",
+          "strategy-profile"
+        ]
+      },
+      "rows": [
+        {
+          "name": "YouTube",
+          "url": "https://www.youtube.com/generate_204",
+          "status": "PASS",
+          "http": "204",
+          "remote": "142.251.152.4",
+          "exit": 0,
+          "elapsedMs": 516,
+          "raw": "204|142.251.152.4|0.509074",
+          "stderr": ""
+        },
+        {
+          "name": "OpenAI",
+          "url": "https://api.openai.com/v1/models",
+          "status": "PASS",
+          "http": "401",
+          "remote": "172.66.0.243",
+          "exit": 0,
+          "elapsedMs": 406,
+          "raw": "401|172.66.0.243|0.399642",
+          "stderr": ""
+        },
+        {
+          "name": "GitHub",
+          "url": "https://github.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "140.82.121.3",
+          "exit": 0,
+          "elapsedMs": 717,
+          "raw": "200|140.82.121.3|0.710606",
+          "stderr": ""
+        },
+        {
+          "name": "Gemini",
+          "url": "https://gemini.google.com/",
+          "status": "REACHABLE",
+          "http": "403",
+          "remote": "142.251.154.2",
+          "exit": 0,
+          "elapsedMs": 614,
+          "raw": "403|142.251.154.2|0.607690",
+          "stderr": ""
+        },
+        {
+          "name": "Adult site",
+          "url": "https://www.pornhub.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "66.254.114.41",
+          "exit": 0,
+          "elapsedMs": 1286,
+          "raw": "200|66.254.114.41|1.279760",
+          "stderr": ""
+        },
+        {
+          "name": "Reddit",
+          "url": "https://www.reddit.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "146.75.121.140",
+          "exit": 0,
+          "elapsedMs": 623,
+          "raw": "200|146.75.121.140|0.616971",
+          "stderr": ""
+        },
+        {
+          "name": "Wikipedia",
+          "url": "https://www.wikipedia.org/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "185.15.59.224",
+          "exit": 0,
+          "elapsedMs": 579,
+          "raw": "200|185.15.59.224|0.571980",
+          "stderr": ""
+        },
+        {
+          "name": "Cloudflare",
+          "url": "https://www.cloudflare.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "104.16.123.96",
+          "exit": 0,
+          "elapsedMs": 953,
+          "raw": "200|104.16.123.96|0.946818",
+          "stderr": ""
+        }
+      ]
+    }
+  ],
+  "recovery": {
+    "unit": "directinternetmethod-recovery.service",
+    "startRc": 0,
+    "show": [
+      "success",
+      "0"
+    ]
+  },
+  "post": {
+    "defaultRoute": "default via 192.168.20.1 dev enp1s0 proto dhcp src 192.168.20.6 metric 100",
+    "dns": "Global:\nLink 2 (enp1s0): 192.168.20.1\nLink 3 (wlp2s0):",
+    "domains": "Global:\nLink 2 (enp1s0): bwrouter\nLink 3 (wlp2s0):",
+    "defaultRouteDns": "Global\n         Protocols: -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported\n  resolv.conf mode: stub\nLink 2 (enp1s0): yes\nLink 3 (wlp2s0): no",
+    "stateExists": false,
+    "ownedProcesses": ""
+  },
+  "rollbackEqual": true,
+  "error": null
+}
