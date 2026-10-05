@@ -79,15 +79,15 @@
     "linux": {
       "status": "PASS_LOCAL_EXACT_ARTIFACT_PENDING_INSTALLED_ACCEPTANCE",
       "artifact": "delivery/DirectInternetMethod_1.5.1_Linux_x86_64.zip",
-      "bytes": 8186498,
-      "sha256": "EB7BAEA9620DAC8A910E087AD1671FA3941F4739C3B41549BAD7CC65556DA871",
+      "bytes": 8183518,
+      "sha256": "2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA",
       "protectedBackendVersion": "1.5.1",
       "packageFiles": 18
     }
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "4F4A22B8958F94FA364EFBEBBBC44C877BB0830395871B2EC4C26A0527E3D610"
+    "sha256": "C95F5CB36AAD337AED57F9147703CD0D9680308C8D9108CE95186FF428031B50"
   },
   "acceptance": {
     "windowsPayload": "PASS",
@@ -105,7 +105,8 @@
     "rejectedComponentAudit": "PASS",
     "releaseMetadata": "PASS",
     "fullTrackedSourceAudit": "PASS_55_PS1_15_PY_DOTNET_0_WARN_0_ERR",
-    "windowsDefender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME"
+    "windowsDefender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME",
+    "linuxCrossHostRebuild": "PASS_EXACT_SHA_2D0D4CEC"
   },
   "validationBoundary": {
     "universalAdultGuarantee": "UNPROVABLE: maintained domain coverage maximizes targeting, but remote origins/CDN edges and site policy can still fail independently of DPI bypass.",
@@ -116,7 +117,8 @@
   "evidence": {
     "adultCoverage": "evidence/DIM_151_ADULT_FULLPAGE_AND_GEMINI_403_20261005.json",
     "windowsPayload": "evidence/WINDOWS_151_PAYLOAD_BUILD_20261005.json",
-    "windowsInstaller": "evidence/WINDOWS_151_INSTALLER_BUILD_20261005.json"
+    "windowsInstaller": "evidence/WINDOWS_151_INSTALLER_BUILD_20261005.json",
+    "linuxCrossHostCandidate": "evidence/LINUX_151_CROSS_HOST_CANDIDATE_20261005.json"
   },
   "exactNextAction": "Run full source/security/Defender gates, install exact v1.5.1 on Linux for lifecycle acceptance, then promote by protected PR/CI and publish only if exact-artifact gates pass."
 }

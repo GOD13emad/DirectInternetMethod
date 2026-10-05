@@ -9,6 +9,6 @@ Versioned installer/archive binaries are not tracked in the source branch. Candi
 - Windows: `DirectInternetMethod_1.5.1_Windows_Setup.exe`
   - SHA-256: `F210AD4663757727452BD6A8ADBDF0288EE7F9867EA5F67BE5322C8B6DB7281A`
 - Linux: `DirectInternetMethod_1.5.1_Linux_x86_64.zip`
-  - SHA-256: `EB7BAEA9620DAC8A910E087AD1671FA3941F4739C3B41549BAD7CC65556DA871`
+  - SHA-256: `2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA`
 
 The previously accepted public release v1.5.0 remains immutable until v1.5.1 promotion completes. Historical binaries remain available through Git tags/GitHub Releases.

@@ -191,8 +191,9 @@
         "authenticode": "NotSigned"
       },
       "linux": {
-        "bytes": 8186498,
-        "sha256": "EB7BAEA9620DAC8A910E087AD1671FA3941F4739C3B41549BAD7CC65556DA871"
+        "bytes": 8183518,
+        "sha256": "2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA",
+        "crossHostDeterministic": "PASS"
       },
       "sourceContracts": "PASS_WINDOWS_LINUX_ROUTER_SECURITY_RELEASE_METADATA_AFTER_VERSION_COHERENCE",
       "fullTrackedSourceAudit": {
@@ -205,7 +206,8 @@
         "todoMarkers": 0,
         "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
       },
-      "defender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME_REALTIME_ON"
+      "defender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME_REALTIME_ON",
+      "deterministicBuildFailure": "FIXED: first local archive preceded committed README delta; clean committed build is now authoritative."
     }
   },
   "adaptiveStrategyResearch": {
