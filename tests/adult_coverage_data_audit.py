@@ -6,7 +6,7 @@ R=Path(__file__).resolve().parents[1]
 W=R/"windows"
 L=R/"linux"
 
-required={"xvideos.com","xnxx.com","xhamster.com","pornhub.com","redtube.com"}
+required={"xvideos.com","xvideos-cdn.com","xvcdn.com","xnxx.com","xnxx-cdn.com","xhamster.com","xhcdn.com","pornhub.com","phncdn.com","redtube.com","rdtcdn.com"}
 wf=(W/"bin/zapret/adult-fallback-hosts.txt").read_text(encoding="utf-8-sig")
 lf=(L/"app/adult_hosts_fallback.txt").read_text(encoding="utf-8")
 wcore=(W/"bin/zapret/hosts.txt").read_text(encoding="utf-8-sig")
@@ -26,8 +26,10 @@ def check(name,ok):
 check("fallback_required_families", required <= domains(wf) and required <= domains(lf))
 check("fallback_cross_platform_same", domains(wf)==domains(lf))
 check("core_adult_free", not (required & domains(wcore)) and not (required & domains(lcore)))
-check("catalog_source_same", "hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt" in wgui.lower()
-      and "hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt" in lui.lower())
+check("catalog_source_same", all(x in wgui.lower() and x in lui.lower() for x in (
+    "raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt",
+    "cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nsfw-onlydomains.txt"
+)))
 check("catalog_validation_bounds", all(x in wgui for x in ("100000","10000","4 * 1024 * 1024"))
       and all(x in lui for x in ("100000","10000","4*1024*1024")))
 for u in ("https://www.pornhub.com/","https://www.xvideos.com/","https://www.xnxx.com/","https://xhamster.com/"):

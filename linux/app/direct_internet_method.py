@@ -38,7 +38,10 @@ CUSTOM_HOSTS=APP_HOME/"custom-hosts.txt"
 ADULT_ENABLED=APP_HOME/"adult-enabled.txt"
 ADULT_HOSTS=APP_HOME/"adult-hosts.txt"
 ADULT_META=APP_HOME/"adult-hosts.meta.json"
-ADULT_CATALOG_URL="https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt"
+ADULT_CATALOG_URLS=(
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt",
+    "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nsfw-onlydomains.txt",
+)
 STRATEGY_FILE=APP_HOME/"strategy.txt"
 SCOPE_FILE=APP_HOME/"scope.txt"
 LATEST_API="https://api.github.com/repos/GOD13emad/DirectInternetMethod/releases/latest"
@@ -96,22 +99,28 @@ def sync_adult_catalog(force=False):
     if not force and ADULT_HOSTS.is_file() and (time.time()-ADULT_HOSTS.stat().st_mtime)<86400:
         vals=validate_adult_catalog(ADULT_HOSTS.read_text(encoding="utf-8"))
         return {"entries":len(vals),"sha256":hashlib.sha256(ADULT_HOSTS.read_bytes()).hexdigest().upper(),"cached":True}
-    req=urllib.request.Request(ADULT_CATALOG_URL,headers={"User-Agent":"DirectInternetMethod/1.5.1"})
-    with urllib.request.urlopen(req,timeout=20) as resp:
-        raw=resp.read(4*1024*1024+1)
-    if len(raw)<100000 or len(raw)>4*1024*1024:
-        raise RuntimeError("Adult catalog size is outside the accepted range.")
-    text=raw.decode("utf-8")
-    vals=validate_adult_catalog(text)
-    ADULT_HOSTS.parent.mkdir(parents=True,exist_ok=True)
-    temp=ADULT_HOSTS.with_suffix(".tmp")
-    temp.write_text("\n".join(vals)+"\n",encoding="utf-8")
-    os.replace(temp,ADULT_HOSTS)
-    digest=hashlib.sha256(raw).hexdigest().upper()
-    meta_tmp=ADULT_META.with_suffix(".tmp")
-    meta_tmp.write_text(json.dumps({"schema":1,"source":ADULT_CATALOG_URL,"fetchedUtc":time.time(),"sourceSha256":digest,"entries":len(vals)},separators=(",",":"))+"\n",encoding="utf-8")
-    os.replace(meta_tmp,ADULT_META)
-    return {"entries":len(vals),"sha256":digest,"cached":False}
+    last_error=None
+    for source_url in ADULT_CATALOG_URLS:
+        try:
+            req=urllib.request.Request(source_url,headers={"User-Agent":"DirectInternetMethod/1.5.1"})
+            with urllib.request.urlopen(req,timeout=20) as resp:
+                raw=resp.read(4*1024*1024+1)
+            if len(raw)<100000 or len(raw)>4*1024*1024:
+                raise RuntimeError("Adult catalog size is outside the accepted range.")
+            text=raw.decode("utf-8")
+            vals=validate_adult_catalog(text)
+            ADULT_HOSTS.parent.mkdir(parents=True,exist_ok=True)
+            temp=ADULT_HOSTS.with_suffix(".tmp")
+            temp.write_text("\n".join(vals)+"\n",encoding="utf-8")
+            os.replace(temp,ADULT_HOSTS)
+            digest=hashlib.sha256(raw).hexdigest().upper()
+            meta_tmp=ADULT_META.with_suffix(".tmp")
+            meta_tmp.write_text(json.dumps({"schema":1,"source":source_url,"fetchedUtc":time.time(),"sourceSha256":digest,"entries":len(vals)},separators=(",",":"))+"\n",encoding="utf-8")
+            os.replace(meta_tmp,ADULT_META)
+            return {"entries":len(vals),"sha256":digest,"cached":False,"source":source_url}
+        except Exception as exc:
+            last_error=exc
+    raise RuntimeError("Adult catalog sync failed from all official upstream endpoints.") from last_error
 
 def normalize_custom_site(raw):
     value=str(raw or "").strip()

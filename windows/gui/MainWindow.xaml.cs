@@ -27,7 +27,11 @@ public partial class MainWindow : Window
     readonly string adultEnabledPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "adult-enabled.txt");
     readonly string adultHostsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "adult-hosts.txt");
     readonly string adultMetaPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "adult-hosts.meta.json");
-    const string AdultCatalogUrl = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt";
+    static readonly string[] AdultCatalogUrls =
+    {
+        "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt",
+        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nsfw-onlydomains.txt"
+    };
     static readonly Regex domainLabel = new("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
     readonly string strategyPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "strategy.txt");
     readonly string scopePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "scope.txt");
@@ -129,27 +133,39 @@ public partial class MainWindow : Window
 
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
         http.DefaultRequestHeaders.UserAgent.ParseAdd("DirectInternetMethod/1.5.1");
-        var bytes = await http.GetByteArrayAsync(AdultCatalogUrl);
-        if (bytes.Length is < 100000 or > 4 * 1024 * 1024) throw new InvalidDataException("Adult catalog size is outside the accepted range.");
-        var raw = Encoding.UTF8.GetString(bytes);
-        var domains = ValidateAdultCatalog(raw);
-        var dir = Path.GetDirectoryName(adultHostsPath)!;
-        Directory.CreateDirectory(dir);
-        var tmp = adultHostsPath + ".tmp";
-        await File.WriteAllTextAsync(tmp, string.Join(Environment.NewLine, domains) + Environment.NewLine, new UTF8Encoding(false));
-        File.Move(tmp, adultHostsPath, true);
-        var digest = Convert.ToHexString(SHA256.HashData(bytes));
-        var metaTmp = adultMetaPath + ".tmp";
-        await File.WriteAllTextAsync(metaTmp, JsonSerializer.Serialize(new
+        Exception? lastError = null;
+        foreach (var sourceUrl in AdultCatalogUrls)
         {
-            schema = 1,
-            source = AdultCatalogUrl,
-            fetchedUtc = DateTime.UtcNow.ToString("O"),
-            sourceSha256 = digest,
-            entries = domains.Count
-        }), new UTF8Encoding(false));
-        File.Move(metaTmp, adultMetaPath, true);
-        return new AdultCatalogInfo(domains.Count, digest);
+            try
+            {
+                var bytes = await http.GetByteArrayAsync(sourceUrl);
+                if (bytes.Length is < 100000 or > 4 * 1024 * 1024) throw new InvalidDataException("Adult catalog size is outside the accepted range.");
+                var raw = Encoding.UTF8.GetString(bytes);
+                var domains = ValidateAdultCatalog(raw);
+                var dir = Path.GetDirectoryName(adultHostsPath)!;
+                Directory.CreateDirectory(dir);
+                var tmp = adultHostsPath + ".tmp";
+                await File.WriteAllTextAsync(tmp, string.Join(Environment.NewLine, domains) + Environment.NewLine, new UTF8Encoding(false));
+                File.Move(tmp, adultHostsPath, true);
+                var digest = Convert.ToHexString(SHA256.HashData(bytes));
+                var metaTmp = adultMetaPath + ".tmp";
+                await File.WriteAllTextAsync(metaTmp, JsonSerializer.Serialize(new
+                {
+                    schema = 1,
+                    source = sourceUrl,
+                    fetchedUtc = DateTime.UtcNow.ToString("O"),
+                    sourceSha256 = digest,
+                    entries = domains.Count
+                }), new UTF8Encoding(false));
+                File.Move(metaTmp, adultMetaPath, true);
+                return new AdultCatalogInfo(domains.Count, digest);
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
+            }
+        }
+        throw new InvalidOperationException("Adult catalog sync failed from all official upstream endpoints.", lastError);
     }
 
     async Task<string> RunPwshCaptureAsync(string script, string args = "")
