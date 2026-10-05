@@ -310,3 +310,11 @@ Maintenance only. Keep tag `v1.4.0` and its three release assets immutable. Any 
 - 2026-10-01: v1.3.2 public release and both installed hosts verified. Public asset SHA-256 PASS; Windows installed GUI/manifest match release payload with 9 visible-profile runtime regression and both shortcuts; Linux installed user-space files match public ZIP exactly with both shortcuts and clean OFF state.
 
 - **Failure→Prevention (Windows build race):** intermittent `ISCC_EXIT_1`/locked-output behavior was traced to insufficient build serialization/output-settle control, not product source failure. Payload+installer now share an exclusive build lock; installer waits for exclusive output access and requires three stable size samples before hashing. Guarded regression PASSed with exact final installer `544FB1D0…B266C`. Evidence: `evidence/WINDOWS_150_BUILD_RACE_PREVENTION_20261005.json`.
+
+## POST-FINAL RE-AUDIT — 2026-10-05
+- **Status:** PASS_POST_FINAL_REAUDIT; no runtime/product mutation required.
+- **Current installed state:** PASS_ACTIVE, Strong + All Sites. Owned ctrld/winws/WinDivert active; default route unchanged; physical adapter DNS remains 192.168.20.1; WinHTTP remains direct.
+- **Fresh regression:** Windows contract PASS; Linux contract PASS; Router Gateway contract PASS; 9-profile runtime smoke PASS; rejected-component guard PASS; release metadata PASS.
+- **Decision:** preserve immutable v1.5.0 release authority and current active session; no blind Start/Stop/Recovery rerun because the three-cycle installed lifecycle + exact rollback already passed today and current read-only state is healthy.
+- **Evidence:** `evidence/DIM_150_POST_FINAL_REAUDIT_20261005.json`.
+- **Exact Next Action:** none release-critical; next code/runtime change must be a new version/change set.
