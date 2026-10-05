@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "PASS_FINAL_LOCAL_CANDIDATE_PENDING_PROTECTED_REMOTE_AND_INSTALLED_HOST_PROMOTION",
+  "context": "Final local candidate freeze after global-access expansion, security review, build-race hardening and exact artifact Defender scan.",
+  "artifacts": {
+    "windows": {
+      "path": "delivery/DirectInternetMethod_1.5.0_Windows_Setup.exe",
+      "bytes": 157112753,
+      "sha256": "544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C",
+      "authenticode": "NotSigned"
+    },
+    "linux": {
+      "path": "delivery/DirectInternetMethod_1.5.0_Linux_x86_64.zip",
+      "bytes": 8179393,
+      "sha256": "61A76B06A59BAC55196DD538D1D17C27C86F8045C6564B67AF3091A3AC7CCBD2"
+    },
+    "checksums": {
+      "path": "delivery/SHA256SUMS.txt",
+      "bytes": 223,
+      "sha256": "66B4BCD88E6B2708D51BAA75D66256CC0295AE1D0C274C12B3B51B479E15522C"
+    }
+  },
+  "windowsPayload": {
+    "guiSha256": "055C2F10BFBEEE13496FBC75B3151D08FCC5AAB3E6D2B0ED27A1D3D0E4450A86",
+    "serviceSha256": "E0BAB3C9E97287E31EE920DB137B7B0C6314194F74D79B2918B25804E2445A8C",
+    "manifestSha256": "E320D89B6D7376800CCDF093E78AE094C0C211708F793F36E7EB4B36A59674D7",
+    "manifestFiles": 678
+  },
+  "validation": {
+    "windowsContract": "PASS",
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "routerGatewayRuntimeSmoke": "PASS_9_PROFILES_BOUNDED",
+    "rejectedComponentAudit": "PASS_7_TRACKED_BINARIES_2_BLOCKED_HASHES",
+    "releaseMetadataAudit": "PASS_2_ARTIFACTS",
+    "powershellParse": "PASS_50_TRACKED",
+    "pythonCompile": "PASS_13_TRACKED",
+    "windowsGuiBuild": "PASS_0_WARNINGS_0_ERRORS",
+    "windowsServiceBuild": "PASS_0_WARNINGS_0_ERRORS",
+    "gitDiffCheck": "PASS",
+    "mergeConflictMarkers": 0,
+    "secretPatternScan": "PASS_240_TRACKED_TEXT_FILES",
+    "exactWindowsInstallerDefender": "PASS_NO_THREATS"
+  },
+  "buildFailurePrevention": {
+    "rootCause": "Final installer build hardening used ($Sizes | Select-Object -Unique).Count under StrictMode. When the pipeline returned one scalar, Count was absent and the guard failed after a valid compile.",
+    "prevention": "Guard changed to @($Sizes | Select-Object -Unique).Count, while preserving one shared exclusive build lock, exclusive output-open verification, and three post-build stable-size samples.",
+    "regression": "PASS: exclusive build lock + exclusive output-open + stable samples [157112753,157112753,157112753]; artifact evidence updated."
+  },
+  "security": {
+    "zapret2WindowsCandidate": "REJECTED_QUARANTINED_NOT_SHIPPED",
+    "retainedZapretRuntime": "DEFENDER_SCAN_PASS",
+    "noDefenderExclusion": true,
+    "noMalwareRestore": true
+  },
+  "boundaries": [
+    "Direct-only operation cannot change public egress IP or guarantee remote account/region/product acceptance.",
+    "All Sites is opt-in experimental; Targeted remains the default.",
+    "Windows installer is not Authenticode-signed.",
+    "Installed-host promotion still requires one-time OS authorization on Windows and Linux."
+  ],
+  "provenance": {
+    "root": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod_v150",
+    "branch": "feature/v1.5.0-adaptive-direct-sites",
+    "sourceCommitBeforeThisRecord": "f3000b37f54ce428352546f597150464b8d96cf5"
+  },
+  "reuseTargets": [
+    "PROJECT_BRAIN",
+    "RELEASE.json",
+    "release notes",
+    "PR #12",
+    "v1.5.0 release audit"
+  ],
+  "exactNextAction": "Commit and push this exact final local state; require protected CI and exact fresh Linux rebuild from that commit; then perform installed Windows/Linux lifecycle/site validation before release."
+}

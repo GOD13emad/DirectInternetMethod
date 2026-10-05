@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "PASS_EVIDENCE_FIRST_NO_UNPROVEN_DNS_FALLBACK_PROMOTED",
+  "objective": "Determine whether adding more direct secure-DNS upstreams improves censorship resilience without introducing resolver leakage, latency or unproven failover.",
+  "methodEvidence": [
+    {
+      "source": "Control D official free DNS documentation",
+      "claim": "Control D free resolvers support encrypted DNS and use 76.76.2.11 / 76.76.10.11 as Secure DNS bootstrap IPs.",
+      "status": "CONFIRMED_OFFICIAL"
+    },
+    {
+      "source": "ctrld official configuration documentation",
+      "claim": "Policy upstream lists provide ordered fallback on timeout; leak_on_upstream_failure=false prevents OS-resolver fallback.",
+      "status": "CONFIRMED_OFFICIAL"
+    }
+  ],
+  "isolatedTests": {
+    "currentProven": {
+      "upstream": "https://76.76.10.11/p0",
+      "bootstrap": "76.76.10.11",
+      "result": "PASS_DNS_ANSWER",
+      "exampleAnswer": [
+        "104.20.23.154",
+        "172.66.147.243"
+      ]
+    },
+    "alternateControlD": {
+      "upstream": "https://76.76.2.11/p0",
+      "bootstrap": "76.76.2.11",
+      "result": "FAIL_TIMEOUT_ON_CURRENT_NETWORK"
+    },
+    "cloudflare": {
+      "directUrlProbe": "https://1.1.1.1/dns-query returned HTTP 400 with valid TLS, proving basic HTTPS reachability",
+      "ctrldDoHQuery": "FAIL_CONNECTION_RESET_BY_PEER_ON_CURRENT_NETWORK"
+    },
+    "google": {
+      "directUrlProbe": "https://8.8.8.8/dns-query",
+      "result": "FAIL_TLS_CONNECTION_TIMEOUT_ON_CURRENT_NETWORK"
+    },
+    "quad9": {
+      "directUrlProbe": "https://9.9.9.9/dns-query",
+      "result": "FAIL_TLS_CONNECTION_TIMEOUT_ON_CURRENT_NETWORK"
+    },
+    "orderedFailoverSimulation": {
+      "primary": "blocked 76.76.2.11",
+      "secondary": "1.1.1.1 DoH",
+      "ctrldObserved": "attempted upstream.0 then upstream.1 as designed",
+      "outcome": "both failed on current network; no useful fallback"
+    }
+  },
+  "decision": {
+    "keepCurrent": "https://76.76.10.11/p0",
+    "addFallbacks": false,
+    "rationale": "Only the current direct-IP Control D endpoint produced real DNS answers. Adding unavailable upstreams would add latency/failure surface without improving outcome. OS-resolver leakage remains disabled.",
+    "future": "Re-evaluate on another network or if an independently proven direct secure-DNS endpoint passes actual DNS-message round trips."
+  },
+  "reuseTargets": [
+    "PROJECT_BRAIN",
+    "RELEASE.json",
+    "future DNS resilience work"
+  ]
+}

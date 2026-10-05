@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "PASS_EXACT_FINAL_WINDOWS_CANDIDATE_DEFENDER_SCAN",
+  "defender": {
+    "engine": "Microsoft Defender MpCmdRun",
+    "antivirusEnabled": true,
+    "realTimeProtectionEnabled": true
+  },
+  "candidate": {
+    "installer": {
+      "path": "delivery/DirectInternetMethod_1.5.0_Windows_Setup.exe",
+      "bytes": 157112753,
+      "sha256": "544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C",
+      "scanExit": 0,
+      "scanResult": "NO_THREATS"
+    },
+    "acceptedRuntimeDirectory": {
+      "path": "windows/bin/zapret",
+      "scanExit": 0,
+      "scanResult": "NO_THREATS"
+    }
+  },
+  "rejectedComparison": {
+    "component": "zapret2 v1.0.5.2 evaluation archive",
+    "priorDetection": "Trojan:Win32/Suschil!rfn Severe/Concrete",
+    "status": "QUARANTINED_REJECTED_NOT_SHIPPED"
+  },
+  "decision": "Exact final v1.5.0 Windows installer and retained accepted zapret runtime pass current Defender scans. Rejected zapret2 remains quarantined/not shipped; no AV exclusion or restore.",
+  "exactNextAction": "Installed-host UAC acceptance and live lifecycle validation."
+}

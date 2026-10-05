@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "SUPERSEDED_PRIOR_CANDIDATE_UAC_ATTEMPT_NO_INSTALL",
+  "context": "Exact local Windows v1.5.0 installer promotion attempt on EMAD-PC-ULTIMAT.",
+  "candidate": {
+    "artifact": "delivery/DirectInternetMethod_1.5.0_Windows_Setup.exe",
+    "bytes": 157103136,
+    "sha256": "6B743712134EFFBACAB4B830DB18B40A5499476FF632DD491372799B7F91361C"
+  },
+  "attempt": {
+    "method": "Start-Process -Verb RunAs with silent/no-restart installer flags",
+    "result": "UAC prompt canceled by local user",
+    "installerStartedElevated": false,
+    "productFailure": false
+  },
+  "postState": {
+    "installedVersion": "1.4.0",
+    "directMethodState": "CLEAN_OFF",
+    "ctrldProcesses": 0,
+    "winwsProcesses": 0,
+    "service": "Running",
+    "defaultRoute": "Ethernet 3 -> 192.168.20.1",
+    "adapterDns": "Ethernet 3 -> 192.168.20.1",
+    "winHttp": "Direct access (no proxy server)"
+  },
+  "decision": "Prior UAC-canceled attempt remains evidence that no install/network mutation occurred. Final artifact requires a new owner-approved UAC attempt; UAC is not bypassed.",
+  "exactNextAction": "After final source/CI/cross-host freeze, owner approves one UAC prompt for exact final candidate, then installed lifecycle/site regression runs.",
+  "priorCandidate": {
+    "artifact": "delivery/DirectInternetMethod_1.5.0_Windows_Setup.exe",
+    "bytes": 157103136,
+    "sha256": "6B743712134EFFBACAB4B830DB18B40A5499476FF632DD491372799B7F91361C"
+  },
+  "currentFinalCandidate": {
+    "artifact": "delivery/DirectInternetMethod_1.5.0_Windows_Setup.exe",
+    "bytes": 157112753,
+    "sha256": "544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C",
+    "status": "NOT_YET_UAC_ATTEMPTED"
+  }
+}

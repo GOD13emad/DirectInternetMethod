@@ -20,7 +20,7 @@
       "file": "app/DirectInternetMethod.exe",
       "source": "app/DirectInternetMethod.exe",
       "bytes": 161819720,
-      "sha256": "4509AD6BA466FA0D3ACC37D6BCA916BEA88D34FCA3A62ABD0783F1D38CA6EBD0"
+      "sha256": "055C2F10BFBEEE13496FBC75B3151D08FCC5AAB3E6D2B0ED27A1D3D0E4450A86"
     },
     {
       "scope": "user",
@@ -61,15 +61,15 @@
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 4337,
-      "sha256": "DEBA2BCEFEDBB8F806D18E35C4E46520E431CFCD0DCAEADB2814DA80261130C5"
+      "bytes": 4405,
+      "sha256": "8B8C44C3588547DEBF83DFF0B8E09CE036FC4827C647371A148F35C3C6B01BD1"
     },
     {
       "scope": "privileged",
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
       "bytes": 67588813,
-      "sha256": "0F9D84BCDC74BCE39AB773B3A13C09A09C2AD56F99611E5ED3F073B879E15AD8"
+      "sha256": "E0BAB3C9E97287E31EE920DB137B7B0C6314194F74D79B2918B25804E2445A8C"
     },
     {
       "scope": "privileged",

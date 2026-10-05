@@ -8,6 +8,8 @@ start,stop,recovery,status,iss=map(txt,["app/Start-Direct.ps1","app/Stop-Direct.
 gui=txt("gui/MainWindow.xaml.cs"); xaml=txt("gui/MainWindow.xaml")
 svc=txt("service/Program.cs"); client=txt("gui/ServiceClient.cs"); updater=txt("gui/UpdateClient.cs")
 manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt")
+payload_builder=(R/"tests"/"build_windows_150_payload.ps1").read_text(encoding="utf-8-sig")
+installer_builder=(R/"tests"/"build_windows_150_installer.ps1").read_text(encoding="utf-8-sig")
 D={"schema":2,"status":"PASS","checks":{},"hashes":{}}
 def check(name,cond):
     D["checks"][name]=bool(cond)
@@ -92,6 +94,8 @@ check("installer_shortcuts_exe", 'DirectInternetMethod.exe' in iss and 'ControlP
 check("installer_active_guard", "PrepareToInstall" in iss and "DirectDnsDpiHarness" in iss and "state.json" in iss)
 check("installer_bundled_pwsh", '..\\vendor\\pwsh\\*' in iss and 'Privileged\\runtime\\pwsh' in iss and "PowerShell7Available" not in iss)
 check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Recovery did not complete" in iss)
+check("windows_build_shared_exclusive_lock", all(x in payload_builder for x in ("windows-150-build.lock","FileShare]::None","WINDOWS_150_BUILD_LOCKED")) and all(x in installer_builder for x in ("windows-150-build.lock","FileShare]::None","WINDOWS_150_BUILD_LOCKED")))
+check("windows_installer_output_stability_guard", all(x in installer_builder for x in ("OUTPUT_STILL_LOCKED_AFTER_ISCC_EXIT","@($Sizes | Select-Object -Unique).Count","OUTPUT_SIZE_UNSTABLE_","outputStableSamples")))
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
 check("manifest_version", manifest.get("version")=="1.5.0")
