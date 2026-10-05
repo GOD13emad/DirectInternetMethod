@@ -114,6 +114,21 @@ check("manifest_bundled_pwsh", manifest.get("bundledPowerShellVersion")=="7.6.6"
 check("manifest_bundled_pwsh_tree", sum(1 for s,f in files if s=="privileged" and f.startswith("runtime/pwsh/")) >= 650)
 check("manifest_no_legacy_launchers", not any(scope=="user" and (f.endswith(".cmd") or f in {"app/ControlPanel.ps1","app/Toggle.ps1"}) for scope,f in files))
 
+pin_paths={
+"ctrld.exe":"bin/ctrld/ctrld.exe",
+"ctrld.toml":"bin/ctrld/ctrld.toml",
+"winws.exe":"bin/zapret/winws.exe",
+"WinDivert.dll":"bin/zapret/WinDivert.dll",
+"WinDivert64.sys":"bin/zapret/WinDivert64.sys",
+"cygwin1.dll":"bin/zapret/cygwin1.dll",
+"hosts.txt":"bin/zapret/hosts.txt",
+"adult-fallback-hosts.txt":"bin/zapret/adult-fallback-hosts.txt",
+}
+start_pins=dict(re.findall(r"'([^']+)'='([0-9A-F]{64})'",start))
+pin_actual={k:hashlib.sha256((W/v).read_bytes()).hexdigest().upper() for k,v in pin_paths.items()}
+D["selfIntegrityPins"]={"declared":{k:start_pins.get(k) for k in pin_paths},"actual":pin_actual}
+check("start_self_integrity_pins",all(start_pins.get(k)==v for k,v in pin_actual.items()))
+
 expected={
 "ctrld":"FC966FD7DD5EE850A9709F632789CFB5BBC06C45D903D24B8ECFCE3306B658CD",
 "winws":"A14BFF1DF6234EA555D2E0C61B589F0707C0B12D6C9B7EECCDA76012154996E8",
