@@ -12,3 +12,7 @@ oaiusercontent.com
 github.com
 githubusercontent.com
 githubassets.com
+reddit.com
+redditstatic.com
+redditmedia.com
+redd.it
