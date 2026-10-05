@@ -1,0 +1,75 @@
+name: isolated-zapret2-evaluation
+
+on:
+  push:
+    branches:
+      - audit/zapret2-isolated-20261005
+
+permissions:
+  contents: read
+
+jobs:
+  windows-defender:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - name: Download official release asset and verify provenance hash
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $dir=Join-Path $env:RUNNER_TEMP 'zapret2-eval'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $zip=Join-Path $dir 'zapret2-v1.0.5.2.zip'
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/bol-van/zapret2/releases/download/v1.0.5.2/zapret2-v1.0.5.2.zip' -OutFile $zip
+          $h=(Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash
+          if($h -ne 'F585590BEA6DA82AC2C74926F6AC17E6204EE8B53E455C2BA2EDAE0C58C5D4AC'){ throw "hash mismatch $h" }
+          "ZIP_SHA256=$h" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+      - name: Microsoft Defender scan in disposable runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Continue'
+          $zip=Join-Path $env:RUNNER_TEMP 'zapret2-eval\zapret2-v1.0.5.2.zip'
+          $before=@(Get-MpThreatDetection -ErrorAction SilentlyContinue).Count
+          Start-MpScan -ScanType CustomScan -ScanPath $zip -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 5
+          $det=@(Get-MpThreatDetection -ErrorAction SilentlyContinue | Sort-Object InitialDetectionTime -Descending | Select-Object -First 10 ThreatID,ThreatStatusID,InitialDetectionTime,ActionSuccess,Resources)
+          "DEFENDER_STATUS:" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          (Get-MpComputerStatus | Select-Object AntivirusEnabled,RealTimeProtectionEnabled,AntivirusSignatureVersion | ConvertTo-Json -Compress) | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "DETECTIONS:" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          ($det | ConvertTo-Json -Depth 5) | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          if($det.Count -gt $before){
+            "PROMOTION=REJECTED_BY_DEFENDER" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          } else {
+            "PROMOTION=NOT_CLEARED; no execution performed" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          }
+      - name: Do not execute Windows binaries after severe local detection
+        shell: pwsh
+        run: |
+          "Windows binaries were intentionally not executed. A prior local Defender Severe/Concrete detection is a hard promotion gate; isolated runner is used only to independently re-scan provenance-matched bytes." | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+
+  linux-static-isolated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Download and hash official asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/zapret2-eval"
+          mkdir -p "$d"
+          curl -fsSL 'https://github.com/bol-van/zapret2/releases/download/v1.0.5.2/zapret2-v1.0.5.2.zip' -o "$d/zapret2.zip"
+          echo 'F585590BEA6DA82AC2C74926F6AC17E6204EE8B53E455C2BA2EDAE0C58C5D4AC  '"$d"'/zapret2.zip' | sha256sum -c -
+          unzip -q "$d/zapret2.zip" -d "$d/x"
+          find "$d/x" -maxdepth 4 -type f -printf '%P\t%s\n' | sort | head -200 > "$d/file-list.txt"
+          cat "$d/file-list.txt"
+      - name: Version-only execution with network namespace isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$RUNNER_TEMP/zapret2-eval/x"
+          b="$(find "$d" -type f -name nfqws2 -path '*linux-x86_64*' | head -1)"
+          test -n "$b"
+          chmod +x "$b"
+          sha256sum "$b"
+          sudo unshare --net --mount-proc "$b" --version
+          echo 'No privileged packet processing or networked execution was performed.' >> "$GITHUB_STEP_SUMMARY"
