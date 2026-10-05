@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.1",
   "date": "2026-10-05",
-  "status": "CANDIDATE_LOCAL_ARTIFACTS_BUILT_CI_REPAIR_AND_INSTALLED_ACCEPTANCE_PENDING",
+  "status": "CANDIDATE_LINUX_INSTALLED_PASS_FINAL_CI_AND_WINDOWS_ACCEPTANCE_PENDING",
   "previousAccepted": {
     "version": "1.5.0",
     "tag": "v1.5.0",
@@ -77,7 +77,7 @@
       "authenticode": "NotSigned"
     },
     "linux": {
-      "status": "PASS_LOCAL_EXACT_ARTIFACT_PENDING_INSTALLED_ACCEPTANCE",
+      "status": "PASS_INSTALLED_LIFECYCLE_ROLLBACK_VERIFIED",
       "artifact": "delivery/DirectInternetMethod_1.5.1_Linux_x86_64.zip",
       "bytes": 8183518,
       "sha256": "2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA",
@@ -95,10 +95,10 @@
     "windowsContract": "PASS",
     "linuxPackage": "PASS",
     "linuxContract": "PASS",
-    "protectedCi": "PENDING_CURRENT_1_5_1_SHA",
+    "protectedCi": "PASS_RUN_37352898981_ON_E9CDE0D; FINAL_METADATA_HEAD_RERUN_PENDING",
     "publication": "PENDING",
     "installedWindows": "PENDING",
-    "installedLinux": "PENDING",
+    "installedLinux": "PASS_LIFECYCLE_SITE_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
     "adultCoverage": "PARTIAL_EVIDENCE_XVIDEOS_XNXX_PASS_XHAMSTER_UNPROVEN",
     "gemini": "FAIL_HTTP_403_CURRENT_EGRESS",
     "routerGatewayContract": "PASS",
@@ -118,7 +118,8 @@
     "adultCoverage": "evidence/DIM_151_ADULT_FULLPAGE_AND_GEMINI_403_20261005.json",
     "windowsPayload": "evidence/WINDOWS_151_PAYLOAD_BUILD_20261005.json",
     "windowsInstaller": "evidence/WINDOWS_151_INSTALLER_BUILD_20261005.json",
-    "linuxCrossHostCandidate": "evidence/LINUX_151_CROSS_HOST_CANDIDATE_20261005.json"
+    "linuxCrossHostCandidate": "evidence/LINUX_151_CROSS_HOST_CANDIDATE_20261005.json",
+    "linuxInstalled": "evidence/LINUX_151_INSTALLED_LIFECYCLE_20261005.json"
   },
-  "exactNextAction": "Re-run release metadata and protected CI after checksum line-ending canonicalization; then complete exact installed v1.5.1 lifecycle acceptance."
+  "exactNextAction": "Commit Linux installed acceptance + lifecycle regression, require protected CI on the final head, then perform Windows exact-installer/live acceptance without disrupting an active user session. Keep XHamster and Gemini as explicit unresolved external-edge/egress gates."
 }

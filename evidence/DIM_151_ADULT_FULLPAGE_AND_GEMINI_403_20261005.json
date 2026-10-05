@@ -107,6 +107,21 @@
       "claim": "PR #20 protected CI run 37350996926 failed only in Linux release_metadata_audit because SHA256SUMS.txt was CRLF in the Windows worktree (SHA C95F...) but canonical Git checkout normalized it to LF (SHA 6C3B...). All Linux/adult/router contracts passed before this metadata failure.",
       "rootCause": "Checksum artifact self-hash was computed from non-canonical Windows worktree bytes despite .gitattributes specifying LF for root SHA256SUMS.txt.",
       "prevention": "Canonicalize root and delivery SHA256SUMS.txt to LF, mark both text eol=lf, and record the canonical LF checksum artifact SHA in RELEASE.json."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Exact installed Linux v1.5.1 lifecycle PASSed three real cycles with rollbackEqual=true and restored the initially ACTIVE state. YouTube/OpenAI/GitHub remained PASS; Reddit passed when explicitly targeted and under All Sites; representative adult page passed HTTP 200 under Strong/All Sites."
+    },
+    {
+      "type": "FACT",
+      "status": "REJECTED_CANDIDATE",
+      "claim": "Comparable-project candidate fake+md5sig+TTL=6 was tested with a correctly wired isolated nft/NFQUEUE harness against both xhamster.com Cloudflare edges 104.16.3.81 and 104.16.4.81. Both remained TLS-failing (HTTP 000), so the profile is not promoted."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Bare xhamster.com and www.xhamster.com resolve to the same Cloudflare edge pair 104.16.3.81/104.16.4.81 under owned DoH and both remain TLS-failing; canonical-hostname variation does not close the blocker."
     }
   ],
   "decision": {
@@ -124,7 +139,7 @@
     "Do not claim all adult sites are individually proven merely because a maintained catalog contains them; prove representative families and preserve fallback/custom-site paths.",
     "Broad Adult domain coverage may be promoted with representative proof and truthful limitations; do not claim every remote Adult origin/CDN edge is guaranteed."
   ],
-  "exactNextAction": "Push checksum canonicalization repair to PR #20, require protected CI green, then complete installed Linux 1.5.1 lifecycle/rollback acceptance and decide promotion.",
+  "exactNextAction": "Promote installed Linux acceptance and lifecycle test to the branch, require final-head protected CI, then continue unresolved XHamster/Gemini research without weakening accepted broad-coverage/runtime claims.",
   "implementation": {
     "adultCatalog": {
       "mode": "opt-in",
@@ -193,6 +208,18 @@
         "localReleaseMetadata": "PASS",
         "windowsContract": "PASS",
         "linuxContract": "PASS"
+      },
+      "finalHeadLocalFullTrackedAudit": {
+        "status": "PASS",
+        "powershellParsed": 55,
+        "pythonCompiled": 16,
+        "powershellErrors": 0,
+        "pythonErrors": 0,
+        "dotnetService": "PASS_0_WARNINGS_0_ERRORS",
+        "dotnetGui": "PASS_0_WARNINGS_0_ERRORS",
+        "mergeConflictMarkers": 0,
+        "todoMarkers": 0,
+        "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
       }
     },
     "packaging": {
@@ -209,7 +236,9 @@
       "linux": {
         "bytes": 8183518,
         "sha256": "2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA",
-        "crossHostDeterministic": "PASS"
+        "crossHostDeterministic": "PASS",
+        "installedLifecycle": "PASS_LIFECYCLE_SITE_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
+        "installedEvidence": "evidence/LINUX_151_INSTALLED_LIFECYCLE_20261005.json"
       },
       "sourceContracts": "PASS_WINDOWS_LINUX_ROUTER_SECURITY_RELEASE_METADATA_AFTER_VERSION_COHERENCE",
       "fullTrackedSourceAudit": {
@@ -223,7 +252,8 @@
         "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
       },
       "defender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME_REALTIME_ON",
-      "deterministicBuildFailure": "FIXED: first local archive preceded committed README delta; clean committed build is now authoritative."
+      "deterministicBuildFailure": "FIXED: first local archive preceded committed README delta; clean committed build is now authoritative.",
+      "protectedCi": "PASS_RUN_37352898981_HEAD_E9CDE0D_CHECKSUM_CANONICALIZATION"
     }
   },
   "adaptiveStrategyResearch": {
@@ -232,6 +262,7 @@
     "provenance": "AloofLibra/zator strategy 28 + zapret v72.13 primitives",
     "localDryRun": "PASS",
     "runtime": "UNPROVEN_PENDING_ROOT_BLOCKCHECK_OR_EQUIVALENT_ISOLATED_TEST",
-    "policy": "Do not auto-promote or apply globally until a real representative runtime test passes."
+    "policy": "Do not auto-promote or apply globally until a real representative runtime test passes.",
+    "comparableCandidateFakeMd5Ttl6": "REJECTED_RUNTIME_HTTP_000_BOTH_EDGES"
   }
 }

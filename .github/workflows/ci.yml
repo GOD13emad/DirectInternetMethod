@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Python syntax
-        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/app/router_gateway.py tests/linux_contract_audit.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py
+        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/app/router_gateway.py tests/linux_contract_audit.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_151_lifecycle.py
       - name: Shell syntax and LF guard
         shell: bash
         run: |
