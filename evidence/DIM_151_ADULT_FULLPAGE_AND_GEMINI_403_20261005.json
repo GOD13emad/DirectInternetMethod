@@ -100,6 +100,13 @@
       "type": "DECISION",
       "status": "ACCEPTED",
       "claim": "Do not add GreenTunnel, SpoofDPI or PowerTunnel runtimes because they use local proxy architectures; do not add GoodbyeDPI because its direct fragmentation/DNS anti-poisoning primitives materially overlap the already accepted zapret/winws runtime without demonstrated incremental benefit."
+    },
+    {
+      "type": "FAILURE",
+      "status": "CLOSED_LOCAL_PENDING_PROTECTED_CI",
+      "claim": "PR #20 protected CI run 37350996926 failed only in Linux release_metadata_audit because SHA256SUMS.txt was CRLF in the Windows worktree (SHA C95F...) but canonical Git checkout normalized it to LF (SHA 6C3B...). All Linux/adult/router contracts passed before this metadata failure.",
+      "rootCause": "Checksum artifact self-hash was computed from non-canonical Windows worktree bytes despite .gitattributes specifying LF for root SHA256SUMS.txt.",
+      "prevention": "Canonicalize root and delivery SHA256SUMS.txt to LF, mark both text eol=lf, and record the canonical LF checksum artifact SHA in RELEASE.json."
     }
   ],
   "decision": {
@@ -117,7 +124,7 @@
     "Do not claim all adult sites are individually proven merely because a maintained catalog contains them; prove representative families and preserve fallback/custom-site paths.",
     "Broad Adult domain coverage may be promoted with representative proof and truthful limitations; do not claim every remote Adult origin/CDN edge is guaranteed."
   ],
-  "exactNextAction": "Complete full syntax/security gates, independently rebuild/install exact v1.5.1 on Linux, run installed lifecycle, then protected PR/CI. Publish only after exact artifact acceptance.",
+  "exactNextAction": "Push checksum canonicalization repair to PR #20, require protected CI green, then complete installed Linux 1.5.1 lifecycle/rollback acceptance and decide promotion.",
   "implementation": {
     "adultCatalog": {
       "mode": "opt-in",
@@ -177,6 +184,15 @@
         "mergeConflictMarkers": 0,
         "todoMarkers": 0,
         "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
+      },
+      "checksumCanonicalization": {
+        "status": "PASS_LOCAL",
+        "canonicalSha256": "6C3BE10C2A8A4225897DE5A0EB08869F3C32E68055C1207839F27A67A225F904",
+        "rootBytes": 221,
+        "lineEnding": "LF",
+        "localReleaseMetadata": "PASS",
+        "windowsContract": "PASS",
+        "linuxContract": "PASS"
       }
     },
     "packaging": {

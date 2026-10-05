@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.1",
   "date": "2026-10-05",
-  "status": "CANDIDATE_LOCAL_ARTIFACTS_BUILT_CI_AND_INSTALLED_ACCEPTANCE_PENDING",
+  "status": "CANDIDATE_LOCAL_ARTIFACTS_BUILT_CI_REPAIR_AND_INSTALLED_ACCEPTANCE_PENDING",
   "previousAccepted": {
     "version": "1.5.0",
     "tag": "v1.5.0",
@@ -87,7 +87,7 @@
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "C95F5CB36AAD337AED57F9147703CD0D9680308C8D9108CE95186FF428031B50"
+    "sha256": "6C3BE10C2A8A4225897DE5A0EB08869F3C32E68055C1207839F27A67A225F904"
   },
   "acceptance": {
     "windowsPayload": "PASS",
@@ -120,5 +120,5 @@
     "windowsInstaller": "evidence/WINDOWS_151_INSTALLER_BUILD_20261005.json",
     "linuxCrossHostCandidate": "evidence/LINUX_151_CROSS_HOST_CANDIDATE_20261005.json"
   },
-  "exactNextAction": "Run full source/security/Defender gates, install exact v1.5.1 on Linux for lifecycle acceptance, then promote by protected PR/CI and publish only if exact-artifact gates pass."
+  "exactNextAction": "Re-run release metadata and protected CI after checksum line-ending canonicalization; then complete exact installed v1.5.1 lifecycle acceptance."
 }
