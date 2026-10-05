@@ -12,6 +12,11 @@ $CtrldServiceName='ctrld'
 $ZapretDir=Join-Path $Root 'bin\zapret'
 $Winws=Join-Path $ZapretDir 'winws.exe'
 $HostList=Join-Path $ZapretDir 'hosts.txt'
+$UserConfigDir=Join-Path $env:ProgramData 'DirectInternetMethod\UserConfig'
+$CustomHosts=Join-Path $UserConfigDir 'custom-hosts.txt'
+$StrategyFile=Join-Path $UserConfigDir 'strategy.txt'
+$ScopeFile=Join-Path $UserConfigDir 'scope.txt'
+$RuntimeHostList=Join-Path $env:ProgramData 'DirectInternetMethod\runtime-hosts.txt'
 $Runtime=Join-Path $env:ProgramData 'DirectDnsDpiHarness'
 $RuntimeCtrld=Join-Path $Runtime 'ctrld'
 $RuntimeConfig=Join-Path $RuntimeCtrld 'ctrld.toml'
@@ -23,7 +28,7 @@ if(-not $LoopbackRoute){throw 'LOOPBACK_INTERFACE_MISSING'}
 $LoopbackIndex=[int]$LoopbackRoute.InterfaceIndex
 $NrptDisplay='DirectDnsDpiHarness'
 $NrptComment='Owned by DirectDnsDpiHarness; safe to remove only by this harness.'
-$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443')
+$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443','custom-hostlist','strategy-profile')
 
 $Expected=@{
  'ctrld.exe'='FC966FD7DD5EE850A9709F632789CFB5BBC06C45D903D24B8ECFCE3306B658CD'
@@ -32,7 +37,7 @@ $Expected=@{
  'WinDivert.dll'='C1E060EE19444A259B2162F8AF0F3FE8C4428A1C6F694DCE20DE194AC8D7D9A2'
  'WinDivert64.sys'='8DA085332782708D8767BCACE5327A6EC7283C17CFB85E40B03CD2323A90DDC2'
  'cygwin1.dll'='103104A52E5293CE418944725DF19E2BF81AD9269B9A120D71D39028E821499B'
- 'hosts.txt'='4006D6A698D4DF2E235EBC98FA178E3D1322D6A6406F0D2CD5355DDD865FD160'
+ 'hosts.txt'='5587E810DED0EDF8D77514A88F944A484038FBF9B1FE5FE32C8E9BA769240AC4'
 }
 
 function Start-ExactProcess([string]$File,[string[]]$ArgumentList,[string]$WorkingDirectory){
@@ -333,26 +338,71 @@ try{
   dns=$dns;adapterDns=$dnsNow;controlD=$cd;ics=$icsNow
  }
 
- $args=@(
-  '--wf-l3=ipv4','--wf-tcp=80,443','--wf-udp=443',
-  '--filter-l3=ipv4','--filter-tcp=80',
-  ('--hostlist='+$HostList),
-  '--dpi-desync=fake,multisplit',
-  '--dpi-desync-split-pos=method+2',
-  '--dpi-desync-fooling=md5sig',
-  '--new',
-  '--filter-l3=ipv4','--filter-tcp=443',
-  ('--hostlist='+$HostList),
-  '--ipset-exclude-ip=76.76.10.11',
-  '--dpi-desync=fake,multidisorder',
-  '--dpi-desync-split-pos=1,midsld',
-  '--dpi-desync-fooling=badseq,md5sig',
-  '--new',
-  '--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic',
-  ('--hostlist='+$HostList),
-  '--dpi-desync=fake',
-  '--dpi-desync-repeats=6'
- )
+ New-Item -ItemType Directory -Force -Path $UserConfigDir|Out-Null
+ foreach($candidate in @($CustomHosts,$StrategyFile,$ScopeFile)){
+  if(Test-Path -LiteralPath $candidate){
+   $ci=Get-Item -LiteralPath $candidate -Force
+   if($ci.PSIsContainer -or ($ci.Attributes -band [IO.FileAttributes]::ReparsePoint)){throw 'USER_CONFIG_INVALID'}
+  }
+ }
+ $labels='^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$'
+ $merged=[Collections.Generic.List[string]]::new()
+ foreach($src in @($HostList,$CustomHosts)){
+  if(-not (Test-Path -LiteralPath $src -PathType Leaf)){continue}
+  $limit=if($src -eq $CustomHosts){256}else{4096}
+  $n=0
+  foreach($raw in Get-Content -LiteralPath $src -ErrorAction Stop){
+   $v=([string]$raw).Trim().ToLowerInvariant()
+   if(-not $v -or $v.StartsWith('#')){continue}
+   $h=if($v.StartsWith('^')){$v.Substring(1)}else{$v}
+   $parts=$h.Split('.')
+   if($h.Length -gt 253 -or $parts.Count -lt 2){continue}
+   $valid=$true
+   foreach($part in $parts){if($part -notmatch $labels){$valid=$false;break}}
+   if($valid -and -not $merged.Contains($v)){$merged.Add($v);$n++}
+   if($n -ge $limit){break}
+  }
+ }
+ [IO.File]::WriteAllLines($RuntimeHostList,$merged,[Text.UTF8Encoding]::new($false))
+ $strategy='balanced'
+ if(Test-Path -LiteralPath $StrategyFile -PathType Leaf){
+  $rawStrategy=([string](Get-Content -LiteralPath $StrategyFile -Raw -ErrorAction Stop)).Trim().ToLowerInvariant()
+  if($rawStrategy -in @('balanced','compatibility','strong')){$strategy=$rawStrategy}else{throw 'STRATEGY_INVALID'}
+ }
+ $scope='targeted'
+ if(Test-Path -LiteralPath $ScopeFile -PathType Leaf){
+  $rawScope=([string](Get-Content -LiteralPath $ScopeFile -Raw -ErrorAction Stop)).Trim().ToLowerInvariant()
+  if($rawScope -in @('targeted','all-sites')){$scope=$rawScope}else{throw 'SCOPE_INVALID'}
+ }
+ $state.customHostlist=$CustomHosts
+ $state.strategy=$strategy
+ $state.scope=$scope
+ Write-JsonAtomic $StatePath $state
+
+ $args=[Collections.Generic.List[string]]::new()
+ foreach($x in @('--wf-l3=ipv4','--wf-tcp=80,443','--wf-udp=443')){[void]$args.Add($x)}
+ function Add-ScopeHost([Collections.Generic.List[string]]$Target){if($scope -eq 'targeted'){[void]$Target.Add('--hostlist='+$RuntimeHostList)}}
+ function Add-ProfileArgs([Collections.Generic.List[string]]$Target,[string[]]$Values){foreach($x in $Values){[void]$Target.Add($x)}}
+ switch($strategy){
+  'compatibility' {
+   Add-ProfileArgs $args @('--filter-l3=ipv4','--filter-tcp=80'); Add-ScopeHost $args
+   Add-ProfileArgs $args @('--dpi-desync=multisplit','--dpi-desync-split-pos=method+2','--new','--filter-l3=ipv4','--filter-tcp=443'); Add-ScopeHost $args
+   Add-ProfileArgs $args @('--ipset-exclude-ip=76.76.10.11','--dpi-desync=multisplit','--dpi-desync-split-pos=1,sniext+1,host+1,midsld,endhost-1','--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic'); Add-ScopeHost $args
+   Add-ProfileArgs $args @('--dpi-desync=fake','--dpi-desync-repeats=4')
+  }
+  'strong' {
+   Add-ProfileArgs $args @('--filter-l3=ipv4','--filter-tcp=80'); Add-ScopeHost $args
+   Add-ProfileArgs $args @('--dpi-desync=fake,fakedsplit','--dpi-desync-split-pos=method+2','--dpi-desync-fooling=md5sig','--dpi-desync-repeats=2','--new','--filter-l3=ipv4','--filter-tcp=443'); Add-ScopeHost $args
+   Add-ProfileArgs $args @('--ipset-exclude-ip=76.76.10.11','--dpi-desync=fake,hostfakesplit','--dpi-desync-hostfakesplit-midhost=midsld','--dpi-desync-fooling=badseq,md5sig','--dpi-desync-repeats=4','--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic'); Add-ScopeHost $args
+   Add-ProfileArgs $args @('--dpi-desync=fake','--dpi-desync-repeats=11')
+  }
+  default {
+   Add-ProfileArgs $args @('--filter-l3=ipv4','--filter-tcp=80'); Add-ScopeHost $args
+   Add-ProfileArgs $args @('--dpi-desync=fake,multisplit','--dpi-desync-split-pos=method+2','--dpi-desync-fooling=md5sig','--new','--filter-l3=ipv4','--filter-tcp=443'); Add-ScopeHost $args
+   Add-ProfileArgs $args @('--ipset-exclude-ip=76.76.10.11','--dpi-desync=fake,multidisorder','--dpi-desync-split-pos=1,midsld','--dpi-desync-fooling=badseq,md5sig','--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic'); Add-ScopeHost $args
+   Add-ProfileArgs $args @('--dpi-desync=fake','--dpi-desync-repeats=6')
+  }
+ }
  $wp=Start-ExactProcess $Winws $args $ZapretDir
  $state.winwsPid=$wp.Id
  Write-JsonAtomic $StatePath $state
@@ -381,7 +431,7 @@ try{
  Write-JsonAtomic $StatePath $state
  $ev.status='PASS_ACTIVE'
  $ev.live=[ordered]@{
-  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;youtubeHttp80=$yh;dns=$dy;youtube=$yt;openai=$oa;github=$gh
+  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;strategy=$strategy;scope=$scope;runtimeHostCount=$merged.Count;youtubeHttp80=$yh;dns=$dy;youtube=$yt;openai=$oa;github=$gh
   ics=$icsLive;proxy=$proxy;broadRouteCount=$routes.Count
   drivers=@(Get-OwnedDrivers|Select-Object Name,State,PathName)
  }

@@ -19,11 +19,11 @@ check("loopback_index_dynamic", all("DestinationPrefix '::1/128'" in x and "$Loo
 check("no_adapter_dns_set", "Set-DnsClientServerAddress" not in start+stop+recovery)
 check("no_default_route_create", not re.search(r'(New-NetRoute|route\.exe\s+add|netsh\s+interface\s+ipv4\s+add\s+route)',start,re.I))
 check("direct_multiprotocol_engine", all(x in start for x in (
-    "$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443')",
+    "$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443','custom-hostlist','strategy-profile')",
     "'--wf-tcp=80,443'","'--wf-udp=443'","'--filter-tcp=80'","'--filter-tcp=443'","'--filter-udp=443'","'--filter-l7=quic'",
     "'--dpi-desync-split-pos=method+2'","'--dpi-desync-split-pos=1,midsld'","'--dpi-desync-repeats=6'","'--new'"
 )))
-check("direct_multiprotocol_hostlist_scoped", start.count("('--hostlist='+$HostList)") >= 3 and "--hostlist-auto=" not in start)
+check("direct_multiprotocol_scope_controlled", "Add-ScopeHost" in start and "$scope='targeted'" in start and "all-sites" in start and "--hostlist-auto=" not in start)
 check("secure_dns_no_os_leak", 'leak_on_upstream_failure = false' in ctrldcfg)
 check("start_adapter_dns_regression", "ADAPTER_DNS_CHANGED" in start)
 check("start_winhttp_regression", "WINHTTP_PROXY_CHANGED" in start)
@@ -54,6 +54,10 @@ check("ui_preferred_startup_size_1289x632", 'Width="1289"' in xaml and 'Height="
 check("ui_layout_rounding", 'UseLayoutRounding="True"' in xaml and 'SnapsToDevicePixels="True"' in xaml)
 check("ui_footer_responsive_no_stack_overflow", '<WrapPanel Orientation="Horizontal">' in xaml and 'TextWrapping="Wrap"' in xaml and '<ColumnDefinition Width="360"/>' in xaml)
 check("target_hostlist_scope", all(x in hostlist.splitlines() for x in ("^gemini.google.com","pornhub.com","phncdn.com")))
+check("critical_global_services_hostlist", all(x in hostlist.splitlines() for x in ("openai.com","chatgpt.com","oaistatic.com","oaiusercontent.com","github.com","githubusercontent.com","githubassets.com")))
+check("custom_site_hostlist", all(x in start for x in ("$CustomHosts=Join-Path $UserConfigDir 'custom-hosts.txt'","$RuntimeHostList=Join-Path $env:ProgramData 'DirectInternetMethod\\runtime-hosts.txt'","USER_CONFIG_INVALID","WriteAllLines($RuntimeHostList")) and all(x in gui for x in ("CustomSites_Click","NormalizeCustomSite","customHostsPath","Maximum 256 entries")) and 'Content="Custom Sites"' in xaml and 'DirectInternetMethod\\UserConfig' in iss and 'users-modify' in iss)
+check("strategy_profiles", all(x in start for x in ("$StrategyFile=Join-Path $UserConfigDir 'strategy.txt'","balanced","compatibility","strong","fakedsplit","hostfakesplit","sniext+1","STRATEGY_INVALID")) and all(x in gui for x in ("Strategy_Click","strategyPath","Compatibility","Strong")) and 'Content="Strategy"' in xaml)
+check("all_sites_scope_optional_default_targeted", all(x in start for x in ("$ScopeFile=Join-Path $UserConfigDir 'scope.txt'","$scope='targeted'","all-sites","SCOPE_INVALID","Add-ScopeHost")) and all(x in gui for x in ("scopePath","Apply DPI strategy to all web sites (experimental)","all-sites","targeted")))
 check("ui_gemini_adult_live_checks", all(x in xaml for x in ('Text="Gemini"','Text="Adult site"','x:Name="AdultSiteCheckToggle"','x:Name="GeminiText"','x:Name="AdultSiteText"')) and "pornhub" not in xaml.lower())
 check("ui_adult_check_default_off_persisted", all(x in gui for x in ("adultSiteLiveCheck","settings.json","AdultSiteCheckToggle_Changed")) and "bool adultCheckEnabled;" in gui)
 check("ui_live_probe_semantics", "REACHABLE" in gui and 'https://gemini.google.com/' in gui and 'https://www.pornhub.com/' in gui and "adultTask is not null" in gui)

@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "component": "bol-van/zapret2 v1.0.5.2",
+  "status": "ISOLATED_EVALUATION_COMPLETE_NOT_PROMOTED",
+  "provenance": {
+    "officialRepo": "bol-van/zapret2",
+    "tag": "v1.0.5.2",
+    "releaseArchive": "zapret2-v1.0.5.2.zip",
+    "expectedSha256": "F585590BEA6DA82AC2C74926F6AC17E6204EE8B53E455C2BA2EDAE0C58C5D4AC",
+    "observedSha256": "F585590BEA6DA82AC2C74926F6AC17E6204EE8B53E455C2BA2EDAE0C58C5D4AC",
+    "provenanceHashMatch": true
+  },
+  "windowsSecurity": {
+    "defenderDetection": "Trojan:Win32/Suschil!rfn",
+    "severity": "Severe",
+    "detectionType": "Concrete",
+    "action": "Quarantine",
+    "archivePromoted": false,
+    "exclusionsCreated": false,
+    "restored": false
+  },
+  "isolatedLinuxEvaluation": {
+    "location": "aliemad-Labtop external cache, not project root",
+    "networkIsolation": "systemd-run --user PrivateNetwork=yes",
+    "noNewPrivileges": true,
+    "testedBinary": "binaries/linux-x86_64/nfqws2",
+    "binarySha256": "DE1414B1E0F9A5659D438CDDCB0C7E9099B4533BF5C8A3CF841C7BC7E5AA1473",
+    "action": "--version only under isolated unit",
+    "result": "PASS_VERSION_ONLY",
+    "versionOutput": "github version v1.0.5.2 (6b6c63e3385fa73f8af3be4a69171e947f5a319d) lua_compat_ver 6",
+    "privilegedPacketExecution": false,
+    "networkedExecution": false
+  },
+  "staticInspection": {
+    "sourceTreePresent": true,
+    "highRiskSourceGrep": "No CreateRemoteThread/WriteProcessMemory/VirtualAllocEx/credential-stealing/ransomware markers found in source text; crypto-wallet mention was documentation donation text.",
+    "windowsRuntimeObservation": "Cygwin runtime contains generic clipboard/CreateRemoteThread strings; these are Cygwin implementation strings, not sufficient evidence of malicious project behavior.",
+    "usefulCapabilities": [
+      "blockcheck2 strategy discovery",
+      "Lua-driven strategy engine",
+      "auto-hostlist",
+      "advanced split/fake modes"
+    ]
+  },
+  "comparisonToAcceptedRuntime": {
+    "currentWinwsSha256": "A14BFF1DF6234EA555D2E0C61B589F0707C0B12D6C9B7EECCDA76012154996E8",
+    "sharedCygwin1DllSha256": "103104A52E5293CE418944725DF19E2BF81AD9269B9A120D71D39028E821499B",
+    "sharedWinDivert64SysSha256": "8DA085332782708D8767BCACE5327A6EC7283C17CFB85E40B03CD2323A90DDC2",
+    "implication": "Archive-level Defender detection does not by itself identify which embedded component caused the alert; current accepted shared components remain separately governed by their own hashes and scans."
+  },
+  "decision": {
+    "shipZapret2WindowsBinaries": false,
+    "shipZapret2Archive": false,
+    "reuseDesignIdeas": true,
+    "rationale": "Useful techniques should be implemented with already-accepted runtime capabilities or independently rebuilt/clean-scanned components. Severe Defender detection prevents promotion without stronger evidence.",
+    "reusedInCurrentRuntime": [
+      "explicit user-managed Custom Sites hostlist",
+      "three selectable accepted-runtime strategies: Balanced, Compatibility, Strong",
+      "optional experimental All Sites scope with Targeted as default"
+    ],
+    "currentRuntimeValidation": "Accepted v72.13 nfqws dry-run PASS for Balanced/Compatibility/Strong in both targeted design and all-sites no-hostlist mode."
+  },
+  "futureSuspiciousFileRule": "All suspicious third-party files follow hash/provenance -> static inspection -> malware scan -> isolated execution -> reproducible regression -> explicit promotion. Failure at severe malware gate remains quarantined.",
+  "githubDisposableIsolation": {
+    "auditBranch": "audit/zapret2-isolated-20261005",
+    "commit": "fcfd129b0ff186530c3d2c07483a99bf279a921e",
+    "workflowRunId": 37292778430,
+    "status": "PASS_EXECUTION_OF_AUDIT_NOT_COMPONENT_PROMOTION",
+    "windows": {
+      "runner": "Windows Server 2025 hosted disposable runner",
+      "archiveHashVerified": true,
+      "defenderAntivirusEnabled": true,
+      "defenderRealTimeProtectionEnabled": false,
+      "signatureVersion": "1.459.560.0",
+      "detections": 0,
+      "conclusion": "INCONCLUSIVE_NOT_CLEARED",
+      "reason": "Hosted runner had Defender engine enabled but real-time protection disabled; no Windows binary execution was allowed after prior local Severe/Concrete detection."
+    },
+    "linux": {
+      "runner": "Ubuntu 24.04 hosted disposable runner",
+      "archiveHashVerified": true,
+      "nfqws2Sha256": "DE1414B1E0F9A5659D438CDDCB0C7E9099B4533BF5C8A3CF841C7BC7E5AA1473",
+      "isolation": "unshare --net --mount-proc",
+      "action": "--version only",
+      "result": "PASS_VERSION_ONLY",
+      "networkedPacketExecution": false
+    }
+  },
+  "exactNextAction": "Keep zapret2 Windows/archive rejected; finish v1.5.0 using accepted v72.13 runtime with validated strategy/scope controls and close installed-host lifecycle gates."
+}

@@ -5,10 +5,12 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import tempfile
 import threading
+import urllib.parse
 import urllib.request
 import zipfile
 
@@ -31,6 +33,9 @@ APP_HOME=pathlib.Path.home()/".local/share/DirectInternetMethod"
 PRIV_HOME=pathlib.Path("/usr/lib/directinternetmethod")
 STATE=APP_HOME/"directmethod/state.json"
 PREFS=APP_HOME/"settings.json"
+CUSTOM_HOSTS=APP_HOME/"custom-hosts.txt"
+STRATEGY_FILE=APP_HOME/"strategy.txt"
+SCOPE_FILE=APP_HOME/"scope.txt"
 LATEST_API="https://api.github.com/repos/GOD13emad/DirectInternetMethod/releases/latest"
 
 def ui_test_log(message):
@@ -49,6 +54,39 @@ def save_adult_site_check(enabled):
     temp=PREFS.with_suffix(".tmp")
     temp.write_text(json.dumps({"adultSiteLiveCheck":bool(enabled)},separators=(",",":"))+"\n",encoding="utf-8")
     os.replace(temp,PREFS)
+
+def normalize_custom_site(raw):
+    value=str(raw or "").strip()
+    if not value or value.startswith("#"):
+        return None
+    exact=value.startswith("^")
+    if exact:
+        value=value[1:].strip()
+    try:
+        parsed=urllib.parse.urlsplit(value if "://" in value else "https://"+value)
+        host=(parsed.hostname or "").strip(".").lower()
+    except Exception:
+        return None
+    if len(host)<3 or len(host)>253 or "." not in host:
+        return None
+    label=re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+    if any(not label.fullmatch(x) for x in host.split(".")):
+        return None
+    return "^"+host if exact else host
+
+def save_custom_hosts_text(text):
+    vals=[]
+    for raw in str(text or "").splitlines():
+        v=normalize_custom_site(raw)
+        if v and v not in vals:
+            vals.append(v)
+        if len(vals)>=256:
+            break
+    CUSTOM_HOSTS.parent.mkdir(parents=True,exist_ok=True)
+    temp=CUSTOM_HOSTS.with_suffix(".tmp")
+    temp.write_text(("\n".join(vals)+"\n") if vals else "",encoding="utf-8")
+    os.replace(temp,CUSTOM_HOSTS)
+    return len(vals)
 
 def probe_url(url,physical,allowed):
     try:
@@ -316,7 +354,7 @@ class Window(Adw.ApplicationWindow):
         self.buttons={}
         for text_,action,css in [
             ("Start","start","suggested-action"),("Stop","stop",None),("Refresh","refresh",None),
-            ("Recovery","recovery","destructive-action"),("Router Gateway","router",None),("Update","update",None)]:
+            ("Recovery","recovery","destructive-action"),("Router Gateway","router",None),("Custom Sites","custom",None),("Strategy","strategy",None),("Update","update",None)]:
             b=Gtk.Button(label=text_);b.set_size_request(120,48)
             if css:b.add_css_class(css)
             b.connect("clicked",self.on_action,action);buttons.append(b);self.buttons[action]=b
@@ -400,12 +438,94 @@ class Window(Adw.ApplicationWindow):
             self.close();return True
         return False
 
+    def open_custom_sites(self):
+        w=Gtk.Window(title="Custom Sites",transient_for=self,modal=True)
+        w.set_default_size(570,470)
+        outer=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=10)
+        outer.set_margin_top(16);outer.set_margin_bottom(16);outer.set_margin_start(16);outer.set_margin_end(16)
+        note=Gtk.Label(label="One site or URL per line. Saved domains and subdomains use the existing Direct Method on the next Start. Prefix ^ for exact-host only. Maximum 256 entries.",xalign=0,wrap=True)
+        note.add_css_class("dim-label");outer.append(note)
+        scroll=Gtk.ScrolledWindow();scroll.set_vexpand(True)
+        view=Gtk.TextView();view.set_monospace(True);view.set_wrap_mode(Gtk.WrapMode.NONE)
+        try:
+            view.get_buffer().set_text(CUSTOM_HOSTS.read_text(encoding="utf-8") if CUSTOM_HOSTS.exists() else "")
+        except Exception:
+            view.get_buffer().set_text("")
+        scroll.set_child(view);outer.append(scroll)
+        row=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8);row.set_halign(Gtk.Align.END)
+        cancel=Gtk.Button(label="Cancel");save=Gtk.Button(label="Save");save.add_css_class("suggested-action")
+        row.append(cancel);row.append(save);outer.append(row)
+        cancel.connect("clicked",lambda *_:w.close())
+        def do_save(*_):
+            try:
+                buf=view.get_buffer()
+                count=save_custom_hosts_text(buf.get_text(buf.get_start_iter(),buf.get_end_iter(),True))
+                self.result.set_text(f"Custom sites saved: {count}. Stop/Start to apply.")
+                w.close()
+            except Exception as e:
+                self.result.set_text("Custom sites save failed: "+str(e))
+        save.connect("clicked",do_save)
+        w.set_child(outer);w.present()
+
+    def open_strategy(self):
+        current="balanced"
+        all_sites=False
+        try:
+            raw=STRATEGY_FILE.read_text(encoding="utf-8").strip().lower()
+            if raw in {"balanced","compatibility","strong"}:
+                current=raw
+        except Exception:
+            pass
+        try:
+            all_sites=SCOPE_FILE.read_text(encoding="utf-8").strip().lower()=="all-sites"
+        except Exception:
+            pass
+        w=Gtk.Window(title="Direct Strategy",transient_for=self,modal=True)
+        w.set_default_size(540,390)
+        outer=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=12)
+        outer.set_margin_top(18);outer.set_margin_bottom(18);outer.set_margin_start(18);outer.set_margin_end(18)
+        note=Gtk.Label(label="Balanced is the default. Compatibility uses split-only TCP handling. Strong is more aggressive and should be used only when Balanced still fails.",xalign=0,wrap=True)
+        outer.append(note)
+        values=["Balanced","Compatibility","Strong"]
+        combo=Gtk.DropDown.new_from_strings(values)
+        combo.set_selected({"balanced":0,"compatibility":1,"strong":2}.get(current,0))
+        outer.append(combo)
+        scope_toggle=Gtk.CheckButton(label="Apply DPI strategy to all web sites (experimental)")
+        scope_toggle.set_active(all_sites);outer.append(scope_toggle)
+        hint=Gtk.Label(label="Targeted mode affects only built-in and Custom Sites. All Sites mode can help unknown blocked domains, but may reduce compatibility or speed on some sites. Neither mode creates a VPN, proxy, or default-route tunnel.",xalign=0,wrap=True)
+        hint.add_css_class("dim-label");outer.append(hint)
+        row=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8);row.set_halign(Gtk.Align.END)
+        cancel=Gtk.Button(label="Cancel");save=Gtk.Button(label="Save");save.add_css_class("suggested-action")
+        row.append(cancel);row.append(save);outer.append(row)
+        cancel.connect("clicked",lambda *_:w.close())
+        def do_save(*_):
+            try:
+                value=("balanced","compatibility","strong")[int(combo.get_selected())]
+                STRATEGY_FILE.parent.mkdir(parents=True,exist_ok=True)
+                temp=STRATEGY_FILE.with_suffix(".tmp")
+                temp.write_text(value+"\n",encoding="utf-8")
+                os.replace(temp,STRATEGY_FILE)
+                scope_value="all-sites" if scope_toggle.get_active() else "targeted"
+                st=SCOPE_FILE.with_suffix(".tmp")
+                st.write_text(scope_value+"\n",encoding="utf-8")
+                os.replace(st,SCOPE_FILE)
+                self.result.set_text(f"Strategy saved: {value}; scope: {scope_value}. Stop/Start to apply.")
+                w.close()
+            except Exception as e:
+                self.result.set_text("Strategy save failed: "+str(e))
+        save.connect("clicked",do_save)
+        w.set_child(outer);w.present()
+
     def on_action(self,_button,action):
         ui_test_log("ACTION:"+action)
         if action=="refresh":
             self.refresh();self.result.set_text("");return
         if action=="router":
             RouterGatewayWindow(self).present();return
+        if action=="custom":
+            self.open_custom_sites();return
+        if action=="strategy":
+            self.open_strategy();return
         if action=="update":
             if self.available_update:
                 self.set_sensitive(False);self.result.set_text("Downloading and verifying update…")

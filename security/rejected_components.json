@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "policy": "Suspicious third-party components are never promoted merely because they improve connectivity. Promotion requires provenance+hash verification, static inspection, platform malware scan where available, isolated execution appropriate to file type, and reproducible project regression. A failed severe malware gate remains quarantined; no antivirus exclusion or restore is created automatically.",
+  "rejected": [
+    {
+      "id": "zapret2-v1.0.5.2-release-archive",
+      "sha256": "F585590BEA6DA82AC2C74926F6AC17E6204EE8B53E455C2BA2EDAE0C58C5D4AC",
+      "filename": "zapret2-v1.0.5.2.zip",
+      "status": "REJECTED_SEVERE_DEFENDER",
+      "reason": "Microsoft Defender detected Trojan:Win32/Suschil!rfn (Severe/Concrete) on the official release archive."
+    },
+    {
+      "id": "zapret2-v1.0.5.2-winws2-x64",
+      "sha256": "EB9807972C15F05A00416B0549D766A71C9186F8101D406E3CC6C16278164D9E",
+      "filename": "winws2.exe",
+      "status": "UNAPPROVED_DO_NOT_SHIP",
+      "reason": "Contained in the rejected archive; Windows binary was not independently source-rebuilt and clean-scanned."
+    }
+  ],
+  "notes": [
+    "The archive contains cygwin1.dll and WinDivert64.sys hashes also present in the already-accepted current runtime; the archive-level detection therefore does not by itself prove those shared components malicious.",
+    "Linux nfqws2 from the official archive was only executed with --version in a systemd user sandbox with PrivateNetwork=yes and NoNewPrivileges=yes; no privileged or networked execution was performed.",
+    "Useful design ideas may be reimplemented using already-accepted runtime capabilities without shipping rejected binaries."
+  ]
+}

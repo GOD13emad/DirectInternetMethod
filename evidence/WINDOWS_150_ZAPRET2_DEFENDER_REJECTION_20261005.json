@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "REJECTED_FROM_PRODUCT_SECURITY_GATE",
+  "context": "Evaluation of upstream zapret2 v1.0.5.2 as a possible future DPI-engine expansion.",
+  "candidate": {
+    "upstream": "bol-van/zapret2",
+    "tag": "v1.0.5.2",
+    "releasePublishedAt": "2026-09-15T12:33:41Z",
+    "asset": "zapret2-v1.0.5.2.zip",
+    "githubApiDigest": "sha256:f585590bea6da82ac2c74926f6ac17e6204ee8b53e455c2ba2edae0c58c5d4ac"
+  },
+  "defender": {
+    "detection": "Trojan:Win32/Suschil!rfn",
+    "severity": "Severe",
+    "category": "Trojan",
+    "threatId": "2147927547",
+    "detectionType": "Concrete",
+    "source": "Real-Time Protection",
+    "action": "Quarantine",
+    "actionStatus": "No additional actions required",
+    "eventDetectedAtLocal": "2026-10-05T06:44:15+03:30",
+    "eventRemediatedAtLocal": "2026-10-05T06:46:58+03:30"
+  },
+  "decision": {
+    "acceptIntoProduct": false,
+    "restoreFromQuarantine": false,
+    "createDefenderExclusion": false,
+    "rationale": "This is a local packet-processing/bypass tool candidate, not a remote attack on filtering infrastructure. Official upstream provenance is insufficient to override a current Severe/Concrete Trojan classification without independent clean-binary/source-build evidence.",
+    "cleanup": "Temporary zapret2 evaluation directory removed after Defender quarantine."
+  },
+  "currentRuntime": {
+    "decision": "RETAIN_CURRENT_V72_13_RUNTIME",
+    "winwsSha256": "A14BFF1DF6234EA555D2E0C61B589F0707C0B12D6C9B7EECCDA76012154996E8",
+    "winDivertDllSha256": "C1E060EE19444A259B2162F8AF0F3FE8C4428A1C6F694DCE20DE194AC8D7D9A2",
+    "winDivertSysSha256": "8DA085332782708D8767BCACE5327A6EC7283C17CFB85E40B03CD2323A90DDC2",
+    "note": "No additional Defender malware detection event for the retained v1.5 runtime appeared in the immediate post-audit event-log readback."
+  },
+  "exactNextAction": "Continue expansion only with source/audit/test-clean components; do not weaken Defender or restore the quarantined zapret2 archive."
+}

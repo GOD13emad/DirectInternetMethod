@@ -7,3 +7,10 @@ youtubei.googleapis.com
 ^gemini.google.com
 pornhub.com
 phncdn.com
+openai.com
+chatgpt.com
+oaistatic.com
+oaiusercontent.com
+github.com
+githubusercontent.com
+githubassets.com
