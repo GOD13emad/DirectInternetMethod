@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.5.0",
-  "status": "PASS_RELEASE_CANDIDATE_WINDOWS_1_5_0_DEVELOPMENT_COMPLETE_PENDING_INSTALLED_LIVE",
+  "status": "PASS_RELEASE_CANDIDATE_WINDOWS_1_5_0_FINAL_LOCAL_PENDING_OWNER_UAC_INSTALLED_LIVE",
   "date": "2026-10-04",
   "previousAccepted": {
     "version": "1.4.0",
@@ -105,11 +105,12 @@
     "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
     "startupLayout": "PASS_DYNAMIC_1289x632_NO_OVERLAP_8_BUTTONS",
     "targetHostlistContract": "PASS",
-    "siteCoverageLive": "PENDING_INSTALLED_1_5_TARGETED_STRONG_ALLSITES_TEST",
+    "siteCoverageLive": "BLOCKED_OWNER_UAC_CANCELED_NO_INSTALL",
     "publication": "PENDING",
     "strategyProfiles": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
     "allSitesScope": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
-    "securityRejectedComponentGate": "PASS_BLOCKED_HASHES_NOT_SHIPPED"
+    "securityRejectedComponentGate": "PASS_BLOCKED_HASHES_NOT_SHIPPED",
+    "artifactIdentity": "EXTERNAL_ROOT_RELEASE_METADATA_AND_SHA256SUMS"
   },
   "validationBoundary": [
     "Direct Internet Method does not change the public egress IP, so remote country/account/product restrictions cannot be guaranteed away.",
@@ -119,6 +120,6 @@
     "zapret2 v1.0.5.2 Windows/archive remains rejected after local Severe/Concrete Defender detection; no exclusion or restore is used.",
     "Windows installer is not Authenticode-signed."
   ],
-  "exactNextAction": "Install exact v1.5.0 candidate on protected hosts, validate lifecycle/site coverage, then publish through protected CI.",
-  "buildIdentityNote": "Final installer/payload hashes are authoritative in root RELEASE.json, SHA256SUMS.txt and evidence records; this embedded platform descriptor intentionally does not self-reference installer/manifest hashes."
+  "exactNextAction": "Approve one local UAC prompt, install exact candidate, verify hashes/UI, then Start->site matrix->Stop->Recovery.",
+  "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records."
 }

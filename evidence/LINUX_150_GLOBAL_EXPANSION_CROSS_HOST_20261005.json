@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "SUPERSEDED_PREVIOUS_CROSS_HOST_PASS_PENDING_FINAL_METADATA_COMMIT_REPRODUCTION",
+  "source": {
+    "branch": "feature/v1.5.0-adaptive-direct-sites",
+    "commit": "PENDING_FINAL_METADATA_COMMIT",
+    "remote": "https://github.com/GOD13emad/DirectInternetMethod.git",
+    "checkout": "fresh single-branch clone on aliemad-Labtop"
+  },
+  "validation": {
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "routerGatewayRuntimeSmoke": "PASS_9_PROFILES_BOUNDED",
+    "rejectedComponentAudit": "PASS_7_TRACKED_BINARIES_2_BLOCKED_HASHES",
+    "packageBuild": "PASS_17_FILES"
+  },
+  "artifact": {
+    "path": "delivery/DirectInternetMethod_1.5.0_Linux_x86_64.zip",
+    "bytes": 8179393,
+    "sha256": "61A76B06A59BAC55196DD538D1D17C27C86F8045C6564B67AF3091A3AC7CCBD2",
+    "localWindowsBuilderSha256": "61A76B06A59BAC55196DD538D1D17C27C86F8045C6564B67AF3091A3AC7CCBD2",
+    "exactCrossHostMatch": false
+  },
+  "security": {
+    "rejectedZapret2HashesNotTracked": true,
+    "suspiciousComponentGuard": "PASS"
+  },
+  "exactNextAction": "Push exact final metadata/artifact state, fresh-clone that commit on aliemad-Labtop, rebuild 17-file ZIP, and require exact SHA-256 match.",
+  "previousPass": {
+    "commit": "f3000b37f54ce428352546f597150464b8d96cf5",
+    "sha256": "5E71632238AF99DF5DE39AF78171DCBA0F4274FAA32CA71252DA65AFFA9E2E52"
+  }
+}

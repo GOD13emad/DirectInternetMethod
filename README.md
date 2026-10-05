@@ -8,13 +8,15 @@ Standalone direct-connect application for Windows and Linux. It is independent o
 
 v1.5.0 keeps the bounded v1.4 direct engine and expands explicit host-scoped coverage and diagnostics without creating a VPN, HTTP/SOCKS proxy, or default-route tunnel.
 
-Built-in target coverage now includes the existing YouTube set plus exact Gemini web-app targeting and an adult-site/CDN target. The application UI never exposes the adult brand name: it shows **Adult site**, and its live check is **off by default** and can be enabled or disabled by the user.
+Built-in target coverage now includes the existing YouTube family plus Gemini, the requested adult-site/CDN target, OpenAI/ChatGPT, and GitHub. The application UI never exposes the adult brand name: it shows **Adult site**, and its live check is **off by default** and can be enabled or disabled by the user.
+
+For sites not covered by the built-in catalog, **Custom Sites** accepts normalized domains/URLs (up to 256 entries). The **Strategy** panel provides Balanced, Compatibility, and Strong profiles. Scope defaults to **Targeted**; an opt-in **All Sites (experimental)** mode is available for unknown blocked domains when targeted coverage is insufficient. All Sites is not the default because broad DPI manipulation can reduce compatibility or speed.
 
 Live-check results distinguish **PASS** (successful 2xx/3xx), **REACHABLE** (HTTP transport succeeded but the site returned an application response such as 403), and **FAIL** (transport did not complete). This matters because the Direct Method can address DNS/DPI interference but does not change public egress IP, account state, or server-side country/product policy.
 
 Linux online update hardening in v1.5.0 requires three-way agreement between the GitHub API asset digest, the exact SHA256SUMS.txt entry, and the downloaded ZIP hash, with exact-one expected asset selection. Router Gateway health diagnostics also state their protocol boundary explicitly: PPTP TCP/1723 checks do not verify GRE/authentication, and L2TP/IPsec generic endpoint fallback does not claim UDP 500/4500 or authenticated tunnel success.
 
-The engine is intentionally bounded to the existing host list and uses four direct method families:
+The engine is bounded by default to built-in + Custom Sites host lists and uses four direct method families:
 
 - **Encrypted DNS (DoH):** ctrld uses the proven direct-IP Control D DoH path and explicitly disables OS-resolver leakage if the encrypted upstream fails.
 - **HTTP/80 Host split:** hostlist-scoped TCP/80 DPI desynchronization using fake + multisplit around the HTTP method.
@@ -23,7 +25,11 @@ The engine is intentionally bounded to the existing host list and uses four dire
 
 The app still does **not** change the physical adapter DNS, create broad /1 or default routes, or configure a WinHTTP proxy. Start/Stop/Recovery own only the resources created by Direct Internet Method and retain exact rollback guards.
 
-Deliberately not enabled by default: broad IP fragmentation, permanent small TCP window tricks, global all-domain interception, or a second DPI-bypass runtime. These add compatibility/performance risk without evidence that they improve the current bounded engine.
+Deliberately not enabled by default: broad IP fragmentation, permanent small TCP-window tricks, automatic hostlist learning, All Sites scope, or a second DPI-bypass runtime. The accepted runtime exposes All Sites only as an explicit user choice; automatic hostlist learning is not enabled because upstream documentation requires broader inbound/outbound interception and extra false-positive controls.
+
+A newer zapret2 Windows archive was evaluated separately but was **not shipped** after Microsoft Defender classified it as a Severe/Concrete Trojan. No exclusion or restore is used. The project instead reimplemented useful ideas (Custom Sites, strategy profiles, optional All Sites) on the already accepted runtime and added a CI hash gate for rejected components.
+
+Secure-DNS resilience was also re-tested. The current direct-IP Control D endpoint `76.76.10.11/p0` produced real DNS answers. Alternate Control D, Google, Quad9 and Cloudflare fallback attempts timed out or reset on the validation network, so they were not promoted merely to increase option count; OS-resolver leakage remains disabled.
 
 ## Router Gateway
 

@@ -1,0 +1,104 @@
+{
+  "generated": "2026-10-05T14:10:16.3200664+03:30",
+  "installedRelease": {
+    "schema": 1,
+    "product": "Direct Internet Method",
+    "version": "1.4.0",
+    "status": "PASS_RELEASE_READY_WINDOWS_1_4_0_DIRECT_MULTIPROTOCOL",
+    "date": "2026-10-01",
+    "previousAccepted": {
+      "version": "1.3.2",
+      "tag": "v1.3.2",
+      "commit": "a0bf6bbce1932a0f4dd405f0cfbffeeb68ec63e6"
+    },
+    "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + hostlist-scoped zapret/WinDivert multiprotocol direct engine",
+    "features": {
+      "directDnsDpi": true,
+      "directMethods": [
+        "encrypted-dns-doh",
+        "http-host-split-tcp80",
+        "tls-sni-desync-tcp443",
+        "quic-desync-udp443"
+      ],
+      "noVpn": true,
+      "noProxy": true,
+      "noDefaultRouteTunnel": true,
+      "noPhysicalAdapterDnsMutation": true,
+      "hostlistScoped": true,
+      "routerGateway": true,
+      "routerGatewayProtocols": [
+        "L2TP/IPsec",
+        "PPTP"
+      ],
+      "routerGatewayProfileCount": 9,
+      "routerGatewayIndependentProviders": 3,
+      "preferredStartupWindow": "1289x632 DIP",
+      "responsiveFooterWrap": true,
+      "secureDnsTransports": [
+        "DoH"
+      ],
+      "secureDnsLeakToOsResolver": false,
+      "secureDnsPrimary": "DoH direct IP 76.76.10.11/p0",
+      "researchedButNotEnabledDnsTransports": [
+        "DoH3",
+        "DoQ",
+        "DoT"
+      ]
+    },
+    "usage": {
+      "chatgptRequired": false,
+      "offlineRuntime": true,
+      "adminRequiredAtInstallOrPrivilegedUpgrade": true,
+      "adminRequiredForNormalRun": false,
+      "controlPanel": "app/DirectInternetMethod.exe",
+      "privilegedService": "DirectInternetMethodSvc",
+      "externalPowerShellRequired": false,
+      "bundledPowerShell": "7.6.6"
+    },
+    "acceptance": {
+      "windowsContract": "PASS",
+      "serviceSelftest": "PASS",
+      "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
+      "startupLayout": "PASS_1289x632_96DPI_NO_OVERLAP",
+      "linuxIndependentValidation": "PENDING",
+      "publication": "PENDING",
+      "secureDnsContract": "PASS_DOH_LEAK_CLOSED",
+      "physicalRefreshInput": "PASS_MOUSE_KEYBOARD",
+      "routerGatewayUi": "PASS_PHYSICAL_OPEN_9_VISIBLE_PROFILES"
+    },
+    "validationBoundary": [
+      "Windows live Start/Stop for the changed packet engine is deferred to avoid disrupting the active Windows host; Linux is the live-network validation host for v1.4.0.",
+      "QUIC profile syntax/runtime ownership can be verified without an HTTP/3-capable curl; full HTTP/3 application success is a separate validation.",
+      "DoH3, DoQ and DoT were researched and isolated-tested but are not enabled because they did not resolve on the current Linux network; proven direct-IP DoH is retained with OS-resolver leakage disabled.",
+      "Windows installer is not Authenticode-signed."
+    ]
+  },
+  "stateExists": false,
+  "action": {
+    "schema": 1,
+    "action": "recovery",
+    "phase": "done",
+    "exitCode": 0,
+    "message": "Action completed.",
+    "updatedUtc": "2026-10-05T13:44:31.8295435+03:30"
+  },
+  "routes": [
+    {
+      "InterfaceAlias": "Ethernet 3",
+      "NextHop": "192.168.20.1",
+      "RouteMetric": 0,
+      "PolicyStore": null
+    }
+  ],
+  "dns": [
+    {
+      "InterfaceAlias": "Ethernet 3",
+      "ServerAddresses": [
+        "192.168.20.1"
+      ]
+    }
+  ],
+  "winhttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+  "ctrld": [],
+  "winws": []
+}

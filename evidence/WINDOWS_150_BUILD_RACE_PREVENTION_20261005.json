@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "PASS_ROOT_CAUSE_PREVENTION_REGRESSION",
+  "failure": {
+    "symptom": "Windows installer build intermittently returned ISCC_EXIT_1 / output lock behavior while an Inno Setup compiler child continued writing the target artifact.",
+    "impact": "Could cause false build failure, blind rerun risk, or hashing an incomplete/locked installer.",
+    "rootCause": "Build orchestration did not serialize payload/installer writers and did not allow enough time for the compiler/output file to become exclusively readable and size-stable."
+  },
+  "prevention": [
+    "Shared exclusive windows-150-build.lock is required by both payload and installer build scripts.",
+    "Installer waits up to 120 seconds for any previous output writer to release before deleting the prior artifact.",
+    "After compiler return, installer waits up to 120 seconds for exclusive read access.",
+    "Artifact size must remain identical across three samples before hashing/evidence promotion.",
+    "No artifact is promoted from a locked or unstable output."
+  ],
+  "regression": {
+    "script": "tests/build_windows_150_installer.ps1",
+    "result": "PASS",
+    "finalBytes": 157112753,
+    "finalSha256": "544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C",
+    "manifestSha256": "E320D89B6D7376800CCDF093E78AE094C0C211708F793F36E7EB4B36A59674D7",
+    "outputExclusiveOpen": "PASS",
+    "outputExclusiveWaitMs": 250,
+    "stableSamples": [
+      157112753,
+      157112753,
+      157112753
+    ],
+    "repeatedArtifactIdentity": "Same exact installer SHA-256 as the preceding complete diagnostic compile."
+  },
+  "confidence": "CONFIRMED_REPRODUCIBLE",
+  "reuseTargets": [
+    "PROJECT_BRAIN",
+    "release engineering",
+    "failure prevention",
+    "CI/build handoff"
+  ]
+}
