@@ -3,7 +3,7 @@
   "date": "2026-10-05",
   "project": "Direct Internet Method",
   "changeSet": "repository-authority-hygiene",
-  "status": "PASS_LOCAL_FULL_SUITE_PENDING_CI",
+  "status": "PASS_MERGED_CI",
   "previousAcceptedState": {
     "mainCommit": "51923983f22d5187f6c4285ac07991df081567fa",
     "appRelease": "1.5.0",
@@ -67,7 +67,7 @@
     "routerGatewayContract": "PASS",
     "diffCheck": "PASS"
   },
-  "exactNextAction": "Commit/push repository-authority cleanup, require protected CI, merge to main, then final authority/host residue verification.",
+  "exactNextAction": "Change Set complete. Keep versioned binaries on GitHub Releases and let release_metadata_audit prevent authority drift.",
   "fullRegression": {
     "trackedSyntaxBuild": {
       "status": "PASS",
@@ -98,5 +98,21 @@
       "jsonErrors": 0,
       "trackedVersionedDeliveryBinaries": 0
     }
+  },
+  "promotion": {
+    "pullRequest": 18,
+    "protectedCiRun": 37323459066,
+    "protectedCi": "PASS_WINDOWS_AND_LINUX_SOURCE_CONTRACTS",
+    "mainCommit": "af2ade3a3a9a71d4c445c936dfd7e6dd44fcd186"
+  },
+  "postMergeVerification": {
+    "workingTree": "CLEAN",
+    "currentRelease": "v1.5.0",
+    "releaseAssetsUnchanged": {
+      "windowsSha256": "544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C",
+      "linuxSha256": "61A76B06A59BAC55196DD538D1D17C27C86F8045C6564B67AF3091A3AC7CCBD2",
+      "checksumAssetSha256": "66B4BCD88E6B2708D51BAA75D66256CC0295AE1D0C274C12B3B51B479E15522C"
+    },
+    "routerGatewayDataRevision": 3
   }
 }
