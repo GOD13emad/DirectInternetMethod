@@ -1,0 +1,339 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "PASS_LIFECYCLE_SITE_MATRIX",
+  "installed": {
+    "version": "1.5.0",
+    "guiSha256": "055C2F10BFBEEE13496FBC75B3151D08FCC5AAB3E6D2B0ED27A1D3D0E4450A86",
+    "serviceSha256": "E0BAB3C9E97287E31EE920DB137B7B0C6314194F74D79B2918B25804E2445A8C"
+  },
+  "pre": {
+    "routes": [
+      {
+        "InterfaceAlias": "Ethernet 3",
+        "NextHop": "192.168.20.1",
+        "RouteMetric": 0
+      }
+    ],
+    "dns": [
+      {
+        "InterfaceAlias": "Ethernet 3",
+        "ServerAddresses": [
+          "192.168.20.1"
+        ]
+      }
+    ],
+    "winhttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+    "stateExists": false,
+    "ctrld": 0,
+    "winws": 0
+  },
+  "cycles": [
+    {
+      "cycle": "balanced-targeted-builtins",
+      "strategy": "balanced",
+      "scope": "targeted",
+      "rows": [
+        {
+          "name": "YouTube",
+          "url": "https://www.youtube.com/generate_204",
+          "status": "PASS",
+          "http": "204",
+          "remote": "142.251.150.4",
+          "exit": 0,
+          "elapsedMs": 612,
+          "raw": "204|142.251.150.4|0.539160"
+        },
+        {
+          "name": "OpenAI",
+          "url": "https://api.openai.com/v1/models",
+          "status": "PASS",
+          "http": "401",
+          "remote": "162.159.140.245",
+          "exit": 0,
+          "elapsedMs": 426,
+          "raw": "401|162.159.140.245|0.393962"
+        },
+        {
+          "name": "GitHub",
+          "url": "https://github.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "140.82.121.3",
+          "exit": 0,
+          "elapsedMs": 1087,
+          "raw": "200|140.82.121.3|0.867870"
+        },
+        {
+          "name": "Gemini",
+          "url": "https://gemini.google.com/",
+          "status": "REACHABLE",
+          "http": "403",
+          "remote": "142.251.154.2",
+          "exit": 0,
+          "elapsedMs": 1452,
+          "raw": "403|142.251.154.2|1.325276"
+        },
+        {
+          "name": "Adult site",
+          "url": "https://www.pornhub.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "66.254.114.41",
+          "exit": 0,
+          "elapsedMs": 1603,
+          "raw": "200|66.254.114.41|1.563232"
+        },
+        {
+          "name": "Reddit",
+          "url": "https://www.reddit.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "146.75.121.140",
+          "exit": 0,
+          "elapsedMs": 1064,
+          "raw": "200|146.75.121.140|1.028864"
+        },
+        {
+          "name": "Wikipedia",
+          "url": "https://www.wikipedia.org/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "185.15.59.224",
+          "exit": 0,
+          "elapsedMs": 640,
+          "raw": "200|185.15.59.224|0.606951"
+        },
+        {
+          "name": "Cloudflare",
+          "url": "https://www.cloudflare.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "104.16.123.96",
+          "exit": 0,
+          "elapsedMs": 1012,
+          "raw": "200|104.16.123.96|0.976261"
+        }
+      ]
+    },
+    {
+      "cycle": "strong-targeted-custom-reddit",
+      "strategy": "strong",
+      "scope": "targeted",
+      "rows": [
+        {
+          "name": "YouTube",
+          "url": "https://www.youtube.com/generate_204",
+          "status": "PASS",
+          "http": "204",
+          "remote": "142.251.153.4",
+          "exit": 0,
+          "elapsedMs": 474,
+          "raw": "204|142.251.153.4|0.448921"
+        },
+        {
+          "name": "OpenAI",
+          "url": "https://api.openai.com/v1/models",
+          "status": "PASS",
+          "http": "401",
+          "remote": "162.159.140.245",
+          "exit": 0,
+          "elapsedMs": 320,
+          "raw": "401|162.159.140.245|0.302525"
+        },
+        {
+          "name": "GitHub",
+          "url": "https://github.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "140.82.121.4",
+          "exit": 0,
+          "elapsedMs": 718,
+          "raw": "200|140.82.121.4|0.687959"
+        },
+        {
+          "name": "Gemini",
+          "url": "https://gemini.google.com/",
+          "status": "REACHABLE",
+          "http": "403",
+          "remote": "142.251.150.2",
+          "exit": 0,
+          "elapsedMs": 679,
+          "raw": "403|142.251.150.2|0.654061"
+        },
+        {
+          "name": "Adult site",
+          "url": "https://www.pornhub.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "66.254.114.41",
+          "exit": 0,
+          "elapsedMs": 1407,
+          "raw": "200|66.254.114.41|1.383244"
+        },
+        {
+          "name": "Reddit",
+          "url": "https://www.reddit.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "146.75.121.140",
+          "exit": 0,
+          "elapsedMs": 1096,
+          "raw": "200|146.75.121.140|1.069636"
+        },
+        {
+          "name": "Wikipedia",
+          "url": "https://www.wikipedia.org/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "185.15.59.224",
+          "exit": 0,
+          "elapsedMs": 627,
+          "raw": "200|185.15.59.224|0.607438"
+        },
+        {
+          "name": "Cloudflare",
+          "url": "https://www.cloudflare.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "104.16.123.96",
+          "exit": 0,
+          "elapsedMs": 1053,
+          "raw": "200|104.16.123.96|1.025051"
+        }
+      ]
+    },
+    {
+      "cycle": "strong-all-sites",
+      "strategy": "strong",
+      "scope": "all-sites",
+      "rows": [
+        {
+          "name": "YouTube",
+          "url": "https://www.youtube.com/generate_204",
+          "status": "PASS",
+          "http": "204",
+          "remote": "142.251.154.4",
+          "exit": 0,
+          "elapsedMs": 665,
+          "raw": "204|142.251.154.4|0.634616"
+        },
+        {
+          "name": "OpenAI",
+          "url": "https://api.openai.com/v1/models",
+          "status": "PASS",
+          "http": "401",
+          "remote": "172.66.0.243",
+          "exit": 0,
+          "elapsedMs": 371,
+          "raw": "401|172.66.0.243|0.351324"
+        },
+        {
+          "name": "GitHub",
+          "url": "https://github.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "140.82.121.3",
+          "exit": 0,
+          "elapsedMs": 685,
+          "raw": "200|140.82.121.3|0.655053"
+        },
+        {
+          "name": "Gemini",
+          "url": "https://gemini.google.com/",
+          "status": "REACHABLE",
+          "http": "403",
+          "remote": "142.251.151.2",
+          "exit": 0,
+          "elapsedMs": 896,
+          "raw": "403|142.251.151.2|0.857430"
+        },
+        {
+          "name": "Adult site",
+          "url": "https://www.pornhub.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "66.254.114.41",
+          "exit": 0,
+          "elapsedMs": 1411,
+          "raw": "200|66.254.114.41|1.387678"
+        },
+        {
+          "name": "Reddit",
+          "url": "https://www.reddit.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "146.75.121.140",
+          "exit": 0,
+          "elapsedMs": 417,
+          "raw": "200|146.75.121.140|0.386852"
+        },
+        {
+          "name": "Wikipedia",
+          "url": "https://www.wikipedia.org/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "185.15.59.224",
+          "exit": 0,
+          "elapsedMs": 661,
+          "raw": "200|185.15.59.224|0.636229"
+        },
+        {
+          "name": "Cloudflare",
+          "url": "https://www.cloudflare.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "104.16.124.96",
+          "exit": 0,
+          "elapsedMs": 1086,
+          "raw": "200|104.16.124.96|1.061500"
+        }
+      ]
+    }
+  ],
+  "recovery": {
+    "schema": 1,
+    "action": "recovery",
+    "phase": "done",
+    "exitCode": 0,
+    "message": "Action completed.",
+    "updatedUtc": "2026-10-05T15:06:28.9505673+03:30"
+  },
+  "post": {
+    "routes": [
+      {
+        "InterfaceAlias": "Ethernet 3",
+        "NextHop": "192.168.20.1",
+        "RouteMetric": 0
+      }
+    ],
+    "dns": [
+      {
+        "InterfaceAlias": "Ethernet 3",
+        "ServerAddresses": [
+          "192.168.20.1"
+        ]
+      }
+    ],
+    "winhttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server).",
+    "stateExists": false,
+    "ctrld": 0,
+    "winws": 0
+  },
+  "rollbackEqual": true,
+  "error": null,
+  "priorTransient": {
+    "status": "CLASSIFIED_UNVERIFIED_TRANSIENT",
+    "firstObservedError": "WINDIVERT_DRIVER_MISSING",
+    "firstObservedAtLocal": "2026-10-05T14:58:18+03:30",
+    "subsequentDiagnostic": "WinDivert driver observed Running from installed protected path and start action completed.",
+    "subsequentRegression": "Three installed Start/Stop cycles across balanced-targeted, strong-targeted-custom and strong-all-sites all PASS; final Recovery and exact route/DNS/WinHTTP rollback PASS.",
+    "rootCause": "UNVERIFIED; no matching Defender/CodeIntegrity/System blocking event was found in the first-run window.",
+    "prevention": "Do not add speculative retry logic without recurrence. Keep installed lifecycle regression and driver diagnostic as guards; recurrence should trigger first-run readiness instrumentation/hardening."
+  },
+  "evidenceRefs": [
+    "evidence/WINDOWS_150_WINDIVERT_START_DIAGNOSTIC_20261005.json"
+  ]
+}

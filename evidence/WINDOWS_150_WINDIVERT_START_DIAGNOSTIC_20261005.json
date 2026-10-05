@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "status": "DIAGNOSTIC",
+  "action": {
+    "schema": 1,
+    "action": "start",
+    "phase": "done",
+    "exitCode": 0,
+    "message": "Action completed.",
+    "updatedUtc": "2026-10-05T15:01:58.0144468+03:30"
+  },
+  "samples": [
+    {
+      "ms": 729,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 1285,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 1776,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 2243,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 2818,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 3295,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 3770,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 4325,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 4826,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 5313,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 5755,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 6263,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    },
+    {
+      "ms": 6831,
+      "drivers": [
+        {
+          "Name": "WinDivert",
+          "State": "Running",
+          "StartMode": "Disabled",
+          "PathName": "\\??\\C:\\Program Files\\DirectInternetMethod\\Privileged\\bin\\zapret\\WinDivert64.sys",
+          "ServiceType": "Kernel Driver",
+          "Status": "OK"
+        }
+      ],
+      "winws": [
+        {
+          "Id": 33364,
+          "Path": null,
+          "HasExited": null
+        }
+      ]
+    }
+  ],
+  "runtimeError": ""
+}
