@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.5.1",
-  "status": "CANDIDATE_1_5_1_ADULT_COVERAGE_PENDING_BUILD_INSTALL_RELEASE",
+  "status": "CANDIDATE_1_5_1_PIN_FIX_PENDING_EXACT_WINDOWS_INSTALLED_ACCEPTANCE",
   "date": "2026-10-05",
   "previousAccepted": {
     "version": "1.5.0",
@@ -19,6 +19,7 @@
       "tls-sni-desync-tcp443",
       "quic-desync-udp443",
       "custom-hostlist",
+      "adult-catalog",
       "strategy-profile"
     ],
     "noVpn": true,
@@ -38,14 +39,8 @@
       "OpenAI",
       "GitHub",
       "Gemini",
-      "Adult site"
+      "Adult coverage representative matrix"
     ],
-    "adultSiteLiveCheck": {
-      "toggleable": true,
-      "defaultEnabled": false,
-      "persistedPerUser": true,
-      "uiLabel": "Adult site"
-    },
     "routerGateway": true,
     "routerGatewayProtocols": [
       "L2TP/IPsec",
@@ -91,8 +86,17 @@
     "adultCoverage": {
       "enabledByDefault": false,
       "optIn": true,
+      "toggleable": true,
+      "persistedPerUser": true,
+      "uiLabel": "Adult coverage",
       "maintainedCatalog": true,
+      "catalogSources": [
+        "HaGeZi NSFW only-domains raw GitHub",
+        "HaGeZi NSFW only-domains jsDelivr fallback"
+      ],
       "offlineFallback": true,
+      "minimumValidatedDomains": 10000,
+      "maximumValidatedDomains": 100000,
       "usablePageAcceptance": "2xx/3xx only"
     }
   },
@@ -107,18 +111,18 @@
     "bundledPowerShell": "7.6.6"
   },
   "acceptance": {
-    "windowsContract": "PASS",
+    "windowsContract": "PASS_INCLUDING_START_SELF_INTEGRITY_PIN_COHERENCE",
     "serviceSelftest": "PASS_BUILD_CONTRACT",
     "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
     "startupLayout": "PASS_DYNAMIC_1289x632_NO_OVERLAP_8_BUTTONS",
     "targetHostlistContract": "PASS",
-    "siteCoverageLive": "PASS_INSTALLED_3_CYCLES_SITE_MATRIX",
-    "publication": "PASS_PUBLIC_REDOWNLOAD_VERIFIED",
+    "siteCoverageLive": "PENDING_EXACT_V1_5_1_WINDOWS_INSTALLED_ACCEPTANCE",
+    "publication": "PENDING",
     "strategyProfiles": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
     "allSitesScope": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
     "securityRejectedComponentGate": "PASS_BLOCKED_HASHES_NOT_SHIPPED",
     "artifactIdentity": "EXTERNAL_ROOT_RELEASE_METADATA_AND_SHA256SUMS",
-    "windowsInstalledLive": "PASS_EXACT_INSTALLED_3_CYCLES_SITE_MATRIX_RECOVERY_ROLLBACK"
+    "windowsInstalledLive": "PENDING_EXACT_V1_5_1_INSTALL_LIFECYCLE"
   },
   "validationBoundary": [
     "Direct Internet Method does not change public egress IP; remote country/account/product restrictions are outside direct DNS/DPI control.",
@@ -127,7 +131,7 @@
     "Targeted remains the default scope; All Sites is explicit opt-in.",
     "Windows installer remains not Authenticode-signed."
   ],
-  "exactNextAction": "Build and verify exact v1.5.1 Windows payload/installer, run contracts and Defender, then promote only with exact-artifact evidence.",
+  "exactNextAction": "Build the exact v1.5.1 Windows payload/installer from this candidate metadata, install that exact artifact, run lifecycle/site/rollback acceptance, then publish only if evidence permits.",
   "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
   "publication": null
 }
