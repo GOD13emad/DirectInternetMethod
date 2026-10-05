@@ -1,0 +1,180 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED_V1_5_0",
+  "finalObjective": "Standalone Windows + Linux direct-connect application with independent install/UI/rollback/online update and GitHub release; normal Start/Stop/Recovery do not require administrator authorization after installation.",
+  "authority": {
+    "mainCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
+    "tag": "v1.5.0",
+    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.0",
+    "publishedAt": "2026-10-05T11:47:58Z",
+    "draft": false,
+    "prerelease": false
+  },
+  "artifacts": {
+    "windows": {
+      "name": "DirectInternetMethod_1.5.0_Windows_Setup.exe",
+      "bytes": 157112753,
+      "sha256": "544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C"
+    },
+    "linux": {
+      "name": "DirectInternetMethod_1.5.0_Linux_x86_64.zip",
+      "bytes": 8179393,
+      "sha256": "61A76B06A59BAC55196DD538D1D17C27C86F8045C6564B67AF3091A3AC7CCBD2"
+    },
+    "checksums": {
+      "name": "SHA256SUMS.txt",
+      "bytes": 223,
+      "sha256": "66B4BCD88E6B2708D51BAA75D66256CC0295AE1D0C274C12B3B51B479E15522C"
+    }
+  },
+  "github": {
+    "mainCi": {
+      "run": 37304991338,
+      "status": "PASS",
+      "jobs": [
+        "linux-source",
+        "windows-source"
+      ]
+    },
+    "tagCi": {
+      "run": 37305259783,
+      "status": "PASS",
+      "jobs": [
+        "linux-source",
+        "windows-source",
+        "windows-release-contract"
+      ]
+    },
+    "releaseApiAssetDigests": "MATCH_ALL_3_ASSETS",
+    "publicRedownload": "PASS_ALL_3_ASSETS_EXACT_SIZE_SHA256"
+  },
+  "installedAcceptance": {
+    "windows": {
+      "status": "PASS",
+      "evidence": "evidence/WINDOWS_150_INSTALLED_LIFECYCLE_20261005.json",
+      "exactGuiSha256": "055C2F10BFBEEE13496FBC75B3151D08FCC5AAB3E6D2B0ED27A1D3D0E4450A86",
+      "exactServiceSha256": "E0BAB3C9E97287E31EE920DB137B7B0C6314194F74D79B2918B25804E2445A8C",
+      "cycles": [
+        "balanced-targeted-builtins",
+        "strong-targeted-custom-reddit",
+        "strong-all-sites"
+      ],
+      "access": {
+        "youtube": "PASS",
+        "openai": "PASS",
+        "github": "PASS",
+        "adultSite": "PASS_HTTP_200",
+        "reddit": "PASS_HTTP_200",
+        "wikipedia": "PASS_HTTP_200",
+        "cloudflare": "PASS_HTTP_200",
+        "gemini": "REACHABLE_HTTP_403_SERVER_SIDE"
+      },
+      "rollback": "PASS_EXACT_ROUTE_DNS_WINHTTP_NO_RUNTIME_RESIDUE"
+    },
+    "linux": {
+      "status": "PASS",
+      "evidence": "evidence/LINUX_150_INSTALLED_LIFECYCLE_20261005.json",
+      "installedAppVersion": "1.5.0",
+      "installedBackendVersion": "1.5.0",
+      "cycles": [
+        "balanced-targeted-builtins",
+        "strong-targeted-custom-reddit",
+        "strong-all-sites"
+      ],
+      "access": {
+        "youtube": "PASS",
+        "openai": "PASS",
+        "github": "PASS",
+        "adultSite": "PASS_HTTP_200",
+        "reddit": "PASS_WITH_CUSTOM_OR_ALL_SITES",
+        "wikipedia": "PASS_HTTP_200",
+        "cloudflare": "PASS_HTTP_200",
+        "gemini": "REACHABLE_HTTP_403_SERVER_SIDE"
+      },
+      "rollback": "PASS_EXACT_DEFAULT_ROUTE_SYSTEMD_RESOLVED_NO_RUNTIME_RESIDUE"
+    }
+  },
+  "onlineUpdate": {
+    "windows": {
+      "status": "PASS_ALREADY_CURRENT_PUBLIC_V1_5_0",
+      "mechanism": "service custom control 131",
+      "message": "Already up to date."
+    },
+    "linux": {
+      "status": "PASS_ALREADY_CURRENT_PUBLIC_V1_5_0",
+      "mechanism": "installed check_update_sync()",
+      "result": null
+    },
+    "linuxFutureUpdateIntegrity": "GitHub API asset digest == SHA256SUMS.txt == downloaded ZIP SHA-256"
+  },
+  "security": {
+    "defenderExactFinalInstaller": "PASS_NO_THREATS",
+    "rejectedZapret2": "REJECTED_NOT_SHIPPED",
+    "rejectedComponentGuard": "PASS",
+    "noAvExclusionOrRestore": true
+  },
+  "featureSet": {
+    "directMethods": [
+      "encrypted-dns-doh",
+      "http-host-split-tcp80",
+      "tls-sni-desync-tcp443",
+      "quic-desync-udp443",
+      "custom-hostlist",
+      "strategy-profile"
+    ],
+    "strategyProfiles": [
+      "balanced",
+      "compatibility",
+      "strong"
+    ],
+    "scopeModes": [
+      "targeted",
+      "all-sites"
+    ],
+    "defaultScope": "targeted",
+    "customSitesMax": 256,
+    "adultSiteLiveCheck": {
+      "label": "Adult site",
+      "defaultEnabled": false,
+      "toggleable": true,
+      "brandHiddenFromUi": true
+    },
+    "routerGateway": {
+      "profiles": 9,
+      "providers": 3,
+      "protocols": [
+        "L2TP/IPsec",
+        "PPTP"
+      ],
+      "autoMutation": false
+    }
+  },
+  "invariants": [
+    "No VPN",
+    "No HTTP/SOCKS application proxy",
+    "No default-route tunnel",
+    "No physical-adapter DNS mutation",
+    "Targeted scope by default",
+    "Exact rollback/recovery"
+  ],
+  "boundaries": [
+    "A direct-only design cannot change public egress IP, account state, age/region policy or remote product availability.",
+    "Gemini is network-reachable on the validation egress but returns HTTP 403; this is not a transport/DPI failure and cannot be guaranteed away without changing egress/server-side conditions.",
+    "All Sites is opt-in/experimental because broad DPI manipulation can reduce compatibility/performance.",
+    "Windows installer is not Authenticode-signed.",
+    "Physical-router authenticated tunnel success remains router-model/firmware dependent.",
+    "Application-level HTTP/3 remains separately unproven where the validation client lacks HTTP/3."
+  ],
+  "releaseCriticalOpenGates": [],
+  "reuseTargets": [
+    "PROJECT_BRAIN",
+    "RELEASE.json",
+    "release handoff",
+    "future maintenance/version planning"
+  ],
+  "exactNextAction": "No release-critical action remains. Treat immutable v1.5.0 release as current product authority; future runtime changes require a new version/change set."
+}

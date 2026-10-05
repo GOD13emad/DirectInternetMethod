@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.5.0",
-  "status": "PASS_RELEASE_CANDIDATE_WINDOWS_1_5_0_FINAL_LOCAL_PENDING_OWNER_UAC_INSTALLED_LIVE",
+  "status": "PASS_FINAL_WINDOWS_1_5_0_PUBLISHED_INSTALLED_VERIFIED",
   "date": "2026-10-04",
   "previousAccepted": {
     "version": "1.4.0",
@@ -105,12 +105,13 @@
     "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
     "startupLayout": "PASS_DYNAMIC_1289x632_NO_OVERLAP_8_BUTTONS",
     "targetHostlistContract": "PASS",
-    "siteCoverageLive": "BLOCKED_OWNER_UAC_CANCELED_NO_INSTALL",
-    "publication": "PENDING",
+    "siteCoverageLive": "PASS_INSTALLED_3_CYCLES_SITE_MATRIX",
+    "publication": "PASS_PUBLIC_REDOWNLOAD_VERIFIED",
     "strategyProfiles": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
     "allSitesScope": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
     "securityRejectedComponentGate": "PASS_BLOCKED_HASHES_NOT_SHIPPED",
-    "artifactIdentity": "EXTERNAL_ROOT_RELEASE_METADATA_AND_SHA256SUMS"
+    "artifactIdentity": "EXTERNAL_ROOT_RELEASE_METADATA_AND_SHA256SUMS",
+    "windowsInstalledLive": "PASS_EXACT_INSTALLED_3_CYCLES_SITE_MATRIX_RECOVERY_ROLLBACK"
   },
   "validationBoundary": [
     "Direct Internet Method does not change the public egress IP, so remote country/account/product restrictions cannot be guaranteed away.",
@@ -120,6 +121,13 @@
     "zapret2 v1.0.5.2 Windows/archive remains rejected after local Severe/Concrete Defender detection; no exclusion or restore is used.",
     "Windows installer is not Authenticode-signed."
   ],
-  "exactNextAction": "Approve one local UAC prompt, install exact candidate, verify hashes/UI, then Start->site matrix->Stop->Recovery.",
-  "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records."
+  "exactNextAction": "No v1.5.0 Windows release-critical gate remains. Immutable public artifact authority is external root RELEASE.json + v1.5.0 release assets; future changes require a new version.",
+  "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
+  "publication": {
+    "tag": "v1.5.0",
+    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.0",
+    "publishedAt": "2026-10-05T11:47:58Z",
+    "publicRedownloadHashVerification": "PASS_ALL_ASSETS"
+  }
 }

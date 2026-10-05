@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.0",
   "date": "2026-10-04",
-  "status": "RELEASE_CANDIDATE_V1_5_0_WINDOWS_LINUX_INSTALLED_PASS_READY_FOR_PROTECTED_PROMOTION",
+  "status": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED_V1_5_0",
   "previousAccepted": {
     "version": "1.4.0",
     "tag": "v1.4.0",
@@ -11,9 +11,10 @@
     "status": "FINAL_PUBLISHED_INSTALLED_VERIFIED"
   },
   "authority": {
-    "baseMain": "ad05cb32749d30f55803753bf0896d3efdda04d7",
-    "branch": "feature/v1.5.0-adaptive-direct-sites",
-    "tag": null
+    "baseMain": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
+    "branch": "main",
+    "tag": "v1.5.0",
+    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d"
   },
   "feature": "Targeted + user-extensible + optional all-sites Direct Method coverage, selectable DPI strategy profiles, privacy-preserving Gemini/Adult live checks, Linux updater three-way digest hardening, truthful Router Gateway diagnostics, and security-gated third-party component admission.",
   "directEngine": {
@@ -115,7 +116,7 @@
   },
   "platforms": {
     "windows": {
-      "status": "PASS_INSTALLED_LIVE_EXACT_ARTIFACT_AND_ROLLBACK",
+      "status": "PASS_FINAL_PUBLISHED_INSTALLED_LIVE_EXACT_ARTIFACT_AND_ROLLBACK",
       "artifact": "delivery/DirectInternetMethod_1.5.0_Windows_Setup.exe",
       "bytes": 157112753,
       "sha256": "544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C",
@@ -132,7 +133,7 @@
       "strategyDynamic": "PASS_STRONG_ALL_SITES_SAVE_THEN_RESET_BALANCED_TARGETED"
     },
     "linux": {
-      "status": "PASS_INSTALLED_LIVE_EXACT_SOURCE_AND_ROLLBACK",
+      "status": "PASS_FINAL_PUBLISHED_INSTALLED_LIVE_EXACT_SOURCE_AND_ROLLBACK",
       "artifact": "delivery/DirectInternetMethod_1.5.0_Linux_x86_64.zip",
       "bytes": 8179393,
       "sha256": "61A76B06A59BAC55196DD538D1D17C27C86F8045C6564B67AF3091A3AC7CCBD2",
@@ -164,8 +165,8 @@
     "crossHostLinux": "PASS_EXACT_SHA_MATCH_E189DF7",
     "windowsSandboxInstalledLive": "BLOCKED_HOST_SANDBOX_INITIALIZATION_ENVIRONMENT",
     "linuxInstalledLiveSiteCoverage": "PASS_EXACT_INSTALLED_3_CYCLES_SITE_MATRIX_RECOVERY_ROLLBACK",
-    "protectedCi": "PASS_E189DF7_PUSH_AND_PR",
-    "publication": "PENDING",
+    "protectedCi": "PASS_MAIN_37304991338_TAG_37305259783",
+    "publication": "PASS_PUBLIC_RELEASE_EXACT_ASSETS",
     "windowsCustomSites": "PASS_DYNAMIC_SAVE_AND_CLEANUP",
     "windowsStrategy": "PASS_DYNAMIC_STRONG_ALL_SITES_SAVE_AND_RESET",
     "windowsInstalledLive": "PASS_EXACT_INSTALLED_3_CYCLES_SITE_MATRIX_RECOVERY_ROLLBACK",
@@ -188,12 +189,15 @@
       "adultSite": "PASS_HTTP_200_ALL_3_CYCLES",
       "reddit": "PASS_AFTER_CUSTOM_OR_ALL_SITES",
       "gemini": "REACHABLE_HTTP_403_SERVER_SIDE"
-    }
+    },
+    "publicRedownload": "PASS_ALL_3_ASSETS_EXACT_SIZE_SHA256",
+    "windowsOnlineUpdate": "PASS_ALREADY_CURRENT_PUBLIC_V1_5_0",
+    "linuxOnlineUpdate": "PASS_ALREADY_CURRENT_PUBLIC_V1_5_0"
   },
   "validationBoundary": {
     "allSitesGuarantee": "UNPROVABLE: remote server/account/region/product policy and unsupported protocols can still deny access",
     "geminiBaseline": "REACHABLE_HTTP_403_ON_CURRENT_LINUX_EGRESS; network bypass alone cannot guarantee server acceptance",
-    "adultBaseline": "TRANSPORT_TIMEOUT_V140_WITHOUT_TARGET_HOSTLIST; v1.5 targeted live test pending",
+    "adultBaseline": "PASS_HTTP_200_ON_INSTALLED_WINDOWS_AND_LINUX_V1_5_0",
     "automaticHostlist": "NOT_ENABLED; user-extensible targeted scope plus optional all-sites mode selected as simpler proportional control.",
     "physicalRouterAuthenticatedTunnel": "UNPROVEN_MODEL_DEPENDENT",
     "http3ApplicationE2E": "UNPROVEN_WHERE_CLIENT_LACKS_HTTP3",
@@ -221,7 +225,38 @@
     "windowsBuildRacePrevention": "evidence/WINDOWS_150_BUILD_RACE_PREVENTION_20261005.json",
     "windowsInstalledLifecycle": "evidence/WINDOWS_150_INSTALLED_LIFECYCLE_20261005.json",
     "windowsWindivertDiagnostic": "evidence/WINDOWS_150_WINDIVERT_START_DIAGNOSTIC_20261005.json",
-    "linuxInstalledLifecycle": "evidence/LINUX_150_INSTALLED_LIFECYCLE_20261005.json"
+    "linuxInstalledLifecycle": "evidence/LINUX_150_INSTALLED_LIFECYCLE_20261005.json",
+    "publicationFinal": "evidence/DIM_150_PUBLICATION_INSTALLED_FINAL_20261005.json"
   },
-  "exactNextAction": "Promote PR #12 through protected checks, merge to main, create immutable v1.5.0 tag/release with exact artifacts, verify public redownload hashes and installed online-update behavior."
+  "exactNextAction": "No release-critical gate remains. Maintain v1.5.0 as current authority; future changes require a new version/change set and must preserve installed rollback, security and publication gates.",
+  "publication": {
+    "tag": "v1.5.0",
+    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.0",
+    "publishedAt": "2026-10-05T11:47:58Z",
+    "draft": false,
+    "prerelease": false,
+    "mainCiRun": 37304991338,
+    "tagCiRun": 37305259783,
+    "mainCi": "PASS",
+    "tagCi": "PASS",
+    "publicRedownload": "PASS_ALL_ASSETS",
+    "assets": {
+      "windows": {
+        "name": "DirectInternetMethod_1.5.0_Windows_Setup.exe",
+        "bytes": 157112753,
+        "sha256": "544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C"
+      },
+      "linux": {
+        "name": "DirectInternetMethod_1.5.0_Linux_x86_64.zip",
+        "bytes": 8179393,
+        "sha256": "61A76B06A59BAC55196DD538D1D17C27C86F8045C6564B67AF3091A3AC7CCBD2"
+      },
+      "checksums": {
+        "name": "SHA256SUMS.txt",
+        "bytes": 223,
+        "sha256": "66B4BCD88E6B2708D51BAA75D66256CC0295AE1D0C274C12B3B51B479E15522C"
+      }
+    }
+  }
 }
