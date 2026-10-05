@@ -10,6 +10,8 @@ svc=txt("service/Program.cs"); client=txt("gui/ServiceClient.cs"); updater=txt("
 manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt")
 payload_builder=(R/"tests"/"build_windows_150_payload.ps1").read_text(encoding="utf-8-sig")
 installer_builder=(R/"tests"/"build_windows_150_installer.ps1").read_text(encoding="utf-8-sig")
+install_registration_guard=(R/"tests"/"windows_install_registration_audit.ps1").read_text(encoding="utf-8-sig")
+installed_release_verifier=(R/"tests"/"windows_installed_release_audit.ps1").read_text(encoding="utf-8-sig")
 D={"schema":2,"status":"PASS","checks":{},"hashes":{}}
 def check(name,cond):
     D["checks"][name]=bool(cond)
@@ -94,6 +96,8 @@ check("installer_shortcuts_exe", 'DirectInternetMethod.exe' in iss and 'ControlP
 check("installer_active_guard", "PrepareToInstall" in iss and "DirectDnsDpiHarness" in iss and "state.json" in iss)
 check("installer_bundled_pwsh", '..\\vendor\\pwsh\\*' in iss and 'Privileged\\runtime\\pwsh' in iss and "PowerShell7Available" not in iss)
 check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Recovery did not complete" in iss)
+check("windows_install_registration_guard", all(x in install_registration_guard for x in ("HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall","HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall","noSameAppIdPerUserDuplicate","registeredUninstallerPresent","installedReleaseMatches")))
+check("installed_release_verifier_delegates_registration_guard", "windows_install_registration_audit.ps1" in installed_release_verifier and "Where-Object DisplayName" not in installed_release_verifier and "pwsh.exe" in installed_release_verifier)
 check("windows_build_shared_exclusive_lock", all(x in payload_builder for x in ("windows-150-build.lock","FileShare]::None","WINDOWS_150_BUILD_LOCKED")) and all(x in installer_builder for x in ("windows-150-build.lock","FileShare]::None","WINDOWS_150_BUILD_LOCKED")))
 check("windows_installer_output_stability_guard", all(x in installer_builder for x in ("OUTPUT_STILL_LOCKED_AFTER_ISCC_EXIT","@($Sizes | Select-Object -Unique).Count","OUTPUT_SIZE_UNSTABLE_","outputStableSamples")))
 
