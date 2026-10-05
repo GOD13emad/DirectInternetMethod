@@ -105,14 +105,15 @@
   },
   "routerGateway": {
     "version": "1.5.0",
-    "dataRevision": 2,
+    "dataRevision": 3,
     "profileCount": 9,
     "providerCount": 3,
     "healthTruthfulness": {
       "pptp": "TCP/1723 control reachability only; GRE/authentication not verified",
       "l2tpIpsec": "generic endpoint TCP/443 fallback only; UDP 500/4500/authentication not verified"
     },
-    "autoRouterMutation": false
+    "autoRouterMutation": false,
+    "dataAuthority": "main/router_gateway/providers.json; rotating provider data may advance independently of immutable v1.5.0 application artifacts"
   },
   "platforms": {
     "windows": {
@@ -226,9 +227,11 @@
     "windowsInstalledLifecycle": "evidence/WINDOWS_150_INSTALLED_LIFECYCLE_20261005.json",
     "windowsWindivertDiagnostic": "evidence/WINDOWS_150_WINDIVERT_START_DIAGNOSTIC_20261005.json",
     "linuxInstalledLifecycle": "evidence/LINUX_150_INSTALLED_LIFECYCLE_20261005.json",
-    "publicationFinal": "evidence/DIM_150_PUBLICATION_INSTALLED_FINAL_20261005.json"
+    "publicationFinal": "evidence/DIM_150_PUBLICATION_INSTALLED_FINAL_20261005.json",
+    "routerGatewayRotatingData": "evidence/ROUTER_GATEWAY_VPNBOOK_REFRESH_20261005.json",
+    "windowsInstallRegistrationHygiene": "evidence/WINDOWS_150_INSTALL_REGISTRATION_HYGIENE_20261005.json"
   },
-  "exactNextAction": "No release-critical gate remains. Maintain v1.5.0 as current authority; future changes require a new version/change set and must preserve installed rollback, security and publication gates.",
+  "exactNextAction": "Keep v1.5.0 application artifacts immutable; maintain rotating Router Gateway data and source/host hygiene on main through evidence-backed change sets.",
   "publication": {
     "tag": "v1.5.0",
     "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",

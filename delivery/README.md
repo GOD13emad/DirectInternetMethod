@@ -1,23 +1,18 @@
-# Delivery directory authority
+# Delivery authority
 
-Release authority is the immutable Git tag/release plus root `RELEASE.json`, the exact public checksum asset, and reproducible acceptance evidence. A filename in this directory alone is never sufficient authority.
+Current application release: `v1.5.0`.
 
-Public tagged versions in project history:
-`v1.0.0`, `v1.1.0`, `v1.2.0`, `v1.2.1`, `v1.3.0`, `v1.3.1`, `v1.3.2`, `v1.4.0`.
+Release authority is the Git tag/GitHub Release plus root `RELEASE.json`, root/delivery `SHA256SUMS.txt`, and acceptance evidence. Versioned installer/archive binaries are intentionally **not tracked in the current source tree**; download authoritative binaries from the corresponding GitHub Release.
 
-The 2026-10-01 machine audit copied missing authoritative historical release binaries from clean historical worktrees into this canonical delivery directory and verified source/destination SHA-256 values. See:
-`audit/20261001_deep_machine_reconciliation/ARTIFACT_CONSOLIDATION_MANIFEST.json`.
+## Current v1.5.0 authority
 
-Non-release material was removed from canonical delivery:
-- untagged/local `1.0.1` artifacts → `archive/superseded-artifacts/v1.0.1-local/`
-- `DIM_120_HOST_BOOTSTRAP_RUNNER.zip` → `archive/validation-tools/`
-- known intermediate same-version artifacts remain under `archive/superseded-artifacts/`
+- Windows: `DirectInternetMethod_1.5.0_Windows_Setup.exe`
+  - SHA-256: `544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C`
+- Linux: `DirectInternetMethod_1.5.0_Linux_x86_64.zip`
+  - SHA-256: `61A76B06A59BAC55196DD538D1D17C27C86F8045C6564B67AF3091A3AC7CCBD2`
+- Checksum asset: `SHA256SUMS.txt`
+  - SHA-256: `66B4BCD88E6B2708D51BAA75D66256CC0295AE1D0C274C12B3B51B479E15522C`
 
-`delivery/SHA256SUMS.txt` is the **exact 223-byte v1.4.0 public checksum asset** with SHA-256:
-`7F80836A153EF0FFEF1A79D797502B773D8776DB99BBE21E1D81227A2D9EA609`.
+The application release remains v1.5.0 while rotating Router Gateway provider data is maintained independently on `main/router_gateway/providers.json`. Current data authority is revision 3.
 
-Current v1.4.0 authority:
-- Windows: `69F0EF63E3A658EC616362FC7D7ADAB95337EC3A034D3981DF44C685DB9FCB93`
-- Linux: `4CF521FD3821F9204999C0F17B217A60DC7117AC68421E5634FDF8D15D3C485E`
-
-Do not choose artifacts by newest-file or directory-location heuristics.
+Historical releases remain available through their Git tags/GitHub Releases; they do not need duplicate binaries in the current branch. Do not choose artifacts by newest-file or directory-location heuristics.

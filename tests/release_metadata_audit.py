@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib, json, pathlib, re
+import hashlib, json, pathlib, re, subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 release = json.loads((ROOT / 'RELEASE.json').read_text(encoding='utf-8-sig'))
@@ -35,6 +35,25 @@ if delivery_sums.exists():
     root_text = (ROOT / 'SHA256SUMS.txt').read_text(encoding='ascii').replace('\r\n','\n')
     if delivery_text != root_text:
         raise SystemExit('root SHA256SUMS.txt differs from delivery/SHA256SUMS.txt')
+
+delivery_readme = (ROOT / 'delivery' / 'README.md').read_text(encoding='utf-8-sig')
+if f'Current application release: `v{version}`' not in delivery_readme:
+    raise SystemExit(f'delivery/README.md does not declare current application release v{version}')
+if (ROOT / '.git').exists():
+    tracked_delivery = subprocess.run(
+        ['git','ls-files','--','delivery/DirectInternetMethod_*'],
+        cwd=ROOT,text=True,capture_output=True,check=True
+    ).stdout.splitlines()
+    if tracked_delivery:
+        raise SystemExit(f'versioned delivery binaries must not be tracked in current source tree: {tracked_delivery!r}')
+
+provider_data = json.loads((ROOT / 'router_gateway' / 'providers.json').read_text(encoding='utf-8-sig'))
+release_router = release.get('routerGateway', {})
+if int(release_router.get('dataRevision', -1)) != int(provider_data.get('dataRevision', -2)):
+    raise SystemExit(
+        f"Router Gateway data revision mismatch: RELEASE.json={release_router.get('dataRevision')} "
+        f"providers.json={provider_data.get('dataRevision')}"
+    )
 
 checksum_meta = release.get('checksums', {})
 checksum_rel = str(checksum_meta.get('artifact',''))

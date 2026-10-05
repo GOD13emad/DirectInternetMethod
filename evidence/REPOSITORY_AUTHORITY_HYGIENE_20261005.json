@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "changeSet": "repository-authority-hygiene",
+  "status": "PASS_LOCAL_FULL_SUITE_PENDING_CI",
+  "previousAcceptedState": {
+    "mainCommit": "51923983f22d5187f6c4285ac07991df081567fa",
+    "appRelease": "1.5.0",
+    "releaseTag": "v1.5.0",
+    "releaseTagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
+    "routerDataRevisionInstalled": 3
+  },
+  "findings": [
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Current source tree still tracked two v1.0.0 release binaries even though authoritative binaries are distributed through GitHub Releases.",
+      "files": [
+        {
+          "path": "delivery/DirectInternetMethod_1.0.0_Windows_Setup.exe",
+          "bytes": 10609007,
+          "sha256": "1D32D0619EDC85C5B11405218087154D53907C06D650843F7375092B2FC7C602"
+        },
+        {
+          "path": "delivery/DirectInternetMethod_1.0.0_Linux_x86_64.zip",
+          "bytes": 7951455,
+          "sha256": "4F6C80D3406055A0A956082E76B211206D1CFFBD2E7398EE84DB62D155F52B98"
+        }
+      ]
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "delivery/README.md still described v1.4.0 as current authority while application authority is v1.5.0."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "RELEASE.json recorded Router Gateway dataRevision 2 while main/router_gateway/providers.json and both installed hosts were already on independently maintained revision 3."
+    }
+  ],
+  "decision": {
+    "type": "DECISION",
+    "status": "ACCEPTED",
+    "claim": "Keep versioned application binaries on GitHub Releases, not tracked in the current source branch; keep current checksum metadata in source; synchronize release metadata with independently maintained Router Gateway data authority.",
+    "rationale": "This removes misleading/current-tree distribution clutter without rewriting Git history or mutating immutable v1.5.0 release assets."
+  },
+  "mutation": [
+    "Removed the two tracked v1.0.0 binaries from the current tree only.",
+    "Consolidated .gitignore to ignore delivery/DirectInternetMethod_* versioned binaries.",
+    "Updated delivery/README.md to v1.5.0 current authority and GitHub Release distribution model.",
+    "Updated RELEASE.json Router Gateway dataRevision from 2 to 3 and recorded independent data authority.",
+    "Added release_metadata_audit guards for delivery README current version, no tracked versioned delivery binaries, and Router Gateway dataRevision equality."
+  ],
+  "preserved": [
+    "Git history and historical tags/releases",
+    "v1.5.0 tag and release artifacts",
+    "SHA256SUMS.txt exact v1.5.0 checksum asset",
+    "Windows/Linux installed runtime state",
+    "Router Gateway revision 3 data"
+  ],
+  "localRegression": {
+    "releaseMetadata": "PASS",
+    "windowsContract": "PASS",
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "diffCheck": "PASS"
+  },
+  "exactNextAction": "Commit/push repository-authority cleanup, require protected CI, merge to main, then final authority/host residue verification.",
+  "fullRegression": {
+    "trackedSyntaxBuild": {
+      "status": "PASS",
+      "powershellParsed": 53,
+      "pythonCompiled": 14,
+      "powershellErrors": 0,
+      "pythonErrors": 0,
+      "dotnetService": "PASS_0_WARNINGS_0_ERRORS",
+      "dotnetGui": "PASS_0_WARNINGS_0_ERRORS",
+      "mergeConflictMarkers": 0,
+      "todoMarkers": 0,
+      "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
+    },
+    "repoContent": {
+      "status": "PASS",
+      "trackedCount": 275,
+      "largestTrackedRequiredRuntime": [
+        {
+          "path": "linux/runtime/ctrld",
+          "bytes": 7961828
+        },
+        {
+          "path": "windows/bin/ctrld/ctrld.exe",
+          "bytes": 7602136
+        }
+      ],
+      "secretHits": 0,
+      "jsonErrors": 0,
+      "trackedVersionedDeliveryBinaries": 0
+    }
+  }
+}
