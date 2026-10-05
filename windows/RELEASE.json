@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.5.0",
-  "status": "PASS_RELEASE_CANDIDATE_WINDOWS_1_5_0_ALL_DEVELOPMENT_IMPLEMENTED",
+  "status": "PASS_RELEASE_CANDIDATE_WINDOWS_1_5_0_DEVELOPMENT_COMPLETE_PENDING_INSTALLED_LIVE",
   "date": "2026-10-04",
   "previousAccepted": {
     "version": "1.4.0",
@@ -10,24 +10,28 @@
     "commit": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
     "status": "FINAL_PUBLISHED_INSTALLED_VERIFIED"
   },
-  "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + hostlist-scoped zapret/WinDivert multiprotocol direct engine",
+  "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + accepted zapret/winws/WinDivert multiprotocol engine with Targeted/All Sites scope control",
   "features": {
     "directDnsDpi": true,
     "directMethods": [
       "encrypted-dns-doh",
       "http-host-split-tcp80",
       "tls-sni-desync-tcp443",
-      "quic-desync-udp443"
+      "quic-desync-udp443",
+      "custom-hostlist",
+      "strategy-profile"
     ],
     "noVpn": true,
     "noProxy": true,
     "noDefaultRouteTunnel": true,
     "noPhysicalAdapterDnsMutation": true,
-    "hostlistScoped": true,
     "targetCoverage": [
-      "YouTube",
+      "YouTube family",
       "Gemini",
-      "Adult site/CDN"
+      "Adult site/CDN",
+      "OpenAI/ChatGPT",
+      "GitHub",
+      "user Custom Sites"
     ],
     "liveChecks": [
       "YouTube",
@@ -60,7 +64,30 @@
       "DoH3",
       "DoQ",
       "DoT"
-    ]
+    ],
+    "hostlistScopedByDefault": true,
+    "scopeModes": {
+      "default": "targeted",
+      "available": [
+        "targeted",
+        "all-sites"
+      ],
+      "allSitesExperimental": true
+    },
+    "strategyProfiles": {
+      "default": "balanced",
+      "available": [
+        "balanced",
+        "compatibility",
+        "strong"
+      ]
+    },
+    "customSites": {
+      "enabled": true,
+      "maxEntries": 256,
+      "normalizesUrlsToDomains": true,
+      "exactHostPrefix": "^"
+    }
   },
   "usage": {
     "chatgptRequired": false,
@@ -76,32 +103,22 @@
     "windowsContract": "PASS",
     "serviceSelftest": "PASS_BUILD_CONTRACT",
     "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
-    "startupLayout": "PASS_DYNAMIC_1289x632_NO_OVERLAP",
+    "startupLayout": "PASS_DYNAMIC_1289x632_NO_OVERLAP_8_BUTTONS",
     "targetHostlistContract": "PASS",
-    "siteCoverageLive": "PENDING_LINUX_INSTALLED_TARGET_TEST",
-    "publication": "PENDING"
+    "siteCoverageLive": "PENDING_INSTALLED_1_5_TARGETED_STRONG_ALLSITES_TEST",
+    "publication": "PENDING",
+    "strategyProfiles": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
+    "allSitesScope": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
+    "securityRejectedComponentGate": "PASS_BLOCKED_HASHES_NOT_SHIPPED"
   },
   "validationBoundary": [
-    "Direct Internet Method does not change the public egress IP, so server-side country/account/product restrictions cannot be guaranteed away.",
+    "Direct Internet Method does not change the public egress IP, so remote country/account/product restrictions cannot be guaranteed away.",
+    "Targeted is the default scope; experimental All Sites applies DPI strategy broadly to HTTP/TLS/QUIC web traffic and may reduce compatibility or speed.",
     "A successful HTTP response such as 403 is reported as REACHABLE, not PASS.",
     "Adult-site live check defaults OFF and is shown only as 'Adult site' in the UI.",
+    "zapret2 v1.0.5.2 Windows/archive remains rejected after local Severe/Concrete Defender detection; no exclusion or restore is used.",
     "Windows installer is not Authenticode-signed."
   ],
-  "exactNextAction": "Run final artifact in Windows Sandbox, then close cross-host Linux protected-backend/site lifecycle before publication.",
-  "artifacts": {
-    "windowsInstaller": {
-      "bytes": 157106605,
-      "sha256": "27127D74480C65DA0D506E84601F2F106679F23EAAE4393AEE5AC7CD32667394"
-    },
-    "gui": {
-      "sha256": "781637F4A27F57A03B1257C7C40D20F7ECBAF1B1B71722ED63C752F038DFEB01"
-    },
-    "service": {
-      "sha256": "6431B5B0E7616E97BC27215944303D90F1074F5929E8D57C194EC2330B4C39AC"
-    },
-    "manifest": {
-      "sha256": "DC83A8651B0C859304102DC21399E96C86BB7F17ACB881583718009D9A380DF3",
-      "files": 678
-    }
-  }
+  "exactNextAction": "Install exact v1.5.0 candidate on protected hosts, validate lifecycle/site coverage, then publish through protected CI.",
+  "buildIdentityNote": "Final installer/payload hashes are authoritative in root RELEASE.json, SHA256SUMS.txt and evidence records; this embedded platform descriptor intentionally does not self-reference installer/manifest hashes."
 }

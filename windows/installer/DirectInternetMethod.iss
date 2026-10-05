@@ -27,6 +27,9 @@ SetupLogging=yes
 CloseApplications=yes
 RestartApplications=no
 
+[Dirs]
+Name: "{commonappdata}\DirectInternetMethod\UserConfig"; Permissions: users-modify
+
 [Files]
 Source: "..\app\DirectInternetMethod.exe"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\DirectInternetMethod.ico"; DestDir: "{app}\app"; Flags: ignoreversion

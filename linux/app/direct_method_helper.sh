@@ -14,6 +14,9 @@ DM="$STATE_BASE/directmethod"
 STATE="$DM/state.json"
 CTRLD_CFG="$DM/ctrld.toml"
 HOSTS="$APP_HOME/direct_hosts.txt"
+CUSTOM_HOSTS="$STATE_BASE/custom-hosts.txt"
+STRATEGY_FILE="$STATE_BASE/strategy.txt"
+SCOPE_FILE="$STATE_BASE/scope.txt"
 CTRLD="$BIN/ctrld"
 NFQWS="$BIN/nfqws"
 TABLE="directinternetmethod"
@@ -282,7 +285,57 @@ case "$ACTION" in
       exit 72
     fi
 
-    install -m 0644 "$HOSTS" "$RUN_HOSTS"
+    if [ -L "$CUSTOM_HOSTS" ]; then
+      echo '{"ok":false,"error":"CUSTOM_HOSTLIST_SYMLINK_REJECTED"}'
+      exit 74
+    fi
+    python3 - "$HOSTS" "$CUSTOM_HOSTS" "$RUN_HOSTS" <<'PY'
+import pathlib,re,sys
+built=pathlib.Path(sys.argv[1])
+custom=pathlib.Path(sys.argv[2])
+out=pathlib.Path(sys.argv[3])
+label=re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+def valid(v):
+    h=v[1:] if v.startswith("^") else v
+    if len(h)>253 or "." not in h:
+        return False
+    return all(label.fullmatch(x) for x in h.split("."))
+vals=[]
+for p,limit in ((built,4096),(custom,256)):
+    if not p.is_file():
+        continue
+    for raw in p.read_text(encoding="utf-8",errors="ignore").splitlines():
+        v=raw.strip().lower()
+        if not v or v.startswith("#"):
+            continue
+        if valid(v) and v not in vals:
+            vals.append(v)
+        if len(vals)>=limit:
+            break
+out.write_text("\n".join(vals)+"\n",encoding="utf-8")
+PY
+    chmod 0644 "$RUN_HOSTS"
+    STRATEGY="balanced"
+    if [ -L "$STRATEGY_FILE" ]; then
+      echo '{"ok":false,"error":"STRATEGY_SYMLINK_REJECTED"}'
+      exit 74
+    fi
+    if [ -f "$STRATEGY_FILE" ]; then
+      STRATEGY="$(tr -d '\r\n[:space:]' <"$STRATEGY_FILE" | tr '[:upper:]' '[:lower:]')"
+      case "$STRATEGY" in balanced|compatibility|strong) ;; *) echo '{"ok":false,"error":"STRATEGY_INVALID"}'; exit 74;; esac
+    fi
+
+    SCOPE="targeted"
+    if [ -L "$SCOPE_FILE" ]; then
+      echo '{"ok":false,"error":"SCOPE_SYMLINK_REJECTED"}'
+      exit 74
+    fi
+    if [ -f "$SCOPE_FILE" ]; then
+      SCOPE="$(tr -d '\r\n[:space:]' <"$SCOPE_FILE" | tr '[:upper:]' '[:lower:]')"
+      case "$SCOPE" in targeted|all-sites) ;; *) echo '{"ok":false,"error":"SCOPE_INVALID"}'; exit 74;; esac
+    fi
+    HOST_ARGS=()
+    [ "$SCOPE" = "targeted" ] && HOST_ARGS=(--hostlist="$RUN_HOSTS")
 
     ip link add "$DNS_IF" type dummy
     CREATED_LINK=1
@@ -344,23 +397,47 @@ EOF
     nft add rule inet "$TABLE" output oifname "$PHY" udp dport 443 ct original packets 1-6 queue num "$QNUM" bypass
 
     NFQWS_UNIT="directinternetmethod-nfqws-${USER_UID}.service"
-    systemd-run --quiet --collect --unit="$NFQWS_UNIT" --service-type=exec --property=Restart=no -- "$NFQWS" --qnum="$QNUM" \
-      --filter-tcp=80 --hostlist="$RUN_HOSTS" --dpi-desync=fake,multisplit --dpi-desync-split-pos=method+2 --dpi-desync-fooling=md5sig \
-      --new --filter-tcp=443 --hostlist="$RUN_HOSTS" --dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld --dpi-desync-fooling=badseq,md5sig \
-      --new --filter-udp=443 --filter-l7=quic --hostlist="$RUN_HOSTS" --dpi-desync=fake --dpi-desync-repeats=6
+    NFQWS_ARGS=(--qnum="$QNUM")
+    case "$STRATEGY" in
+      compatibility)
+        NFQWS_ARGS+=(
+          --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=method+2
+          --new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=1,sniext+1,host+1,midsld,endhost-1
+          --new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=4
+        )
+        ;;
+      strong)
+        NFQWS_ARGS+=(
+          --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=fake,fakedsplit --dpi-desync-split-pos=method+2 --dpi-desync-fooling=md5sig --dpi-desync-repeats=2
+          --new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,hostfakesplit --dpi-desync-hostfakesplit-midhost=midsld --dpi-desync-fooling=badseq,md5sig --dpi-desync-repeats=4
+          --new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=11
+        )
+        ;;
+      *)
+        NFQWS_ARGS+=(
+          --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=fake,multisplit --dpi-desync-split-pos=method+2 --dpi-desync-fooling=md5sig
+          --new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld --dpi-desync-fooling=badseq,md5sig
+          --new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=6
+        )
+        ;;
+    esac
+    "$NFQWS" --dry-run "${NFQWS_ARGS[@]}" >/dev/null 2>&1 || { echo '{"ok":false,"error":"NFQWS_STRATEGY_INVALID"}'; exit 76; }
+    systemd-run --quiet --collect --unit="$NFQWS_UNIT" --service-type=exec --property=Restart=no -- "$NFQWS" "${NFQWS_ARGS[@]}"
     NPID="$(systemctl show "$NFQWS_UNIT" -p MainPID --value)"
     case "$NPID" in ''|0|*[!0-9]*) echo '{"ok":false,"error":"NFQWS_TRANSIENT_PID_MISSING"}'; exit 76;; esac
     sleep .5
     pid_owned "$NPID" "$NFQWS" || { echo '{"ok":false,"error":"NFQWS_START_FAILED"}'; exit 76; }
 
-    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" <<'PY'
+    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" <<'PY'
 import json,os,sys,time
 p=sys.argv[1]
 d={
   "schema":3,
   "status":"ACTIVE",
   "architecture":"LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS_MULTIPROTOCOL",
-  "directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"],
+  "directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443","custom-hostlist","strategy-profile"],
+  "strategy":sys.argv[9],
+  "scope":sys.argv[10],
   "ctrldPid":int(sys.argv[2]),
   "nfqwsPid":int(sys.argv[3]),
   "physicalInterface":sys.argv[4],

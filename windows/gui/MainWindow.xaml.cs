@@ -2,7 +2,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace DirectInternetMethod;
@@ -18,6 +20,9 @@ public partial class MainWindow : Window
     readonly Brush bad = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7A85"));
     readonly Brush neutral = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9FB1C3"));
     readonly string settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DirectInternetMethod", "settings.json");
+    readonly string customHostsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "custom-hosts.txt");
+    readonly string strategyPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "strategy.txt");
+    readonly string scopePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "scope.txt");
     UpdateInfo? availableUpdate;
     bool adultCheckEnabled;
 
@@ -384,6 +389,147 @@ public partial class MainWindow : Window
         try { SaveAdultSiteCheckSetting(); }
         catch (Exception ex) { AdultSiteText.Text = "Settings error: " + ex.Message; return; }
         await RefreshStatusAsync();
+    }
+
+    static string? NormalizeCustomSite(string raw)
+    {
+        var value = (raw ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(value) || value.StartsWith('#')) return null;
+        var exact = value.StartsWith('^');
+        if (exact) value = value[1..].Trim();
+        string host;
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absolute) && !string.IsNullOrWhiteSpace(absolute.Host))
+            host = absolute.Host;
+        else if (Uri.TryCreate("https://" + value, UriKind.Absolute, out var implied) && !string.IsNullOrWhiteSpace(implied.Host))
+            host = implied.Host;
+        else
+            return null;
+        host = host.Trim('.').ToLowerInvariant();
+        if (host.Length is < 3 or > 253 || !host.Contains('.')) return null;
+        var label = new Regex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", RegexOptions.CultureInvariant);
+        if (host.Split('.').Any(x => !label.IsMatch(x))) return null;
+        return exact ? "^" + host : host;
+    }
+
+    void CustomSites_Click(object sender, RoutedEventArgs e)
+    {
+        var editor = new Window
+        {
+            Title = "Custom Sites", Owner = this, Width = 570, Height = 470, MinWidth = 470, MinHeight = 360,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#091725"))
+        };
+        var root = new DockPanel { Margin = new Thickness(18) };
+        var note = new TextBlock
+        {
+            Text = "One site or URL per line. The saved domain and its subdomains use the existing Direct Method on the next Start. Prefix ^ for exact-host only. Maximum 256 entries.",
+            TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White, Margin = new Thickness(0,0,0,12)
+        };
+        DockPanel.SetDock(note, Dock.Top); root.Children.Add(note);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0,12,0,0) };
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        var save = new Button { Content = "Save", MinWidth = 90, Margin = new Thickness(8,0,0,0), IsDefault = true };
+        var cancel = new Button { Content = "Cancel", MinWidth = 90, Margin = new Thickness(8,0,0,0), IsCancel = true };
+        buttons.Children.Add(save); buttons.Children.Add(cancel); root.Children.Add(buttons);
+        var box = new TextBox
+        {
+            AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, FontFamily = new FontFamily("Consolas")
+        };
+        try { if (File.Exists(customHostsPath)) box.Text = File.ReadAllText(customHostsPath); } catch { }
+        root.Children.Add(box); editor.Content = root;
+        save.Click += (_, _) =>
+        {
+            try
+            {
+                var values = box.Text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)
+                    .Select(NormalizeCustomSite).Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase).Take(256).ToArray();
+                var dir = Path.GetDirectoryName(customHostsPath)!; Directory.CreateDirectory(dir);
+                var tmp = customHostsPath + ".tmp";
+                File.WriteAllText(tmp, string.Join(Environment.NewLine, values!) + (values.Length > 0 ? Environment.NewLine : ""), new System.Text.UTF8Encoding(false));
+                File.Move(tmp, customHostsPath, true);
+                editor.DialogResult = true; HealthText.Text = $"Custom sites saved: {values.Length}. Stop/Start to apply."; editor.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(editor, "Unable to save custom sites: " + ex.Message, "Direct Internet Method", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        };
+        editor.ShowDialog();
+    }
+    void Strategy_Click(object sender, RoutedEventArgs e)
+    {
+        var current = "balanced";
+        var allSites = false;
+        try
+        {
+            if (File.Exists(strategyPath))
+            {
+                var raw = File.ReadAllText(strategyPath).Trim().ToLowerInvariant();
+                if (raw is "balanced" or "compatibility" or "strong") current = raw;
+            }
+        }
+        catch { }
+        try
+        {
+            if (File.Exists(scopePath)) allSites = File.ReadAllText(scopePath).Trim().Equals("all-sites", StringComparison.OrdinalIgnoreCase);
+        }
+        catch { }
+
+        var editor = new Window
+        {
+            Title = "Direct Strategy", Owner = this, Width = 540, Height = 390, ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#091725"))
+        };
+        var root = new StackPanel { Margin = new Thickness(20) };
+        root.Children.Add(new TextBlock
+        {
+            Text = "Choose the packet strategy used for built-in and Custom Sites. Balanced is the default. Compatibility uses split-only TCP handling. Strong is more aggressive and should be used only when Balanced still fails.",
+            TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White, Margin = new Thickness(0,0,0,14)
+        });
+        var combo = new ComboBox { MinWidth = 230, HorizontalAlignment = HorizontalAlignment.Left };
+        combo.Items.Add("Balanced"); combo.Items.Add("Compatibility"); combo.Items.Add("Strong");
+        combo.SelectedIndex = current switch { "compatibility" => 1, "strong" => 2, _ => 0 };
+        root.Children.Add(combo);
+        var allSitesCheck = new CheckBox
+        {
+            Content = "Apply DPI strategy to all web sites (experimental)",
+            IsChecked = allSites, Foreground = Brushes.White, Margin = new Thickness(0,14,0,0)
+        };
+        root.Children.Add(allSitesCheck);
+        root.Children.Add(new TextBlock
+        {
+            Text = "Targeted mode affects only built-in and Custom Sites. All Sites mode can help unknown blocked domains, but may reduce compatibility or speed on some sites. Neither mode creates a VPN, proxy, or default-route tunnel.",
+            TextWrapping = TextWrapping.Wrap, Foreground = neutral, Margin = new Thickness(0,12,0,16)
+        });
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var cancel = new Button { Content = "Cancel", MinWidth = 90, Margin = new Thickness(8,0,0,0), IsCancel = true };
+        var save = new Button { Content = "Save", MinWidth = 90, Margin = new Thickness(8,0,0,0), IsDefault = true };
+        buttons.Children.Add(cancel); buttons.Children.Add(save); root.Children.Add(buttons); editor.Content = root;
+        save.Click += (_, _) =>
+        {
+            try
+            {
+                var value = combo.SelectedIndex switch { 1 => "compatibility", 2 => "strong", _ => "balanced" };
+                var dir = Path.GetDirectoryName(strategyPath)!; Directory.CreateDirectory(dir);
+                var tmp = strategyPath + ".tmp";
+                File.WriteAllText(tmp, value + Environment.NewLine, new System.Text.UTF8Encoding(false));
+                File.Move(tmp, strategyPath, true);
+                var scopeValue = allSitesCheck.IsChecked == true ? "all-sites" : "targeted";
+                var scopeTmp = scopePath + ".tmp";
+                File.WriteAllText(scopeTmp, scopeValue + Environment.NewLine, new System.Text.UTF8Encoding(false));
+                File.Move(scopeTmp, scopePath, true);
+                HealthText.Text = $"Strategy saved: {value}; scope: {scopeValue}. Stop/Start to apply.";
+                editor.DialogResult = true; editor.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(editor, "Unable to save strategy: " + ex.Message, "Direct Internet Method", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        };
+        editor.ShowDialog();
     }
 
     void RouterGateway_Click(object sender, RoutedEventArgs e)
