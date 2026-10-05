@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "changeSet": "post-final-v1.5.0-revalidation-and-audit-harness-hardening",
+  "status": "PASS_POSTFINAL_REVALIDATION",
+  "releaseAuthority": {
+    "version": "1.5.0",
+    "immutableReleaseCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
+    "releaseChanged": false
+  },
+  "windows": {
+    "installedVersion": "1.5.0",
+    "lifecycle": "PASS_LIFECYCLE_SITE_MATRIX",
+    "rollbackEqual": true,
+    "rawEvidence": "evidence/WINDOWS_150_POSTFINAL_REVALIDATION_RAW_20261005.json",
+    "rawSha256": "EBFB6ED06AD6A3A2002A08BCB12559B25DCEB37ED639B78D98AD9FBA723E0F15",
+    "contracts": [
+      "windows_contract_audit PASS",
+      "router_gateway_contract_audit PASS",
+      "router_gateway_runtime_smoke PASS",
+      "rejected_component_audit PASS",
+      "release_metadata_audit PASS"
+    ],
+    "ui": {
+      "siteChecks": "PASS",
+      "layout": "PASS_1289x632_8_BUTTONS_NO_OVERLAP",
+      "initialFailure": "MINIMIZED_WINDOW_REPORTED_160x28",
+      "rootCause": "test harness measured iconic/minimized Win32 window bounds rather than restored normal bounds",
+      "prevention": "layout audit now detects IsIconic, restores only for measurement, then returns originally minimized window to minimized state",
+      "productRegression": false
+    }
+  },
+  "linux": {
+    "installedAppVersion": "1.5.0",
+    "installedBackendVersion": "1.5.0",
+    "lifecycle": "PASS_LIFECYCLE_SITE_MATRIX",
+    "rollbackEqual": true,
+    "rawEvidence": "evidence/LINUX_150_POSTFINAL_REVALIDATION_RAW_20261005.json",
+    "rawSha256": "25AA6E19FE515DA20DB158B1C20ECE0F392D73D3BE120AA390F2F49A671C9992",
+    "stalePathFinding": "/home/aliemad/source/repos/DirectInternetMethod is a non-git stale 1.3.x-era source copy and is not release authority"
+  },
+  "behavioralBoundary": {
+    "reddit": "Balanced/Targeted without Reddit targeting can fail; Strong+Custom Reddit and Strong/All Sites PASS on both hosts",
+    "gemini": "HTTP transport reaches Gemini but server returns 403; classified REACHABLE, not PASS",
+    "guarantee": "No direct-only method can guarantee remote account/region/product-policy acceptance"
+  },
+  "decision": {
+    "type": "DECISION",
+    "status": "ACCEPTED",
+    "claim": "Keep immutable v1.5.0 release unchanged; promote only audit-harness hardening and post-final evidence.",
+    "rationale": "Fresh runtime regression does not identify a release defect. Changing product/runtime after a clean cross-platform revalidation would add risk without demonstrated benefit."
+  },
+  "evidenceStatus": "CONFIRMED",
+  "reuseTargets": [
+    "PROJECT_BRAIN",
+    "maintenance audit",
+    "future regression triage",
+    "v1.5.0 handoff"
+  ],
+  "exactNextAction": "Run final branch regression/diff checks, commit/push the audit-only change set, and merge only if protected CI remains green."
+}
