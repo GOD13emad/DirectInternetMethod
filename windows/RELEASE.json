@@ -2,8 +2,8 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.5.1",
-  "status": "CANDIDATE_1_5_1_PIN_FIX_PENDING_EXACT_WINDOWS_INSTALLED_ACCEPTANCE",
-  "date": "2026-10-05",
+  "status": "CANDIDATE_1_5_1_METADATA_FINALIZED_FINAL_ARTIFACT_REBUILD_PENDING",
+  "date": "2026-10-06",
   "previousAccepted": {
     "version": "1.5.0",
     "tag": "v1.5.0",
@@ -116,22 +116,28 @@
     "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
     "startupLayout": "PASS_DYNAMIC_1289x632_NO_OVERLAP_8_BUTTONS",
     "targetHostlistContract": "PASS",
-    "siteCoverageLive": "PENDING_EXACT_V1_5_1_WINDOWS_INSTALLED_ACCEPTANCE",
-    "publication": "PENDING",
+    "siteCoverageLive": "PASS_WINDOWS_BALANCED_TARGETED_STABLE_STATE_REPRESENTATIVES_WITH_EDGE_CAVEAT",
+    "publication": "PENDING_FINAL_ARTIFACT_CI_AND_RELEASE",
     "strategyProfiles": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
     "allSitesScope": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
     "securityRejectedComponentGate": "PASS_BLOCKED_HASHES_NOT_SHIPPED",
     "artifactIdentity": "EXTERNAL_ROOT_RELEASE_METADATA_AND_SHA256SUMS",
-    "windowsInstalledLive": "PENDING_EXACT_V1_5_1_INSTALL_LIFECYCLE"
+    "windowsInstalledLive": "PASS_EXACT_PRE_FINAL_METADATA_REBUILD_RUNTIME_START_STOP_RECOVERY",
+    "startupHealth": "PASS_RETRY_QUORUM_2_OF_3_REAL_GITHUB_TRANSIENT_SURVIVED",
+    "adultCoverage": "PASS_WINDOWS_PORNHUB_REDTUBE_XVIDEOS_XNXX_AND_XHAMSTER_USABLE_ON_HEALTHY_EDGE",
+    "gemini": "FAIL_HTTP_403_CURL_AND_CHROME_CURRENT_EGRESS_DIRECT_ONLY_EXHAUSTED"
   },
   "validationBoundary": [
     "Direct Internet Method does not change public egress IP; remote country/account/product restrictions are outside direct DNS/DPI control.",
-    "Adult coverage is broad maintained-domain coverage, not a guarantee that every remote origin or edge will return a usable page.",
+    "Gemini returns HTTP 403 on the validated IR egress in both curl and real headless Chrome. A usable Gemini page requires a separate egress-changing architecture.",
+    "Adult coverage uses a maintained opt-in catalog plus bounded host-specific profiles. Windows stable-state representative probes return HTTP 200 for Pornhub, RedTube, XVideos, XNXX and XHamster.",
+    "XHamster currently resolves to Cloudflare 104.16.3.81 and 104.16.4.81: 104.16.4.81 is repeatably HTTP 200 while 104.16.3.81 is repeatably TCP-connect timeout. A cold first probe can therefore fail depending on CDN edge selection; pinning a shared Cloudflare edge is rejected as brittle/system-risky.",
+    "Linux representative matrix passes Pornhub, RedTube, XVideos and XNXX; XHamster remains a platform/network-path-specific TLS/edge limitation after bounded upstream/comparable strategy exhaustion.",
     "HTTP 4xx/5xx is not accepted as usable-page PASS.",
     "Targeted remains the default scope; All Sites is explicit opt-in.",
     "Windows installer remains not Authenticode-signed."
   ],
-  "exactNextAction": "Build the exact v1.5.1 Windows payload/installer from this candidate metadata, install that exact artifact, run lifecycle/site/rollback acceptance, then publish only if evidence permits.",
+  "exactNextAction": "Commit final candidate metadata, rebuild one exact Windows artifact from that committed source, install/verify exact identity plus live Start/site/rollback, require protected CI on the exact final branch head, then publish v1.5.1 only if all gates pass.",
   "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
   "publication": null
 }

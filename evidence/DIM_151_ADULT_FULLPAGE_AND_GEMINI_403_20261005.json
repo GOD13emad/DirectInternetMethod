@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "date": "2026-10-05",
+  "date": "2026-10-06",
   "project": "Direct Internet Method",
   "changeSet": "adult-fullpage-coverage-151",
-  "status": "CANDIDATE_1_5_1_LOCAL_ARTIFACTS_PASS_RUNTIME_REPRESENTATIVE_PARTIAL",
+  "status": "CANDIDATE_1_5_1_WINDOWS_PRE_FINAL_RUNTIME_ACCEPTED_FINAL_ARTIFACT_REBUILD_PENDING",
   "objective": "Make the existing opt-in Adult control provide real broad adult-domain DPI coverage and validate full HTTP page access instead of merely probing one site.",
   "previousAcceptedState": {
     "main": "b6a7e5434e2056c97ef5abdcb6086bfb9a813bec",
@@ -122,6 +122,36 @@
       "type": "FACT",
       "status": "CONFIRMED",
       "claim": "Bare xhamster.com and www.xhamster.com resolve to the same Cloudflare edge pair 104.16.3.81/104.16.4.81 under owned DoH and both remain TLS-failing; canonical-hostname variation does not close the blocker."
+    },
+    {
+      "type": "ROOT_CAUSE",
+      "status": "CONFIRMED",
+      "claim": "The first Windows v1.5.1 installed candidate failed Start preflight because embedded Start-Direct.ps1 self-integrity pins still expected the previous hosts.txt/adult-fallback hashes while that same installer shipped newer files. Start therefore exited before mutation. Source commits e9cc8fb/90b4591 corrected the pins and added contract coverage; the corrected installer self-integrity check matched all eight declared runtime file hashes and Start returned done/0."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "On corrected Windows v1.5.1 balanced/targeted with Adult coverage enabled, the maintained catalog validated to 84,123 upstream entries and runtime adultHostCount was 84,127 after fallback/merged normalization."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Stable-state Windows balanced/targeted repeated probes returned HTTP 200 five of five for XHamster, XVideos and Reddit. A cold-cycle immediate XHamster probe timed out once while XVideos/XNXX/Pornhub/Reddit returned HTTP 200; after stabilization XHamster again returned 200 repeatedly."
+    },
+    {
+      "type": "ROOT_CAUSE",
+      "status": "CONFIRMED",
+      "claim": "XHamster cold instability is edge-specific: pinned probes to 104.16.4.81 returned HTTP 200 five of five, while 104.16.3.81 timed out at TCP connect five of five. This occurs before TLS/DPI handling. Product-level pinning or system routing to a shared Cloudflare edge is rejected as brittle and potentially harmful to unrelated domains."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Strong/All-Sites A/B returned Reddit HTTP 200 and XHamster HTTP 200 but caused XVideos timeout; the test restored balanced/targeted afterward. Therefore global Strong promotion remains rejected."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Real Chrome 154 headless on the corrected Windows active path rendered an Access Denied result for Gemini while curl returned HTTP 403. The 403 is not a curl fingerprint artifact and remains outside Direct-only DNS/DPI remediation because public egress is unchanged."
     }
   ],
   "decision": {
@@ -139,7 +169,7 @@
     "Do not claim all adult sites are individually proven merely because a maintained catalog contains them; prove representative families and preserve fallback/custom-site paths.",
     "Broad Adult domain coverage may be promoted with representative proof and truthful limitations; do not claim every remote Adult origin/CDN edge is guaranteed."
   ],
-  "exactNextAction": "Promote installed Linux acceptance and lifecycle test to the branch, require final-head protected CI, then continue unresolved XHamster/Gemini research without weakening accepted broad-coverage/runtime claims.",
+  "exactNextAction": "Commit final candidate metadata/evidence, rebuild one exact Windows artifact from committed source, install and verify exact identity/runtime, require protected CI on final head, then publish v1.5.1 if all gates pass.",
   "implementation": {
     "adultCatalog": {
       "mode": "opt-in",
@@ -231,7 +261,13 @@
       "windows": {
         "bytes": 157104795,
         "sha256": "F210AD4663757727452BD6A8ADBDF0288EE7F9867EA5F67BE5322C8B6DB7281A",
-        "authenticode": "NotSigned"
+        "authenticode": "NotSigned",
+        "runtimePreFinalMetadataRebuild": "PASS_EXACT_INSTALLED_AF6837_SELF_INTEGRITY_START_AND_STABLE_SITE_MATRIX",
+        "xhamsterEdgeEvidence": {
+          "healthyEdge": "104.16.4.81 HTTP_200_5_OF_5",
+          "failingEdge": "104.16.3.81 TCP_CONNECT_TIMEOUT_5_OF_5",
+          "decision": "DO_NOT_PIN_SHARED_CLOUDFLARE_EDGE"
+        }
       },
       "linux": {
         "bytes": 8183518,
