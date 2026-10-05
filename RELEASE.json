@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.0",
   "date": "2026-10-04",
-  "status": "RELEASE_CANDIDATE_V1_5_0_FINAL_LOCAL_ARTIFACTS_PENDING_FINAL_REMOTE_REPRO_AND_INSTALLED_PROMOTION",
+  "status": "RELEASE_CANDIDATE_V1_5_0_SOURCE_CI_CROSS_HOST_PASS_PENDING_INSTALLED_OWNER_AUTH",
   "previousAccepted": {
     "version": "1.4.0",
     "tag": "v1.4.0",
@@ -132,7 +132,7 @@
       "strategyDynamic": "PASS_STRONG_ALL_SITES_SAVE_THEN_RESET_BALANCED_TARGETED"
     },
     "linux": {
-      "status": "PASS_FINAL_LOCAL_BUILD_PENDING_FINAL_REMOTE_REPRO_AND_OWNER_AUTH_INSTALLED_LIVE",
+      "status": "PASS_FINAL_LOCAL_AND_FRESH_REMOTE_REPRO_PENDING_OWNER_AUTH_INSTALLED_LIVE",
       "artifact": "delivery/DirectInternetMethod_1.5.0_Linux_x86_64.zip",
       "bytes": 8179393,
       "sha256": "61A76B06A59BAC55196DD538D1D17C27C86F8045C6564B67AF3091A3AC7CCBD2",
@@ -141,7 +141,7 @@
       "updaterThreeWayDigestContract": "PASS",
       "installedHostCurrentBeforeUpgrade": "1.4.0",
       "installedLive": "PENDING_ONE_TIME_PRIVILEGED_BACKEND_UPGRADE",
-      "crossHostDeterministic": "PENDING_FINAL_METADATA_COMMIT_REPRODUCTION"
+      "crossHostDeterministic": "PASS_EXACT_SHA_MATCH_E189DF7"
     }
   },
   "checksums": {
@@ -161,10 +161,10 @@
     "windowsAdultToggle": "PASS_DYNAMIC",
     "linuxLocalBuild": "PASS_CURRENT_GLOBAL_EXPANSION",
     "linuxUpdaterThreeWayDigest": "PASS_CONTRACT",
-    "crossHostLinux": "PENDING_FINAL_METADATA_COMMIT_REPRODUCTION",
+    "crossHostLinux": "PASS_EXACT_SHA_MATCH_E189DF7",
     "windowsSandboxInstalledLive": "BLOCKED_HOST_SANDBOX_INITIALIZATION_ENVIRONMENT",
     "linuxInstalledLiveSiteCoverage": "BLOCKED_OWNER_LOCAL_AUTH_REQUIRED",
-    "protectedCi": "PENDING_FINAL_METADATA_COMMIT",
+    "protectedCi": "PASS_E189DF7_PUSH_AND_PR",
     "publication": "PENDING",
     "windowsCustomSites": "PASS_DYNAMIC_SAVE_AND_CLEANUP",
     "windowsStrategy": "PASS_DYNAMIC_STRONG_ALL_SITES_SAVE_AND_RESET",
@@ -204,5 +204,5 @@
     "finalLocalCandidate": "evidence/DIM_150_FINAL_LOCAL_CANDIDATE_ACCEPTANCE_20261005.json",
     "windowsBuildRacePrevention": "evidence/WINDOWS_150_BUILD_RACE_PREVENTION_20261005.json"
   },
-  "exactNextAction": "Commit/push exact final local metadata; require protected CI and exact fresh-clone Linux reproduction; then one-time Windows UAC/Linux pkexec installed Start->site matrix->Stop->Recovery before merge/release."
+  "exactNextAction": "Owner approves one-time Windows UAC and Linux pkexec prompts for exact final candidate; run installed Start->site matrix->Stop->Recovery on both hosts, then promote PR #12, merge, tag/release, public-redownload and installed-update verification."
 }

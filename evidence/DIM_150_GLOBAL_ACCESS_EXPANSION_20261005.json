@@ -4,7 +4,7 @@
   "project": "Direct Internet Method",
   "version": "1.5.0",
   "context": "Global-access expansion after v1.5 targeted coverage baseline and user request for maximum non-VPN/non-proxy reachability.",
-  "status": "PASS_FINAL_LOCAL_PENDING_FINAL_REMOTE_REPRO_AND_INSTALLED_OWNER_AUTH",
+  "status": "PASS_SOURCE_CI_FINAL_ARTIFACTS_CROSS_HOST_PENDING_INSTALLED_OWNER_AUTH",
   "objective": "Maximize safe direct Internet reachability without VPN/proxy/default-route tunneling by adding user-extensible host scope, selectable DPI strategy strength, optional all-sites scope, security-gated third-party evaluation, and stronger built-in coverage.",
   "previousAccepted": {
     "version": "1.4.0",
@@ -96,7 +96,7 @@
       "files": 17,
       "bytes": 8179393,
       "sha256": "61A76B06A59BAC55196DD538D1D17C27C86F8045C6564B67AF3091A3AC7CCBD2",
-      "crossHostFreshClone": "PENDING_FINAL_METADATA_COMMIT_REPRODUCTION"
+      "crossHostFreshClone": "PASS_EXACT_SHA_E189DF7"
     },
     "windowsDynamicUi": {
       "preferredSize": "1289x632",
@@ -123,6 +123,11 @@
         "Reddit=connection reset"
       ],
       "interpretation": "v1.4 proves core direct engine but not universal access; server-side Gemini 403 is not removable by DPI bypass alone."
+    },
+    "protectedCi": {
+      "commit": "e189df749c822e1ce93193bee810e3e2859274bc",
+      "workflowRunId": 37301989936,
+      "conclusion": "success"
     }
   },
   "security": {
@@ -165,5 +170,5 @@
     "future adaptive strategy work",
     "security review"
   ],
-  "exactNextAction": "Push exact final metadata/artifact state, require protected CI and exact fresh-clone Linux SHA reproduction, then close installed-host owner-auth lifecycle gates."
+  "exactNextAction": "Close owner-auth installed-host lifecycle/site gates, then protected merge/release/public verification."
 }
