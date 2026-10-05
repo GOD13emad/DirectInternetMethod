@@ -5,8 +5,6 @@ googlevideo.com
 ytimg.com
 youtubei.googleapis.com
 ^gemini.google.com
-pornhub.com
-phncdn.com
 openai.com
 chatgpt.com
 oaistatic.com

@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -21,6 +24,11 @@ public partial class MainWindow : Window
     readonly Brush neutral = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9FB1C3"));
     readonly string settingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DirectInternetMethod", "settings.json");
     readonly string customHostsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "custom-hosts.txt");
+    readonly string adultEnabledPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "adult-enabled.txt");
+    readonly string adultHostsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "adult-hosts.txt");
+    readonly string adultMetaPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "adult-hosts.meta.json");
+    const string AdultCatalogUrl = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt";
+    static readonly Regex domainLabel = new("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
     readonly string strategyPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "strategy.txt");
     readonly string scopePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "DirectInternetMethod", "UserConfig", "scope.txt");
     UpdateInfo? availableUpdate;
@@ -35,6 +43,18 @@ public partial class MainWindow : Window
         AdultSiteCheckToggle.Unchecked += AdultSiteCheckToggle_Changed;
         Loaded += async (_, _) =>
         {
+            if (adultCheckEnabled)
+            {
+                try
+                {
+                    SaveAdultSiteCheckSetting();
+                    await EnsureAdultCatalogAsync(false);
+                }
+                catch (Exception ex)
+                {
+                    AdultSiteText.Text = "Coverage fallback active · catalog sync failed: " + ex.Message;
+                }
+            }
             await RefreshStatusAsync();
             _ = CheckForUpdatesAsync(false);
         };
@@ -46,20 +66,90 @@ public partial class MainWindow : Window
     {
         try
         {
+            if (File.Exists(adultEnabledPath))
+                return File.ReadAllText(adultEnabledPath).Trim() == "1";
             if (!File.Exists(settingsPath)) return false;
             using var doc = JsonDocument.Parse(File.ReadAllText(settingsPath));
-            return doc.RootElement.TryGetProperty("adultSiteLiveCheck", out var value) && value.ValueKind == JsonValueKind.True;
+            if (doc.RootElement.TryGetProperty("adultCoverageEnabled", out var coverage))
+                return coverage.ValueKind == JsonValueKind.True;
+            return doc.RootElement.TryGetProperty("adultSiteLiveCheck", out var legacy) && legacy.ValueKind == JsonValueKind.True;
         }
         catch { return false; }
     }
 
     void SaveAdultSiteCheckSetting()
     {
-        var dir = Path.GetDirectoryName(settingsPath)!;
+        var settingsDir = Path.GetDirectoryName(settingsPath)!;
+        Directory.CreateDirectory(settingsDir);
+        var settingsTemp = settingsPath + ".tmp";
+        File.WriteAllText(settingsTemp, JsonSerializer.Serialize(new { adultCoverageEnabled = adultCheckEnabled, adultSiteLiveCheck = adultCheckEnabled }));
+        File.Move(settingsTemp, settingsPath, true);
+
+        var configDir = Path.GetDirectoryName(adultEnabledPath)!;
+        Directory.CreateDirectory(configDir);
+        var enabledTemp = adultEnabledPath + ".tmp";
+        File.WriteAllText(enabledTemp, adultCheckEnabled ? "1\r\n" : "0\r\n", new UTF8Encoding(false));
+        File.Move(enabledTemp, adultEnabledPath, true);
+        if (!adultCheckEnabled)
+        {
+            try { if (File.Exists(adultHostsPath)) File.Delete(adultHostsPath); } catch { }
+            try { if (File.Exists(adultMetaPath)) File.Delete(adultMetaPath); } catch { }
+        }
+    }
+
+    sealed record AdultCatalogInfo(int Count, string Sha256);
+
+    static List<string> ValidateAdultCatalog(string text)
+    {
+        var result = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var raw in text.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None))
+        {
+            var v = raw.Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(v) || v.StartsWith('#')) continue;
+            if (v.StartsWith('^')) v = v[1..];
+            if (v.Length is < 3 or > 253 || !v.Contains('.')) continue;
+            if (v.Split('.').Any(x => !domainLabel.IsMatch(x))) continue;
+            if (seen.Add(v)) result.Add(v);
+            if (result.Count > 100000) throw new InvalidDataException("Adult catalog exceeds 100,000 validated domains.");
+        }
+        if (result.Count < 10000) throw new InvalidDataException("Adult catalog is unexpectedly small.");
+        foreach (var required in new[] { "xvideos.com", "xnxx.com", "xhamster.com", "pornhub.com", "redtube.com" })
+            if (!seen.Contains(required)) throw new InvalidDataException("Adult catalog is missing a required coverage family.");
+        return result;
+    }
+
+    async Task<AdultCatalogInfo> EnsureAdultCatalogAsync(bool force)
+    {
+        if (!force && File.Exists(adultHostsPath) && File.GetLastWriteTimeUtc(adultHostsPath) > DateTime.UtcNow.AddHours(-24))
+        {
+            var existing = ValidateAdultCatalog(await File.ReadAllTextAsync(adultHostsPath));
+            return new AdultCatalogInfo(existing.Count, Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(adultHostsPath))));
+        }
+
+        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("DirectInternetMethod/1.5.1");
+        var bytes = await http.GetByteArrayAsync(AdultCatalogUrl);
+        if (bytes.Length is < 100000 or > 4 * 1024 * 1024) throw new InvalidDataException("Adult catalog size is outside the accepted range.");
+        var raw = Encoding.UTF8.GetString(bytes);
+        var domains = ValidateAdultCatalog(raw);
+        var dir = Path.GetDirectoryName(adultHostsPath)!;
         Directory.CreateDirectory(dir);
-        var temp = settingsPath + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(new { adultSiteLiveCheck = adultCheckEnabled }));
-        File.Move(temp, settingsPath, true);
+        var tmp = adultHostsPath + ".tmp";
+        await File.WriteAllTextAsync(tmp, string.Join(Environment.NewLine, domains) + Environment.NewLine, new UTF8Encoding(false));
+        File.Move(tmp, adultHostsPath, true);
+        var digest = Convert.ToHexString(SHA256.HashData(bytes));
+        var metaTmp = adultMetaPath + ".tmp";
+        await File.WriteAllTextAsync(metaTmp, JsonSerializer.Serialize(new
+        {
+            schema = 1,
+            source = AdultCatalogUrl,
+            fetchedUtc = DateTime.UtcNow.ToString("O"),
+            sourceSha256 = digest,
+            entries = domains.Count
+        }), new UTF8Encoding(false));
+        File.Move(metaTmp, adultMetaPath, true);
+        return new AdultCatalogInfo(domains.Count, digest);
     }
 
     async Task<string> RunPwshCaptureAsync(string script, string args = "")
@@ -133,8 +223,16 @@ public partial class MainWindow : Window
 
     static string FmtHttp(ProbeResult p) =>
         p.Ok ? $"PASS · HTTP {p.Code} · {p.Ms} ms" :
-        p.Reached ? $"REACHABLE · HTTP {p.Code} · {p.Ms} ms" :
+        p.Reached ? $"FAIL · HTTP {p.Code} · {p.Ms} ms" :
         "FAIL · transport";
+
+    static string FmtAdult(IReadOnlyCollection<ProbeResult> probes)
+    {
+        var okCount = probes.Count(x => x.Ok);
+        return okCount == probes.Count
+            ? $"PASS · full pages {okCount}/{probes.Count}"
+            : $"FAIL · full pages {okCount}/{probes.Count}";
+    }
 
     async Task RefreshStatusAsync()
     {
@@ -190,17 +288,23 @@ public partial class MainWindow : Window
                 var oaTask = ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401", "403" });
                 var ghTask = ProbeAsync("https://github.com/", IpText.Text, new[] { "200", "301", "302" });
                 var geminiTask = ProbeAsync("https://gemini.google.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" });
-                Task<ProbeResult>? adultTask = adultCheckEnabled
-                    ? ProbeAsync("https://www.pornhub.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" })
+                Task<ProbeResult>[]? adultTasks = adultCheckEnabled
+                    ? new[]
+                    {
+                        ProbeAsync("https://www.pornhub.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" }),
+                        ProbeAsync("https://www.xvideos.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" }),
+                        ProbeAsync("https://www.xnxx.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" }),
+                        ProbeAsync("https://xhamster.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" })
+                    }
                     : null;
                 var tasks = new List<Task> { ytTask, oaTask, ghTask, geminiTask };
-                if (adultTask is not null) tasks.Add(adultTask);
+                if (adultTasks is not null) tasks.AddRange(adultTasks);
                 await Task.WhenAll(tasks);
                 YoutubeText.Text = FmtHttp(await ytTask);
                 OpenAiText.Text = FmtHttp(await oaTask);
                 GithubText.Text = FmtHttp(await ghTask);
                 GeminiText.Text = FmtHttp(await geminiTask);
-                AdultSiteText.Text = adultTask is null ? "Disabled" : FmtHttp(await adultTask);
+                AdultSiteText.Text = adultTasks is null ? "Disabled" : FmtAdult(await Task.WhenAll(adultTasks));
             }
 
             HealthText.Text = mode switch
@@ -386,8 +490,26 @@ public partial class MainWindow : Window
     async void AdultSiteCheckToggle_Changed(object sender, RoutedEventArgs e)
     {
         adultCheckEnabled = AdultSiteCheckToggle.IsChecked == true;
-        try { SaveAdultSiteCheckSetting(); }
-        catch (Exception ex) { AdultSiteText.Text = "Settings error: " + ex.Message; return; }
+        try
+        {
+            SaveAdultSiteCheckSetting();
+            if (adultCheckEnabled)
+            {
+                AdultSiteText.Text = "Syncing coverage catalog…";
+                var info = await EnsureAdultCatalogAsync(true);
+                AdultSiteText.Text = $"Enabled · {info.Count:N0} domains · Stop/Start to apply";
+            }
+            else
+            {
+                AdultSiteText.Text = "Disabled";
+            }
+        }
+        catch (Exception ex)
+        {
+            AdultSiteText.Text = adultCheckEnabled
+                ? "Fallback coverage enabled · catalog sync failed: " + ex.Message
+                : "Settings error: " + ex.Message;
+        }
         await RefreshStatusAsync();
     }
 
@@ -406,8 +528,7 @@ public partial class MainWindow : Window
             return null;
         host = host.Trim('.').ToLowerInvariant();
         if (host.Length is < 3 or > 253 || !host.Contains('.')) return null;
-        var label = new Regex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", RegexOptions.CultureInvariant);
-        if (host.Split('.').Any(x => !label.IsMatch(x))) return null;
+        if (host.Split('.').Any(x => !domainLabel.IsMatch(x))) return null;
         return exact ? "^" + host : host;
     }
 

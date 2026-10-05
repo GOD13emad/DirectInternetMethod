@@ -12,8 +12,11 @@ $CtrldServiceName='ctrld'
 $ZapretDir=Join-Path $Root 'bin\zapret'
 $Winws=Join-Path $ZapretDir 'winws.exe'
 $HostList=Join-Path $ZapretDir 'hosts.txt'
+$AdultFallback=Join-Path $ZapretDir 'adult-fallback-hosts.txt'
 $UserConfigDir=Join-Path $env:ProgramData 'DirectInternetMethod\UserConfig'
 $CustomHosts=Join-Path $UserConfigDir 'custom-hosts.txt'
+$AdultEnabledFile=Join-Path $UserConfigDir 'adult-enabled.txt'
+$AdultHosts=Join-Path $UserConfigDir 'adult-hosts.txt'
 $StrategyFile=Join-Path $UserConfigDir 'strategy.txt'
 $ScopeFile=Join-Path $UserConfigDir 'scope.txt'
 $RuntimeHostList=Join-Path $env:ProgramData 'DirectInternetMethod\runtime-hosts.txt'
@@ -28,7 +31,7 @@ if(-not $LoopbackRoute){throw 'LOOPBACK_INTERFACE_MISSING'}
 $LoopbackIndex=[int]$LoopbackRoute.InterfaceIndex
 $NrptDisplay='DirectDnsDpiHarness'
 $NrptComment='Owned by DirectDnsDpiHarness; safe to remove only by this harness.'
-$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443','custom-hostlist','strategy-profile')
+$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443','custom-hostlist','adult-catalog','strategy-profile')
 
 $Expected=@{
  'ctrld.exe'='FC966FD7DD5EE850A9709F632789CFB5BBC06C45D903D24B8ECFCE3306B658CD'
@@ -37,7 +40,8 @@ $Expected=@{
  'WinDivert.dll'='C1E060EE19444A259B2162F8AF0F3FE8C4428A1C6F694DCE20DE194AC8D7D9A2'
  'WinDivert64.sys'='8DA085332782708D8767BCACE5327A6EC7283C17CFB85E40B03CD2323A90DDC2'
  'cygwin1.dll'='103104A52E5293CE418944725DF19E2BF81AD9269B9A120D71D39028E821499B'
- 'hosts.txt'='5587E810DED0EDF8D77514A88F944A484038FBF9B1FE5FE32C8E9BA769240AC4'
+ 'hosts.txt'='E895E0D0E1A9B5E85073A4B47B72B1FBF64AE11B928D703A6770252BA9917578'
+ 'adult-fallback-hosts.txt'='FD832F1E1A2376588FE363B8A2A684AAA88E025A5B39AE5716F7E17C4FFCAE00'
 }
 
 function Start-ExactProcess([string]$File,[string[]]$ArgumentList,[string]$WorkingDirectory){
@@ -230,6 +234,7 @@ $files=@{
  'WinDivert64.sys'=Join-Path $ZapretDir 'WinDivert64.sys'
  'cygwin1.dll'=Join-Path $ZapretDir 'cygwin1.dll'
  'hosts.txt'=$HostList
+ 'adult-fallback-hosts.txt'=$AdultFallback
 }
 foreach($n in $Expected.Keys){
  $p=$files[$n]
@@ -339,17 +344,28 @@ try{
  }
 
  New-Item -ItemType Directory -Force -Path $UserConfigDir|Out-Null
- foreach($candidate in @($CustomHosts,$StrategyFile,$ScopeFile)){
+ foreach($candidate in @($CustomHosts,$AdultEnabledFile,$AdultHosts,$StrategyFile,$ScopeFile)){
   if(Test-Path -LiteralPath $candidate){
    $ci=Get-Item -LiteralPath $candidate -Force
    if($ci.PSIsContainer -or ($ci.Attributes -band [IO.FileAttributes]::ReparsePoint)){throw 'USER_CONFIG_INVALID'}
   }
  }
  $labels='^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$'
+ $adultEnabled=$false
+ if(Test-Path -LiteralPath $AdultEnabledFile -PathType Leaf){$adultEnabled=(([string](Get-Content -LiteralPath $AdultEnabledFile -Raw -ErrorAction Stop)).Trim() -eq '1')}
  $merged=[Collections.Generic.List[string]]::new()
- foreach($src in @($HostList,$CustomHosts)){
+ $seen=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+ $sources=[Collections.Generic.List[object]]::new()
+ $sources.Add([pscustomobject]@{Path=$HostList;Limit=4096;Kind='built-in'})
+ $sources.Add([pscustomobject]@{Path=$CustomHosts;Limit=256;Kind='custom'})
+ if($adultEnabled){
+  $sources.Add([pscustomobject]@{Path=$AdultFallback;Limit=256;Kind='adult-fallback'})
+  $sources.Add([pscustomobject]@{Path=$AdultHosts;Limit=100000;Kind='adult-catalog'})
+ }
+ $adultHostCount=0
+ foreach($source in $sources){
+  $src=[string]$source.Path
   if(-not (Test-Path -LiteralPath $src -PathType Leaf)){continue}
-  $limit=if($src -eq $CustomHosts){256}else{4096}
   $n=0
   foreach($raw in Get-Content -LiteralPath $src -ErrorAction Stop){
    $v=([string]$raw).Trim().ToLowerInvariant()
@@ -359,10 +375,14 @@ try{
    if($h.Length -gt 253 -or $parts.Count -lt 2){continue}
    $valid=$true
    foreach($part in $parts){if($part -notmatch $labels){$valid=$false;break}}
-   if($valid -and -not $merged.Contains($v)){$merged.Add($v);$n++}
-   if($n -ge $limit){break}
+   if($valid -and $seen.Add($v)){
+    $merged.Add($v);$n++
+    if(([string]$source.Kind).StartsWith('adult')){$adultHostCount++}
+   }
+   if($n -ge [int]$source.Limit){break}
   }
  }
+ if($adultEnabled -and $adultHostCount -lt 5){throw 'ADULT_CATALOG_INVALID'}
  [IO.File]::WriteAllLines($RuntimeHostList,$merged,[Text.UTF8Encoding]::new($false))
  $strategy='balanced'
  if(Test-Path -LiteralPath $StrategyFile -PathType Leaf){
@@ -375,6 +395,8 @@ try{
   if($rawScope -in @('targeted','all-sites')){$scope=$rawScope}else{throw 'SCOPE_INVALID'}
  }
  $state.customHostlist=$CustomHosts
+ $state.adultCoverage=$adultEnabled
+ $state.adultHostCount=$adultHostCount
  $state.strategy=$strategy
  $state.scope=$scope
  Write-JsonAtomic $StatePath $state
@@ -431,7 +453,7 @@ try{
  Write-JsonAtomic $StatePath $state
  $ev.status='PASS_ACTIVE'
  $ev.live=[ordered]@{
-  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;strategy=$strategy;scope=$scope;runtimeHostCount=$merged.Count;youtubeHttp80=$yh;dns=$dy;youtube=$yt;openai=$oa;github=$gh
+  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;strategy=$strategy;scope=$scope;runtimeHostCount=$merged.Count;adultCoverage=$adultEnabled;adultHostCount=$adultHostCount;youtubeHttp80=$yh;dns=$dy;youtube=$yt;openai=$oa;github=$gh
   ics=$icsLive;proxy=$proxy;broadRouteCount=$routes.Count
   drivers=@(Get-OwnedDrivers|Select-Object Name,State,PathName)
  }

@@ -1,0 +1,14 @@
+# Built-in offline fallback for opt-in Adult coverage.
+# The maintained full catalog is downloaded at runtime and is not redistributed in the release.
+xvideos.com
+xnxx.com
+xhamster.com
+pornhub.com
+phncdn.com
+redtube.com
+youporn.com
+thumbzilla.com
+tube8.com
+spankbang.com
+eporner.com
+tnaflix.com

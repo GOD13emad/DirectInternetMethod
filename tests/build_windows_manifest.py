@@ -22,6 +22,7 @@ FILES=[
 ("privileged","bin/zapret/WinDivert64.sys","bin/zapret/WinDivert64.sys"),
 ("privileged","bin/zapret/cygwin1.dll","bin/zapret/cygwin1.dll"),
 ("privileged","bin/zapret/hosts.txt","bin/zapret/hosts.txt"),
+("privileged","bin/zapret/adult-fallback-hosts.txt","bin/zapret/adult-fallback-hosts.txt"),
 ("privileged","bin/zapret/LICENSE.txt","bin/zapret/LICENSE.txt"),
 ]
 vendor=W/"vendor"/"pwsh"

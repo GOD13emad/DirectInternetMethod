@@ -19,6 +19,7 @@ install -m 0755 "$SRC/app/direct_method_helper.sh" "$ROOT/direct_method_helper.s
 install -m 0755 "$SRC/system/control.sh" "$ROOT/control.sh"
 install -m 0755 "$SRC/system/uninstall_system.sh" "$ROOT/uninstall_system.sh"
 install -m 0644 "$SRC/app/hosts.txt" "$ROOT/direct_hosts.txt"
+install -m 0644 "$SRC/app/adult_hosts_fallback.txt" "$ROOT/adult_hosts_fallback.txt"
 install -m 0755 "$SRC/runtime/ctrld" "$ROOT/runtime/usr/bin/ctrld"
 install -m 0755 "$SRC/runtime/nfqws" "$ROOT/runtime/usr/bin/nfqws"
 install -m 0644 "$SRC/licenses/LICENSE-ctrld.txt" "$ROOT/licenses/LICENSE-ctrld.txt"

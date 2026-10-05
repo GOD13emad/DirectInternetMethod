@@ -19,8 +19,8 @@
       "scope": "user",
       "file": "app/DirectInternetMethod.exe",
       "source": "app/DirectInternetMethod.exe",
-      "bytes": 161807432,
-      "sha256": "83594B60BBA67F84175F1287EB12E6921A14C883E83BF2CCF566A8A4A698728B"
+      "bytes": 161827912,
+      "sha256": "AB39316374AA32F97F0B6D5ECC501B424B10CF69B197CBB529F02E01E3D4490F"
     },
     {
       "scope": "user",
@@ -40,8 +40,8 @@
       "scope": "user",
       "file": "app/router_gateway/providers.json",
       "source": "../router_gateway/providers.json",
-      "bytes": 6950,
-      "sha256": "E6FF8848FC9E251B14CE695360013ED1EA7D0DFDFF5F2D05D38D851CD015D5C0"
+      "bytes": 7111,
+      "sha256": "D4E4B3A91252802DF33A46FE4F36067BA02A3E28974EDD23D458127E5224E0CD"
     },
     {
       "scope": "user",
@@ -61,22 +61,22 @@
       "scope": "user",
       "file": "RELEASE.json",
       "source": "RELEASE.json",
-      "bytes": 4852,
-      "sha256": "88736296D3622AB506D3BDECC805DB993D07E9DF7A1B54E0A4A8338E7C3B4BEB"
+      "bytes": 4984,
+      "sha256": "3CAB5676C75C6D1EBAEDF9B8DD314BE51C786D6233A1328BA86B0E18AF0D58DA"
     },
     {
       "scope": "privileged",
       "file": "app/DirectInternetMethod.Service.exe",
       "source": "app/DirectInternetMethod.Service.exe",
       "bytes": 67588813,
-      "sha256": "034CA29CF4CB3968AAB37CEABDB8D78C84F0B7355659F312D119A19E61C163D4"
+      "sha256": "D2491AEF07F7CB7C4AB730A8642F60896CBBC65A31144D7790D6D8D283269DA6"
     },
     {
       "scope": "privileged",
       "file": "app/Start-Direct.ps1",
       "source": "app/Start-Direct.ps1",
-      "bytes": 23610,
-      "sha256": "C7044B29DD1A909D3B2465F7800DBFC5369EA67864B817523159008EE5A329BA"
+      "bytes": 24950,
+      "sha256": "1596E76B5EF383317A3D98535A7AA27DED9D1EADA89B4E42B62C5400F71F72A1"
     },
     {
       "scope": "privileged",
@@ -145,8 +145,15 @@
       "scope": "privileged",
       "file": "bin/zapret/hosts.txt",
       "source": "bin/zapret/hosts.txt",
-      "bytes": 256,
-      "sha256": "5587E810DED0EDF8D77514A88F944A484038FBF9B1FE5FE32C8E9BA769240AC4"
+      "bytes": 231,
+      "sha256": "337A2FFD11F4BADAF7B8F9CC50AFC7650A9805FCD092DAF08F2DB1E94ABE3274"
+    },
+    {
+      "scope": "privileged",
+      "file": "bin/zapret/adult-fallback-hosts.txt",
+      "source": "bin/zapret/adult-fallback-hosts.txt",
+      "bytes": 309,
+      "sha256": "FD832F1E1A2376588FE363B8A2A684AAA88E025A5B39AE5716F7E17C4FFCAE00"
     },
     {
       "scope": "privileged",

@@ -52,6 +52,7 @@ Source: "..\bin\zapret\WinDivert.dll"; DestDir: "{commonpf}\DirectInternetMethod
 Source: "..\bin\zapret\WinDivert64.sys"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\cygwin1.dll"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\adult-fallback-hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 
 [InstallDelete]
