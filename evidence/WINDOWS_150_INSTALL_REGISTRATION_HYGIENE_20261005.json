@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "changeSet": "windows-install-registration-hygiene",
+  "status": "PASS_HOST_AND_SOURCE_REGRESSION_PENDING_CI",
+  "finding": {
+    "type": "FACT",
+    "confidence": "CONFIRMED",
+    "prestate": {
+      "stalePerUserRegistration": {
+        "hive": "HKCU",
+        "appId": "{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}_is1",
+        "version": "1.0.1",
+        "uninstallExe": "C:\\Users\\Aa.Emad\\AppData\\Local\\Programs\\DirectInternetMethod\\unins000.exe"
+      },
+      "currentAllUsersRegistration": {
+        "hive": "HKLM",
+        "appId": "{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}_is1",
+        "version": "1.5.0",
+        "uninstallExe": "C:\\Users\\Aa.Emad\\AppData\\Local\\Programs\\DirectInternetMethod\\unins001.exe"
+      }
+    },
+    "impact": "Apps & Features could expose duplicate 1.0.1/1.5.0 registrations and the stale uninstaller could target files shared with the current install."
+  },
+  "rootCause": {
+    "status": "PROBABLE",
+    "claim": "Historical per-user installation state remained in HKCU when later all-users installation registered the same AppId in HKLM; Inno Setup therefore retained separate uninstall registration/log identities across install-mode history.",
+    "evidence": "Exact HKCU/HKLM same-AppId registrations and distinct unins000/unins001 pairs observed on the host."
+  },
+  "mutation": {
+    "backupPath": "C:\\Users\\Aa.Emad\\.chatgpt-remote-commander\\backups\\DIM_WINDOWS_INSTALL_REGISTRATION_20261005",
+    "backup": {
+      "legacyRegistryExport": {
+        "file": "legacy-hkcu-uninstall.reg",
+        "sha256": "CFF81C4C0DD8DBE7D1DFDCBB63C7DD56A5F7F5935C006118F896B862BA4C5C3A"
+      },
+      "legacyUninstallerExe": {
+        "file": "unins000.exe",
+        "sha256": "221327E831CC6DE85E15276E51838625345D9BC0DF7B3D0ACAA7AEE627BB7A72"
+      },
+      "legacyUninstallerDat": {
+        "file": "unins000.dat",
+        "sha256": "5C1AB217657F5D5E51836E2FCD075FE0411EA1D1D1B0F453E23B22A26EEF8733"
+      },
+      "prestate": {
+        "file": "prestate.json",
+        "sha256": "C56E9246BB037BA9C4D6681A2563816C00A4C15EF812818E758195154B158555"
+      }
+    },
+    "removed": [
+      "HKCU same-AppId legacy 1.0.1 uninstall registration",
+      "unins000.exe",
+      "unins000.dat"
+    ],
+    "preserved": [
+      "HKLM current 1.5.0 all-users registration",
+      "unins001.exe",
+      "unins001.dat",
+      "DirectInternetMethodSvc and privileged runtime",
+      "network/DNS/routes"
+    ]
+  },
+  "guard": {
+    "added": "tests/windows_install_registration_audit.ps1",
+    "preMutation": "FAIL_ONLY_noSameAppIdPerUserDuplicate",
+    "postMutation": "PASS_ALL_CHECKS",
+    "trackedInstalledReleaseAudit": "tests/windows_installed_release_audit.ps1 delegates to the exact AppId registration guard; the historical local _verify helper is ignored/non-authoritative."
+  },
+  "regression": {
+    "installRegistration": "PASS",
+    "hostResidue": "PASS_STATE_ABSENT_ULA0_NRPT0_BROAD0_CTRLD_STOPPED_MANUAL",
+    "installedRelease": "PASS_1.5.0",
+    "currentUninstaller": "PASS_unins001_present"
+  },
+  "prevention": [
+    "Use exact AppId/HKLM registration checks rather than DisplayName matching.",
+    "Run windows_install_registration_audit.ps1 after installed lifecycle/upgrade maintenance.",
+    "For a future Windows installer release that supports migration from historical per-user installs, explicitly remove/migrate the same-AppId HKCU legacy registration after verifying the current all-users registration."
+  ],
+  "distributionBoundaries": {
+    "authenticode": {
+      "status": "MISSING_EXTERNAL_TRUST_MATERIAL",
+      "fact": "The published Windows v1.5.0 installer is not Authenticode-signed.",
+      "artifactSha256": "544FB1D01242F2670C44CA325A171F5CB4B7E962109A68239BCEECFDB83B266C",
+      "githubReleaseDigest": "sha256:544fb1d01242f2670c44ca325a171f5cb4b7e962109a68239bceecfdb83b266c",
+      "decision": "Do not self-sign as a substitute for a publicly trusted publisher certificate; keep checksum/digest verification and record trusted code-signing as external distribution hardening."
+    },
+    "alternateAdminInstallContext": {
+      "status": "KNOWN_UNPROVEN_ARCHITECTURE_RISK",
+      "fact": "Current Inno Setup source uses PrivilegesRequired=admin together with DefaultDirName={localappdata}.",
+      "methodEvidence": [
+        "https://jrsoftware.org/ishelp/topic_admininstallmode.htm",
+        "https://jrsoftware.org/ishelp/topic_consts.htm",
+        "https://jrsoftware.org/ishelp/topic_setup_privilegesrequired.htm"
+      ],
+      "limitation": "If a standard user supplies credentials for a different administrator at UAC, the per-user install directory may resolve under the elevated account context. This scenario is not validated by current project evidence.",
+      "decision": "Do not re-architect immutable v1.5.0 during a host hygiene fix. Treat broad standard-user/alternate-admin installation support as a separate next-release architecture gate."
+    }
+  },
+  "reuseTargets": [
+    "PROJECT_BRAIN",
+    "Windows upgrade audit",
+    "future installer release",
+    "support diagnostics"
+  ],
+  "exactNextAction": "Commit/push the install-registration guard/evidence change, require protected CI, merge, sync main, then run final authority/residue checks.",
+  "sourceRegression": {
+    "windowsContract": "PASS_INCLUDING_install_registration_guard_and_delegation",
+    "releaseMetadata": "PASS_v1.5.0_2_artifacts",
+    "diffCheck": "PASS",
+    "trackedSyntaxAudit": {
+      "status": "PASS",
+      "powershellParsed": 53,
+      "powershellErrors": 0,
+      "pythonCompiled": 14,
+      "pythonErrors": 0,
+      "dotnetService": "PASS_0_WARNINGS_0_ERRORS",
+      "dotnetGui": "PASS_0_WARNINGS_0_ERRORS",
+      "mergeConflictMarkers": 0,
+      "todoMarkers": 0,
+      "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
+    }
+  }
+}
