@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "changeSet": "router-gateway-vpnbook-credential-refresh",
+  "status": "PASS_DATA_REFRESH_REGRESSION",
+  "finding": {
+    "type": "FACT",
+    "status": "CONFIRMED",
+    "claim": "Bundled VPNBook PPTP password ngzc6a8 (source observed 2026-09-29) became stale after the official provider rotated credentials on 2026-10-05.",
+    "officialSource": "https://www.vpnbook.com/freevpn/pptp-vpn",
+    "officialObservedDate": "2026-10-05",
+    "officialUsername": "vpnbook",
+    "officialPassword": "e5c65ph",
+    "officialHosts": [
+      "pl134.vpnbook.com",
+      "pl140.vpnbook.com",
+      "ca225.vpnbook.com"
+    ]
+  },
+  "decision": {
+    "type": "DECISION",
+    "status": "ACCEPTED",
+    "claim": "Refresh repository data authority only; do not issue a new application release solely for a rotating provider password.",
+    "rationale": "Windows and Linux Router Gateway refresh paths fetch main/router_gateway/providers.json independently of the application release, and attempt direct live VPNBook refresh when reachable."
+  },
+  "prevention": [
+    "Treat rotating provider credentials as data authority, not immutable application release state.",
+    "Provider freshness failures must distinguish upstream/network unavailability from stale bundled data.",
+    "Revalidate official rotating credentials at finalization and meaningful maintenance milestones."
+  ],
+  "exactNextAction": "Commit/push data-authority refresh, require CI, merge to main, then refresh installed caches.",
+  "regression": {
+    "routerGatewayContract": "PASS",
+    "routerGatewayRuntimeSmoke": "PASS",
+    "windowsContract": "PASS",
+    "linuxContract": "PASS",
+    "releaseMetadata": "PASS",
+    "diffCheck": "PASS",
+    "liveEndpointInformational": "VPN Gate L2TP profile endpoint TCP/443 reachable; full L2TP/IPsec handshake remains UNPROVEN by design."
+  }
+}

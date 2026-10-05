@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "Direct Internet Method Router Gateway",
   "version": "1.5.0",
-  "generatedUtc": "2026-10-01T04:40:00Z",
+  "generatedUtc": "2026-10-05T00:00:00Z",
   "policy": {
     "preferredProtocol": "L2TP/IPsec",
     "legacyFallback": "PPTP",
@@ -20,7 +20,8 @@
     {
       "id": "vpnbook",
       "url": "https://www.vpnbook.com/freevpn/pptp-vpn",
-      "observedUtc": "2026-10-01T02:20:00Z"
+      "observedUtc": "2026-10-05T00:00:00Z",
+      "note": "Official PPTP credentials revalidated on 2026-10-05; password is rotating and should be refreshed from the official page when reachable."
     },
     {
       "id": "pilovali",
@@ -114,12 +115,12 @@
       "host": "pl134.vpnbook.com",
       "ip": "",
       "username": "vpnbook",
-      "password": "ngzc6a8",
+      "password": "e5c65ph",
       "preSharedKey": "",
       "security": "MPPE / legacy",
       "observedPingMs": null,
-      "sourceObservedUtc": "2026-09-29T00:00:00Z",
-      "credentialStatus": "CONFIRMED_SOURCE_2026-09-29_ROTATING"
+      "sourceObservedUtc": "2026-10-05T00:00:00Z",
+      "credentialStatus": "CONFIRMED_OFFICIAL_2026-10-05_ROTATING"
     },
     {
       "id": "vpnbook-pl140",
@@ -129,12 +130,12 @@
       "host": "pl140.vpnbook.com",
       "ip": "",
       "username": "vpnbook",
-      "password": "ngzc6a8",
+      "password": "e5c65ph",
       "preSharedKey": "",
       "security": "MPPE / legacy",
       "observedPingMs": null,
-      "sourceObservedUtc": "2026-09-29T00:00:00Z",
-      "credentialStatus": "CONFIRMED_SOURCE_2026-09-29_ROTATING"
+      "sourceObservedUtc": "2026-10-05T00:00:00Z",
+      "credentialStatus": "CONFIRMED_OFFICIAL_2026-10-05_ROTATING"
     },
     {
       "id": "vpnbook-ca225",
@@ -144,12 +145,12 @@
       "host": "ca225.vpnbook.com",
       "ip": "",
       "username": "vpnbook",
-      "password": "ngzc6a8",
+      "password": "e5c65ph",
       "preSharedKey": "",
       "security": "MPPE / legacy",
       "observedPingMs": null,
-      "sourceObservedUtc": "2026-09-29T00:00:00Z",
-      "credentialStatus": "CONFIRMED_SOURCE_2026-09-29_ROTATING"
+      "sourceObservedUtc": "2026-10-05T00:00:00Z",
+      "credentialStatus": "CONFIRMED_OFFICIAL_2026-10-05_ROTATING"
     },
     {
       "id": "pilovali-fr-gravelines",
@@ -194,5 +195,5 @@
       "pptp": "/interface/pptp-client add name=dim-pptp connect-to=<server> user=<user> password=<password> disabled=no"
     }
   ],
-  "dataRevision": 2
+  "dataRevision": 3
 }
