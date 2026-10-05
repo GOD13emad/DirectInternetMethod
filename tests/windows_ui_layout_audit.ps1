@@ -15,6 +15,8 @@ public static class DimUiWin32 {
   public struct RECT { public int Left, Top, Right, Bottom; }
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
   [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
 }
 '@
 Add-Type $src
@@ -22,6 +24,14 @@ $p = if($ProcessId -gt 0){ Get-Process -Id $ProcessId -ErrorAction Stop } else {
 $until=(Get-Date).AddSeconds(12)
 while($p.MainWindowHandle -eq 0 -and (Get-Date) -lt $until){ Start-Sleep -Milliseconds 150; $p.Refresh() }
 if($p.MainWindowHandle -eq 0){ throw 'MAIN_WINDOW_NOT_READY' }
+$wasMinimized=[DimUiWin32]::IsIconic($p.MainWindowHandle)
+if($wasMinimized){
+  [void][DimUiWin32]::ShowWindowAsync($p.MainWindowHandle,9)
+  $restoreUntil=(Get-Date).AddSeconds(5)
+  while([DimUiWin32]::IsIconic($p.MainWindowHandle) -and (Get-Date) -lt $restoreUntil){ Start-Sleep -Milliseconds 100; $p.Refresh() }
+  if([DimUiWin32]::IsIconic($p.MainWindowHandle)){ throw 'WINDOW_RESTORE_TIMEOUT' }
+  Start-Sleep -Milliseconds 250
+}
 $r=New-Object DimUiWin32+RECT
 if(-not [DimUiWin32]::GetWindowRect($p.MainWindowHandle,[ref]$r)){ throw 'GET_WINDOW_RECT_FAILED' }
 $dpi=[int][DimUiWin32]::GetDpiForWindow($p.MainWindowHandle)
@@ -73,10 +83,12 @@ $status=if(@($checks.Values | Where-Object { -not $_ }).Count -eq 0){'PASS'}else
   pid=$p.Id
   title=$p.MainWindowTitle
   dpi=$dpi
+  restoredFromMinimized=$wasMinimized
   window=[ordered]@{widthPx=$w;heightPx=$h;expectedWidthPx=$ew;expectedHeightPx=$eh}
   checks=$checks
   overlaps=$overlaps
   buttons=$rows
   footer=[ordered]@{left=$fr.Left;top=$fr.Top;right=$fr.Right;bottom=$fr.Bottom;offscreen=$footer.Current.IsOffscreen}
 }|ConvertTo-Json -Depth 6
+if($wasMinimized){ [void][DimUiWin32]::ShowWindowAsync($p.MainWindowHandle,6) }
 if($status -ne 'PASS'){exit 31}

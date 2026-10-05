@@ -5,6 +5,8 @@ Final Objective: standalone Windows + Linux direct-connect application with inde
 DoD: PASS_FINAL_RELEASE on both platforms + live install/runtime/rollback validation + hash-pinned artifacts + GitHub main/tag/release published + online-update verification.
 
 ## CURRENT FINAL v1.5.0 adaptive global-access release — 2026-10-05
+- **Post-final independent re-audit (2026-10-05): PASS.** Fresh Windows installed 1.5.0 lifecycle/site matrix and exact rollback PASS; fresh Linux installed app/backend 1.5.0 lifecycle/site matrix and exact rollback PASS. Windows site-card UI audit PASS. A layout-audit false negative was traced to measuring minimized Win32 bounds (160x28); the audit harness now temporarily restores an iconic window for measurement, verifies 1289x632 / 8 buttons / no overlap, then re-minimizes it. This is test-harness hardening only; immutable v1.5.0 product/tag/assets remain unchanged. Fresh raw records: `evidence/WINDOWS_150_POSTFINAL_REVALIDATION_RAW_20261005.json`, `evidence/LINUX_150_POSTFINAL_REVALIDATION_RAW_20261005.json`; summary: `evidence/DIM_150_POSTFINAL_REAUDIT_20261005.json`.
+- **Authority hygiene:** `/home/aliemad/source/repos/DirectInternetMethod` on the Linux laptop is a stale non-Git 1.3.x-era source copy and is explicitly **NOT** release authority; installed v1.5.0 metadata/runtime and canonical Windows Git repository remain authoritative.
 - **Current Accepted Authority:** immutable `v1.5.0` at main/tag commit `78e5726a9235d3c63e8f5fe7b567ce710040034d`, PUBLIC/PUBLISHED/INSTALLED_VERIFIED on Windows + Linux. v1.4.0 is historical authority only.
 - **Mutation Objective:** maximize safe non-VPN/non-proxy direct reachability with explicit built-in coverage, user-managed Custom Sites, selectable Balanced/Compatibility/Strong DPI strategies, and opt-in All Sites scope while preserving no-default-route/no-adapter-DNS invariants.
 - **UI:** Gemini live check added. Adult target is labeled only **Adult site** in Windows/Linux UI; its live check is user-toggleable, persisted per user and defaults OFF.
@@ -310,3 +312,11 @@ Maintenance only. Keep tag `v1.4.0` and its three release assets immutable. Any 
 - 2026-10-01: v1.3.2 public release and both installed hosts verified. Public asset SHA-256 PASS; Windows installed GUI/manifest match release payload with 9 visible-profile runtime regression and both shortcuts; Linux installed user-space files match public ZIP exactly with both shortcuts and clean OFF state.
 
 - **Failure→Prevention (Windows build race):** intermittent `ISCC_EXIT_1`/locked-output behavior was traced to insufficient build serialization/output-settle control, not product source failure. Payload+installer now share an exclusive build lock; installer waits for exclusive output access and requires three stable size samples before hashing. Guarded regression PASSed with exact final installer `544FB1D0…B266C`. Evidence: `evidence/WINDOWS_150_BUILD_RACE_PREVENTION_20261005.json`.
+
+## POST-FINAL RE-AUDIT — 2026-10-05
+- **Status:** PASS_POST_FINAL_REAUDIT; no runtime/product mutation required.
+- **Current installed state:** PASS_ACTIVE, Strong + All Sites. Owned ctrld/winws/WinDivert active; default route unchanged; physical adapter DNS remains 192.168.20.1; WinHTTP remains direct.
+- **Fresh regression:** Windows contract PASS; Linux contract PASS; Router Gateway contract PASS; 9-profile runtime smoke PASS; rejected-component guard PASS; release metadata PASS.
+- **Decision:** preserve immutable v1.5.0 release authority and current active session; no blind Start/Stop/Recovery rerun because the three-cycle installed lifecycle + exact rollback already passed today and current read-only state is healthy.
+- **Evidence:** `evidence/DIM_150_POST_FINAL_REAUDIT_20261005.json`.
+- **Exact Next Action:** none release-critical; next code/runtime change must be a new version/change set.

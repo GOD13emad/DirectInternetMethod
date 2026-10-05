@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.0",
+  "status": "PASS_POST_FINAL_REAUDIT",
+  "authority": {
+    "root": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod",
+    "branch": "main",
+    "headBeforeRecord": "5a4d4e046f125c5c3da8f311cf06390cf18f669d",
+    "tagAuthority": "v1.5.0@78e5726a9235d3c63e8f5fe7b567ce710040034d"
+  },
+  "checks": {
+    "windowsContract": "PASS",
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "routerGatewayRuntimeSmoke": "PASS_9_PROFILES",
+    "rejectedComponentGuard": "PASS",
+    "releaseMetadata": "PASS",
+    "installedRuntime": "PASS_ACTIVE",
+    "installedStrategy": "strong",
+    "installedScope": "all-sites",
+    "defaultRouteMutation": false,
+    "physicalAdapterDnsMutation": false,
+    "winHttpProxy": "Direct access",
+    "winDivertOwnedDriver": "Running"
+  },
+  "decision": "No product/runtime mutation justified. Immutable v1.5.0 remains current release authority; preserve current active session and avoid blind lifecycle reruns.",
+  "confidence": "CONFIRMED",
+  "reuseTargets": ["PROJECT_BRAIN", "future maintenance", "handoff"]
+}
