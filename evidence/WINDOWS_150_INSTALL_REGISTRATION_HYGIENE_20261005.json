@@ -3,7 +3,7 @@
   "date": "2026-10-05",
   "project": "Direct Internet Method",
   "changeSet": "windows-install-registration-hygiene",
-  "status": "PASS_HOST_AND_SOURCE_REGRESSION_PENDING_CI",
+  "status": "PASS_MERGED_CI_HOST_CLEAN",
   "finding": {
     "type": "FACT",
     "confidence": "CONFIRMED",
@@ -104,7 +104,7 @@
     "future installer release",
     "support diagnostics"
   ],
-  "exactNextAction": "Commit/push the install-registration guard/evidence change, require protected CI, merge, sync main, then run final authority/residue checks.",
+  "exactNextAction": "Change Set complete. Re-run tracked install-registration audit after any future Windows installer/upgrade architecture change.",
   "sourceRegression": {
     "windowsContract": "PASS_INCLUDING_install_registration_guard_and_delegation",
     "releaseMetadata": "PASS_v1.5.0_2_artifacts",
@@ -121,5 +121,22 @@
       "todoMarkers": 0,
       "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
     }
+  },
+  "promotion": {
+    "pullRequest": 17,
+    "protectedCiRun": 37315890643,
+    "protectedCi": "PASS",
+    "mainCommit": "51923983f22d5187f6c4285ac07991df081567fa"
+  },
+  "finalHostVerification": {
+    "installedVersion": "1.5.0",
+    "authoritativeRegistration": "HKLM same-AppId only",
+    "stalePerUserDuplicate": false,
+    "currentUninstaller": "unins001.exe present",
+    "directMethodStateExists": false,
+    "ulaCount": 0,
+    "ownedNrptCount": 0,
+    "broadRoutes": 0,
+    "ctrldService": "Stopped/Manual"
   }
 }
