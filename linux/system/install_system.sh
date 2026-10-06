@@ -19,6 +19,8 @@ install -m 0755 "$SRC/app/direct_method_helper.sh" "$ROOT/direct_method_helper.s
 install -m 0755 "$SRC/system/control.sh" "$ROOT/control.sh"
 install -m 0755 "$SRC/system/uninstall_system.sh" "$ROOT/uninstall_system.sh"
 install -m 0644 "$SRC/app/hosts.txt" "$ROOT/direct_hosts.txt"
+install -m 0644 "$SRC/app/adult_hosts_fallback.txt" "$ROOT/adult_hosts_fallback.txt"
+install -m 0644 "$SRC/app/strong_override_hosts.txt" "$ROOT/strong_override_hosts.txt"
 install -m 0755 "$SRC/runtime/ctrld" "$ROOT/runtime/usr/bin/ctrld"
 install -m 0755 "$SRC/runtime/nfqws" "$ROOT/runtime/usr/bin/nfqws"
 install -m 0644 "$SRC/licenses/LICENSE-ctrld.txt" "$ROOT/licenses/LICENSE-ctrld.txt"
@@ -80,7 +82,7 @@ test -f /etc/polkit-1/rules.d/49-directinternetmethod.rules
 test "$(cat /etc/directinternetmethod.uid)" = "$USER_UID"
 mkdir -p /var/lib/directinternetmethod
 cat > /var/lib/directinternetmethod/install.json <<EOF
-{"schema":1,"version":"1.5.0","user":"$USER_NAME","uid":$USER_UID,"home":"$HOME_DIR"}
+{"schema":1,"version":"1.5.1","user":"$USER_NAME","uid":$USER_UID,"home":"$HOME_DIR"}
 EOF
 chmod 0644 /var/lib/directinternetmethod/install.json
-echo '{"ok":true,"systemBackend":"installed","version":"1.5.0"}'
+echo '{"ok":true,"systemBackend":"installed","version":"1.5.1"}'

@@ -2,8 +2,8 @@
 from __future__ import annotations
 import hashlib,json,pathlib,zipfile,tempfile,os
 R=pathlib.Path(__file__).resolve().parent
-OUT=R/"delivery"/"DirectInternetMethod_1.5.0_Linux_x86_64.zip"
-ROOT="DirectInternetMethod_1.5.0_Linux_x86_64"
+OUT=R/"delivery"/"DirectInternetMethod_1.5.1_Linux_x86_64.zip"
+ROOT="DirectInternetMethod_1.5.1_Linux_x86_64"
 FILES=[
  ("README.md","README.md"),
  ("linux/install.sh","install.sh"),
@@ -17,6 +17,8 @@ FILES=[
  ("router_gateway/providers.json","app/router_gateway/providers.json"),
  ("linux/app/direct_method_helper.sh","app/direct_method_helper.sh"),
  ("linux/app/hosts.txt","app/hosts.txt"),
+ ("linux/app/adult_hosts_fallback.txt","app/adult_hosts_fallback.txt"),
+ ("linux/app/strong_override_hosts.txt","app/strong_override_hosts.txt"),
  ("linux/app/direct-internet-method.svg","app/direct-internet-method.svg"),
  ("linux/runtime/ctrld","runtime/ctrld"),
  ("linux/runtime/nfqws","runtime/nfqws"),
@@ -36,7 +38,7 @@ for src,dst in FILES:
  if not p.is_file(): raise SystemExit("MISSING:"+src)
  data=payload_bytes(src,dst)
  rows.append({"file":dst,"bytes":len(data),"sha256":sha_bytes(data)})
-manifest={"schema":1,"product":"Direct Internet Method","version":"1.5.0","platform":"linux-x86_64","files":rows}
+manifest={"schema":1,"product":"Direct Internet Method","version":"1.5.1","platform":"linux-x86_64","files":rows}
 OUT.parent.mkdir(parents=True,exist_ok=True)
 fd,tmp_name=tempfile.mkstemp(prefix="dim-build-",suffix=".zip",dir=OUT.parent)
 os.close(fd)

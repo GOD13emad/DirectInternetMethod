@@ -1,5 +1,5 @@
 #define MyAppName "Direct Internet Method"
-#define MyAppVersion "1.5.0"
+#define MyAppVersion "1.5.1"
 #define MyAppPublisher "Direct Internet Method"
 #define MyAppExeName "DirectInternetMethod.exe"
 
@@ -13,7 +13,7 @@ UsePreviousAppDir=yes
 DefaultGroupName=Direct Internet Method
 DisableProgramGroupPage=yes
 OutputDir=..\..\delivery
-OutputBaseFilename=DirectInternetMethod_1.5.0_Windows_Setup
+OutputBaseFilename=DirectInternetMethod_1.5.1_Windows_Setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -52,6 +52,8 @@ Source: "..\bin\zapret\WinDivert.dll"; DestDir: "{commonpf}\DirectInternetMethod
 Source: "..\bin\zapret\WinDivert64.sys"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\cygwin1.dll"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\adult-fallback-hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\strong-override-hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 
 [InstallDelete]

@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "date": "2026-10-06",
+  "project": "Direct Internet Method",
+  "version": "1.5.1",
+  "status": "PASS_FINAL_CANDIDATE_WINDOWS_LINUX_INSTALLED_RUNTIME_METADATA_CI_PENDING",
+  "runtimeSourceCommit": "52e00dd1bd2f635f0241b51e7106af6a2bfe86ee",
+  "artifacts": {
+    "windows": {
+      "file": "DirectInternetMethod_1.5.1_Windows_Setup.exe",
+      "bytes": 157111497,
+      "sha256": "4E1974B5A40F96B49B7B4196FFE963DCDF65B05E4F2B89DE4EC06E794B77EE9B",
+      "exactInstalled": true
+    },
+    "linux": {
+      "file": "DirectInternetMethod_1.5.1_Linux_x86_64.zip",
+      "bytes": 8185606,
+      "sha256": "21FE512444957008DA4D79F540ABCEAD5CC9CB18481F1FF8B620A4B90A9374B8",
+      "crossHostDeterministicRebuild": true,
+      "exactInstalled": true
+    },
+    "checksums": {
+      "file": "SHA256SUMS.txt",
+      "bytes": 221,
+      "sha256": "BE9249CD5E326C2B47BC6DAC79EF62EFC9A2B4ACC9491E223A3DBE0064583DC0"
+    }
+  },
+  "windowsAcceptance": {
+    "status": "PASS_EXACT_INSTALLED_LIFECYCLE_SITE_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
+    "finalMode": "balanced/targeted/adult-on",
+    "matrix": {
+      "YouTube": 204,
+      "OpenAI": 401,
+      "GitHub": 200,
+      "Pornhub": 200,
+      "XVideos": 200,
+      "XNXX": 200,
+      "XHamster": 200,
+      "Reddit": 200,
+      "Wikipedia": 200,
+      "Gemini": 403
+    },
+    "evidence": "evidence/WINDOWS_151_INSTALLED_LIFECYCLE_20261005.json"
+  },
+  "linuxAcceptance": {
+    "status": "PASS_EXACT_INSTALLED_BALANCED_TARGETED_ADULT_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
+    "finalMode": "balanced/targeted/adult-on",
+    "matrix": {
+      "YouTube": 204,
+      "OpenAI": 401,
+      "GitHub": 200,
+      "Pornhub": 200,
+      "XVideos": 200,
+      "XNXX": 200,
+      "XHamster": 200,
+      "Reddit": 200,
+      "Wikipedia": 200,
+      "Gemini": 403
+    },
+    "packageHelperSha256": "DD2E3F37B0B91698D6F220E5953BEC84419C14B8592A4D3547EEC4DF7E802AB0",
+    "strongOverrideSha256": "A706F1035230EDDFB1EA5037A4234AEA351018265F2B359DA4C9E1347A3A900A",
+    "evidence": "evidence/LINUX_151_FINAL_EXACT_INSTALLED_20261006.json"
+  },
+  "adultCoverage": {
+    "status": "PASS_VALIDATED_REPRESENTATIVE_MATRIX_BOTH_HOSTS",
+    "catalog": "HaGeZi NSFW only-domains opt-in bounded catalog + offline fallback",
+    "linuxEdgeFix": "official zapret v72.13 clean blockcheck => multisplit/sniext+1 restricted to XHamster family",
+    "universalGuarantee": "UNPROVABLE for every future domain/CDN edge; representative validated hosts are PASS"
+  },
+  "gemini": {
+    "status": "FAIL_HTTP_403_NOT_ACCEPTED",
+    "windows": "curl + real Chrome HTTP 403",
+    "linux": "HTTP 403",
+    "boundary": "Direct DNS/DPI does not change public egress region/account/product policy; usable Gemini requires separate egress-changing architecture."
+  },
+  "localGates": {
+    "windowsContract": "PASS",
+    "linuxContract": "PASS",
+    "routerGatewayContract": "PASS",
+    "rejectedComponentAudit": "PASS",
+    "releaseMetadata": "PASS",
+    "diffCheck": "PASS",
+    "windowsFullTrackedSyntaxBuild": "PASS_56_PS1_16_PY_DOTNET_0_WARN_0_ERR prior to Linux narrow strategy delta; final exact-head CI required"
+  },
+  "criticalPath": [
+    "commit and push final metadata/evidence",
+    "protected CI on exact final head",
+    "mark PR #20 ready and merge",
+    "tag/publish v1.5.1 with Windows/Linux/SHA256SUMS",
+    "verify public asset digests",
+    "verify installed Windows/Linux authority/update state",
+    "disable 20-hour finalization automation when FINAL is evidence-backed"
+  ]
+}

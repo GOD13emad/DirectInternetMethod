@@ -7,9 +7,9 @@ def txt(rel): return (W/rel).read_text(encoding="utf-8-sig")
 start,stop,recovery,status,iss=map(txt,["app/Start-Direct.ps1","app/Stop-Direct.ps1","app/Recovery.ps1","app/Status.ps1","installer/DirectInternetMethod.iss"])
 gui=txt("gui/MainWindow.xaml.cs"); xaml=txt("gui/MainWindow.xaml")
 svc=txt("service/Program.cs"); client=txt("gui/ServiceClient.cs"); updater=txt("gui/UpdateClient.cs")
-manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt")
-payload_builder=(R/"tests"/"build_windows_150_payload.ps1").read_text(encoding="utf-8-sig")
-installer_builder=(R/"tests"/"build_windows_150_installer.ps1").read_text(encoding="utf-8-sig")
+manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt"); adult_fallback=txt("bin/zapret/adult-fallback-hosts.txt"); strong_override=txt("bin/zapret/strong-override-hosts.txt")
+payload_builder=(R/"tests"/"build_windows_151_payload.ps1").read_text(encoding="utf-8-sig")
+installer_builder=(R/"tests"/"build_windows_151_installer.ps1").read_text(encoding="utf-8-sig")
 install_registration_guard=(R/"tests"/"windows_install_registration_audit.ps1").read_text(encoding="utf-8-sig")
 installed_release_verifier=(R/"tests"/"windows_installed_release_audit.ps1").read_text(encoding="utf-8-sig")
 D={"schema":2,"status":"PASS","checks":{},"hashes":{}}
@@ -23,7 +23,7 @@ check("loopback_index_dynamic", all("DestinationPrefix '::1/128'" in x and "$Loo
 check("no_adapter_dns_set", "Set-DnsClientServerAddress" not in start+stop+recovery)
 check("no_default_route_create", not re.search(r'(New-NetRoute|route\.exe\s+add|netsh\s+interface\s+ipv4\s+add\s+route)',start,re.I))
 check("direct_multiprotocol_engine", all(x in start for x in (
-    "$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443','custom-hostlist','strategy-profile')",
+    "$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443','custom-hostlist','adult-catalog','strategy-profile')",
     "'--wf-tcp=80,443'","'--wf-udp=443'","'--filter-tcp=80'","'--filter-tcp=443'","'--filter-udp=443'","'--filter-l7=quic'",
     "'--dpi-desync-split-pos=method+2'","'--dpi-desync-split-pos=1,midsld'","'--dpi-desync-repeats=6'","'--new'"
 )))
@@ -57,14 +57,17 @@ check("ui_vector_hero", "<Viewbox" in xaml and "زن زندگی آزادی" in x
 check("ui_preferred_startup_size_1289x632", 'Width="1289"' in xaml and 'Height="632"' in xaml and 'SizeToContent="Manual"' in xaml)
 check("ui_layout_rounding", 'UseLayoutRounding="True"' in xaml and 'SnapsToDevicePixels="True"' in xaml)
 check("ui_footer_responsive_no_stack_overflow", '<WrapPanel Orientation="Horizontal">' in xaml and 'TextWrapping="Wrap"' in xaml and '<ColumnDefinition Width="360"/>' in xaml)
-check("target_hostlist_scope", all(x in hostlist.splitlines() for x in ("^gemini.google.com","pornhub.com","phncdn.com")))
-check("critical_global_services_hostlist", all(x in hostlist.splitlines() for x in ("openai.com","chatgpt.com","oaistatic.com","oaiusercontent.com","github.com","githubusercontent.com","githubassets.com")))
+check("target_hostlist_scope", "^gemini.google.com" in hostlist.splitlines() and all(x not in hostlist.splitlines() for x in ("pornhub.com","phncdn.com","xvideos.com","xnxx.com","xhamster.com")) and all(x in adult_fallback.splitlines() for x in ("pornhub.com","phncdn.com","xvideos.com","xvideos-cdn.com","xvcdn.com","xnxx.com","xnxx-cdn.com","xhamster.com","xhcdn.com","redtube.com","rdtcdn.com")))
+check("critical_global_services_hostlist", all(x in hostlist.splitlines() for x in ("openai.com","chatgpt.com","oaistatic.com","oaiusercontent.com","github.com","githubusercontent.com","githubassets.com","reddit.com","redditstatic.com","redditmedia.com","redd.it")))
 check("custom_site_hostlist", all(x in start for x in ("$CustomHosts=Join-Path $UserConfigDir 'custom-hosts.txt'","$RuntimeHostList=Join-Path $env:ProgramData 'DirectInternetMethod\\runtime-hosts.txt'","USER_CONFIG_INVALID","WriteAllLines($RuntimeHostList")) and all(x in gui for x in ("CustomSites_Click","NormalizeCustomSite","customHostsPath","Maximum 256 entries")) and 'Content="Custom Sites"' in xaml and 'DirectInternetMethod\\UserConfig' in iss and 'users-modify' in iss)
 check("strategy_profiles", all(x in start for x in ("$StrategyFile=Join-Path $UserConfigDir 'strategy.txt'","balanced","compatibility","strong","fakedsplit","hostfakesplit","sniext+1","STRATEGY_INVALID")) and all(x in gui for x in ("Strategy_Click","strategyPath","Compatibility","Strong")) and 'Content="Strategy"' in xaml)
 check("all_sites_scope_optional_default_targeted", all(x in start for x in ("$ScopeFile=Join-Path $UserConfigDir 'scope.txt'","$scope='targeted'","all-sites","SCOPE_INVALID","Add-ScopeHost")) and all(x in gui for x in ("scopePath","Apply DPI strategy to all web sites (experimental)","all-sites","targeted")))
-check("ui_gemini_adult_live_checks", all(x in xaml for x in ('Text="Gemini"','Text="Adult site"','x:Name="AdultSiteCheckToggle"','x:Name="GeminiText"','x:Name="AdultSiteText"')) and "pornhub" not in xaml.lower())
+check("ui_gemini_adult_live_checks", all(x in xaml for x in ('Text="Gemini"','Text="Adult coverage"','x:Name="AdultSiteCheckToggle"','x:Name="GeminiText"','x:Name="AdultSiteText"')) and all(x in gui for x in ("https://www.pornhub.com/","https://www.xvideos.com/","https://www.xnxx.com/","https://xhamster.com/","FmtAdult")) and "pornhub" not in xaml.lower())
 check("ui_adult_check_default_off_persisted", all(x in gui for x in ("adultSiteLiveCheck","settings.json","AdultSiteCheckToggle_Changed")) and "bool adultCheckEnabled;" in gui)
-check("ui_live_probe_semantics", "REACHABLE" in gui and 'https://gemini.google.com/' in gui and 'https://www.pornhub.com/' in gui and "adultTask is not null" in gui)
+check("adult_catalog_opt_in", all(x in gui for x in ("adultCoverageEnabled","adult-enabled.txt","adult-hosts.txt","nsfw-onlydomains.txt","EnsureAdultCatalogAsync","Adult catalog is unexpectedly small","xvideos.com","xnxx.com","xhamster.com")) and all(x in start for x in ("$AdultEnabledFile","$AdultHosts","$AdultFallback","adultHostCount","ADULT_CATALOG_INVALID")) and 'adult-fallback-hosts.txt' in iss)
+check("startup_https_health_quorum", all(x in start for x in ("Curl-Probe-Retry","HTTPS_HEALTH_QUORUM_FAIL","$httpsProbePassCount -lt 2","httpsHealth=[ordered]@{required=2")) and all(x not in start for x in ("throw 'YOUTUBE_HTTP80_FAIL'","throw 'YOUTUBE_HTTPS_FAIL'","throw 'OPENAI_HTTPS_FAIL'","throw 'GITHUB_HTTPS_FAIL'")))
+check("adult_strong_override_profile", all(x in strong_override.splitlines() for x in ("xhamster.com","xhamsterlive.com","xhcdn.com","reddit.com","redditstatic.com","redditmedia.com","redd.it")) and all(x in start for x in ("$StrongOverrideHostList","strong-override-hosts.txt","--hostlist='+$StrongOverrideHostList","--dpi-desync=fake,hostfakesplit","--dpi-desync-repeats=11")) and 'strong-override-hosts.txt' in iss)
+check("ui_live_probe_semantics", "FAIL · HTTP" in gui and 'https://gemini.google.com/' in gui and "adultTasks is not null" in gui and "full pages" in gui)
 check("ui_direct_update_service_handoff", 'ServiceClient.Send("update")' in gui and 'ServiceClient.Send("recovery")' in gui and '"handoff"' in gui and "300000" in gui and "DownloadVerifiedAsync" not in gui and "LaunchInstaller" not in gui)
 check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "digest" in updater and "SHA256SUMS.txt" in updater and "DownloadVerifiedAsync" not in updater and "Process.Start" not in updater)
 
@@ -98,19 +101,37 @@ check("installer_bundled_pwsh", '..\\vendor\\pwsh\\*' in iss and 'Privileged\\ru
 check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Recovery did not complete" in iss)
 check("windows_install_registration_guard", all(x in install_registration_guard for x in ("HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall","HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall","noSameAppIdPerUserDuplicate","registeredUninstallerPresent","installedReleaseMatches")))
 check("installed_release_verifier_delegates_registration_guard", "windows_install_registration_audit.ps1" in installed_release_verifier and "Where-Object DisplayName" not in installed_release_verifier and "pwsh.exe" in installed_release_verifier)
-check("windows_build_shared_exclusive_lock", all(x in payload_builder for x in ("windows-150-build.lock","FileShare]::None","WINDOWS_150_BUILD_LOCKED")) and all(x in installer_builder for x in ("windows-150-build.lock","FileShare]::None","WINDOWS_150_BUILD_LOCKED")))
+check("windows_build_shared_exclusive_lock", all(x in payload_builder for x in ("windows-151-build.lock","FileShare]::None","WINDOWS_151_BUILD_LOCKED")) and all(x in installer_builder for x in ("windows-151-build.lock","FileShare]::None","WINDOWS_151_BUILD_LOCKED")))
 check("windows_installer_output_stability_guard", all(x in installer_builder for x in ("OUTPUT_STILL_LOCKED_AFTER_ISCC_EXIT","@($Sizes | Select-Object -Unique).Count","OUTPUT_SIZE_UNSTABLE_","outputStableSamples")))
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.5.0")
+check("manifest_version", manifest.get("version")=="1.5.1")
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)
+check("manifest_adult_fallback", ("privileged","bin/zapret/adult-fallback-hosts.txt") in files)
+check("manifest_strong_override", ("privileged","bin/zapret/strong-override-hosts.txt") in files)
 check("manifest_service", ("privileged","app/DirectInternetMethod.Service.exe") in files)
 check("manifest_no_helper", not any(x[1].endswith("Helper.exe") for x in files))
 check("manifest_bundled_pwsh", manifest.get("bundledPowerShellVersion")=="7.6.6" and manifest.get("bundledPowerShellArchiveSha256")=="02FE458BE20493FBDF43F61EA20610B811EE6C738AB1676C61B9CFCD1A33C860" and ("privileged","runtime/pwsh/pwsh.exe") in files)
 check("manifest_bundled_pwsh_tree", sum(1 for s,f in files if s=="privileged" and f.startswith("runtime/pwsh/")) >= 650)
 check("manifest_no_legacy_launchers", not any(scope=="user" and (f.endswith(".cmd") or f in {"app/ControlPanel.ps1","app/Toggle.ps1"}) for scope,f in files))
+
+pin_paths={
+"ctrld.exe":"bin/ctrld/ctrld.exe",
+"ctrld.toml":"bin/ctrld/ctrld.toml",
+"winws.exe":"bin/zapret/winws.exe",
+"WinDivert.dll":"bin/zapret/WinDivert.dll",
+"WinDivert64.sys":"bin/zapret/WinDivert64.sys",
+"cygwin1.dll":"bin/zapret/cygwin1.dll",
+"hosts.txt":"bin/zapret/hosts.txt",
+"adult-fallback-hosts.txt":"bin/zapret/adult-fallback-hosts.txt",
+"strong-override-hosts.txt":"bin/zapret/strong-override-hosts.txt",
+}
+start_pins=dict(re.findall(r"'([^']+)'='([0-9A-F]{64})'",start))
+pin_actual={k:hashlib.sha256((W/v).read_bytes()).hexdigest().upper() for k,v in pin_paths.items()}
+D["selfIntegrityPins"]={"declared":{k:start_pins.get(k) for k in pin_paths},"actual":pin_actual}
+check("start_self_integrity_pins",all(start_pins.get(k)==v for k,v in pin_actual.items()))
 
 expected={
 "ctrld":"FC966FD7DD5EE850A9709F632789CFB5BBC06C45D903D24B8ECFCE3306B658CD",

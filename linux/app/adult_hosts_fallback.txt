@@ -1,0 +1,26 @@
+# Built-in offline fallback for opt-in Adult coverage.
+# The maintained full catalog is downloaded at runtime and is not redistributed in the release.
+xvideos.com
+xvideos4.com
+xvideos-cdn.com
+xvcdn.com
+xv-cdn.com
+xnxx.com
+xnxx-cdn.com
+xhamster.com
+xhamsterlive.com
+xhcdn.com
+pornhub.com
+pornhubpremium.com
+phncdn.com
+phprcdn.com
+redtube.com
+rdtcdn.com
+youporn.com
+ypncdn.com
+thumbzilla.com
+tube8.com
+spankbang.com
+sb-cd.com
+eporner.com
+tnaflix.com

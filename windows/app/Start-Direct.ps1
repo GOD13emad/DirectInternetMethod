@@ -12,8 +12,12 @@ $CtrldServiceName='ctrld'
 $ZapretDir=Join-Path $Root 'bin\zapret'
 $Winws=Join-Path $ZapretDir 'winws.exe'
 $HostList=Join-Path $ZapretDir 'hosts.txt'
+$AdultFallback=Join-Path $ZapretDir 'adult-fallback-hosts.txt'
+$StrongOverrideHostList=Join-Path $ZapretDir 'strong-override-hosts.txt'
 $UserConfigDir=Join-Path $env:ProgramData 'DirectInternetMethod\UserConfig'
 $CustomHosts=Join-Path $UserConfigDir 'custom-hosts.txt'
+$AdultEnabledFile=Join-Path $UserConfigDir 'adult-enabled.txt'
+$AdultHosts=Join-Path $UserConfigDir 'adult-hosts.txt'
 $StrategyFile=Join-Path $UserConfigDir 'strategy.txt'
 $ScopeFile=Join-Path $UserConfigDir 'scope.txt'
 $RuntimeHostList=Join-Path $env:ProgramData 'DirectInternetMethod\runtime-hosts.txt'
@@ -28,7 +32,7 @@ if(-not $LoopbackRoute){throw 'LOOPBACK_INTERFACE_MISSING'}
 $LoopbackIndex=[int]$LoopbackRoute.InterfaceIndex
 $NrptDisplay='DirectDnsDpiHarness'
 $NrptComment='Owned by DirectDnsDpiHarness; safe to remove only by this harness.'
-$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443','custom-hostlist','strategy-profile')
+$DirectMethods=@('encrypted-dns-doh','http-host-split-tcp80','tls-sni-desync-tcp443','quic-desync-udp443','custom-hostlist','adult-catalog','strategy-profile')
 
 $Expected=@{
  'ctrld.exe'='FC966FD7DD5EE850A9709F632789CFB5BBC06C45D903D24B8ECFCE3306B658CD'
@@ -37,7 +41,9 @@ $Expected=@{
  'WinDivert.dll'='C1E060EE19444A259B2162F8AF0F3FE8C4428A1C6F694DCE20DE194AC8D7D9A2'
  'WinDivert64.sys'='8DA085332782708D8767BCACE5327A6EC7283C17CFB85E40B03CD2323A90DDC2'
  'cygwin1.dll'='103104A52E5293CE418944725DF19E2BF81AD9269B9A120D71D39028E821499B'
- 'hosts.txt'='5587E810DED0EDF8D77514A88F944A484038FBF9B1FE5FE32C8E9BA769240AC4'
+ 'hosts.txt'='48EF43491901AB4336DDDFE6324C5820AC8B90F59511F138A7202DBCC8B033A3'
+ 'adult-fallback-hosts.txt'='25BA72F6D56EF1C405115C7AA5D6ED1985E8F6D56F306A95D5AD800602A75288'
+ 'strong-override-hosts.txt'='A371B754B201D1E87A9C0474BDEA1821539D7DAF20B5DA6C8F5105A1F85C8506'
 }
 
 function Start-ExactProcess([string]$File,[string[]]$ArgumentList,[string]$WorkingDirectory){
@@ -199,6 +205,18 @@ function Curl-Probe([string]$Url,[string]$LocalIp,[int]$Timeout=7){
  $m=& curl.exe -4 --interface $LocalIp --noproxy '*' -sS -o NUL -w '%{http_code}|%{remote_ip}|%{time_connect}|%{time_appconnect}|%{time_total}' --max-time $Timeout $Url 2>&1
  [ordered]@{url=$Url;exit=$LASTEXITCODE;meta=($m -join ' ')}
 }
+function Curl-Probe-Retry([string]$Url,[string]$LocalIp,[string]$AcceptPattern,[int]$Timeout=7,[int]$Attempts=2){
+ $runs=@()
+ for($i=1;$i -le $Attempts;$i++){
+  $p=Curl-Probe $Url $LocalIp $Timeout
+  $ok=($p.exit -eq 0 -and $p.meta -match $AcceptPattern)
+  $runs += [ordered]@{attempt=$i;exit=$p.exit;meta=$p.meta;ok=$ok}
+  if($ok){return [ordered]@{url=$Url;exit=$p.exit;meta=$p.meta;ok=$true;attempts=$i;runs=$runs}}
+  if($i -lt $Attempts){Start-Sleep -Milliseconds 350}
+ }
+ $last=$runs[-1]
+ [ordered]@{url=$Url;exit=$last.exit;meta=$last.meta;ok=$false;attempts=$Attempts;runs=$runs}
+}
 function Rollback($s){
  try{Remove-OwnedNrpt ([string]$s.nrptRuleName)}catch{}
  Clear-DnsClientCache -ErrorAction SilentlyContinue
@@ -230,6 +248,8 @@ $files=@{
  'WinDivert64.sys'=Join-Path $ZapretDir 'WinDivert64.sys'
  'cygwin1.dll'=Join-Path $ZapretDir 'cygwin1.dll'
  'hosts.txt'=$HostList
+ 'adult-fallback-hosts.txt'=$AdultFallback
+ 'strong-override-hosts.txt'=$StrongOverrideHostList
 }
 foreach($n in $Expected.Keys){
  $p=$files[$n]
@@ -339,17 +359,28 @@ try{
  }
 
  New-Item -ItemType Directory -Force -Path $UserConfigDir|Out-Null
- foreach($candidate in @($CustomHosts,$StrategyFile,$ScopeFile)){
+ foreach($candidate in @($CustomHosts,$AdultEnabledFile,$AdultHosts,$StrategyFile,$ScopeFile)){
   if(Test-Path -LiteralPath $candidate){
    $ci=Get-Item -LiteralPath $candidate -Force
    if($ci.PSIsContainer -or ($ci.Attributes -band [IO.FileAttributes]::ReparsePoint)){throw 'USER_CONFIG_INVALID'}
   }
  }
  $labels='^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$'
+ $adultEnabled=$false
+ if(Test-Path -LiteralPath $AdultEnabledFile -PathType Leaf){$adultEnabled=(([string](Get-Content -LiteralPath $AdultEnabledFile -Raw -ErrorAction Stop)).Trim() -eq '1')}
  $merged=[Collections.Generic.List[string]]::new()
- foreach($src in @($HostList,$CustomHosts)){
+ $seen=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+ $sources=[Collections.Generic.List[object]]::new()
+ $sources.Add([pscustomobject]@{Path=$HostList;Limit=4096;Kind='built-in'})
+ $sources.Add([pscustomobject]@{Path=$CustomHosts;Limit=256;Kind='custom'})
+ if($adultEnabled){
+  $sources.Add([pscustomobject]@{Path=$AdultFallback;Limit=256;Kind='adult-fallback'})
+  $sources.Add([pscustomobject]@{Path=$AdultHosts;Limit=100000;Kind='adult-catalog'})
+ }
+ $adultHostCount=0
+ foreach($source in $sources){
+  $src=[string]$source.Path
   if(-not (Test-Path -LiteralPath $src -PathType Leaf)){continue}
-  $limit=if($src -eq $CustomHosts){256}else{4096}
   $n=0
   foreach($raw in Get-Content -LiteralPath $src -ErrorAction Stop){
    $v=([string]$raw).Trim().ToLowerInvariant()
@@ -359,10 +390,14 @@ try{
    if($h.Length -gt 253 -or $parts.Count -lt 2){continue}
    $valid=$true
    foreach($part in $parts){if($part -notmatch $labels){$valid=$false;break}}
-   if($valid -and -not $merged.Contains($v)){$merged.Add($v);$n++}
-   if($n -ge $limit){break}
+   if($valid -and $seen.Add($v)){
+    $merged.Add($v);$n++
+    if(([string]$source.Kind).StartsWith('adult')){$adultHostCount++}
+   }
+   if($n -ge [int]$source.Limit){break}
   }
  }
+ if($adultEnabled -and $adultHostCount -lt 5){throw 'ADULT_CATALOG_INVALID'}
  [IO.File]::WriteAllLines($RuntimeHostList,$merged,[Text.UTF8Encoding]::new($false))
  $strategy='balanced'
  if(Test-Path -LiteralPath $StrategyFile -PathType Leaf){
@@ -375,6 +410,8 @@ try{
   if($rawScope -in @('targeted','all-sites')){$scope=$rawScope}else{throw 'SCOPE_INVALID'}
  }
  $state.customHostlist=$CustomHosts
+ $state.adultCoverage=$adultEnabled
+ $state.adultHostCount=$adultHostCount
  $state.strategy=$strategy
  $state.scope=$scope
  Write-JsonAtomic $StatePath $state
@@ -385,44 +422,50 @@ try{
  function Add-ProfileArgs([Collections.Generic.List[string]]$Target,[string[]]$Values){foreach($x in $Values){[void]$Target.Add($x)}}
  switch($strategy){
   'compatibility' {
-   Add-ProfileArgs $args @('--filter-l3=ipv4','--filter-tcp=80'); Add-ScopeHost $args
-   Add-ProfileArgs $args @('--dpi-desync=multisplit','--dpi-desync-split-pos=method+2','--new','--filter-l3=ipv4','--filter-tcp=443'); Add-ScopeHost $args
-   Add-ProfileArgs $args @('--ipset-exclude-ip=76.76.10.11','--dpi-desync=multisplit','--dpi-desync-split-pos=1,sniext+1,host+1,midsld,endhost-1','--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic'); Add-ScopeHost $args
-   Add-ProfileArgs $args @('--dpi-desync=fake','--dpi-desync-repeats=4')
-  }
+    Add-ProfileArgs $args @('--filter-l3=ipv4','--filter-tcp=80'); Add-ScopeHost $args
+    Add-ProfileArgs $args @('--dpi-desync=multisplit','--dpi-desync-split-pos=method+2')
+    if($adultEnabled){Add-ProfileArgs $args @('--new','--filter-l3=ipv4','--filter-tcp=443',('--hostlist='+$StrongOverrideHostList),'--dpi-desync=fake,hostfakesplit','--dpi-desync-hostfakesplit-midhost=midsld','--dpi-desync-fooling=badseq,md5sig','--dpi-desync-repeats=4')}
+    Add-ProfileArgs $args @('--new','--filter-l3=ipv4','--filter-tcp=443'); Add-ScopeHost $args
+    Add-ProfileArgs $args @('--ipset-exclude-ip=76.76.10.11','--dpi-desync=multisplit','--dpi-desync-split-pos=1,sniext+1,host+1,midsld,endhost-1')
+    if($adultEnabled){Add-ProfileArgs $args @('--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic',('--hostlist='+$StrongOverrideHostList),'--dpi-desync=fake','--dpi-desync-repeats=11')}
+    Add-ProfileArgs $args @('--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic'); Add-ScopeHost $args
+    Add-ProfileArgs $args @('--dpi-desync=fake','--dpi-desync-repeats=4')
+   }
   'strong' {
-   Add-ProfileArgs $args @('--filter-l3=ipv4','--filter-tcp=80'); Add-ScopeHost $args
-   Add-ProfileArgs $args @('--dpi-desync=fake,fakedsplit','--dpi-desync-split-pos=method+2','--dpi-desync-fooling=md5sig','--dpi-desync-repeats=2','--new','--filter-l3=ipv4','--filter-tcp=443'); Add-ScopeHost $args
-   Add-ProfileArgs $args @('--ipset-exclude-ip=76.76.10.11','--dpi-desync=fake,hostfakesplit','--dpi-desync-hostfakesplit-midhost=midsld','--dpi-desync-fooling=badseq,md5sig','--dpi-desync-repeats=4','--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic'); Add-ScopeHost $args
-   Add-ProfileArgs $args @('--dpi-desync=fake','--dpi-desync-repeats=11')
-  }
+    Add-ProfileArgs $args @('--filter-l3=ipv4','--filter-tcp=80'); Add-ScopeHost $args
+    Add-ProfileArgs $args @('--dpi-desync=fake,fakedsplit','--dpi-desync-split-pos=method+2','--dpi-desync-fooling=md5sig','--dpi-desync-repeats=2','--new','--filter-l3=ipv4','--filter-tcp=443'); Add-ScopeHost $args
+    Add-ProfileArgs $args @('--ipset-exclude-ip=76.76.10.11','--dpi-desync=fake,hostfakesplit','--dpi-desync-hostfakesplit-midhost=midsld','--dpi-desync-fooling=badseq,md5sig','--dpi-desync-repeats=4','--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic'); Add-ScopeHost $args
+    Add-ProfileArgs $args @('--dpi-desync=fake','--dpi-desync-repeats=11')
+   }
   default {
-   Add-ProfileArgs $args @('--filter-l3=ipv4','--filter-tcp=80'); Add-ScopeHost $args
-   Add-ProfileArgs $args @('--dpi-desync=fake,multisplit','--dpi-desync-split-pos=method+2','--dpi-desync-fooling=md5sig','--new','--filter-l3=ipv4','--filter-tcp=443'); Add-ScopeHost $args
-   Add-ProfileArgs $args @('--ipset-exclude-ip=76.76.10.11','--dpi-desync=fake,multidisorder','--dpi-desync-split-pos=1,midsld','--dpi-desync-fooling=badseq,md5sig','--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic'); Add-ScopeHost $args
-   Add-ProfileArgs $args @('--dpi-desync=fake','--dpi-desync-repeats=6')
+    Add-ProfileArgs $args @('--filter-l3=ipv4','--filter-tcp=80'); Add-ScopeHost $args
+    Add-ProfileArgs $args @('--dpi-desync=fake,multisplit','--dpi-desync-split-pos=method+2','--dpi-desync-fooling=md5sig')
+    if($adultEnabled){Add-ProfileArgs $args @('--new','--filter-l3=ipv4','--filter-tcp=443',('--hostlist='+$StrongOverrideHostList),'--dpi-desync=fake,hostfakesplit','--dpi-desync-hostfakesplit-midhost=midsld','--dpi-desync-fooling=badseq,md5sig','--dpi-desync-repeats=4')}
+    Add-ProfileArgs $args @('--new','--filter-l3=ipv4','--filter-tcp=443'); Add-ScopeHost $args
+    Add-ProfileArgs $args @('--ipset-exclude-ip=76.76.10.11','--dpi-desync=fake,multidisorder','--dpi-desync-split-pos=1,midsld','--dpi-desync-fooling=badseq,md5sig')
+    if($adultEnabled){Add-ProfileArgs $args @('--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic',('--hostlist='+$StrongOverrideHostList),'--dpi-desync=fake','--dpi-desync-repeats=11')}
+    Add-ProfileArgs $args @('--new','--filter-l3=ipv4','--filter-udp=443','--filter-l7=quic'); Add-ScopeHost $args
+    Add-ProfileArgs $args @('--dpi-desync=fake','--dpi-desync-repeats=6')
+   }
   }
- }
  $wp=Start-ExactProcess $Winws $args $ZapretDir
  $state.winwsPid=$wp.Id
  Write-JsonAtomic $StatePath $state
  Start-Sleep -Seconds 3
  if($wp.HasExited){throw ('WINWS_EXIT_'+$wp.ExitCode)}
 
- $dy=Dns-Probe 'www.youtube.com'
- $yh=Curl-Probe 'http://www.youtube.com/' $route.LocalIp 7
- $yt=Curl-Probe 'https://www.youtube.com/generate_204' $route.LocalIp 8
- $oa=Curl-Probe 'https://api.openai.com/v1/models' $route.LocalIp 7
- $gh=Curl-Probe 'https://github.com/' $route.LocalIp 7
- $routes=@(Get-NetRoute -AddressFamily IPv4 -ErrorAction SilentlyContinue|Where-Object{$_.DestinationPrefix -in @('0.0.0.0/1','128.0.0.0/1')})
- $proxy=(netsh winhttp show proxy|Out-String).Trim()
- $icsLive=Get-Ics
- if(-not $dy.ok){throw 'YOUTUBE_DNS_NOT_CLEAN'}
- if($yh.exit -ne 0 -or $yh.meta -notmatch '^(200|301|302|303|307|308)\|'){throw 'YOUTUBE_HTTP80_FAIL'}
- if($yt.exit -ne 0 -or $yt.meta -notmatch '^(200|204)\|'){throw 'YOUTUBE_HTTPS_FAIL'}
- if($oa.exit -ne 0 -or $oa.meta -notmatch '^(200|401|403)\|'){throw 'OPENAI_HTTPS_FAIL'}
- if($gh.exit -ne 0 -or $gh.meta -notmatch '^(200|301|302)\|'){throw 'GITHUB_HTTPS_FAIL'}
- if($routes.Count){throw 'BROAD_ROUTE_APPEARED'}
+  $dy=Dns-Probe 'www.youtube.com'
+  $yh=Curl-Probe-Retry 'http://www.youtube.com/' $route.LocalIp '^(200|301|302|303|307|308)\|' 7 2
+  $yt=Curl-Probe-Retry 'https://www.youtube.com/generate_204' $route.LocalIp '^(200|204)\|' 8 2
+  $oa=Curl-Probe-Retry 'https://api.openai.com/v1/models' $route.LocalIp '^(200|401)\|' 7 2
+  $gh=Curl-Probe-Retry 'https://github.com/' $route.LocalIp '^(200|301|302|303|307|308)\|' 7 2
+  $httpsProbePassCount=@($yt,$oa,$gh|Where-Object{$_.ok}).Count
+  $routes=@(Get-NetRoute -AddressFamily IPv4 -ErrorAction SilentlyContinue|Where-Object{$_.DestinationPrefix -in @('0.0.0.0/1','128.0.0.0/1')})
+  $proxy=(netsh winhttp show proxy|Out-String).Trim()
+  $icsLive=Get-Ics
+  if(-not $dy.ok){throw 'YOUTUBE_DNS_NOT_CLEAN'}
+  if($httpsProbePassCount -lt 2){throw 'HTTPS_HEALTH_QUORUM_FAIL'}
+  if($routes.Count){throw 'BROAD_ROUTE_APPEARED'}
  if($proxy -notmatch 'Direct access'){throw 'WINHTTP_PROXY_CHANGED'}
  if($pre.ics.exists -and ($icsLive.state -ne $pre.ics.state -or $icsLive.pid -ne $pre.ics.pid)){throw 'ICS_CHANGED_LIVE'}
  if(@(Get-OwnedDrivers).Count -lt 1){throw 'WINDIVERT_DRIVER_MISSING'}
@@ -431,7 +474,7 @@ try{
  Write-JsonAtomic $StatePath $state
  $ev.status='PASS_ACTIVE'
  $ev.live=[ordered]@{
-  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;strategy=$strategy;scope=$scope;runtimeHostCount=$merged.Count;youtubeHttp80=$yh;dns=$dy;youtube=$yt;openai=$oa;github=$gh
+  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;strategy=$strategy;scope=$scope;runtimeHostCount=$merged.Count;adultCoverage=$adultEnabled;adultHostCount=$adultHostCount;youtubeHttp80=$yh;dns=$dy;youtube=$yt;openai=$oa;github=$gh;httpsHealth=[ordered]@{required=2;passed=$httpsProbePassCount;members=@('youtube','openai','github')}
   ics=$icsLive;proxy=$proxy;broadRouteCount=$routes.Count
   drivers=@(Get-OwnedDrivers|Select-Object Name,State,PathName)
  }

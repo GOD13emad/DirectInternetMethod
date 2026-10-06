@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.1",
+  "status": "PASS_CROSS_HOST_DETERMINISTIC_REBUILD",
+  "sourceCommit": "9a5c5912e5ff6d8578776ad8b9381a2c6ca0dbe9",
+  "finding": {
+    "type": "FAILURE_FIXED",
+    "firstLocalBuild": {
+      "bytes": 8186498,
+      "sha256": "EB7BAEA9620DAC8A910E087AD1671FA3941F4739C3B41549BAD7CC65556DA871"
+    },
+    "freshCloneBuild": {
+      "bytes": 8183518,
+      "sha256": "2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA"
+    },
+    "rootCause": "The first local package was built before the final README/release-authority edits were committed; README.md is part of the Linux archive payload.",
+    "prevention": "Treat only a build from a clean committed source state as candidate authority and require cross-host exact SHA reproduction before promotion."
+  },
+  "postFix": {
+    "windowsRebuildFromCurrentWorkingTree": {
+      "bytes": 8183518,
+      "sha256": "2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA"
+    },
+    "linuxFreshClone": {
+      "bytes": 8183518,
+      "sha256": "2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA"
+    },
+    "exactMatch": true
+  },
+  "exactNextAction": "Commit corrected artifact metadata, then rebuild from the new metadata-only descendant and install exact reproducible Linux archive for lifecycle acceptance."
+}

@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.1",
+  "status": "PASS_EXACT_LOCAL_WINDOWS_CANDIDATE_DEFENDER_SCAN",
+  "defender": {
+    "engine": "Microsoft Defender MpCmdRun",
+    "antivirusEnabled": true,
+    "realTimeProtectionEnabled": true,
+    "platform": "4.18.26080.4-0"
+  },
+  "candidate": {
+    "installer": {
+      "path": "delivery/DirectInternetMethod_1.5.1_Windows_Setup.exe",
+      "bytes": 157104795,
+      "sha256": "F210AD4663757727452BD6A8ADBDF0288EE7F9867EA5F67BE5322C8B6DB7281A",
+      "scanExit": 0,
+      "scanResult": "NO_THREATS"
+    },
+    "acceptedRuntimeDirectory": {
+      "path": "windows/bin/zapret",
+      "scanExit": 0,
+      "scanResult": "NO_THREATS"
+    }
+  },
+  "rejectedComparison": {
+    "component": "zapret2 v1.0.5.2 evaluation archive",
+    "status": "REJECTED_NOT_SHIPPED"
+  },
+  "exactNextAction": "Require protected CI and exact installed-host acceptance before release promotion."
+}

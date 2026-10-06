@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "date": "2026-10-06",
+  "project": "Direct Internet Method",
+  "status": "CURRENT_FINAL_CANDIDATE_METADATA_COMMIT_PENDING",
+  "authority": {
+    "writerRoot": "C:\\Users\\Aa.Emad\\source\\repos\\DirectInternetMethod",
+    "branch": "feature/adult-coverage-151",
+    "head": "719a4a92b3a9652fc506e9a840058b6eec1bc584",
+    "remoteHead": "719a4a92b3a9652fc506e9a840058b6eec1bc584",
+    "acceptedRelease": "v1.5.0 immutable until v1.5.1 publication",
+    "windowsInstalled": "v1.5.1 corrected pre-final artifact runtime PASS; final metadata artifact rebuild pending",
+    "linuxInstalled": "v1.5.1 lifecycle/rollback PASS"
+  },
+  "findings": [
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Windows corrected v1.5.1 candidate passed self-integrity, Start done/0, balanced/targeted ACTIVE with Adult coverage and stable representative HTTP 200 probes; cold XHamster variability is traced to one unreachable Cloudflare edge, not a failed DPI profile."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Gemini remains HTTP 403 in curl and real Chrome on the current public egress. Direct-only architecture cannot change that egress and therefore cannot truthfully promise a usable Gemini page."
+    },
+    {
+      "type": "ROOT_CAUSE",
+      "status": "CONFIRMED",
+      "claim": "Earlier Windows v1.5.1 Start failure was packaging integrity-pin drift. Source and contract regression now prevent declared Start-Direct pins from diverging from packaged runtime files."
+    },
+    {
+      "type": "DECISION",
+      "status": "CONFIRMED",
+      "claim": "Do not promote global Strong, CDN IP pinning, or system route hacks. Keep balanced/targeted default with host-specific strong overrides and maintained Adult catalog; publish only after one final exact-artifact rebuild/install/CI gate."
+    }
+  ],
+  "decision": {
+    "type": "DECISION",
+    "status": "CURRENT",
+    "claim": "Do not promote 1.5.1 yet. Preserve v1.5.0. Highest gate is exact current-candidate installed acceptance; prefer Linux once source transfer/remote synchronization is available, otherwise perform bounded Windows Stop→install→Start/rollback acceptance only when necessary."
+  },
+  "evidence": [
+    "evidence/DIM_151_ADULT_FULLPAGE_AND_GEMINI_403_20261005.json",
+    "evidence/WINDOWS_151_INSTALLED_LIFECYCLE_20261005.json",
+    "evidence/WINDOWS_151_INSTALLER_BUILD_20261005.json",
+    "evidence/LINUX_151_INSTALLED_LIFECYCLE_20261005.json",
+    "tests/windows_contract_audit.py",
+    "tests/windows_installed_151_lifecycle.ps1"
+  ],
+  "exactNextAction": "Commit final candidate metadata/evidence, rebuild from that commit, exact-install Windows artifact, run live Start/site/rollback and protected CI, then merge/publish only if exact-head gates pass."
+}

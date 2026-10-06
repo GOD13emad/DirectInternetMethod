@@ -14,7 +14,11 @@ DM="$STATE_BASE/directmethod"
 STATE="$DM/state.json"
 CTRLD_CFG="$DM/ctrld.toml"
 HOSTS="$APP_HOME/direct_hosts.txt"
+ADULT_FALLBACK="$APP_HOME/adult_hosts_fallback.txt"
+STRONG_OVERRIDE="$APP_HOME/strong_override_hosts.txt"
 CUSTOM_HOSTS="$STATE_BASE/custom-hosts.txt"
+ADULT_ENABLED="$STATE_BASE/adult-enabled.txt"
+ADULT_HOSTS="$STATE_BASE/adult-hosts.txt"
 STRATEGY_FILE="$STATE_BASE/strategy.txt"
 SCOPE_FILE="$STATE_BASE/scope.txt"
 CTRLD="$BIN/ctrld"
@@ -285,35 +289,55 @@ case "$ACTION" in
       exit 72
     fi
 
-    if [ -L "$CUSTOM_HOSTS" ]; then
-      echo '{"ok":false,"error":"CUSTOM_HOSTLIST_SYMLINK_REJECTED"}'
-      exit 74
+    for candidate in "$CUSTOM_HOSTS" "$ADULT_ENABLED" "$ADULT_HOSTS"; do
+      if [ -L "$candidate" ]; then
+        echo '{"ok":false,"error":"USER_HOSTLIST_SYMLINK_REJECTED"}'
+        exit 74
+      fi
+    done
+    ADULT_ON=0
+    if [ -f "$ADULT_ENABLED" ] && [ "$(tr -d '\r\n[:space:]' <"$ADULT_ENABLED")" = "1" ]; then
+      ADULT_ON=1
+      [ -f "$STRONG_OVERRIDE" ] || { echo '{"ok":false,"error":"STRONG_OVERRIDE_HOSTLIST_MISSING"}'; exit 74; }
     fi
-    python3 - "$HOSTS" "$CUSTOM_HOSTS" "$RUN_HOSTS" <<'PY'
+    ADULT_COUNT="$(
+    python3 - "$HOSTS" "$CUSTOM_HOSTS" "$ADULT_FALLBACK" "$ADULT_HOSTS" "$ADULT_ON" "$RUN_HOSTS" <<'PY'
 import pathlib,re,sys
 built=pathlib.Path(sys.argv[1])
 custom=pathlib.Path(sys.argv[2])
-out=pathlib.Path(sys.argv[3])
+adult_fallback=pathlib.Path(sys.argv[3])
+adult_hosts=pathlib.Path(sys.argv[4])
+adult_on=sys.argv[5]=="1"
+out=pathlib.Path(sys.argv[6])
 label=re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 def valid(v):
     h=v[1:] if v.startswith("^") else v
     if len(h)>253 or "." not in h:
         return False
     return all(label.fullmatch(x) for x in h.split("."))
-vals=[]
-for p,limit in ((built,4096),(custom,256)):
+vals=[];seen=set();adult_count=0
+sources=[(built,4096,False),(custom,256,False)]
+if adult_on:
+    sources += [(adult_fallback,256,True),(adult_hosts,100000,True)]
+for p,limit,is_adult in sources:
     if not p.is_file():
         continue
+    accepted=0
     for raw in p.read_text(encoding="utf-8",errors="ignore").splitlines():
         v=raw.strip().lower()
         if not v or v.startswith("#"):
             continue
-        if valid(v) and v not in vals:
-            vals.append(v)
-        if len(vals)>=limit:
+        if valid(v) and v not in seen:
+            seen.add(v);vals.append(v);accepted+=1
+            if is_adult: adult_count+=1
+        if accepted>=limit:
             break
+if adult_on and adult_count<5:
+    raise SystemExit("ADULT_CATALOG_INVALID")
 out.write_text("\n".join(vals)+"\n",encoding="utf-8")
+print(adult_count)
 PY
+    )"
     chmod 0644 "$RUN_HOSTS"
     STRATEGY="balanced"
     if [ -L "$STRATEGY_FILE" ]; then
@@ -402,23 +426,41 @@ EOF
       compatibility)
         NFQWS_ARGS+=(
           --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=method+2
-          --new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=1,sniext+1,host+1,midsld,endhost-1
-          --new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=4
         )
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1)
+        fi
+        NFQWS_ARGS+=(--new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=1,sniext+1,host+1,midsld,endhost-1)
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic --hostlist="$STRONG_OVERRIDE" --dpi-desync=fake --dpi-desync-repeats=11)
+        fi
+        NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=4)
         ;;
       strong)
         NFQWS_ARGS+=(
           --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=fake,fakedsplit --dpi-desync-split-pos=method+2 --dpi-desync-fooling=md5sig --dpi-desync-repeats=2
-          --new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,hostfakesplit --dpi-desync-hostfakesplit-midhost=midsld --dpi-desync-fooling=badseq,md5sig --dpi-desync-repeats=4
-          --new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=11
         )
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1)
+        fi
+        NFQWS_ARGS+=(--new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,hostfakesplit --dpi-desync-hostfakesplit-midhost=midsld --dpi-desync-fooling=badseq,md5sig --dpi-desync-repeats=4)
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic --hostlist="$STRONG_OVERRIDE" --dpi-desync=fake --dpi-desync-repeats=11)
+        fi
+        NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=11)
         ;;
       *)
         NFQWS_ARGS+=(
           --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=fake,multisplit --dpi-desync-split-pos=method+2 --dpi-desync-fooling=md5sig
-          --new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld --dpi-desync-fooling=badseq,md5sig
-          --new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=6
         )
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1)
+        fi
+        NFQWS_ARGS+=(--new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld --dpi-desync-fooling=badseq,md5sig)
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic --hostlist="$STRONG_OVERRIDE" --dpi-desync=fake --dpi-desync-repeats=11)
+        fi
+        NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=6)
         ;;
     esac
     "$NFQWS" --dry-run "${NFQWS_ARGS[@]}" >/dev/null 2>&1 || { echo '{"ok":false,"error":"NFQWS_STRATEGY_INVALID"}'; exit 76; }
@@ -428,16 +470,18 @@ EOF
     sleep .5
     pid_owned "$NPID" "$NFQWS" || { echo '{"ok":false,"error":"NFQWS_START_FAILED"}'; exit 76; }
 
-    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" <<'PY'
+    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" "$ADULT_ON" "$ADULT_COUNT" <<'PY'
 import json,os,sys,time
 p=sys.argv[1]
 d={
   "schema":3,
   "status":"ACTIVE",
   "architecture":"LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS_MULTIPROTOCOL",
-  "directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443","custom-hostlist","strategy-profile"],
+  "directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443","custom-hostlist","adult-catalog","strategy-profile"],
   "strategy":sys.argv[9],
   "scope":sys.argv[10],
+  "adultCoverage":bool(int(sys.argv[11])),
+  "adultHostCount":int(sys.argv[12]),
   "ctrldPid":int(sys.argv[2]),
   "nfqwsPid":int(sys.argv[3]),
   "physicalInterface":sys.argv[4],

@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 import urllib.parse
 import urllib.request
 import zipfile
@@ -21,7 +22,7 @@ from gi.repository import Gtk, Adw, GLib, Gdk
 from router_gateway import RouterGatewayWindow
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
-VERSION="1.5.0"
+VERSION="1.5.1"
 GLib.set_prgname("DirectInternetMethod")
 GLib.set_application_name("Direct Internet Method")
 try:
@@ -34,6 +35,13 @@ PRIV_HOME=pathlib.Path("/usr/lib/directinternetmethod")
 STATE=APP_HOME/"directmethod/state.json"
 PREFS=APP_HOME/"settings.json"
 CUSTOM_HOSTS=APP_HOME/"custom-hosts.txt"
+ADULT_ENABLED=APP_HOME/"adult-enabled.txt"
+ADULT_HOSTS=APP_HOME/"adult-hosts.txt"
+ADULT_META=APP_HOME/"adult-hosts.meta.json"
+ADULT_CATALOG_URLS=(
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt",
+    "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nsfw-onlydomains.txt",
+)
 STRATEGY_FILE=APP_HOME/"strategy.txt"
 SCOPE_FILE=APP_HOME/"scope.txt"
 LATEST_API="https://api.github.com/repos/GOD13emad/DirectInternetMethod/releases/latest"
@@ -45,15 +53,74 @@ def ui_test_log(message):
 
 def load_adult_site_check():
     try:
-        return bool(json.loads(PREFS.read_text(encoding="utf-8")).get("adultSiteLiveCheck",False))
+        if ADULT_ENABLED.is_file():
+            return ADULT_ENABLED.read_text(encoding="utf-8").strip()=="1"
+        prefs=json.loads(PREFS.read_text(encoding="utf-8"))
+        return bool(prefs.get("adultCoverageEnabled",prefs.get("adultSiteLiveCheck",False)))
     except Exception:
         return False
 
 def save_adult_site_check(enabled):
+    enabled=bool(enabled)
     PREFS.parent.mkdir(parents=True,exist_ok=True)
     temp=PREFS.with_suffix(".tmp")
-    temp.write_text(json.dumps({"adultSiteLiveCheck":bool(enabled)},separators=(",",":"))+"\n",encoding="utf-8")
+    temp.write_text(json.dumps({"adultCoverageEnabled":enabled,"adultSiteLiveCheck":enabled},separators=(",",":"))+"\n",encoding="utf-8")
     os.replace(temp,PREFS)
+    flag=ADULT_ENABLED.with_suffix(".tmp")
+    flag.write_text("1\n" if enabled else "0\n",encoding="utf-8")
+    os.replace(flag,ADULT_ENABLED)
+    if not enabled:
+        for path in (ADULT_HOSTS,ADULT_META):
+            try:path.unlink()
+            except FileNotFoundError:pass
+
+def validate_adult_catalog(text):
+    label=re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+    vals=[];seen=set()
+    for raw in str(text or "").splitlines():
+        v=raw.strip().lower()
+        if not v or v.startswith("#"):
+            continue
+        if v.startswith("^"):v=v[1:]
+        if len(v)<3 or len(v)>253 or "." not in v or any(not label.fullmatch(x) for x in v.split(".")):
+            continue
+        if v not in seen:
+            seen.add(v);vals.append(v)
+        if len(vals)>100000:
+            raise RuntimeError("Adult catalog exceeds 100,000 validated domains.")
+    if len(vals)<10000:
+        raise RuntimeError("Adult catalog is unexpectedly small.")
+    for required in ("xvideos.com","xnxx.com","xhamster.com","pornhub.com","redtube.com"):
+        if required not in seen:
+            raise RuntimeError("Adult catalog is missing a required coverage family.")
+    return vals
+
+def sync_adult_catalog(force=False):
+    if not force and ADULT_HOSTS.is_file() and (time.time()-ADULT_HOSTS.stat().st_mtime)<86400:
+        vals=validate_adult_catalog(ADULT_HOSTS.read_text(encoding="utf-8"))
+        return {"entries":len(vals),"sha256":hashlib.sha256(ADULT_HOSTS.read_bytes()).hexdigest().upper(),"cached":True}
+    last_error=None
+    for source_url in ADULT_CATALOG_URLS:
+        try:
+            req=urllib.request.Request(source_url,headers={"User-Agent":"DirectInternetMethod/1.5.1"})
+            with urllib.request.urlopen(req,timeout=20) as resp:
+                raw=resp.read(4*1024*1024+1)
+            if len(raw)<100000 or len(raw)>4*1024*1024:
+                raise RuntimeError("Adult catalog size is outside the accepted range.")
+            text=raw.decode("utf-8")
+            vals=validate_adult_catalog(text)
+            ADULT_HOSTS.parent.mkdir(parents=True,exist_ok=True)
+            temp=ADULT_HOSTS.with_suffix(".tmp")
+            temp.write_text("\n".join(vals)+"\n",encoding="utf-8")
+            os.replace(temp,ADULT_HOSTS)
+            digest=hashlib.sha256(raw).hexdigest().upper()
+            meta_tmp=ADULT_META.with_suffix(".tmp")
+            meta_tmp.write_text(json.dumps({"schema":1,"source":source_url,"fetchedUtc":time.time(),"sourceSha256":digest,"entries":len(vals)},separators=(",",":"))+"\n",encoding="utf-8")
+            os.replace(meta_tmp,ADULT_META)
+            return {"entries":len(vals),"sha256":digest,"cached":False,"source":source_url}
+        except Exception as exc:
+            last_error=exc
+    raise RuntimeError("Adult catalog sync failed from all official upstream endpoints.") from last_error
 
 def normalize_custom_site(raw):
     value=str(raw or "").strip()
@@ -108,8 +175,12 @@ def format_probe(name,result):
     if result.get("ok"):
         return f"{name}: PASS · HTTP {result.get('code','')}"
     if result.get("reached"):
-        return f"{name}: REACHABLE · HTTP {result.get('code','')}"
+        return f"{name}: FAIL · HTTP {result.get('code','')}"
     return f"{name}: FAIL · transport"
+
+def format_adult_probes(results):
+    ok=sum(1 for r in results if r.get("ok"))
+    return f"Adult coverage: {'PASS' if ok==len(results) else 'FAIL'} · full pages {ok}/{len(results)}"
 
 def _systemd_unit_matches(unit_value, pid_value, expected_unit):
     try:
@@ -297,6 +368,9 @@ class Window(Adw.ApplicationWindow):
         self.set_resizable(True)
         self.available_update=None
         self.adult_check_enabled=load_adult_site_check()
+        if self.adult_check_enabled:
+            try: save_adult_site_check(True)
+            except Exception: pass
         self.live_check_generation=0
 
         header=Adw.HeaderBar()
@@ -342,12 +416,12 @@ class Window(Adw.ApplicationWindow):
         live_header=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=10)
         live_title=Gtk.Label(label="Live checks",xalign=0);live_title.add_css_class("heading");live_title.set_hexpand(True)
         live_header.append(live_title)
-        adult_toggle_label=Gtk.Label(label="Adult site",xalign=1);adult_toggle_label.add_css_class("dim-label");live_header.append(adult_toggle_label)
+        adult_toggle_label=Gtk.Label(label="Adult coverage",xalign=1);adult_toggle_label.add_css_class("dim-label");live_header.append(adult_toggle_label)
         self.adult_switch=Gtk.Switch(active=self.adult_check_enabled);live_header.append(self.adult_switch)
         self.adult_switch.connect("notify::active",self.on_adult_toggle)
         live.append(live_header)
         self.gemini_live=Gtk.Label(label="Gemini: —",xalign=0);self.gemini_live.add_css_class("dim-label");live.append(self.gemini_live)
-        self.adult_live=Gtk.Label(label="Adult site: "+("Checking…" if self.adult_check_enabled else "Disabled"),xalign=0);self.adult_live.add_css_class("dim-label");live.append(self.adult_live)
+        self.adult_live=Gtk.Label(label="Adult coverage: "+("Checking…" if self.adult_check_enabled else "Disabled"),xalign=0);self.adult_live.add_css_class("dim-label");live.append(self.adult_live)
         box.append(live)
 
         buttons=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8);buttons.set_homogeneous(True)
@@ -366,6 +440,8 @@ class Window(Adw.ApplicationWindow):
 
         keys=Gtk.EventControllerKey();keys.connect("key-pressed",self.on_key);self.add_controller(keys)
         self.refresh()
+        if self.adult_check_enabled:
+            threading.Thread(target=self.adult_sync_worker,args=(False,),daemon=True).start()
         threading.Thread(target=self.update_check_worker,args=(False,),daemon=True).start()
 
     def toggle_maximize(self,*_args):
@@ -396,11 +472,11 @@ class Window(Adw.ApplicationWindow):
         generation=self.live_check_generation
         if mode=="ACTIVE":
             self.gemini_live.set_text("Gemini: Checking…")
-            self.adult_live.set_text("Adult site: Checking…" if self.adult_check_enabled else "Adult site: Disabled")
+            self.adult_live.set_text("Adult coverage: Checking…" if self.adult_check_enabled else "Adult coverage: Disabled")
             threading.Thread(target=self.live_checks_worker,args=(generation,),daemon=True).start()
         else:
             self.gemini_live.set_text("Gemini: Available when Direct Method is active")
-            self.adult_live.set_text("Adult site: Disabled" if not self.adult_check_enabled else "Adult site: Available when Direct Method is active")
+            self.adult_live.set_text("Adult coverage: Disabled" if not self.adult_check_enabled else "Adult coverage: Available when Direct Method is active")
 
     def live_checks_worker(self,generation):
         try:
@@ -409,17 +485,36 @@ class Window(Adw.ApplicationWindow):
         except Exception:
             physical=""
         if not physical:
-            GLib.idle_add(self.finish_live_checks,generation,{"ok":False,"reached":False},{"ok":False,"reached":False} if self.adult_check_enabled else None)
+            GLib.idle_add(self.finish_live_checks,generation,{"ok":False,"reached":False},[{"ok":False,"reached":False}] if self.adult_check_enabled else None)
             return
         gemini=probe_url("https://gemini.google.com/",physical,{"200","301","302","303","307","308"})
-        adult=probe_url("https://www.pornhub.com/",physical,{"200","301","302","303","307","308"}) if self.adult_check_enabled else None
+        adult=None
+        if self.adult_check_enabled:
+            allowed={"200","301","302","303","307","308"}
+            adult=[
+                probe_url("https://www.pornhub.com/",physical,allowed),
+                probe_url("https://www.xvideos.com/",physical,allowed),
+                probe_url("https://www.xnxx.com/",physical,allowed),
+                probe_url("https://xhamster.com/",physical,allowed),
+            ]
         GLib.idle_add(self.finish_live_checks,generation,gemini,adult)
 
     def finish_live_checks(self,generation,gemini,adult):
         if generation!=self.live_check_generation:
             return False
         self.gemini_live.set_text(format_probe("Gemini",gemini))
-        self.adult_live.set_text(format_probe("Adult site",adult) if adult is not None else "Adult site: Disabled")
+        self.adult_live.set_text(format_adult_probes(adult) if adult is not None else "Adult coverage: Disabled")
+        return False
+
+    def adult_sync_worker(self,force):
+        try:
+            info=sync_adult_catalog(force)
+            GLib.idle_add(self.finish_adult_sync,True,f"Adult coverage: {info['entries']:,} domains synced · Stop/Start to apply")
+        except Exception as e:
+            GLib.idle_add(self.finish_adult_sync,False,"Adult coverage: fallback active · catalog sync failed · "+str(e))
+
+    def finish_adult_sync(self,ok,message):
+        self.adult_live.set_text(message)
         return False
 
     def on_adult_toggle(self,switch,_pspec):
@@ -427,9 +522,13 @@ class Window(Adw.ApplicationWindow):
         try:
             save_adult_site_check(self.adult_check_enabled)
         except Exception as e:
-            self.adult_live.set_text("Adult site: settings error · "+str(e))
+            self.adult_live.set_text("Adult coverage: settings error · "+str(e))
             return
-        self.refresh()
+        if self.adult_check_enabled:
+            self.adult_live.set_text("Adult coverage: syncing catalog…")
+            threading.Thread(target=self.adult_sync_worker,args=(True,),daemon=True).start()
+        else:
+            self.refresh()
 
     def on_key(self,_controller,keyval,_keycode,state):
         if keyval==Gdk.KEY_F5 or (keyval in (Gdk.KEY_r,Gdk.KEY_R) and bool(state & Gdk.ModifierType.CONTROL_MASK)):

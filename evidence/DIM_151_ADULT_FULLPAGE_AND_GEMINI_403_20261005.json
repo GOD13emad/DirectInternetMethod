@@ -1,0 +1,304 @@
+{
+  "schema": 1,
+  "date": "2026-10-06",
+  "project": "Direct Internet Method",
+  "changeSet": "adult-fullpage-coverage-151",
+  "status": "CANDIDATE_1_5_1_WINDOWS_PRE_FINAL_RUNTIME_ACCEPTED_FINAL_ARTIFACT_REBUILD_PENDING",
+  "objective": "Make the existing opt-in Adult control provide real broad adult-domain DPI coverage and validate full HTTP page access instead of merely probing one site.",
+  "previousAcceptedState": {
+    "main": "b6a7e5434e2056c97ef5abdcb6086bfb9a813bec",
+    "release": "1.5.0"
+  },
+  "findings": [
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Adult toggle was enabled on both installed Windows and Linux hosts but only controlled a Pornhub live probe; it did not expand DPI host coverage."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Built-in v1.5.0 adult scope contains pornhub.com and phncdn.com but omits xvideos.com, xnxx.com, xhamster.com and many other adult domains."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "With normal v1.5.0 balanced/targeted state, Pornhub and RedTube return HTTP 200 on both hosts while Xvideos/XNXX/XHamster fail during TLS before HTTP."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "On Linux, controlled temporary inclusion of xvideos.com and xnxx.com under the existing Balanced profile changed both from TLS failure/HTTP 000 to HTTP 200; rollback restored the prior Reddit custom-host configuration and ACTIVE balanced/targeted state."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "XHamster remained failing under Balanced, Strong, Compatibility and six bounded candidate TCP-443 strategies; no unproven strategy is promoted."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Current HaGeZi NSFW only-domains upstream was fetched independently on 2026-10-05: 84,135 physical lines / 1,330,723 bytes, SHA-256 68579D46894EEAFF2D52C793C4163A2C5CA8409FD28DFB71A179768663450DE9; validation yields 84,123 non-comment domain entries and includes xvideos.com, xnxx.com, xhamster.com, pornhub.com and redtube.com.",
+      "source": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt"
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Gemini returns HTTP 403 for /, /app, /app?hl=en and /?hl=en under browser-like IPv4 probes; IPv6 is unavailable for this path. A normal isolated Edge-browser check from the earlier same change set also rendered the 403 rather than a usable Gemini page."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Cloudflare trace classifies the current public egress as IR. Google official Gemini web availability lists Azerbaijan and over 230 supported countries/territories, but no Iran entry was found. DPI manipulation does not change public egress geolocation.",
+      "methodEvidence": [
+        "https://support.google.com/gemini/answer/13575153?hl=en",
+        "https://github.com/bol-van/zapret/blob/master/docs/readme.en.md",
+        "https://github.com/bol-van/zapret/blob/master/docs/quick_start.md"
+      ]
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Fresh isolated Microsoft Edge CDP validation on the Windows v1.5.0 active host confirms user-visible failure for XVideos and XHamster: both finish at chrome-error://chromewebdata/ with navigation responseStatus 0 and transferSize 0. Gemini independently completes navigation at gemini.google.com with HTTP 403."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Comparable zapret projects consistently pair major adult site domains with CDN/companion families; representative families include xvideos-cdn.com/xvcdn.com, xnxx-cdn.com, xhcdn.com/xhamsterlive.com, phncdn.com/phprcdn.com, rdtcdn.com, ypncdn.com and sb-cd.com. These were promoted only to the offline fallback host coverage, not to a new unproven DPI strategy."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "HaGeZi officially publishes the same NSFW only-domains catalog through both raw GitHub and jsDelivr. Windows and Linux candidate code now fail over between those two official endpoints while applying identical size/domain validation before accepting data."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "AloofLibra/zator includes XHamster in its adaptive sweep corpus and defines strategy 28 as multidisorder with split positions 1,host+2,sld+2,sld+5,sniext+1,sniext+2,endhost-2 and seqovl=1. The corresponding classic nfqws v72.13 command line passes dry-run on the installed Linux runtime, proving syntax/engine compatibility only; network effectiveness remains UNPROVEN."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Official zapret v72.13 release archive was downloaded to the Linux test host and matched upstream SHA-256 25C74E6C5F48963FA244C2955E76694A07C39447245A0457E2EFDC74B3317E68. Its blockcheck tool is ready in /tmp, but full quick-scan requires root firewall mutation; pkexec waits for interactive authorization and sudo -n is not allowed on the laptop connector."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Official zapret v72.13 release archive was downloaded from the upstream release and SHA-256 matched 25C74E6C5F48963FA244C2955E76694A07C39447245A0457E2EFDC74B3317E68 before strategy research."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "When Direct Method is off, the validation network DNS can return interception addresses such as 10.10.34.35; with owned ctrld DoH active, xhamster.com resolved to public Cloudflare addresses 104.16.3.81/104.16.4.81."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "An isolated HTTPS-only zapret v72.13 matrix using a separate nft/NFQUEUE probe found no usable full-page XHamster strategy: several split/sequence-overlap/syndata variants reached HTTP 520 on 104.16.4.81 while 104.16.3.81 remained TLS-failing. HTTP 520 is not accepted as PASS."
+    },
+    {
+      "type": "DECISION",
+      "status": "ACCEPTED",
+      "claim": "Do not add GreenTunnel, SpoofDPI or PowerTunnel runtimes because they use local proxy architectures; do not add GoodbyeDPI because its direct fragmentation/DNS anti-poisoning primitives materially overlap the already accepted zapret/winws runtime without demonstrated incremental benefit."
+    },
+    {
+      "type": "FAILURE",
+      "status": "CLOSED_LOCAL_PENDING_PROTECTED_CI",
+      "claim": "PR #20 protected CI run 37350996926 failed only in Linux release_metadata_audit because SHA256SUMS.txt was CRLF in the Windows worktree (SHA C95F...) but canonical Git checkout normalized it to LF (SHA 6C3B...). All Linux/adult/router contracts passed before this metadata failure.",
+      "rootCause": "Checksum artifact self-hash was computed from non-canonical Windows worktree bytes despite .gitattributes specifying LF for root SHA256SUMS.txt.",
+      "prevention": "Canonicalize root and delivery SHA256SUMS.txt to LF, mark both text eol=lf, and record the canonical LF checksum artifact SHA in RELEASE.json."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Exact installed Linux v1.5.1 lifecycle PASSed three real cycles with rollbackEqual=true and restored the initially ACTIVE state. YouTube/OpenAI/GitHub remained PASS; Reddit passed when explicitly targeted and under All Sites; representative adult page passed HTTP 200 under Strong/All Sites."
+    },
+    {
+      "type": "FACT",
+      "status": "REJECTED_CANDIDATE",
+      "claim": "Comparable-project candidate fake+md5sig+TTL=6 was tested with a correctly wired isolated nft/NFQUEUE harness against both xhamster.com Cloudflare edges 104.16.3.81 and 104.16.4.81. Both remained TLS-failing (HTTP 000), so the profile is not promoted."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Bare xhamster.com and www.xhamster.com resolve to the same Cloudflare edge pair 104.16.3.81/104.16.4.81 under owned DoH and both remain TLS-failing; canonical-hostname variation does not close the blocker."
+    },
+    {
+      "type": "ROOT_CAUSE",
+      "status": "CONFIRMED",
+      "claim": "The first Windows v1.5.1 installed candidate failed Start preflight because embedded Start-Direct.ps1 self-integrity pins still expected the previous hosts.txt/adult-fallback hashes while that same installer shipped newer files. Start therefore exited before mutation. Source commits e9cc8fb/90b4591 corrected the pins and added contract coverage; the corrected installer self-integrity check matched all eight declared runtime file hashes and Start returned done/0."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "On corrected Windows v1.5.1 balanced/targeted with Adult coverage enabled, the maintained catalog validated to 84,123 upstream entries and runtime adultHostCount was 84,127 after fallback/merged normalization."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Stable-state Windows balanced/targeted repeated probes returned HTTP 200 five of five for XHamster, XVideos and Reddit. A cold-cycle immediate XHamster probe timed out once while XVideos/XNXX/Pornhub/Reddit returned HTTP 200; after stabilization XHamster again returned 200 repeatedly."
+    },
+    {
+      "type": "ROOT_CAUSE",
+      "status": "CONFIRMED",
+      "claim": "XHamster cold instability is edge-specific: pinned probes to 104.16.4.81 returned HTTP 200 five of five, while 104.16.3.81 timed out at TCP connect five of five. This occurs before TLS/DPI handling. Product-level pinning or system routing to a shared Cloudflare edge is rejected as brittle and potentially harmful to unrelated domains."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Strong/All-Sites A/B returned Reddit HTTP 200 and XHamster HTTP 200 but caused XVideos timeout; the test restored balanced/targeted afterward. Therefore global Strong promotion remains rejected."
+    },
+    {
+      "type": "FACT",
+      "status": "CONFIRMED",
+      "claim": "Real Chrome 154 headless on the corrected Windows active path rendered an Access Denied result for Gemini while curl returned HTTP 403. The 403 is not a curl fingerprint artifact and remains outside Direct-only DNS/DPI remediation because public egress is unchanged."
+    }
+  ],
+  "decision": {
+    "type": "DECISION",
+    "status": "ACCEPTED",
+    "claim": "For Adult coverage, convert the existing opt-in toggle into a real coverage control. Fetch and validate a maintained upstream domain catalog at runtime instead of redistributing it in the release, keep a small built-in fallback for major families, and apply the adult hostlist only when enabled.",
+    "rationale": "This gives broad maintained coverage without pretending a small hard-coded list means all sites, avoids GPL list redistribution inside the release, and preserves default privacy/minimum-scope behavior."
+  },
+  "constraints": [
+    "Do not change Windows network state during source development; Windows is currently ACTIVE and healthy.",
+    "Linux is the mutation test host; preserve and restore its prior custom hosts and ACTIVE balanced/targeted state.",
+    "No global Strong/Compatibility promotion because tests showed regressions.",
+    "Gemini egress-policy remediation is a separate architecture decision because it requires changing egress.",
+    "Do not label Gemini HTTP 403 as PASS/REACHABLE success; usable-page acceptance requires 2xx/3xx.",
+    "Do not claim all adult sites are individually proven merely because a maintained catalog contains them; prove representative families and preserve fallback/custom-site paths.",
+    "Broad Adult domain coverage may be promoted with representative proof and truthful limitations; do not claim every remote Adult origin/CDN edge is guaranteed."
+  ],
+  "exactNextAction": "Commit final candidate metadata/evidence, rebuild one exact Windows artifact from committed source, install and verify exact identity/runtime, require protected CI on final head, then publish v1.5.1 if all gates pass.",
+  "implementation": {
+    "adultCatalog": {
+      "mode": "opt-in",
+      "source": "HaGeZi NSFW only-domains runtime fetch",
+      "maxValidatedDomains": 100000,
+      "minimumValidatedDomains": 10000,
+      "offlineFallbackFamilies": [
+        "xvideos.com",
+        "xvideos4.com",
+        "xvideos-cdn.com",
+        "xvcdn.com",
+        "xv-cdn.com",
+        "xnxx.com",
+        "xnxx-cdn.com",
+        "xhamster.com",
+        "xhamsterlive.com",
+        "xhcdn.com",
+        "pornhub.com",
+        "pornhubpremium.com",
+        "phncdn.com",
+        "phprcdn.com",
+        "redtube.com",
+        "rdtcdn.com",
+        "youporn.com",
+        "ypncdn.com",
+        "thumbzilla.com",
+        "tube8.com",
+        "spankbang.com",
+        "sb-cd.com",
+        "eporner.com",
+        "tnaflix.com"
+      ],
+      "defaultEnabled": false,
+      "coreHostlistAdultFree": true,
+      "sources": [
+        "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt",
+        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nsfw-onlydomains.txt"
+      ]
+    },
+    "sourceRegression": {
+      "windowsGuiBuild": "PASS_0_WARNINGS_0_ERRORS",
+      "windowsServiceBuild": "PASS_0_WARNINGS_0_ERRORS",
+      "windowsPayloadBuild": "PASS_679_MANIFEST_FILES",
+      "windowsContract": "PASS_AFTER_DUAL_SOURCE_AND_CDN_FALLBACK",
+      "linuxContract": "PASS_AFTER_DUAL_SOURCE_AND_CDN_FALLBACK",
+      "pythonCompile": "PASS",
+      "diffCheck": "PASS",
+      "releaseMetadata": "PASS_V1.5.0_AUTHORITY_UNCHANGED",
+      "fullTrackedSyntaxBuild": {
+        "status": "PASS",
+        "powershellParsed": 53,
+        "pythonCompiled": 15,
+        "powershellErrors": 0,
+        "pythonErrors": 0,
+        "dotnetService": "PASS_0_WARNINGS_0_ERRORS",
+        "dotnetGui": "PASS_0_WARNINGS_0_ERRORS",
+        "mergeConflictMarkers": 0,
+        "todoMarkers": 0,
+        "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
+      },
+      "checksumCanonicalization": {
+        "status": "PASS_LOCAL",
+        "canonicalSha256": "6C3BE10C2A8A4225897DE5A0EB08869F3C32E68055C1207839F27A67A225F904",
+        "rootBytes": 221,
+        "lineEnding": "LF",
+        "localReleaseMetadata": "PASS",
+        "windowsContract": "PASS",
+        "linuxContract": "PASS"
+      },
+      "finalHeadLocalFullTrackedAudit": {
+        "status": "PASS",
+        "powershellParsed": 55,
+        "pythonCompiled": 16,
+        "powershellErrors": 0,
+        "pythonErrors": 0,
+        "dotnetService": "PASS_0_WARNINGS_0_ERRORS",
+        "dotnetGui": "PASS_0_WARNINGS_0_ERRORS",
+        "mergeConflictMarkers": 0,
+        "todoMarkers": 0,
+        "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
+      }
+    },
+    "packaging": {
+      "windowsFallbackRequiredInManifest": true,
+      "linuxFallbackRequiredInPackage": true
+    },
+    "releaseCandidate": {
+      "version": "1.5.1",
+      "windows": {
+        "bytes": 157104795,
+        "sha256": "F210AD4663757727452BD6A8ADBDF0288EE7F9867EA5F67BE5322C8B6DB7281A",
+        "authenticode": "NotSigned",
+        "runtimePreFinalMetadataRebuild": "PASS_EXACT_INSTALLED_AF6837_SELF_INTEGRITY_START_AND_STABLE_SITE_MATRIX",
+        "xhamsterEdgeEvidence": {
+          "healthyEdge": "104.16.4.81 HTTP_200_5_OF_5",
+          "failingEdge": "104.16.3.81 TCP_CONNECT_TIMEOUT_5_OF_5",
+          "decision": "DO_NOT_PIN_SHARED_CLOUDFLARE_EDGE"
+        }
+      },
+      "linux": {
+        "bytes": 8183518,
+        "sha256": "2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA",
+        "crossHostDeterministic": "PASS",
+        "installedLifecycle": "PASS_LIFECYCLE_SITE_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
+        "installedEvidence": "evidence/LINUX_151_INSTALLED_LIFECYCLE_20261005.json"
+      },
+      "sourceContracts": "PASS_WINDOWS_LINUX_ROUTER_SECURITY_RELEASE_METADATA_AFTER_VERSION_COHERENCE",
+      "fullTrackedSourceAudit": {
+        "status": "PASS",
+        "powershellParsed": 55,
+        "pythonCompiled": 15,
+        "dotnetGui": "PASS_0_WARNINGS_0_ERRORS",
+        "dotnetService": "PASS_0_WARNINGS_0_ERRORS",
+        "mergeConflictMarkers": 0,
+        "todoMarkers": 0,
+        "gitFsck": "ONLY_DANGLING_UNREACHABLE_OBJECTS_NO_CORRUPTION"
+      },
+      "defender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME_REALTIME_ON",
+      "deterministicBuildFailure": "FIXED: first local archive preceded committed README delta; clean committed build is now authoritative.",
+      "protectedCi": "PASS_RUN_37352898981_HEAD_E9CDE0D_CHECKSUM_CANONICALIZATION"
+    }
+  },
+  "adaptiveStrategyResearch": {
+    "status": "CANDIDATE_ONLY",
+    "candidate": "multidisorder + split positions 1,host+2,sld+2,sld+5,sniext+1,sniext+2,endhost-2 + split-seqovl=1",
+    "provenance": "AloofLibra/zator strategy 28 + zapret v72.13 primitives",
+    "localDryRun": "PASS",
+    "runtime": "UNPROVEN_PENDING_ROOT_BLOCKCHECK_OR_EQUIVALENT_ISOLATED_TEST",
+    "policy": "Do not auto-promote or apply globally until a real representative runtime test passes.",
+    "comparableCandidateFakeMd5Ttl6": "REJECTED_RUNTIME_HTTP_000_BOTH_EDGES"
+  }
+}

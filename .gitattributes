@@ -13,4 +13,4 @@ linux/**/*.md text eol=lf
 linux/**/*.txt text eol=lf
 linux/**/*.svg text eol=lf
 SHA256SUMS.txt text eol=lf
-delivery/SHA256SUMS.txt binary
+delivery/SHA256SUMS.txt text eol=lf

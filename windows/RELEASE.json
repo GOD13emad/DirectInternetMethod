@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.5.0",
-  "status": "PASS_FINAL_WINDOWS_1_5_0_PUBLISHED_INSTALLED_VERIFIED",
-  "date": "2026-10-04",
+  "version": "1.5.1",
+  "status": "CANDIDATE_1_5_1_METADATA_FINALIZED_FINAL_ARTIFACT_REBUILD_PENDING",
+  "date": "2026-10-06",
   "previousAccepted": {
-    "version": "1.4.0",
-    "tag": "v1.4.0",
-    "commit": "910e22d06209e244f8caf809c9821e3fb16c7cc1",
-    "status": "FINAL_PUBLISHED_INSTALLED_VERIFIED"
+    "version": "1.5.0",
+    "tag": "v1.5.0",
+    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
+    "status": "PASS_FINAL_WINDOWS_1_5_0_PUBLISHED_INSTALLED_VERIFIED"
   },
   "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + accepted zapret/winws/WinDivert multiprotocol engine with Targeted/All Sites scope control",
   "features": {
@@ -19,6 +19,7 @@
       "tls-sni-desync-tcp443",
       "quic-desync-udp443",
       "custom-hostlist",
+      "adult-catalog",
       "strategy-profile"
     ],
     "noVpn": true,
@@ -38,14 +39,8 @@
       "OpenAI",
       "GitHub",
       "Gemini",
-      "Adult site"
+      "Adult coverage representative matrix"
     ],
-    "adultSiteLiveCheck": {
-      "toggleable": true,
-      "defaultEnabled": false,
-      "persistedPerUser": true,
-      "uiLabel": "Adult site"
-    },
     "routerGateway": true,
     "routerGatewayProtocols": [
       "L2TP/IPsec",
@@ -87,6 +82,22 @@
       "maxEntries": 256,
       "normalizesUrlsToDomains": true,
       "exactHostPrefix": "^"
+    },
+    "adultCoverage": {
+      "enabledByDefault": false,
+      "optIn": true,
+      "toggleable": true,
+      "persistedPerUser": true,
+      "uiLabel": "Adult coverage",
+      "maintainedCatalog": true,
+      "catalogSources": [
+        "HaGeZi NSFW only-domains raw GitHub",
+        "HaGeZi NSFW only-domains jsDelivr fallback"
+      ],
+      "offlineFallback": true,
+      "minimumValidatedDomains": 10000,
+      "maximumValidatedDomains": 100000,
+      "usablePageAcceptance": "2xx/3xx only"
     }
   },
   "usage": {
@@ -100,34 +111,33 @@
     "bundledPowerShell": "7.6.6"
   },
   "acceptance": {
-    "windowsContract": "PASS",
+    "windowsContract": "PASS_INCLUDING_START_SELF_INTEGRITY_PIN_COHERENCE",
     "serviceSelftest": "PASS_BUILD_CONTRACT",
     "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
     "startupLayout": "PASS_DYNAMIC_1289x632_NO_OVERLAP_8_BUTTONS",
     "targetHostlistContract": "PASS",
-    "siteCoverageLive": "PASS_INSTALLED_3_CYCLES_SITE_MATRIX",
-    "publication": "PASS_PUBLIC_REDOWNLOAD_VERIFIED",
+    "siteCoverageLive": "PASS_WINDOWS_BALANCED_TARGETED_STABLE_STATE_REPRESENTATIVES_WITH_EDGE_CAVEAT",
+    "publication": "PENDING_FINAL_ARTIFACT_CI_AND_RELEASE",
     "strategyProfiles": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
     "allSitesScope": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
     "securityRejectedComponentGate": "PASS_BLOCKED_HASHES_NOT_SHIPPED",
     "artifactIdentity": "EXTERNAL_ROOT_RELEASE_METADATA_AND_SHA256SUMS",
-    "windowsInstalledLive": "PASS_EXACT_INSTALLED_3_CYCLES_SITE_MATRIX_RECOVERY_ROLLBACK"
+    "windowsInstalledLive": "PASS_EXACT_PRE_FINAL_METADATA_REBUILD_RUNTIME_START_STOP_RECOVERY",
+    "startupHealth": "PASS_RETRY_QUORUM_2_OF_3_REAL_GITHUB_TRANSIENT_SURVIVED",
+    "adultCoverage": "PASS_WINDOWS_PORNHUB_REDTUBE_XVIDEOS_XNXX_AND_XHAMSTER_USABLE_ON_HEALTHY_EDGE",
+    "gemini": "FAIL_HTTP_403_CURL_AND_CHROME_CURRENT_EGRESS_DIRECT_ONLY_EXHAUSTED"
   },
   "validationBoundary": [
-    "Direct Internet Method does not change the public egress IP, so remote country/account/product restrictions cannot be guaranteed away.",
-    "Targeted is the default scope; experimental All Sites applies DPI strategy broadly to HTTP/TLS/QUIC web traffic and may reduce compatibility or speed.",
-    "A successful HTTP response such as 403 is reported as REACHABLE, not PASS.",
-    "Adult-site live check defaults OFF and is shown only as 'Adult site' in the UI.",
-    "zapret2 v1.0.5.2 Windows/archive remains rejected after local Severe/Concrete Defender detection; no exclusion or restore is used.",
-    "Windows installer is not Authenticode-signed."
+    "Direct Internet Method does not change public egress IP; remote country/account/product restrictions are outside direct DNS/DPI control.",
+    "Gemini returns HTTP 403 on the validated IR egress in both curl and real headless Chrome. A usable Gemini page requires a separate egress-changing architecture.",
+    "Adult coverage uses a maintained opt-in catalog plus bounded host-specific profiles. Windows stable-state representative probes return HTTP 200 for Pornhub, RedTube, XVideos, XNXX and XHamster.",
+    "XHamster currently resolves to Cloudflare 104.16.3.81 and 104.16.4.81: 104.16.4.81 is repeatably HTTP 200 while 104.16.3.81 is repeatably TCP-connect timeout. A cold first probe can therefore fail depending on CDN edge selection; pinning a shared Cloudflare edge is rejected as brittle/system-risky.",
+    "Linux representative matrix passes Pornhub, RedTube, XVideos and XNXX; XHamster remains a platform/network-path-specific TLS/edge limitation after bounded upstream/comparable strategy exhaustion.",
+    "HTTP 4xx/5xx is not accepted as usable-page PASS.",
+    "Targeted remains the default scope; All Sites is explicit opt-in.",
+    "Windows installer remains not Authenticode-signed."
   ],
-  "exactNextAction": "No v1.5.0 Windows release-critical gate remains. Immutable public artifact authority is external root RELEASE.json + v1.5.0 release assets; future changes require a new version.",
+  "exactNextAction": "Commit final candidate metadata, rebuild one exact Windows artifact from that committed source, install/verify exact identity plus live Start/site/rollback, require protected CI on the exact final branch head, then publish v1.5.1 only if all gates pass.",
   "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
-  "publication": {
-    "tag": "v1.5.0",
-    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.0",
-    "publishedAt": "2026-10-05T11:47:58Z",
-    "publicRedownloadHashVerification": "PASS_ALL_ASSETS"
-  }
+  "publication": null
 }

@@ -2,73 +2,54 @@
 
 **زن زندگی آزادی**
 
-Standalone direct-connect application for Windows and Linux. It is independent of FreeNetHub and does not require ChatGPT for normal use.
+Standalone direct-connect application for Windows and Linux. It does not create a VPN, HTTP/SOCKS proxy, WinHTTP proxy, or default-route tunnel.
 
-## Direct Method — v1.5.0
+## Direct Method — v1.5.1 candidate
 
-v1.5.0 keeps the bounded v1.4 direct engine and expands explicit host-scoped coverage and diagnostics without creating a VPN, HTTP/SOCKS proxy, or default-route tunnel.
+v1.5.1 keeps the accepted v1.5.0 direct engine and turns the existing opt-in **Adult coverage** control into real bounded domain coverage rather than a single-site diagnostic.
 
-Built-in target coverage now includes the existing YouTube family plus Gemini, the requested adult-site/CDN target, OpenAI/ChatGPT, and GitHub. The application UI never exposes the adult brand name: it shows **Adult site**, and its live check is **off by default** and can be enabled or disabled by the user.
+When Adult coverage is enabled, the app fetches and validates a maintained HaGeZi NSFW only-domains catalog at runtime and combines it with a small offline fallback. The feature remains OFF by default. Core traffic stays targeted, and the catalog is not applied unless the user enables it.
 
-For sites not covered by the built-in catalog, **Custom Sites** accepts normalized domains/URLs (up to 256 entries). The **Strategy** panel provides Balanced, Compatibility, and Strong profiles. Scope defaults to **Targeted**; an opt-in **All Sites (experimental)** mode is available for unknown blocked domains when targeted coverage is insufficient. All Sites is not the default because broad DPI manipulation can reduce compatibility or speed.
+Representative controlled testing on the validation Linux network proved that adding the missing host scope changed **XVideos** and **XNXX** from TLS failure to HTTP 200. A separate representative Cloudflare-backed site remains unproven for a usable full page: several accepted-runtime strategies reached HTTP 520 on one edge while another edge still failed TLS. HTTP 4xx/5xx is therefore reported as failure, not success. Broad catalog coverage maximizes targeting but does not truthfully guarantee every remote origin/CDN edge.
 
-Live-check results distinguish **PASS** (successful 2xx/3xx), **REACHABLE** (HTTP transport succeeded but the site returned an application response such as 403), and **FAIL** (transport did not complete). This matters because the Direct Method can address DNS/DPI interference but does not change public egress IP, account state, or server-side country/product policy.
+Gemini currently returns HTTP 403 on the validated public egress. Direct DNS/DPI manipulation can solve DNS spoofing and DPI interference but does not change the public egress region; 403 is not counted as PASS.
 
-Linux online update hardening in v1.5.0 requires three-way agreement between the GitHub API asset digest, the exact SHA256SUMS.txt entry, and the downloaded ZIP hash, with exact-one expected asset selection. Router Gateway health diagnostics also state their protocol boundary explicitly: PPTP TCP/1723 checks do not verify GRE/authentication, and L2TP/IPsec generic endpoint fallback does not claim UDP 500/4500 or authenticated tunnel success.
+The engine uses:
 
-The engine is bounded by default to built-in + Custom Sites host lists and uses four direct method families:
+- leak-closed direct-IP DoH through ctrld;
+- host-scoped HTTP/80 splitting;
+- host-scoped TLS/SNI TCP/443 desynchronization;
+- host-scoped QUIC UDP/443 desynchronization;
+- user-managed Custom Sites;
+- Balanced / Compatibility / Strong strategy profiles;
+- opt-in All Sites scope;
+- opt-in maintained Adult coverage.
 
-- **Encrypted DNS (DoH):** ctrld uses the proven direct-IP Control D DoH path and explicitly disables OS-resolver leakage if the encrypted upstream fails.
-- **HTTP/80 Host split:** hostlist-scoped TCP/80 DPI desynchronization using fake + multisplit around the HTTP method.
-- **TLS/SNI desync:** hostlist-scoped TCP/443 fake + multidisorder with SNI-oriented split markers.
-- **QUIC desync:** hostlist-scoped UDP/443 QUIC fake packets instead of globally blocking UDP/443.
-
-The app still does **not** change the physical adapter DNS, create broad /1 or default routes, or configure a WinHTTP proxy. Start/Stop/Recovery own only the resources created by Direct Internet Method and retain exact rollback guards.
-
-Deliberately not enabled by default: broad IP fragmentation, permanent small TCP-window tricks, automatic hostlist learning, All Sites scope, or a second DPI-bypass runtime. The accepted runtime exposes All Sites only as an explicit user choice; automatic hostlist learning is not enabled because upstream documentation requires broader inbound/outbound interception and extra false-positive controls.
-
-A newer zapret2 Windows archive was evaluated separately but was **not shipped** after Microsoft Defender classified it as a Severe/Concrete Trojan. No exclusion or restore is used. The project instead reimplemented useful ideas (Custom Sites, strategy profiles, optional All Sites) on the already accepted runtime and added a CI hash gate for rejected components.
-
-Secure-DNS resilience was also re-tested. The current direct-IP Control D endpoint `76.76.10.11/p0` produced real DNS answers. Alternate Control D, Google, Quad9 and Cloudflare fallback attempts timed out or reset on the validation network, so they were not promoted merely to increase option count; OS-resolver leakage remains disabled.
+The validation network exhibits DNS interception when Direct Method is disabled. Direct Method's encrypted DNS resolves affected domains to their real public addresses before DPI handling.
 
 ## Router Gateway
 
-Router Gateway remains a separate non-privileged configuration panel for compatible modems/routers.
+Router Gateway remains a separate non-privileged configuration panel for compatible routers/modems. Provider data revision 3 is maintained independently of application artifacts. Endpoint probes do not claim authenticated PPTP/L2TP tunnel success.
 
-- L2TP/IPsec profiles are preferred.
-- PPTP is available only as a legacy compatibility fallback.
-- Copy-ready Server/IP, Username, Password and IPsec PSK fields.
-- Bundled offline snapshot and best-effort online refresh.
-- Numeric VPN Gate IPs where available.
-- Endpoint tests do not change routes or VPN state.
-- Private/loopback/link-local DNS results are rejected as possible interception.
-- Guides for Generic VPN Client, TP-Link, ASUS and MikroTik.
-- Provider catalog revision 2: 9 ready profiles from VPN Gate, VPNBook and Pilovali.
-- Router support and authenticated tunnel success remain model/firmware-dependent.
+## Windows 1.5.1
 
-## Windows 1.5.0
+- Native WPF UI and fixed-command privileged service.
+- Bundled PowerShell 7.6.6.
+- ctrld + zapret/winws v72.13 + WinDivert.
+- Adult coverage catalog is opt-in and cached per user.
+- Installer is not Authenticode-signed; SHA-256 remains the artifact identity gate.
 
-- Native WPF application; preferred startup geometry remains 1289 × 632 DIP with responsive footer.
-- Fixed-command privileged Windows service; normal Start/Stop/Recovery do not prompt for administrator rights after install.
-- Bundled protected PowerShell 7.6.6.
-- Owned ctrld service + leak-closed direct-IP DoH + loopback ULA + NRPT.
-- zapret/winws + WinDivert for bounded TCP/80, TCP/443 and UDP/443 direct DPI handling.
-- Service-mediated in-app update with GitHub release digest + SHA256SUMS + downloaded-file SHA-256 verification.
-- Installer is not Authenticode-signed.
+## Linux 1.5.1
 
-## Linux 1.5.0
-
-- Dedicated temporary DNS link + leak-closed ctrld DoH + systemd-resolved.
-- Owned nftables table queues only host traffic classes needed by nfqws: TCP/80, TCP/443 and UDP/443.
-- zapret/nfqws multi-profile direct engine for HTTP, TLS/SNI and QUIC.
-- Protected backend is versioned 1.5.0 because the protected hostlist/version contract changed.
-- GTK/Adwaita UI with Router Gateway integrated.
-- After the one-time protected-backend upgrade, normal Start/Stop/Recovery remain non-interactive.
+- Dedicated temporary DNS link + ctrld + systemd-resolved.
+- nftables/NFQUEUE + zapret/nfqws v72.13.
+- Protected backend version 1.5.1.
+- Adult coverage uses the same validated catalog/fallback model as Windows.
 
 ## Release artifacts
 
-- `DirectInternetMethod_1.5.0_Windows_Setup.exe`
-- `DirectInternetMethod_1.5.0_Linux_x86_64.zip`
+- `DirectInternetMethod_1.5.1_Windows_Setup.exe`
+- `DirectInternetMethod_1.5.1_Linux_x86_64.zip`
 - `SHA256SUMS.txt`
 
-Acceptance and provenance evidence are stored under `evidence/`.
+Authoritative acceptance/provenance records are stored under `evidence/`.
