@@ -1,0 +1,299 @@
+{
+  "schema": 1,
+  "date": "2026-10-05",
+  "project": "Direct Internet Method",
+  "version": "1.5.1",
+  "status": "PASS_INSTALLED_LIFECYCLE_SITE_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
+  "installed": {
+    "version": "1.5.1",
+    "guiSha256": "B85460B8225060E7C8C9C54F5C39D444457071E77C0BBD7CD39BF34343F8B619",
+    "serviceSha256": "A327B01DFB7C05896DDB9F81E123E8A0362B200E52A5EB061AFDB4A7BCA367A5",
+    "manifestSha256": "2114B625154C7E50DC6BD6C2B3D6B7A86FDEC6D4C700374F40A15612C55C0810"
+  },
+  "adult": {
+    "entries": 84123,
+    "sha256": "B755FA57432E0DB3CFB4C6E6F796E8B4270DE77AB8234200CF803817269F1A39"
+  },
+  "pre": {
+    "interface": "Ethernet 3",
+    "localIp": "192.168.20.2",
+    "dnsV4": [
+      "192.168.20.1"
+    ],
+    "dnsV6": [],
+    "nrpt": [],
+    "ulaExists": false,
+    "ics": {
+      "exists": true,
+      "state": "Running",
+      "pid": 5436
+    },
+    "broadRouteCount": 0,
+    "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server)."
+  },
+  "cycles": [
+    {
+      "cycle": "balanced-targeted-adult-catalog",
+      "state": {
+        "strategy": "balanced",
+        "scope": "targeted",
+        "adultCoverage": true,
+        "adultHostCount": 84127,
+        "runtimeHostCount": 84145
+      },
+      "rows": [
+        {
+          "name": "YouTube",
+          "url": "https://www.youtube.com/generate_204",
+          "status": "PASS",
+          "http": "204",
+          "remote": "142.251.153.4",
+          "exit": 0,
+          "elapsedMs": 349,
+          "stderr": ""
+        },
+        {
+          "name": "OpenAI",
+          "url": "https://api.openai.com/v1/models",
+          "status": "PASS",
+          "http": "401",
+          "remote": "172.66.0.243",
+          "exit": 0,
+          "elapsedMs": 590,
+          "stderr": ""
+        },
+        {
+          "name": "GitHub",
+          "url": "https://github.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "140.82.121.4",
+          "exit": 0,
+          "elapsedMs": 9523,
+          "stderr": ""
+        },
+        {
+          "name": "Gemini",
+          "url": "https://gemini.google.com/",
+          "status": "FAIL_HTTP",
+          "http": "403",
+          "remote": "142.251.152.2",
+          "exit": 0,
+          "elapsedMs": 542,
+          "stderr": ""
+        },
+        {
+          "name": "Pornhub",
+          "url": "https://www.pornhub.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "66.254.114.41",
+          "exit": 0,
+          "elapsedMs": 4694,
+          "stderr": ""
+        },
+        {
+          "name": "XVideos",
+          "url": "https://www.xvideos.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "89.222.127.6",
+          "exit": 0,
+          "elapsedMs": 1050,
+          "stderr": ""
+        },
+        {
+          "name": "XNXX",
+          "url": "https://www.xnxx.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "152.233.100.9",
+          "exit": 0,
+          "elapsedMs": 733,
+          "stderr": ""
+        },
+        {
+          "name": "XHamster",
+          "url": "https://xhamster.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "104.16.4.81",
+          "exit": 0,
+          "elapsedMs": 1088,
+          "stderr": ""
+        },
+        {
+          "name": "Reddit",
+          "url": "https://www.reddit.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "146.75.121.140",
+          "exit": 0,
+          "elapsedMs": 1831,
+          "stderr": ""
+        },
+        {
+          "name": "Wikipedia",
+          "url": "https://www.wikipedia.org/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "185.15.59.224",
+          "exit": 0,
+          "elapsedMs": 1623,
+          "stderr": ""
+        }
+      ]
+    },
+    {
+      "cycle": "strong-all-sites",
+      "state": {
+        "strategy": "strong",
+        "scope": "all-sites",
+        "adultCoverage": true,
+        "adultHostCount": 84127,
+        "runtimeHostCount": 84145
+      },
+      "rows": [
+        {
+          "name": "YouTube",
+          "url": "https://www.youtube.com/generate_204",
+          "status": "PASS",
+          "http": "204",
+          "remote": "142.251.150.4",
+          "exit": 0,
+          "elapsedMs": 841,
+          "stderr": ""
+        },
+        {
+          "name": "OpenAI",
+          "url": "https://api.openai.com/v1/models",
+          "status": "PASS",
+          "http": "401",
+          "remote": "172.66.0.243",
+          "exit": 0,
+          "elapsedMs": 473,
+          "stderr": ""
+        },
+        {
+          "name": "GitHub",
+          "url": "https://github.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "140.82.121.3",
+          "exit": 0,
+          "elapsedMs": 13449,
+          "stderr": ""
+        },
+        {
+          "name": "Gemini",
+          "url": "https://gemini.google.com/",
+          "status": "FAIL_HTTP",
+          "http": "403",
+          "remote": "142.251.154.2",
+          "exit": 0,
+          "elapsedMs": 545,
+          "stderr": ""
+        },
+        {
+          "name": "Pornhub",
+          "url": "https://www.pornhub.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "66.254.114.41",
+          "exit": 0,
+          "elapsedMs": 4100,
+          "stderr": ""
+        },
+        {
+          "name": "XVideos",
+          "url": "https://www.xvideos.com/",
+          "status": "FAIL_TRANSPORT",
+          "http": "000",
+          "remote": "",
+          "exit": 28,
+          "elapsedMs": 6052,
+          "stderr": "curl: (28) Connection timed out after 6009 milliseconds"
+        },
+        {
+          "name": "XNXX",
+          "url": "https://www.xnxx.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "152.233.100.12",
+          "exit": 0,
+          "elapsedMs": 840,
+          "stderr": ""
+        },
+        {
+          "name": "XHamster",
+          "url": "https://xhamster.com/",
+          "status": "FAIL_TRANSPORT",
+          "http": "000",
+          "remote": "",
+          "exit": 28,
+          "elapsedMs": 6080,
+          "stderr": "curl: (28) Connection timed out after 6019 milliseconds"
+        },
+        {
+          "name": "Reddit",
+          "url": "https://www.reddit.com/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "146.75.121.140",
+          "exit": 0,
+          "elapsedMs": 562,
+          "stderr": ""
+        },
+        {
+          "name": "Wikipedia",
+          "url": "https://www.wikipedia.org/",
+          "status": "PASS",
+          "http": "200",
+          "remote": "185.15.59.224",
+          "exit": 0,
+          "elapsedMs": 1725,
+          "stderr": ""
+        }
+      ]
+    }
+  ],
+  "recovery": {
+    "schema": 1,
+    "action": "recovery",
+    "phase": "done",
+    "exitCode": 0,
+    "message": "Action completed.",
+    "updatedUtc": "2026-10-06T01:14:55.0011736+03:30"
+  },
+  "post": {
+    "stateExists": false
+  },
+  "rollbackEqual": true,
+  "finalActive": {
+    "strategy": "balanced",
+    "scope": "targeted",
+    "adultCoverage": true,
+    "adultHostCount": 84127,
+    "runtimeHostCount": 84145,
+    "ctrldPid": 35044,
+    "winwsPid": 49160,
+    "pre": {
+      "interface": "Ethernet 3",
+      "localIp": "192.168.20.2",
+      "dnsV4": [
+        "192.168.20.1"
+      ],
+      "dnsV6": [],
+      "nrpt": [],
+      "ulaExists": false,
+      "ics": {
+        "exists": true,
+        "state": "Running",
+        "pid": 5436
+      },
+      "broadRouteCount": 0,
+      "winHttp": "Current WinHTTP proxy settings:\r\n\r\n    Direct access (no proxy server)."
+    }
+  },
+  "error": null
+}

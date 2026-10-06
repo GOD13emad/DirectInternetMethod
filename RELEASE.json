@@ -2,8 +2,8 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.5.1",
-  "date": "2026-10-05",
-  "status": "CANDIDATE_LINUX_INSTALLED_PASS_FINAL_CI_AND_WINDOWS_ACCEPTANCE_PENDING",
+  "date": "2026-10-06",
+  "status": "CANDIDATE_1_5_1_FINAL_ARTIFACT_EXACT_INSTALLED_IDENTITY_PASS_LIFECYCLE_CI_PENDING",
   "previousAccepted": {
     "version": "1.5.0",
     "tag": "v1.5.0",
@@ -29,9 +29,9 @@
       "maxValidatedDomains": 100000,
       "minimumValidatedDomains": 10000,
       "representativeEvidence": {
-        "xvideos": "PASS_HTTP_200_AFTER_HOST_SCOPE_ON_LINUX",
-        "xnxx": "PASS_HTTP_200_AFTER_HOST_SCOPE_ON_LINUX",
-        "xhamster": "FAIL_UNPROVEN_FULL_PAGE; best isolated accepted-runtime candidates reached HTTP_520 on one edge and TLS failure on another"
+        "xvideos": "PASS_WINDOWS_HTTP_200_STABLE_AND_LINUX_HTTP_200_AFTER_HOST_SCOPE",
+        "xnxx": "PASS_WINDOWS_HTTP_200_STABLE_AND_LINUX_HTTP_200_AFTER_HOST_SCOPE",
+        "xhamster": "PASS_WINDOWS_STABLE_ON_HEALTHY_CLOUDFLARE_EDGE; 104.16.4.81_HTTP_200_5_OF_5; 104.16.3.81_TCP_TIMEOUT_5_OF_5; LINUX_EDGE_LIMITATION_REMAINS"
       }
     },
     "strategyProfiles": [
@@ -66,14 +66,14 @@
   },
   "platforms": {
     "windows": {
-      "status": "PASS_LOCAL_EXACT_ARTIFACT_PENDING_INSTALLED_ACCEPTANCE",
+      "status": "PASS_FINAL_ARTIFACT_EXACT_INSTALLED_IDENTITY; LIFECYCLE_PENDING",
       "artifact": "delivery/DirectInternetMethod_1.5.1_Windows_Setup.exe",
-      "bytes": 157104795,
-      "sha256": "F210AD4663757727452BD6A8ADBDF0288EE7F9867EA5F67BE5322C8B6DB7281A",
-      "guiSha256": "692FF64804F71353EB1F610A10324C7EEE402B0F3F8DD0ADA774FC7F77C8EC9D",
-      "serviceSha256": "F722FB4926AFE3552AC5DE7BB7B044A14D7808032CE13558AC4471B9E729732F",
-      "manifestSha256": "F5F60DBC6B98248701C43746AE8904A8C4442E23058F59BFB264D78293D386A1",
-      "manifestFiles": 679,
+      "bytes": 157111497,
+      "sha256": "4E1974B5A40F96B49B7B4196FFE963DCDF65B05E4F2B89DE4EC06E794B77EE9B",
+      "guiSha256": "B85460B8225060E7C8C9C54F5C39D444457071E77C0BBD7CD39BF34343F8B619",
+      "serviceSha256": "A327B01DFB7C05896DDB9F81E123E8A0362B200E52A5EB061AFDB4A7BCA367A5",
+      "manifestSha256": "2114B625154C7E50DC6BD6C2B3D6B7A86FDEC6D4C700374F40A15612C55C0810",
+      "manifestFiles": 680,
       "authenticode": "NotSigned"
     },
     "linux": {
@@ -87,20 +87,20 @@
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "6C3BE10C2A8A4225897DE5A0EB08869F3C32E68055C1207839F27A67A225F904"
+    "sha256": "F960D903DE02EB066169422F725AE472A45955BB9C42C621225EF2C691BD0E50"
   },
   "acceptance": {
-    "windowsPayload": "PASS",
-    "windowsInstaller": "PASS_STABLE_OUTPUT",
-    "windowsContract": "PASS",
+    "windowsPayload": "PASS_FINAL_BUILD",
+    "windowsInstaller": "PASS_FINAL_BUILD_STABLE_OUTPUT",
+    "windowsContract": "PASS_FINAL_CANDIDATE",
     "linuxPackage": "PASS",
     "linuxContract": "PASS",
-    "protectedCi": "PASS_RUN_37352898981_ON_E9CDE0D; FINAL_METADATA_HEAD_RERUN_PENDING",
-    "publication": "PENDING",
-    "installedWindows": "PENDING",
+    "protectedCi": "PASS_PRIOR_HEAD; EXACT_FINAL_HEAD_PENDING",
+    "publication": "PENDING_EXACT_LIFECYCLE_AND_FINAL_HEAD_CI",
+    "installedWindows": "PASS_EXACT_FINAL_ARTIFACT_IDENTITY; LIFECYCLE_SITE_ROLLBACK_PENDING",
     "installedLinux": "PASS_LIFECYCLE_SITE_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
-    "adultCoverage": "PARTIAL_EVIDENCE_XVIDEOS_XNXX_PASS_XHAMSTER_UNPROVEN",
-    "gemini": "FAIL_HTTP_403_CURRENT_EGRESS",
+    "adultCoverage": "PASS_WINDOWS_STABLE_REPRESENTATIVES_WITH_CDN_EDGE_CAVEAT; LINUX_XHAMSTER_LIMITATION",
+    "gemini": "FAIL_HTTP_403_CURL_AND_REAL_CHROME_CURRENT_EGRESS_DIRECT_ONLY_EXHAUSTED",
     "routerGatewayContract": "PASS",
     "rejectedComponentAudit": "PASS",
     "releaseMetadata": "PASS",
@@ -109,8 +109,8 @@
     "linuxCrossHostRebuild": "PASS_EXACT_SHA_2D0D4CEC"
   },
   "validationBoundary": {
-    "universalAdultGuarantee": "UNPROVABLE: maintained domain coverage maximizes targeting, but remote origins/CDN edges and site policy can still fail independently of DPI bypass.",
-    "gemini": "Direct-only architecture cannot change egress geolocation; HTTP 403 remains a separate egress-policy blocker.",
+    "universalAdultGuarantee": "UNPROVABLE: maintained domain coverage and host-specific profiles maximize targeting, but remote CDN edge reachability remains external. Windows stable-state representative coverage is proven; one XHamster Cloudflare edge is reachable/200 and one is TCP-unreachable.",
+    "gemini": "Direct-only architecture cannot change public egress geolocation. Gemini is HTTP 403 in curl and real Chrome on the validated current egress; usable Gemini requires a separate egress-changing architecture.",
     "authenticode": "NOT_SIGNED_EXTERNAL_TRUST_CERTIFICATE_MISSING",
     "proxyVpn": "NOT_USED"
   },
@@ -119,7 +119,9 @@
     "windowsPayload": "evidence/WINDOWS_151_PAYLOAD_BUILD_20261005.json",
     "windowsInstaller": "evidence/WINDOWS_151_INSTALLER_BUILD_20261005.json",
     "linuxCrossHostCandidate": "evidence/LINUX_151_CROSS_HOST_CANDIDATE_20261005.json",
-    "linuxInstalled": "evidence/LINUX_151_INSTALLED_LIFECYCLE_20261005.json"
+    "linuxInstalled": "evidence/LINUX_151_INSTALLED_LIFECYCLE_20261005.json",
+    "windowsInstalled": "evidence/WINDOWS_151_INSTALLED_LIFECYCLE_20261005.json",
+    "authorityRuntimeDelta": "evidence/DIM_151_AUTHORITY_RUNTIME_DELTA_20261005.json"
   },
-  "exactNextAction": "Commit Linux installed acceptance + lifecycle regression, require protected CI on the final head, then perform Windows exact-installer/live acceptance without disrupting an active user session. Keep XHamster and Gemini as explicit unresolved external-edge/egress gates."
+  "exactNextAction": "Run exact final Windows lifecycle/site/rollback acceptance using this artifact authority, restore ACTIVE balanced/targeted state, record evidence, commit generated artifact metadata, require protected CI on exact final head, merge/publish v1.5.1 if green."
 }

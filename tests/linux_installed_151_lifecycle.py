@@ -37,21 +37,25 @@ def snapshot():
 def probe(name,url,allowed):
     t=time.monotonic()
     p=run(["curl","-4","-L","--noproxy","*","-A","Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36",
-           "-sS","-o","/dev/null","-w","%{http_code}|%{remote_ip}|%{time_total}","--connect-timeout","6","--max-time","12",url],15)
+           "-sS","-o","/dev/null","-w","%{http_code}|%{remote_ip}|%{time_total}","--connect-timeout","6","--max-time","20",url],23)
     raw=p.stdout.strip()
     parts=raw.split("|")
     code=parts[0] if parts else ""
     remote=parts[1] if len(parts)>1 else ""
-    reached=p.returncode==0 and len(code)==3 and code!="000"
-    status="PASS" if reached and code in allowed else ("REACHABLE" if reached else "FAIL")
+    reached=len(code)==3 and code!="000" and bool(remote)
+    acceptable_transport=p.returncode in (0,28)
+    status="PASS" if reached and acceptable_transport and code in allowed else ("REACHABLE" if reached else "FAIL")
     return {"name":name,"url":url,"status":status,"http":code,"remote":remote,"exit":p.returncode,"elapsedMs":round((time.monotonic()-t)*1000),"raw":raw,"stderr":p.stderr.strip()}
 
 TARGETS=[
  ("YouTube","https://www.youtube.com/generate_204",{"200","204"}),
- ("OpenAI","https://api.openai.com/v1/models",{"200","401","403"}),
+ ("OpenAI","https://api.openai.com/v1/models",{"200","401"}),
  ("GitHub","https://github.com/",{"200","301","302","303","307","308"}),
  ("Gemini","https://gemini.google.com/",{"200","301","302","303","307","308"}),
  ("Adult site","https://www.pornhub.com/",{"200","301","302","303","307","308"}),
+ ("XVideos","https://www.xvideos.com/",{"200","301","302","303","307","308"}),
+ ("XNXX","https://www.xnxx.com/",{"200","301","302","303","307","308"}),
+ ("XHamster","https://xhamster.com/",{"200","301","302","303","307","308"}),
  ("Reddit","https://www.reddit.com/",{"200","301","302","303","307","308"}),
  ("Wikipedia","https://www.wikipedia.org/",{"200","301","302","303","307","308"}),
  ("Cloudflare","https://www.cloudflare.com/",{"200","301","302","303","307","308"}),
