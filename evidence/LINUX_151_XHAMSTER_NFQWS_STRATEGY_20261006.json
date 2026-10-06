@@ -4,7 +4,7 @@
   "project": "Direct Internet Method",
   "version": "1.5.1",
   "changeSet": "linux-xhamster-edge-specific-nfqws-strategy",
-  "status": "SOURCE_PATCH_LOCAL_CONTRACT_PASS_PENDING_EXACT_INSTALL_ACCEPTANCE",
+  "status": "PASS_EXACT_INSTALLED_RUNTIME_AND_ROLLBACK",
   "previousAcceptedState": {
     "windows": "v1.5.1 exact-installed lifecycle PASS; balanced/targeted adult coverage: Pornhub/XVideos/XNXX/XHamster/Reddit HTTP 200",
     "linux": "v1.5.1 installed/ACTIVE with adult coverage; XVideos/XNXX/Reddit pass but XHamster is edge-flaky on balanced/targeted"
@@ -50,5 +50,30 @@
     "linuxContract": "PASS",
     "diffCheck": "PASS"
   },
-  "exactNextAction": "Commit/push this narrow source fix, rebuild from a fresh exact commit on Linux, install exact archive, run balanced/targeted full matrix + lifecycle/rollback, then update canonical artifact metadata only if exact installed acceptance passes."
+  "exactNextAction": "Promote final artifact metadata, require protected CI on the exact final metadata head, merge PR #20, publish/tag v1.5.1, then verify public asset digests and installed Windows/Linux authority.",
+  "exactInstalledAcceptance": {
+    "sourceCommit": "52e00dd1bd2f635f0241b51e7106af6a2bfe86ee",
+    "artifact": {
+      "file": "DirectInternetMethod_1.5.1_Linux_x86_64.zip",
+      "bytes": 8185606,
+      "sha256": "21FE512444957008DA4D79F540ABCEAD5CC9CB18481F1FF8B620A4B90A9374B8",
+      "crossHostRebuild": "PASS_BYTE_IDENTICAL_WINDOWS_LINUX"
+    },
+    "helperSha256": "DD2E3F37B0B91698D6F220E5953BEC84419C14B8592A4D3547EEC4DF7E802AB0",
+    "overrideSha256": "A706F1035230EDDFB1EA5037A4234AEA351018265F2B359DA4C9E1347A3A900A",
+    "balancedTargetedMatrix": {
+      "YouTube": 204,
+      "OpenAI": 401,
+      "GitHub": 200,
+      "Pornhub": 200,
+      "XVideos": 200,
+      "XNXX": 200,
+      "XHamster": 200,
+      "Reddit": 200,
+      "Wikipedia": 200,
+      "Gemini": 403
+    },
+    "rollbackEqual": true,
+    "finalState": "ACTIVE_BALANCED_TARGETED_ADULT_ON"
+  }
 }

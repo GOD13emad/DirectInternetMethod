@@ -1,0 +1,174 @@
+{
+  "schema": 1,
+  "date": "2026-10-06",
+  "project": "Direct Internet Method",
+  "version": "1.5.1",
+  "sourceCommit": "52e00dd1bd2f635f0241b51e7106af6a2bfe86ee",
+  "status": "PASS_EXACT_INSTALLED_BALANCED_TARGETED_ADULT_MATRIX_ROLLBACK_RESTORED_ACTIVE",
+  "identity": {
+    "helperPackageSha256": "DD2E3F37B0B91698D6F220E5953BEC84419C14B8592A4D3547EEC4DF7E802AB0",
+    "helperInstalledSha256": "DD2E3F37B0B91698D6F220E5953BEC84419C14B8592A4D3547EEC4DF7E802AB0",
+    "strongOverridePackageSha256": "A706F1035230EDDFB1EA5037A4234AEA351018265F2B359DA4C9E1347A3A900A",
+    "strongOverrideInstalledSha256": "A706F1035230EDDFB1EA5037A4234AEA351018265F2B359DA4C9E1347A3A900A"
+  },
+  "pre": {
+    "defaultRoute": "default via 192.168.20.1 dev enp1s0 proto dhcp src 192.168.20.6 metric 100",
+    "defaultRouteLinks": "Global\n         Protocols: -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported\n  resolv.conf mode: stub\nLink 2 (enp1s0): yes\nLink 3 (wlp2s0): no",
+    "dns": "Global:\nLink 2 (enp1s0): 192.168.20.1\nLink 3 (wlp2s0):",
+    "domains": "Global:\nLink 2 (enp1s0): bwrouter\nLink 3 (wlp2s0):"
+  },
+  "active": {
+    "schema": 3,
+    "status": "ACTIVE",
+    "architecture": "LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS_MULTIPROTOCOL",
+    "directMethods": [
+      "encrypted-dns-doh",
+      "http-host-split-tcp80",
+      "tls-sni-desync-tcp443",
+      "quic-desync-udp443",
+      "custom-hostlist",
+      "adult-catalog",
+      "strategy-profile"
+    ],
+    "strategy": "balanced",
+    "scope": "targeted",
+    "adultCoverage": true,
+    "adultHostCount": 84127,
+    "ctrldPid": 3528802,
+    "nfqwsPid": 3528893,
+    "physicalInterface": "enp1s0",
+    "dnsInterface": "dimdns0",
+    "dnsIp": "192.0.2.53",
+    "ctrldUnit": "directinternetmethod-ctrld-1000.service",
+    "nfqwsUnit": "directinternetmethod-nfqws-1000.service",
+    "started": 1791270112.9626846
+  },
+  "matrix": [
+    {
+      "name": "YouTube",
+      "status": "PASS",
+      "http": "204",
+      "exit": 0,
+      "result": "204|142.251.153.4|0.170671|0.341728|0.341769",
+      "stderr": "",
+      "elapsedMs": 349
+    },
+    {
+      "name": "OpenAI",
+      "status": "PASS",
+      "http": "401",
+      "exit": 0,
+      "result": "401|162.159.140.245|0.141678|0.439710|0.441023",
+      "stderr": "",
+      "elapsedMs": 449
+    },
+    {
+      "name": "GitHub",
+      "status": "PASS",
+      "http": "200",
+      "exit": 0,
+      "result": "200|140.82.121.3|0.169616|0.408381|0.720911",
+      "stderr": "",
+      "elapsedMs": 728
+    },
+    {
+      "name": "Gemini",
+      "status": "FAIL_HTTP",
+      "http": "403",
+      "exit": 0,
+      "result": "403|142.251.150.2|0.170456|0.447865|0.447910",
+      "stderr": "",
+      "elapsedMs": 455
+    },
+    {
+      "name": "Pornhub",
+      "status": "PASS",
+      "http": "200",
+      "exit": 0,
+      "result": "200|66.254.114.41|0.207603|0.565954|1.293992",
+      "stderr": "",
+      "elapsedMs": 1301
+    },
+    {
+      "name": "XVideos",
+      "status": "PASS",
+      "http": "200",
+      "exit": 0,
+      "result": "200|89.222.127.7|0.179133|0.412876|0.673847",
+      "stderr": "",
+      "elapsedMs": 681
+    },
+    {
+      "name": "XNXX",
+      "status": "PASS",
+      "http": "200",
+      "exit": 0,
+      "result": "200|152.233.100.10|0.192506|0.447183|0.622760",
+      "stderr": "",
+      "elapsedMs": 630
+    },
+    {
+      "name": "XHamster",
+      "status": "PASS",
+      "http": "200",
+      "exit": 0,
+      "result": "200|104.16.4.81|0.178935|0.365344|1.025814",
+      "stderr": "",
+      "elapsedMs": 1033
+    },
+    {
+      "name": "Reddit",
+      "status": "PASS",
+      "http": "200",
+      "exit": 0,
+      "result": "200|146.75.121.140|0.168421|0.338738|0.341557",
+      "stderr": "",
+      "elapsedMs": 348
+    },
+    {
+      "name": "Wikipedia",
+      "status": "PASS",
+      "http": "200",
+      "exit": 0,
+      "result": "200|185.15.59.224|0.165816|0.352770|0.524777",
+      "stderr": "",
+      "elapsedMs": 532
+    }
+  ],
+  "post": {
+    "defaultRoute": "default via 192.168.20.1 dev enp1s0 proto dhcp src 192.168.20.6 metric 100",
+    "defaultRouteLinks": "Global\n         Protocols: -LLMNR -mDNS -DNSOverTLS DNSSEC=no/unsupported\n  resolv.conf mode: stub\nLink 2 (enp1s0): yes\nLink 3 (wlp2s0): no",
+    "dns": "Global:\nLink 2 (enp1s0): 192.168.20.1\nLink 3 (wlp2s0):",
+    "domains": "Global:\nLink 2 (enp1s0): bwrouter\nLink 3 (wlp2s0):"
+  },
+  "rollbackEqual": true,
+  "finalActive": {
+    "schema": 3,
+    "status": "ACTIVE",
+    "architecture": "LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS_MULTIPROTOCOL",
+    "directMethods": [
+      "encrypted-dns-doh",
+      "http-host-split-tcp80",
+      "tls-sni-desync-tcp443",
+      "quic-desync-udp443",
+      "custom-hostlist",
+      "adult-catalog",
+      "strategy-profile"
+    ],
+    "strategy": "balanced",
+    "scope": "targeted",
+    "adultCoverage": true,
+    "adultHostCount": 84127,
+    "ctrldPid": 3529941,
+    "nfqwsPid": 3530022,
+    "physicalInterface": "enp1s0",
+    "dnsInterface": "dimdns0",
+    "dnsIp": "192.0.2.53",
+    "ctrldUnit": "directinternetmethod-ctrld-1000.service",
+    "nfqwsUnit": "directinternetmethod-nfqws-1000.service",
+    "started": 1791270116.2925272
+  },
+  "limitation": {
+    "Gemini": "HTTP 403 confirmed FAIL_HTTP; not accepted as usable-page PASS"
+  }
+}

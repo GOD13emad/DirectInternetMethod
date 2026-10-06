@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.1",
   "date": "2026-10-06",
-  "status": "CANDIDATE_1_5_1_FINAL_ARTIFACT_EXACT_INSTALLED_IDENTITY_PASS_LIFECYCLE_CI_PENDING",
+  "status": "CANDIDATE_1_5_1_WINDOWS_LINUX_EXACT_INSTALLED_ACCEPTED_FINAL_HEAD_CI_PENDING",
   "previousAccepted": {
     "version": "1.5.0",
     "tag": "v1.5.0",
@@ -29,9 +29,9 @@
       "maxValidatedDomains": 100000,
       "minimumValidatedDomains": 10000,
       "representativeEvidence": {
-        "xvideos": "PASS_WINDOWS_HTTP_200_STABLE_AND_LINUX_HTTP_200_AFTER_HOST_SCOPE",
-        "xnxx": "PASS_WINDOWS_HTTP_200_STABLE_AND_LINUX_HTTP_200_AFTER_HOST_SCOPE",
-        "xhamster": "PASS_WINDOWS_STABLE_ON_HEALTHY_CLOUDFLARE_EDGE; 104.16.4.81_HTTP_200_5_OF_5; 104.16.3.81_TCP_TIMEOUT_5_OF_5; LINUX_EDGE_LIMITATION_REMAINS"
+        "xvideos": "PASS_WINDOWS_LINUX_HTTP_200_EXACT_INSTALLED",
+        "xnxx": "PASS_WINDOWS_LINUX_HTTP_200_EXACT_INSTALLED",
+        "xhamster": "PASS_WINDOWS_LINUX_HTTP_200_EXACT_INSTALLED_BALANCED_TARGETED_AFTER_PLATFORM_SPECIFIC_NFQWS_OVERRIDE"
       }
     },
     "strategyProfiles": [
@@ -66,7 +66,7 @@
   },
   "platforms": {
     "windows": {
-      "status": "PASS_FINAL_ARTIFACT_EXACT_INSTALLED_IDENTITY; LIFECYCLE_PENDING",
+      "status": "PASS_EXACT_INSTALLED_LIFECYCLE_SITE_MATRIX_ROLLBACK_RESTORED_ACTIVE",
       "artifact": "delivery/DirectInternetMethod_1.5.1_Windows_Setup.exe",
       "bytes": 157111497,
       "sha256": "4E1974B5A40F96B49B7B4196FFE963DCDF65B05E4F2B89DE4EC06E794B77EE9B",
@@ -77,17 +77,17 @@
       "authenticode": "NotSigned"
     },
     "linux": {
-      "status": "PASS_INSTALLED_LIFECYCLE_ROLLBACK_VERIFIED",
+      "status": "PASS_EXACT_INSTALLED_BALANCED_TARGETED_ADULT_MATRIX_ROLLBACK_RESTORED_ACTIVE",
       "artifact": "delivery/DirectInternetMethod_1.5.1_Linux_x86_64.zip",
-      "bytes": 8183518,
-      "sha256": "2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA",
+      "bytes": 8185606,
+      "sha256": "21FE512444957008DA4D79F540ABCEAD5CC9CB18481F1FF8B620A4B90A9374B8",
       "protectedBackendVersion": "1.5.1",
-      "packageFiles": 18
+      "packageFiles": 19
     }
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "F960D903DE02EB066169422F725AE472A45955BB9C42C621225EF2C691BD0E50"
+    "sha256": "BE9249CD5E326C2B47BC6DAC79EF62EFC9A2B4ACC9491E223A3DBE0064583DC0"
   },
   "acceptance": {
     "windowsPayload": "PASS_FINAL_BUILD",
@@ -95,22 +95,22 @@
     "windowsContract": "PASS_FINAL_CANDIDATE",
     "linuxPackage": "PASS",
     "linuxContract": "PASS",
-    "protectedCi": "PASS_PRIOR_HEAD; EXACT_FINAL_HEAD_PENDING",
-    "publication": "PENDING_EXACT_LIFECYCLE_AND_FINAL_HEAD_CI",
-    "installedWindows": "PASS_EXACT_FINAL_ARTIFACT_IDENTITY; LIFECYCLE_SITE_ROLLBACK_PENDING",
-    "installedLinux": "PASS_LIFECYCLE_SITE_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
-    "adultCoverage": "PASS_WINDOWS_STABLE_REPRESENTATIVES_WITH_CDN_EDGE_CAVEAT; LINUX_XHAMSTER_LIMITATION",
+    "protectedCi": "PASS_PRIOR_HEAD; FINAL_METADATA_HEAD_PENDING",
+    "publication": "PENDING_FINAL_METADATA_HEAD_CI_MERGE_TAG_RELEASE",
+    "installedWindows": "PASS_EXACT_INSTALLED_LIFECYCLE_SITE_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
+    "installedLinux": "PASS_EXACT_INSTALLED_BALANCED_TARGETED_ADULT_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
+    "adultCoverage": "PASS_WINDOWS_AND_LINUX_PORNHUB_XVIDEOS_XNXX_XHAMSTER_REDDIT_REPRESENTATIVE_MATRIX",
     "gemini": "FAIL_HTTP_403_CURL_AND_REAL_CHROME_CURRENT_EGRESS_DIRECT_ONLY_EXHAUSTED",
     "routerGatewayContract": "PASS",
     "rejectedComponentAudit": "PASS",
     "releaseMetadata": "PASS",
     "fullTrackedSourceAudit": "PASS_55_PS1_15_PY_DOTNET_0_WARN_0_ERR",
     "windowsDefender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME",
-    "linuxCrossHostRebuild": "PASS_EXACT_SHA_2D0D4CEC"
+    "linuxCrossHostRebuild": "PASS_EXACT_SHA_21FE5124"
   },
   "validationBoundary": {
-    "universalAdultGuarantee": "UNPROVABLE: maintained domain coverage and host-specific profiles maximize targeting, but remote CDN edge reachability remains external. Windows stable-state representative coverage is proven; one XHamster Cloudflare edge is reachable/200 and one is TCP-unreachable.",
-    "gemini": "Direct-only architecture cannot change public egress geolocation. Gemini is HTTP 403 in curl and real Chrome on the validated current egress; usable Gemini requires a separate egress-changing architecture.",
+    "universalAdultGuarantee": "UNPROVABLE for every remote domain/CDN edge; maintained opt-in catalog plus platform-specific bounded profiles are used. Exact-installed representative matrices on Windows and Linux both pass Pornhub/XVideos/XNXX/XHamster/Reddit with usable 2xx/3xx responses.",
+    "gemini": "Direct-only architecture cannot change public egress geolocation. Gemini is HTTP 403 in curl and real Chrome on the validated current egress; HTTP 403 remains FAIL_HTTP and a usable Gemini page requires a separate egress-changing architecture.",
     "authenticode": "NOT_SIGNED_EXTERNAL_TRUST_CERTIFICATE_MISSING",
     "proxyVpn": "NOT_USED"
   },
@@ -121,7 +121,9 @@
     "linuxCrossHostCandidate": "evidence/LINUX_151_CROSS_HOST_CANDIDATE_20261005.json",
     "linuxInstalled": "evidence/LINUX_151_INSTALLED_LIFECYCLE_20261005.json",
     "windowsInstalled": "evidence/WINDOWS_151_INSTALLED_LIFECYCLE_20261005.json",
-    "authorityRuntimeDelta": "evidence/DIM_151_AUTHORITY_RUNTIME_DELTA_20261005.json"
+    "authorityRuntimeDelta": "evidence/DIM_151_AUTHORITY_RUNTIME_DELTA_20261005.json",
+    "linuxFinalExact": "evidence/LINUX_151_FINAL_EXACT_INSTALLED_20261006.json",
+    "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json"
   },
-  "exactNextAction": "Run exact final Windows lifecycle/site/rollback acceptance using this artifact authority, restore ACTIVE balanced/targeted state, record evidence, commit generated artifact metadata, require protected CI on exact final head, merge/publish v1.5.1 if green."
+  "exactNextAction": "Run final metadata/source regression, commit/push exact final head, require protected CI, mark PR #20 ready, merge to main, tag/publish v1.5.1, verify public asset digests, and verify installed Windows/Linux authority against the published release."
 }
