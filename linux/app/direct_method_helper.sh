@@ -428,7 +428,7 @@ EOF
           --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=method+2
         )
         if [ "$ADULT_ON" = "1" ]; then
-          NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=fake,hostfakesplit --dpi-desync-hostfakesplit-midhost=midsld --dpi-desync-fooling=badseq,md5sig --dpi-desync-repeats=4)
+          NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1)
         fi
         NFQWS_ARGS+=(--new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=1,sniext+1,host+1,midsld,endhost-1)
         if [ "$ADULT_ON" = "1" ]; then
@@ -439,16 +439,22 @@ EOF
       strong)
         NFQWS_ARGS+=(
           --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=fake,fakedsplit --dpi-desync-split-pos=method+2 --dpi-desync-fooling=md5sig --dpi-desync-repeats=2
-          --new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,hostfakesplit --dpi-desync-hostfakesplit-midhost=midsld --dpi-desync-fooling=badseq,md5sig --dpi-desync-repeats=4
-          --new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=11
         )
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1)
+        fi
+        NFQWS_ARGS+=(--new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,hostfakesplit --dpi-desync-hostfakesplit-midhost=midsld --dpi-desync-fooling=badseq,md5sig --dpi-desync-repeats=4)
+        if [ "$ADULT_ON" = "1" ]; then
+          NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic --hostlist="$STRONG_OVERRIDE" --dpi-desync=fake --dpi-desync-repeats=11)
+        fi
+        NFQWS_ARGS+=(--new --filter-udp=443 --filter-l7=quic "${HOST_ARGS[@]}" --dpi-desync=fake --dpi-desync-repeats=11)
         ;;
       *)
         NFQWS_ARGS+=(
           --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=fake,multisplit --dpi-desync-split-pos=method+2 --dpi-desync-fooling=md5sig
         )
         if [ "$ADULT_ON" = "1" ]; then
-          NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=fake,hostfakesplit --dpi-desync-hostfakesplit-midhost=midsld --dpi-desync-fooling=badseq,md5sig --dpi-desync-repeats=4)
+          NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1)
         fi
         NFQWS_ARGS+=(--new --filter-tcp=443 "${HOST_ARGS[@]}" --dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld --dpi-desync-fooling=badseq,md5sig)
         if [ "$ADULT_ON" = "1" ]; then

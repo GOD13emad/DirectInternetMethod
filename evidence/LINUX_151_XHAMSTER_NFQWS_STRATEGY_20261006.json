@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "date": "2026-10-06",
+  "project": "Direct Internet Method",
+  "version": "1.5.1",
+  "changeSet": "linux-xhamster-edge-specific-nfqws-strategy",
+  "status": "SOURCE_PATCH_LOCAL_CONTRACT_PASS_PENDING_EXACT_INSTALL_ACCEPTANCE",
+  "previousAcceptedState": {
+    "windows": "v1.5.1 exact-installed lifecycle PASS; balanced/targeted adult coverage: Pornhub/XVideos/XNXX/XHamster/Reddit HTTP 200",
+    "linux": "v1.5.1 installed/ACTIVE with adult coverage; XVideos/XNXX/Reddit pass but XHamster is edge-flaky on balanced/targeted"
+  },
+  "finding": {
+    "type": "FAILURE_FIXED_PENDING_RUNTIME",
+    "status": "CONFIRMED",
+    "claim": "Linux XHamster failures are DPI/edge-specific, not catalog or DNS-resolution absence.",
+    "observations": [
+      "With Direct Method OFF, ISP/system DNS may hijack xhamster.com to 10.10.34.35.",
+      "With Direct Method ACTIVE, encrypted DNS resolves real Cloudflare edges 104.16.3.81/104.16.4.81.",
+      "Balanced/targeted and strong/targeted can fail XHamster while XVideos/XNXX/Reddit remain usable.",
+      "Compatibility sometimes passed XHamster but was edge-unstable, so profile-wide switching is insufficient."
+    ]
+  },
+  "methodEvidence": {
+    "upstream": "bol-van/zapret",
+    "version": "v72.13",
+    "releaseArchiveSha256": "25C74E6C5F48963FA244C2955E76694A07C39447245A0457E2EFDC74B3317E68",
+    "testMode": "clean HTTPS-only nfqws blockcheck; Direct Method OFF; no other DPI process; IPv4; real xhamster Cloudflare IPs forced in test resolver",
+    "result": {
+      "baseline": "TLS reset / unavailable",
+      "failedCandidates": [
+        "nfqws --dpi-desync=multisplit --dpi-desync-split-pos=2",
+        "nfqws --dpi-desync=multisplit --dpi-desync-split-pos=1"
+      ],
+      "workingCandidate": "nfqws --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1"
+    }
+  },
+  "decision": {
+    "type": "DECISION",
+    "status": "ACCEPTED_FOR_CANDIDATE",
+    "claim": "Apply the proven multisplit/sniext+1 override only to the Linux XHamster family hostlist; keep Reddit on the normal/core target path and leave Windows unchanged.",
+    "rationale": "Minimum sufficient change. It avoids global strategy escalation that regresses other sites, preserves existing XVideos/XNXX/Reddit behavior, and follows zapret upstream blockcheck evidence on the affected Linux network."
+  },
+  "mutation": [
+    "linux/app/strong_override_hosts.txt reduced to xhamster.com, xhamsterlive.com, xhcdn.com",
+    "Linux adult strong-override TCP/443 profile changed to multisplit with split-pos=sniext+1",
+    "Linux strong strategy now receives the same XHamster-specific profile before its generic TCP/443 profile",
+    "Linux contract updated to guard the dedicated strategy and keep Reddit out of the XHamster override list"
+  ],
+  "localRegression": {
+    "linuxContract": "PASS",
+    "diffCheck": "PASS"
+  },
+  "exactNextAction": "Commit/push this narrow source fix, rebuild from a fresh exact commit on Linux, install exact archive, run balanced/targeted full matrix + lifecycle/rollback, then update canonical artifact metadata only if exact installed acceptance passes."
+}
