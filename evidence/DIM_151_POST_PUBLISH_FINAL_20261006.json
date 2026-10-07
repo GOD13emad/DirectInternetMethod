@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "date": "2026-10-06",
+  "project": "Direct Internet Method",
+  "version": "1.5.1",
+  "changeSet": "post-publish-final-closeout",
+  "status": "PASS_FINAL_PUBLISHED_POST_PUBLISH_VERIFIED_RUNTIME; SOURCE_REPRODUCIBILITY_REPAIR_PENDING_PROTECTED_CI",
+  "authority": {
+    "mainCommit": "a79dfb8216c603d6e29236233e8d250b490a96cc",
+    "exactReleaseHead": "bfabb33015d32bda596144e2c5f30d8c870841ec",
+    "tree": "d0bfe6a230a3eefda064d33db25764a488611b90",
+    "treeEquality": "PASS_EXACT_HEAD_EQUALS_MERGE_COMMIT",
+    "tag": "v1.5.1",
+    "annotatedTagObject": "08a76c4ba966022104f4e16b542b573886181ec2",
+    "releaseId": 404451350,
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.1",
+    "publishedAt": "2026-10-06T07:52:05Z",
+    "protectedCi": {
+      "runId": 37427662880,
+      "status": "FALSE_GREEN_WINDOWS_JOB; LINUX_JOB_PASS",
+      "finding": "GitHub job conclusion was success, but gh run logs show windows_contract_audit.py raised FileNotFoundError for untracked windows/bin/zapret/strong-override-hosts.txt. Subsequent commands returned zero, masking the failure."
+    }
+  },
+  "publicAssets": [
+    {
+      "name": "DirectInternetMethod_1.5.1_Windows_Setup.exe",
+      "bytes": 157111497,
+      "sha256": "4E1974B5A40F96B49B7B4196FFE963DCDF65B05E4F2B89DE4EC06E794B77EE9B",
+      "githubDigest": "sha256:4e1974b5a40f96b49b7b4196ffe963dcdf65b05e4f2b89de4ec06e794b77ee9b",
+      "status": "PASS_EXACT"
+    },
+    {
+      "name": "DirectInternetMethod_1.5.1_Linux_x86_64.zip",
+      "bytes": 8185606,
+      "sha256": "21FE512444957008DA4D79F540ABCEAD5CC9CB18481F1FF8B620A4B90A9374B8",
+      "githubDigest": "sha256:21fe512444957008da4d79f540abcead5cc9cb18481f1ff8b620a4b90a9374b8",
+      "status": "PASS_EXACT"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 221,
+      "sha256": "BE9249CD5E326C2B47BC6DAC79EF62EFC9A2B4ACC9491E223A3DBE0064583DC0",
+      "githubDigest": "sha256:be9249cd5e326c2b47bc6dac79ef62efc9a2b4acc9491e223a3dbe0064583dc0",
+      "status": "PASS_EXACT"
+    }
+  ],
+  "windowsPostPublish": {
+    "latestTag": "v1.5.1",
+    "releaseVisible": true,
+    "installedVersion": "1.5.1",
+    "guiSha256": "B85460B8225060E7C8C9C54F5C39D444457071E77C0BBD7CD39BF34343F8B619",
+    "serviceSha256": "A327B01DFB7C05896DDB9F81E123E8A0362B200E52A5EB061AFDB4A7BCA367A5",
+    "manifestSha256": "2114B625154C7E50DC6BD6C2B3D6B7A86FDEC6D4C700374F40A15612C55C0810",
+    "state": {
+      "phase": "ACTIVE",
+      "strategy": "balanced",
+      "scope": "targeted",
+      "adultCoverage": true,
+      "adultHostCount": 84127
+    },
+    "status": "PASS"
+  },
+  "linuxPostPublish": {
+    "latestTag": "v1.5.1",
+    "releaseVisible": true,
+    "appVersion": "1.5.1",
+    "backendVersion": "1.5.1",
+    "helperSha256": "DD2E3F37B0B91698D6F220E5953BEC84419C14B8592A4D3547EEC4DF7E802AB0",
+    "strongOverrideSha256": "A706F1035230EDDFB1EA5037A4234AEA351018265F2B359DA4C9E1347A3A900A",
+    "state": {
+      "status": "ACTIVE",
+      "strategy": "balanced",
+      "scope": "targeted",
+      "adultCoverage": true,
+      "adultHostCount": 84127
+    },
+    "xhamsterStability": {
+      "forcedEdge104_16_3_81": "FAIL_FORCED_EDGE",
+      "forcedEdge104_16_4_81": "PASS_5_OF_5_HTTP_200",
+      "normalClientConsecutive": "PASS_10_OF_10_HTTP_200",
+      "restartCycles": "PASS_5_OF_5_HTTP_200",
+      "detail": "In four restart cycles DNS listed 104.16.3.81 first; normal curl/libcurl operation still completed on 104.16.4.81 with HTTP 200, demonstrating client failover. No brittle shared-CDN IP pinning or global aggressive profile was promoted."
+    },
+    "status": "PASS_NORMAL_CLIENT_RELEASE_ACCEPTANCE"
+  },
+  "boundaries": {
+    "gemini": "FAIL_HTTP_403 on current public egress in curl and real Chrome; not counted as PASS. Requires separate egress-changing architecture if authorized.",
+    "universalAdultGuarantee": "UNPROVABLE for every remote domain/CDN edge; representative normal-client acceptance and maintained catalog are the supported evidence level.",
+    "windowsAuthenticode": "MISSING_EXTERNAL_TRUSTED_PUBLISHER_CERTIFICATE; artifact hash verification remains authoritative."
+  },
+  "decision": {
+    "claim": "Promote v1.5.1 as final for the validated direct-only architecture; do not add brittle IP pinning or global stronger DPI strategy solely to make one forced CDN edge pass.",
+    "rationale": "Normal-client Linux behavior remained usable across repeated restarts through healthy-edge failover; global Strong had documented regressions on other sites, and static shared-CDN pinning would add systemic risk without improving validated user outcome."
+  },
+  "exactNextAction": "Run full tracked source audit, commit/push the source reproducibility repair, require fresh-checkout protected CI to genuinely pass Windows+Linux, merge to main, then verify v1.5.1 tag/assets remain unchanged.",
+  "sourceReproducibilityRepair": {
+    "status": "LOCAL_PASS_PROTECTED_CI_PENDING",
+    "rootCause": [
+      "windows/bin/zapret/strong-override-hosts.txt was ignored and not tracked although the installer/manifest/Start-Direct contract depended on it.",
+      "Hash-pinned Windows text payloads had no explicit EOL attributes; core.autocrlf=true produced checkout-dependent raw SHA-256 bytes.",
+      "Windows GitHub Actions multi-command audit step did not exit after a failed external python command, allowing a later passing command to make the step green."
+    ],
+    "prevention": [
+      "Force-track the exact Windows strong-override source payload.",
+      "Pin published byte conventions in .gitattributes: hosts.txt=CRLF, adult-fallback-hosts.txt=LF, strong-override-hosts.txt=CRLF.",
+      "Require source contract checks for tracked override, EOL policy and CI fail-fast.",
+      "Add explicit LASTEXITCODE exits after every Windows external audit command."
+    ],
+    "localRegression": {
+      "windowsContract": "PASS_INCLUDING_SOURCE_TRACKING_EOL_CI_FAIL_FAST_AND_SELF_INTEGRITY",
+      "releaseMetadata": "PASS",
+      "linuxContract": "PASS",
+      "diffCheck": "PASS"
+    },
+    "releaseImpact": "NO_RUNTIME_ASSET_CHANGE. Published v1.5.1 artifacts remain exact-installed and post-publish verified; repair makes future clean-source builds/audits reproducible."
+  }
+}

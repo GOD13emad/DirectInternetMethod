@@ -84,11 +84,17 @@ jobs:
         shell: pwsh
         run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
       - name: Full Windows and Router Gateway contract audits
+        shell: pwsh
         run: |
+          $ErrorActionPreference='Stop'
           python tests/windows_contract_audit.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/adult_coverage_data_audit.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/router_gateway_contract_audit.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/rejected_component_audit.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
 
   windows-release-contract:
     name: windows-release-contract
@@ -100,7 +106,12 @@ jobs:
         shell: pwsh
         run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
       - name: Full Windows and Router Gateway contract audits
+        shell: pwsh
         run: |
+          $ErrorActionPreference='Stop'
           python tests/windows_contract_audit.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/router_gateway_contract_audit.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/rejected_component_audit.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
