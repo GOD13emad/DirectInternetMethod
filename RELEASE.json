@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.2",
   "date": "2026-10-08",
-  "status": "CANDIDATE_V152_BUILT_NOT_RELEASED",
+  "status": "CANDIDATE_V152_HOLD_APP_CONTROL_SIGNING",
   "previousAccepted": {
     "version": "1.5.1",
     "tag": "v1.5.1",
@@ -66,7 +66,7 @@
   },
   "platforms": {
     "windows": {
-      "status": "PASS_BUILT_ASSET_IDENTITY_ONLY_INSTALLED_VALIDATION_OPEN",
+      "status": "BUILD_PASS_BUT_ISOLATED_EXECUTION_BLOCKED_BY_APP_CONTROL",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Windows_Setup.exe",
       "bytes": 157128933,
       "sha256": "BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85",
@@ -112,7 +112,10 @@
     "windowsDefender": "PENDING_V152_VERIFICATION",
     "linuxCrossHostRebuild": "PENDING_V152_VERIFICATION",
     "sourceReproducibility": "NEEDS_INDEPENDENT_LINUX_V152_REBUILD",
-    "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING"
+    "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING",
+    "windowsSandbox": "FAIL_APP_CONTROL_POLICY_BLOCKED_EXACT_SHA",
+    "windowsDistributionSigning": "FAIL_AUTHENTICODE_NOT_SIGNED",
+    "installerIntegrity": "PASS_EXACT_HASH"
   },
   "validationBoundary": {
     "universalAdultGuarantee": "UNPROVABLE for every remote domain/CDN edge. Maintained opt-in catalog plus bounded platform profiles are used. Exact-installed normal-client matrices pass Pornhub/XVideos/XNXX/XHamster/Reddit. On validated Linux, forced Cloudflare edge 104.16.3.81 is unusable, but normal client operation failed over to 104.16.4.81 and returned HTTP 200 in 5/5 restart cycles.",
@@ -132,6 +135,6 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Candidate Windows installer built; corrected Linux 1.5.2 ZIP includes SHA-gated reuse of byte-identical 1.5.1 protected backend. Pending exact-head CI, independent Linux rebuild and real non-admin upgrade/rollback. Not published.",
+  "exactNextAction": "Windows v1.5.2 installer exact SHA is correct but Windows Sandbox App Control blocked its execution. Do NOT publish until signed/trusted distribution and clean Sandbox full install acceptance; Issue #25. Both Linux v1.5.2 user upgrades passed without repeat admin only with 10/10 byte-identical 1.5.1 protected backend. Gemini 403 remains FAIL.",
   "publication": {}
 }

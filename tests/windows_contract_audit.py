@@ -11,6 +11,7 @@ manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml");
 payload_builder=(R/"tests"/"build_windows_152_payload.ps1").read_text(encoding="utf-8-sig")
 installer_builder=(R/"tests"/"build_windows_152_installer.ps1").read_text(encoding="utf-8-sig")
 ci_workflow=(R/".github"/"workflows"/"ci.yml").read_text(encoding="utf-8-sig")
+signature_gate=(R/"tests"/"windows_distribution_signature_audit.ps1").read_text(encoding="utf-8-sig")
 gitattributes=(R/".gitattributes").read_text(encoding="utf-8-sig")
 install_registration_guard=(R/"tests"/"windows_install_registration_audit.ps1").read_text(encoding="utf-8-sig")
 installed_release_verifier=(R/"tests"/"windows_installed_release_audit.ps1").read_text(encoding="utf-8-sig")
@@ -108,6 +109,7 @@ check("windows_installer_output_stability_guard", all(x in installer_builder for
 tracked_strong=subprocess.run(["git","ls-files","--error-unmatch","windows/bin/zapret/strong-override-hosts.txt"],cwd=R,text=True,capture_output=True).returncode==0
 check("windows_strong_override_source_tracked", tracked_strong)
 check("windows_hash_pinned_text_eol_policy", all(x in gitattributes for x in ("windows/bin/zapret/hosts.txt text eol=crlf","windows/bin/zapret/adult-fallback-hosts.txt text eol=lf","windows/bin/zapret/strong-override-hosts.txt text eol=crlf")))
+check("windows_distribution_signature_fail_closed", all(x in signature_gate for x in ("Get-AuthenticodeSignature","TRUSTED_AUTHENTICODE_SIGNATURE_REQUIRED","$sig.Status -ne 'Valid'","FAIL_CLOSED","exit 42")))
 check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}

@@ -11,3 +11,7 @@ Candidate hashes, exact-head CI, installed lifecycle, version parity and publica
 Candidate checksums (not public authority):
 BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85  DirectInternetMethod_1.5.2_Windows_Setup.exe
 2F13E15236F7AE3128C3A981605F5240F8A91F141246079A291561032130CFE7  DirectInternetMethod_1.5.2_Linux_x86_64.zip
+
+## Open publication blocker (2026-10-08)
+
+Windows installer passes file SHA256 verification but its execution was refused by a clean offline Windows Sandbox: Application Control policy blocked the unsigned executable. Signature audit fails closed; this candidate is NOT public-release-ready. See evidence/DIM_152_SANDBOX_APPCONTROL_20261008.json and GitHub Issue #25. The accepted v1.5.1 release is unchanged.
