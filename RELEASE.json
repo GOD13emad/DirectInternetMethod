@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.1",
   "date": "2026-10-06",
-  "status": "CANDIDATE_1_5_1_WINDOWS_LINUX_EXACT_INSTALLED_ACCEPTED_FINAL_HEAD_CI_PENDING",
+  "status": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED",
   "previousAccepted": {
     "version": "1.5.0",
     "tag": "v1.5.0",
@@ -95,21 +95,22 @@
     "windowsContract": "PASS_FINAL_CANDIDATE",
     "linuxPackage": "PASS",
     "linuxContract": "PASS",
-    "protectedCi": "PASS_PRIOR_HEAD; FINAL_METADATA_HEAD_PENDING",
-    "publication": "PENDING_FINAL_METADATA_HEAD_CI_MERGE_TAG_RELEASE",
-    "installedWindows": "PASS_EXACT_INSTALLED_LIFECYCLE_SITE_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
-    "installedLinux": "PASS_EXACT_INSTALLED_BALANCED_TARGETED_ADULT_MATRIX_ROLLBACK_EQUAL_RESTORED_ACTIVE",
-    "adultCoverage": "PASS_WINDOWS_AND_LINUX_PORNHUB_XVIDEOS_XNXX_XHAMSTER_REDDIT_REPRESENTATIVE_MATRIX",
+    "protectedCi": "RELEASE_HEAD_RUN_37427662880_FALSE_GREEN_WINDOWS_CONTRACT_CRASH_DETECTED_POST_PUBLISH; LINUX_JOB_PASS; POST_PUBLISH_SOURCE_REPRODUCIBILITY_FIX_CI_PENDING",
+    "publication": "PASS_PUBLIC_RELEASE_AND_ASSET_DIGESTS_VERIFIED",
+    "installedWindows": "PASS_EXACT_INSTALLED_ACTIVE_POST_PUBLISH_LATEST_V1_5_1",
+    "installedLinux": "PASS_EXACT_INSTALLED_ACTIVE_POST_PUBLISH_LATEST_V1_5_1",
+    "adultCoverage": "PASS_WINDOWS_AND_LINUX_NORMAL_CLIENT_PORNHUB_XVIDEOS_XNXX_XHAMSTER_REDDIT_REPRESENTATIVE_MATRIX_WITH_LINUX_EDGE_FAILOVER",
     "gemini": "FAIL_HTTP_403_CURL_AND_REAL_CHROME_CURRENT_EGRESS_DIRECT_ONLY_EXHAUSTED",
     "routerGatewayContract": "PASS",
     "rejectedComponentAudit": "PASS",
     "releaseMetadata": "PASS",
-    "fullTrackedSourceAudit": "PASS_55_PS1_15_PY_DOTNET_0_WARN_0_ERR",
+    "fullTrackedSourceAudit": "PASS_56_PS1_16_PY_DOTNET_0_WARN_0_ERR",
     "windowsDefender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME",
-    "linuxCrossHostRebuild": "PASS_EXACT_SHA_21FE5124"
+    "linuxCrossHostRebuild": "PASS_EXACT_SHA_21FE5124",
+    "sourceReproducibility": "LOCAL_PASS_WINDOWS_OVERRIDE_TRACKED_HASH_PINNED_EOL_DETERMINISTIC_CI_FAIL_FAST; PROTECTED_CI_PENDING"
   },
   "validationBoundary": {
-    "universalAdultGuarantee": "UNPROVABLE for every remote domain/CDN edge; maintained opt-in catalog plus platform-specific bounded profiles are used. Exact-installed representative matrices on Windows and Linux both pass Pornhub/XVideos/XNXX/XHamster/Reddit with usable 2xx/3xx responses.",
+    "universalAdultGuarantee": "UNPROVABLE for every remote domain/CDN edge. Maintained opt-in catalog plus bounded platform profiles are used. Exact-installed normal-client matrices pass Pornhub/XVideos/XNXX/XHamster/Reddit. On validated Linux, forced Cloudflare edge 104.16.3.81 is unusable, but normal client operation failed over to 104.16.4.81 and returned HTTP 200 in 5/5 restart cycles.",
     "gemini": "Direct-only architecture cannot change public egress geolocation. Gemini is HTTP 403 in curl and real Chrome on the validated current egress; HTTP 403 remains FAIL_HTTP and a usable Gemini page requires a separate egress-changing architecture.",
     "authenticode": "NOT_SIGNED_EXTERNAL_TRUST_CERTIFICATE_MISSING",
     "proxyVpn": "NOT_USED"
@@ -123,7 +124,20 @@
     "windowsInstalled": "evidence/WINDOWS_151_INSTALLED_LIFECYCLE_20261005.json",
     "authorityRuntimeDelta": "evidence/DIM_151_AUTHORITY_RUNTIME_DELTA_20261005.json",
     "linuxFinalExact": "evidence/LINUX_151_FINAL_EXACT_INSTALLED_20261006.json",
-    "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json"
+    "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
+    "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Run final metadata/source regression, commit/push exact final head, require protected CI, mark PR #20 ready, merge to main, tag/publish v1.5.1, verify public asset digests, and verify installed Windows/Linux authority against the published release."
+  "exactNextAction": "v1.5.1 runtime/release is FINAL/PUBLISHED/POST-PUBLISH VERIFIED on Windows and Linux. One source-governance gate remains: merge the post-publish reproducibility/CI fail-fast repair after protected CI passes on a fresh checkout; no release asset/runtime mutation is required.",
+  "publication": {
+    "tag": "v1.5.1",
+    "tagCommit": "a79dfb8216c603d6e29236233e8d250b490a96cc",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.1",
+    "releaseId": 404451350,
+    "publishedAt": "2026-10-06T07:52:05Z",
+    "exactReleaseHead": "bfabb33015d32bda596144e2c5f30d8c870841ec",
+    "exactReleaseTree": "d0bfe6a230a3eefda064d33db25764a488611b90",
+    "protectedCiRun": 37427662880,
+    "publicAssetsVerified": true,
+    "protectedCiCaveat": "Run 37427662880 reported overall success but Windows contract actually crashed because strong-override-hosts.txt was not tracked; multi-command pwsh step masked the nonzero exit. Release artifact acceptance is based on exact-installed/live/hash evidence, not this false-green Windows job."
+  }
 }

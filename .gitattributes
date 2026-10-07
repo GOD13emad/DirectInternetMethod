@@ -14,3 +14,7 @@ linux/**/*.txt text eol=lf
 linux/**/*.svg text eol=lf
 SHA256SUMS.txt text eol=lf
 delivery/SHA256SUMS.txt text eol=lf
+# Windows hash-pinned zapret text payloads: preserve published byte identities deterministically.
+windows/bin/zapret/hosts.txt text eol=crlf
+windows/bin/zapret/adult-fallback-hosts.txt text eol=lf
+windows/bin/zapret/strong-override-hosts.txt text eol=crlf

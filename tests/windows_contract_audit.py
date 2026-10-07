@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import hashlib,json,re,sys
+import hashlib,json,re,sys,subprocess
 R=Path(__file__).resolve().parents[1]
 W=R/"windows"
 def txt(rel): return (W/rel).read_text(encoding="utf-8-sig")
@@ -10,6 +10,8 @@ svc=txt("service/Program.cs"); client=txt("gui/ServiceClient.cs"); updater=txt("
 manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt"); adult_fallback=txt("bin/zapret/adult-fallback-hosts.txt"); strong_override=txt("bin/zapret/strong-override-hosts.txt")
 payload_builder=(R/"tests"/"build_windows_151_payload.ps1").read_text(encoding="utf-8-sig")
 installer_builder=(R/"tests"/"build_windows_151_installer.ps1").read_text(encoding="utf-8-sig")
+ci_workflow=(R/".github"/"workflows"/"ci.yml").read_text(encoding="utf-8-sig")
+gitattributes=(R/".gitattributes").read_text(encoding="utf-8-sig")
 install_registration_guard=(R/"tests"/"windows_install_registration_audit.ps1").read_text(encoding="utf-8-sig")
 installed_release_verifier=(R/"tests"/"windows_installed_release_audit.ps1").read_text(encoding="utf-8-sig")
 D={"schema":2,"status":"PASS","checks":{},"hashes":{}}
@@ -103,6 +105,10 @@ check("windows_install_registration_guard", all(x in install_registration_guard 
 check("installed_release_verifier_delegates_registration_guard", "windows_install_registration_audit.ps1" in installed_release_verifier and "Where-Object DisplayName" not in installed_release_verifier and "pwsh.exe" in installed_release_verifier)
 check("windows_build_shared_exclusive_lock", all(x in payload_builder for x in ("windows-151-build.lock","FileShare]::None","WINDOWS_151_BUILD_LOCKED")) and all(x in installer_builder for x in ("windows-151-build.lock","FileShare]::None","WINDOWS_151_BUILD_LOCKED")))
 check("windows_installer_output_stability_guard", all(x in installer_builder for x in ("OUTPUT_STILL_LOCKED_AFTER_ISCC_EXIT","@($Sizes | Select-Object -Unique).Count","OUTPUT_SIZE_UNSTABLE_","outputStableSamples")))
+tracked_strong=subprocess.run(["git","ls-files","--error-unmatch","windows/bin/zapret/strong-override-hosts.txt"],cwd=R,text=True,capture_output=True).returncode==0
+check("windows_strong_override_source_tracked", tracked_strong)
+check("windows_hash_pinned_text_eol_policy", all(x in gitattributes for x in ("windows/bin/zapret/hosts.txt text eol=crlf","windows/bin/zapret/adult-fallback-hosts.txt text eol=lf","windows/bin/zapret/strong-override-hosts.txt text eol=crlf")))
+check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
 check("manifest_version", manifest.get("version")=="1.5.1")
