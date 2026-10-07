@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "recordDate": "2026-10-08",
+  "status": "INSTALL_PASS_NETWORK_RUNTIME_DEFERRED",
+  "baseMainSha": "1c3f5525d9d27f03feff0522fefc85c5d66d55db",
+  "release": {
+    "tag": "v1.5.1",
+    "linuxZip": "DirectInternetMethod_1.5.1_Linux_x86_64.zip",
+    "linuxZipSha256": "21fe512444957008da4d79f540abcead5cc9cb18481f1ff8b620a4b90a9374b8",
+    "manifestVerification": "PASS_19_OF_19"
+  },
+  "target": {
+    "device": "mmz-LOQ-15IRX9",
+    "user": "mmz",
+    "projectRoot": "/home/mmz/source/repos/DirectInternetMethod",
+    "installedVersion": "1.5.1",
+    "userApp": "/home/mmz/.local/share/DirectInternetMethod",
+    "protectedBackend": "/usr/lib/directinternetmethod"
+  },
+  "failure": {
+    "phase": "FRESH_LINUX_INSTALL_POST_PRIVILEGED_BACKEND_VERIFY",
+    "initialExitCode": 22,
+    "detail": "Protected backend verification failed",
+    "rootCause": "umask 077 left parent directories /var/lib/directinternetmethod and /usr/lib/directinternetmethod/runtime at mode 0700; unprivileged backend_matches_current cannot traverse/read protected metadata and runtime",
+    "originalInstallSystemSha256": "99f0f502c5e4cfa29234aa2dab9e9cce5fe76a4072c453b04d8a49b80caa57c4"
+  },
+  "repair": {
+    "objective": "Make required nonsecret protected parent directories traversable without weakening root ownership",
+    "patchedInstallSystemSha256": "f8e6e7e5a591cf2494e22415f3e237ae2febf2b45c2a074f0a06dd20f3b2096a",
+    "actions": [
+      "install -d -m 0755 ROOT/runtime and ROOT/runtime/usr",
+      "install -d -m 0755 /var/lib/directinternetmethod"
+    ],
+    "reinstallExitCode": 0,
+    "dirsVerifiedMode": "0755",
+    "backendHashVerified": true,
+    "normalAdminRequired": false,
+    "networkMutationOnInstall": false
+  },
+  "validation": {
+    "staticBashParse": "PASS",
+    "regressionFirst": "FAIL on original source / PASS on corrected source",
+    "linuxContract": "PASS",
+    "desktopEntryInstalled": true,
+    "launcherExecutable": true,
+    "guiWindowObserved": true,
+    "systemdStartStopRecoveryUnitsPresent": true,
+    "stateAfterInstall": "OFF_CLEAN"
+  },
+  "openGates": [
+    {
+      "id": "LIVE_NETWORK_ON_SAEID",
+      "status": "UNPROVEN",
+      "reason": "Existing Tailscale tunnel active; fail-closed prevents competing Direct Method activation without interrupting another live network."
+    },
+    {
+      "id": "DISTRIBUTION_RELEASE",
+      "status": "OPEN",
+      "reason": "Published v1.5.1 Linux ZIP unchanged and will still fail on first install until next versioned release incorporates patch."
+    }
+  ],
+  "nextAction": "Promote source/CI repair after exact-head CI and plan a versioned installer hotfix release; preserve Tailscale until explicit isolated network maintenance window."
+}

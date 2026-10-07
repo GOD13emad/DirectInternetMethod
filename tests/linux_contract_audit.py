@@ -74,6 +74,7 @@ check("install_backup_excludes_runtime_state", 'for f in direct_internet_method.
 check("linux_package_includes_router_core", '("linux/app/router_gateway_core.py","app/router_gateway_core.py")' in build)
 check("install_one_time_admin", 'pkexec /bin/bash "$HERE/system/install_system.sh"' in install)
 check("install_idempotent_backend_hash_gate", "backend_matches_current()" in install and 'sha256sum "$src"' in install and "skipping admin authorization" in install)
+check("linux_fresh_install_parent_permissions", 'install -d -m 0755 "$ROOT" "$ROOT/runtime" "$ROOT/runtime/usr" "$ROOT/runtime/usr/bin" "$ROOT/licenses"' in sysinstall and 'install -d -m 0755 /var/lib/directinternetmethod' in sysinstall and 'mkdir -p /var/lib/directinternetmethod' not in sysinstall)
 check("install_no_unprivileged_polkit_probe", "test -f /etc/polkit-1/rules.d/49-directinternetmethod.rules" not in install and "test -f /etc/polkit-1/rules.d/49-directinternetmethod.rules" in sysinstall)
 check("normal_actions_no_pkexec", "pkexec" not in ui and "pkexec" not in control)
 check("protected_backend_root", "ROOT=/usr/lib/directinternetmethod" in sysinstall and "ROOT=/usr/lib/directinternetmethod" in control)
