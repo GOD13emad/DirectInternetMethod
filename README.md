@@ -4,9 +4,9 @@
 
 Standalone direct-connect application for Windows and Linux. It does not create a VPN, HTTP/SOCKS proxy, WinHTTP proxy, or default-route tunnel.
 
-## Direct Method — v1.5.1 candidate
+## Direct Method — v1.5.2 corrective candidate
 
-v1.5.1 keeps the accepted v1.5.0 direct engine and turns the existing opt-in **Adult coverage** control into real bounded domain coverage rather than a single-site diagnostic.
+v1.5.2 retains the accepted v1.5.1 direct engine and turns the existing opt-in **Adult coverage** control into real bounded domain coverage rather than a single-site diagnostic.
 
 When Adult coverage is enabled, the app fetches and validates a maintained HaGeZi NSFW only-domains catalog at runtime and combines it with a small offline fallback. The feature remains OFF by default. Core traffic stays targeted, and the catalog is not applied unless the user enables it.
 
@@ -31,7 +31,7 @@ The validation network exhibits DNS interception when Direct Method is disabled.
 
 Router Gateway remains a separate non-privileged configuration panel for compatible routers/modems. Provider data revision 3 is maintained independently of application artifacts. Endpoint probes do not claim authenticated PPTP/L2TP tunnel success.
 
-## Windows 1.5.1
+## Windows 1.5.2
 
 - Native WPF UI and fixed-command privileged service.
 - Bundled PowerShell 7.6.6.
@@ -39,17 +39,17 @@ Router Gateway remains a separate non-privileged configuration panel for compati
 - Adult coverage catalog is opt-in and cached per user.
 - Installer is not Authenticode-signed; SHA-256 remains the artifact identity gate.
 
-## Linux 1.5.1
+## Linux 1.5.2
 
 - Dedicated temporary DNS link + ctrld + systemd-resolved.
 - nftables/NFQUEUE + zapret/nfqws v72.13.
-- Protected backend version 1.5.1.
+- Protected backend version 1.5.2.
 - Adult coverage uses the same validated catalog/fallback model as Windows.
 
 ## Release artifacts
 
-- `DirectInternetMethod_1.5.1_Windows_Setup.exe`
-- `DirectInternetMethod_1.5.1_Linux_x86_64.zip`
+- `DirectInternetMethod_1.5.2_Windows_Setup.exe`
+- `DirectInternetMethod_1.5.2_Linux_x86_64.zip`
 - `SHA256SUMS.txt`
 
 Authoritative acceptance/provenance records are stored under `evidence/`.

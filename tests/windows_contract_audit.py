@@ -8,8 +8,8 @@ start,stop,recovery,status,iss=map(txt,["app/Start-Direct.ps1","app/Stop-Direct.
 gui=txt("gui/MainWindow.xaml.cs"); xaml=txt("gui/MainWindow.xaml")
 svc=txt("service/Program.cs"); client=txt("gui/ServiceClient.cs"); updater=txt("gui/UpdateClient.cs")
 manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt"); adult_fallback=txt("bin/zapret/adult-fallback-hosts.txt"); strong_override=txt("bin/zapret/strong-override-hosts.txt")
-payload_builder=(R/"tests"/"build_windows_151_payload.ps1").read_text(encoding="utf-8-sig")
-installer_builder=(R/"tests"/"build_windows_151_installer.ps1").read_text(encoding="utf-8-sig")
+payload_builder=(R/"tests"/"build_windows_152_payload.ps1").read_text(encoding="utf-8-sig")
+installer_builder=(R/"tests"/"build_windows_152_installer.ps1").read_text(encoding="utf-8-sig")
 ci_workflow=(R/".github"/"workflows"/"ci.yml").read_text(encoding="utf-8-sig")
 gitattributes=(R/".gitattributes").read_text(encoding="utf-8-sig")
 install_registration_guard=(R/"tests"/"windows_install_registration_audit.ps1").read_text(encoding="utf-8-sig")
@@ -103,7 +103,7 @@ check("installer_bundled_pwsh", '..\\vendor\\pwsh\\*' in iss and 'Privileged\\ru
 check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Recovery did not complete" in iss)
 check("windows_install_registration_guard", all(x in install_registration_guard for x in ("HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall","HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall","noSameAppIdPerUserDuplicate","registeredUninstallerPresent","installedReleaseMatches")))
 check("installed_release_verifier_delegates_registration_guard", "windows_install_registration_audit.ps1" in installed_release_verifier and "Where-Object DisplayName" not in installed_release_verifier and "pwsh.exe" in installed_release_verifier)
-check("windows_build_shared_exclusive_lock", all(x in payload_builder for x in ("windows-151-build.lock","FileShare]::None","WINDOWS_151_BUILD_LOCKED")) and all(x in installer_builder for x in ("windows-151-build.lock","FileShare]::None","WINDOWS_151_BUILD_LOCKED")))
+check("windows_build_shared_exclusive_lock", all(x in payload_builder for x in ("windows-152-build.lock","FileShare]::None","WINDOWS_152_BUILD_LOCKED")) and all(x in installer_builder for x in ("windows-152-build.lock","FileShare]::None","WINDOWS_152_BUILD_LOCKED")))
 check("windows_installer_output_stability_guard", all(x in installer_builder for x in ("OUTPUT_STILL_LOCKED_AFTER_ISCC_EXIT","@($Sizes | Select-Object -Unique).Count","OUTPUT_SIZE_UNSTABLE_","outputStableSamples")))
 tracked_strong=subprocess.run(["git","ls-files","--error-unmatch","windows/bin/zapret/strong-override-hosts.txt"],cwd=R,text=True,capture_output=True).returncode==0
 check("windows_strong_override_source_tracked", tracked_strong)
@@ -111,7 +111,7 @@ check("windows_hash_pinned_text_eol_policy", all(x in gitattributes for x in ("w
 check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.5.1")
+check("manifest_version", manifest.get("version")=="1.5.2")
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)

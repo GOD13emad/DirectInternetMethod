@@ -1,5 +1,5 @@
 #define MyAppName "Direct Internet Method"
-#define MyAppVersion "1.5.1"
+#define MyAppVersion "1.5.2"
 #define MyAppPublisher "Direct Internet Method"
 #define MyAppExeName "DirectInternetMethod.exe"
 
@@ -13,7 +13,7 @@ UsePreviousAppDir=yes
 DefaultGroupName=Direct Internet Method
 DisableProgramGroupPage=yes
 OutputDir=..\..\delivery
-OutputBaseFilename=DirectInternetMethod_1.5.1_Windows_Setup
+OutputBaseFilename=DirectInternetMethod_1.5.2_Windows_Setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern

@@ -1,14 +1,13 @@
-# Delivery authority
+# Delivery authority: Direct Internet Method
+Current application release: `v1.5.2` (candidate; NOT PUBLISHED).
 
-Current application release: `v1.5.1` candidate.
+## Candidate artifacts
+- Windows: DirectInternetMethod_1.5.2_Windows_Setup.exe
+- Linux: DirectInternetMethod_1.5.2_Linux_x86_64.zip
+- Checksums: SHA256SUMS.txt
 
-Versioned installer/archive binaries are not tracked in the source branch. Candidate artifacts are produced locally/CI and become public authority only after protected CI, exact installed-host acceptance, tag/release publication, and public re-download verification.
+Candidate hashes, exact-head CI, installed lifecycle, version parity and publication require independent acceptance. Public v1.5.1 assets and Git tag remain immutable.
 
-## Current v1.5.1 candidate artifacts
-
-- Windows: `DirectInternetMethod_1.5.1_Windows_Setup.exe`
-  - SHA-256: `F210AD4663757727452BD6A8ADBDF0288EE7F9867EA5F67BE5322C8B6DB7281A`
-- Linux: `DirectInternetMethod_1.5.1_Linux_x86_64.zip`
-  - SHA-256: `2D0D4CEC12AD6D95428B9F14DD070CEE9538975B97EC89F1D2137BB5D2E7C6DA`
-
-The previously accepted public release v1.5.0 remains immutable until v1.5.1 promotion completes. Historical binaries remain available through Git tags/GitHub Releases.
+Candidate checksums (not public authority):
+BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85  DirectInternetMethod_1.5.2_Windows_Setup.exe
+2262BAB7D6B4BAB634803F674BA0CA61926C51850B9E3BD3E7350626A96B1130  DirectInternetMethod_1.5.2_Linux_x86_64.zip
