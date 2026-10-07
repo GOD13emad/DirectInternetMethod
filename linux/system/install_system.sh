@@ -14,7 +14,7 @@ IFS=: read -r USER_NAME _ USER_UID USER_GID _ HOME_DIR _ <<<"$PASSWD"
 [[ "$HOME_DIR" =~ ^/[A-Za-z0-9._@/+:-]+$ ]] || { echo "unsafe home path" >&2; exit 65; }
 
 ROOT=/usr/lib/directinternetmethod
-install -d -m 0755 "$ROOT" "$ROOT/runtime/usr/bin" "$ROOT/licenses"
+install -d -m 0755 "$ROOT" "$ROOT/runtime" "$ROOT/runtime/usr" "$ROOT/runtime/usr/bin" "$ROOT/licenses"
 install -m 0755 "$SRC/app/direct_method_helper.sh" "$ROOT/direct_method_helper.sh"
 install -m 0755 "$SRC/system/control.sh" "$ROOT/control.sh"
 install -m 0755 "$SRC/system/uninstall_system.sh" "$ROOT/uninstall_system.sh"
@@ -80,7 +80,7 @@ test -x "$ROOT/direct_method_helper.sh"
 for action in start stop recovery; do test -f "/etc/systemd/system/directinternetmethod-$action.service"; done
 test -f /etc/polkit-1/rules.d/49-directinternetmethod.rules
 test "$(cat /etc/directinternetmethod.uid)" = "$USER_UID"
-mkdir -p /var/lib/directinternetmethod
+install -d -m 0755 /var/lib/directinternetmethod
 cat > /var/lib/directinternetmethod/install.json <<EOF
 {"schema":1,"version":"1.5.1","user":"$USER_NAME","uid":$USER_UID,"home":"$HOME_DIR"}
 EOF
