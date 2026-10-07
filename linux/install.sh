@@ -29,7 +29,7 @@ backend_matches_current() {
   python3 - /var/lib/directinternetmethod/install.json "$uid" <<'PY' >/dev/null 2>&1 || return 1
 import json,sys
 d=json.load(open(sys.argv[1],encoding="utf-8"))
-raise SystemExit(0 if d.get("version")=="1.5.2" and str(d.get("uid"))==sys.argv[2] else 1)
+raise SystemExit(0 if d.get("version") in ("1.5.1","1.5.2") and str(d.get("uid"))==sys.argv[2] else 1)
 PY
   [ "$(cat /etc/directinternetmethod.uid 2>/dev/null || true)" = "$uid" ] || return 1
   for action in start stop recovery; do
@@ -117,6 +117,8 @@ command -v gtk4-update-icon-cache >/dev/null 2>&1 && gtk4-update-icon-cache -f "
 
 python3 - "$APP/INSTALL.json" <<'PY'
 import json,pathlib,sys,time
+protected=json.loads(pathlib.Path("/var/lib/directinternetmethod/install.json").read_text(encoding="utf-8"))
+assert protected.get("version") in ("1.5.1","1.5.2")
 pathlib.Path(sys.argv[1]).write_text(json.dumps({
   "schema":2,
   "product":"Direct Internet Method",
@@ -126,6 +128,8 @@ pathlib.Path(sys.argv[1]).write_text(json.dumps({
   "networkMutationOnInstall":False,
   "normalRunRequiresAdmin":False,
   "systemBackend":"/usr/lib/directinternetmethod",
+  "protectedBackendVersion":protected["version"],
+  "protectedBackendByteCompatible":True,
   "onlineUpdate":"GitHub latest release + SHA256SUMS verification"
 },indent=2)+"\n")
 PY

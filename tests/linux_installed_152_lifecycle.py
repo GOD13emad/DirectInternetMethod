@@ -79,8 +79,35 @@ try:
     install=json.loads((HOME/".local/share/DirectInternetMethod/INSTALL.json").read_text())
     backend=json.loads(pathlib.Path("/var/lib/directinternetmethod/install.json").read_text())
     result["installed"]={"appVersion":install.get("version"),"backendVersion":backend.get("version")}
-    if install.get("version")!="1.5.2" or backend.get("version")!="1.5.2":
-        raise RuntimeError("INSTALLED_VERSION_MISMATCH")
+    if (install.get("version")!="1.5.2" or backend.get("version") not in ("1.5.1","1.5.2")
+            or install.get("protectedBackendVersion")!=backend.get("version")
+            or install.get("protectedBackendByteCompatible") is not True):
+        raise RuntimeError("INSTALLED_VERSION_OR_BACKEND_COMPATIBILITY_MISMATCH")
+    # A 1.5.1 protected backend may be used by 1.5.2 only if its exact
+    # accepted root-owned payload is byte-identical to the current source.
+    if backend.get("version")=="1.5.1":
+        repo=pathlib.Path(__file__).resolve().parents[1]
+        protected=pathlib.Path("/usr/lib/directinternetmethod")
+        pairs=[
+          ("linux/app/direct_method_helper.sh","direct_method_helper.sh"),
+          ("linux/system/control.sh","control.sh"),
+          ("linux/system/uninstall_system.sh","uninstall_system.sh"),
+          ("linux/app/hosts.txt","direct_hosts.txt"),
+          ("linux/app/adult_hosts_fallback.txt","adult_hosts_fallback.txt"),
+          ("linux/app/strong_override_hosts.txt","strong_override_hosts.txt"),
+          ("linux/runtime/ctrld","runtime/usr/bin/ctrld"),
+          ("linux/runtime/nfqws","runtime/usr/bin/nfqws"),
+          ("linux/licenses/LICENSE-ctrld.txt","licenses/LICENSE-ctrld.txt"),
+          ("linux/licenses/LICENSE-zapret.txt","licenses/LICENSE-zapret.txt"),
+        ]
+        mismatched=[]
+        for source,target in pairs:
+            a,b=repo/source,protected/target
+            if not (a.is_file() and b.is_file()) or hashlib.sha256(a.read_bytes()).digest()!=hashlib.sha256(b.read_bytes()).digest():
+                mismatched.append(source)
+        result["installed"]["compatibleBackendHashChecks"]=len(pairs)-len(mismatched)
+        if mismatched:
+            raise RuntimeError("COMPATIBLE_OLD_BACKEND_HASH_MISMATCH:"+",".join(mismatched))
     unit("recovery")
     time.sleep(.5)
     result["pre"]=snapshot()

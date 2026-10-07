@@ -79,21 +79,25 @@
     "linux": {
       "status": "PASS_BUILT_ASSET_IDENTITY_ONLY_INSTALLED_VALIDATION_OPEN",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
-      "bytes": 8185665,
-      "sha256": "2262BAB7D6B4BAB634803F674BA0CA61926C51850B9E3BD3E7350626A96B1130",
+      "bytes": 8185930,
+      "sha256": "2F13E15236F7AE3128C3A981605F5240F8A91F141246079A291561032130CFE7",
       "protectedBackendVersion": "1.5.2",
-      "packageFiles": 19
+      "packageFiles": 19,
+      "compatibleProtectedBackendVersions": [
+        "1.5.1",
+        "1.5.2"
+      ]
     }
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "2AD592A127B8B14D29E1A57D0E72185A0534F8F4A2B74A1502C10DF19E755D94"
+    "sha256": "40DFA69A4A32E7325117BA8CAAF11E8F95DEA93D17D3CEAB43898C05953529E3"
   },
   "acceptance": {
     "windowsPayload": "PASS_BUILD_SERVICE_SELFTEST_AND_CONTRACT_V152",
     "windowsInstaller": "PASS_BUILD_STABLE_OUTPUT_SHA_V152",
     "windowsContract": "PASS_SOURCE_CONTRACT_V152",
-    "linuxPackage": "PASS_BUILD_MANIFEST_SHA_V152",
+    "linuxPackage": "PASS_REBUILD_MANIFEST_SHA_V152_POST_COMPAT",
     "linuxContract": "PASS_SOURCE_CONTRACT_V152",
     "protectedCi": "PENDING_EXACT_HEAD_CI",
     "publication": "NOT_PUBLISHED",
@@ -107,7 +111,8 @@
     "fullTrackedSourceAudit": "PENDING_V152_VERIFICATION",
     "windowsDefender": "PENDING_V152_VERIFICATION",
     "linuxCrossHostRebuild": "PENDING_V152_VERIFICATION",
-    "sourceReproducibility": "NEEDS_INDEPENDENT_LINUX_V152_REBUILD"
+    "sourceReproducibility": "NEEDS_INDEPENDENT_LINUX_V152_REBUILD",
+    "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING"
   },
   "validationBoundary": {
     "universalAdultGuarantee": "UNPROVABLE for every remote domain/CDN edge. Maintained opt-in catalog plus bounded platform profiles are used. Exact-installed normal-client matrices pass Pornhub/XVideos/XNXX/XHamster/Reddit. On validated Linux, forced Cloudflare edge 104.16.3.81 is unusable, but normal client operation failed over to 104.16.4.81 and returned HTTP 200 in 5/5 restart cycles.",
@@ -127,6 +132,6 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Candidate v1.5.2 binaries built, hashes stable; exact-head CI and independent installed updater/lifecycle tests remain open. Do NOT publish until accepted.",
+  "exactNextAction": "Candidate Windows installer built; corrected Linux 1.5.2 ZIP includes SHA-gated reuse of byte-identical 1.5.1 protected backend. Pending exact-head CI, independent Linux rebuild and real non-admin upgrade/rollback. Not published.",
   "publication": {}
 }

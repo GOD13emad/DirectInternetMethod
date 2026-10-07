@@ -20,7 +20,7 @@ def check(name,cond):
     D["checks"][name]=bool(cond)
     if not cond:D["status"]="FAIL"
 
-check("version_152_backend_152", 'VERSION="1.5.2"' in ui and '"version":"1.5.2"' in install and '"version":"1.5.2"' in sysinstall and 'd.get("version")=="1.5.2"' in install)
+check("version_152_backend_152", 'VERSION="1.5.2"' in ui and '"version":"1.5.2"' in install and '"version":"1.5.2"' in sysinstall and 'd.get("version") in ("1.5.1","1.5.2")' in install)
 check("no_default_route_mutation", not re.search(r'ip\s+route\s+(add|del|replace).*default|nmcli\s+.*ipv4\.gateway',helper,re.I))
 check("no_physical_dns_mutation", "nmcli connection modify" not in helper and "resolvectl dns enp" not in helper and "resolvectl dns eth" not in helper)
 check("dedicated_dns_link", all(x in helper for x in ('DNS_IF="dimdns0"','ip link add "$DNS_IF" type dummy','ip addr add "$DNS_IP/32" dev "$DNS_IF"','SetLinkDNS','SetLinkDomains','RevertLink','ip link del "$DNS_IF"')))
@@ -74,6 +74,9 @@ check("install_backup_excludes_runtime_state", 'for f in direct_internet_method.
 check("linux_package_includes_router_core", '("linux/app/router_gateway_core.py","app/router_gateway_core.py")' in build)
 check("install_one_time_admin", 'pkexec /bin/bash "$HERE/system/install_system.sh"' in install)
 check("install_idempotent_backend_hash_gate", "backend_matches_current()" in install and 'sha256sum "$src"' in install and "skipping admin authorization" in install)
+check("linux_hash_compatible_prior_backend_no_repeat_admin", 'd.get("version") in ("1.5.1","1.5.2")' in install and 'sha256sum "$src"' in install and 'if backend_matches_current; then' in install and 'skipping admin authorization' in install)
+check("linux_install_reports_backend_version_authoritatively", 'protectedBackendVersion' in install and 'protectedBackendByteCompatible' in install and '/var/lib/directinternetmethod/install.json' in install)
+check("linux_lifecycle_acceptance_old_backend_sha_gated", "COMPATIBLE_OLD_BACKEND_HASH_MISMATCH" in (R/"tests"/"linux_installed_152_lifecycle.py").read_text(encoding="utf-8") and "compatibleBackendHashChecks" in (R/"tests"/"linux_installed_152_lifecycle.py").read_text(encoding="utf-8"))
 check("linux_fresh_install_parent_permissions", 'install -d -m 0755 "$ROOT" "$ROOT/runtime" "$ROOT/runtime/usr" "$ROOT/runtime/usr/bin" "$ROOT/licenses"' in sysinstall and 'install -d -m 0755 /var/lib/directinternetmethod' in sysinstall and 'mkdir -p /var/lib/directinternetmethod' not in sysinstall)
 check("install_no_unprivileged_polkit_probe", "test -f /etc/polkit-1/rules.d/49-directinternetmethod.rules" not in install and "test -f /etc/polkit-1/rules.d/49-directinternetmethod.rules" in sysinstall)
 check("normal_actions_no_pkexec", "pkexec" not in ui and "pkexec" not in control)
