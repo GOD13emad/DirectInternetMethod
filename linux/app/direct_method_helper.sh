@@ -334,17 +334,16 @@ case "$ACTION" in
     if [ -f "$STATE" ]; then
       cleanup_state_owned
     else
+      # Without the ownership state, no table/link may be safely attributed.
+      # Fail before orphan process cleanup; preserve ambiguous foreign resources.
+      if nft list table inet "$TABLE" >/dev/null 2>&1 ||
+         ip link show "$DNS_IF" >/dev/null 2>&1; then
+        echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+        exit 81
+      fi
       kill_all_owned_by_exe "$NFQWS"
       kill_all_owned_by_exe "$CTRLD"
       sleep .3
-      if nft list table inet "$TABLE" >/dev/null 2>&1; then
-        nft_table_owned "" || { echo '{"ok":false,"error":"NFT_TABLE_OWNERSHIP_MISMATCH"}'; exit 81; }
-        nft delete table inet "$TABLE"
-      fi
-      if ip link show "$DNS_IF" >/dev/null 2>&1; then
-        dns_link_owned || { echo '{"ok":false,"error":"DNS_LINK_OWNERSHIP_MISMATCH"}'; exit 79; }
-        remove_dns_link
-      fi
       rm -f "$RUN_HOSTS"
     fi
     verify_clean || { echo '{"ok":false,"error":"RECOVERY_RESIDUE"}'; exit 80; }

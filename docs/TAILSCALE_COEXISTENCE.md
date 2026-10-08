@@ -226,3 +226,33 @@ installation are still UNPROVEN. Strict table ownership deliberately fails close
 when the real nft output differs from the accepted schema; manual review is safer
 than deleting an unrecognized table. Windows signing / Smart App Control remains
 a separate mandatory release gate. This section does not authorize merge/release.
+
+## 2026-10-08 R211: Stateless recovery cannot assume ownership
+
+**Negative-first security regression:** in the prior R210 code, the `recovery` action
+without a saved owner-state file invoked exact-executable orphan cleanup *before*
+checking whether a named nft table or DNS dummy link was foreign or stale.
+The original scenario attempted two terminations, then rejected the foreign table.
+A second test simulated a DNS link appearing after initial preflight and found
+the legacy no-state branch could still enter unknown-link cleanup.
+
+**R211 guard:** if no owner-state file exists, the helper checks nft and DNS-link
+presence first and exits with `FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE`
+without touching any process if either resource is present. With no such resources,
+it may clean up exact-path orphaned Direct processes, but the no-state branch has
+no nft or DNS-link deletion path at all. A final verify fails closed on late
+resource appearance. This is a narrow change to Recovery, not a new release.
+
+Tests: `tests/tailscale_recovery_missing_state_contract.py` 6/6 isolated
+negative and control cases PASS, existing 12/12 table ownership and 8/8
+owned-state cleanup regressions PASS. New Linux source archive:
+8,196,051 bytes, SHA256
+`6D517949DC044122C5E19B5F7C82608C9E798BD56741E6424EB5CD81D23155C3`;
+prior R210 candidate ZIP SHA `7BEE8DC4...D6F8` is
+**SUPERSEDED—DO NOT INSTALL**. No user network state, Tailscale,
+RustDesk, installed backend or public v1.5.1 release changed.
+
+Runtime caveat: No test of privileged production Start/Stop/Recovery,
+real nft rule syntax, MagicDNS, TSMP and active RustDesk session has
+been accepted. Windows Authenticode and Smart App Control-on installation
+remain release-blocking. Never merge/release merely from mock QA PASS.
