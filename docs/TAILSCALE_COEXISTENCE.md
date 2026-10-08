@@ -59,8 +59,9 @@ global `all-sites` strategy is activated for split coexistence.
   execution, start/stop/recovery with actual peer/DERP connectivity and
   DNS/route baseline equality, Tailscale reconnect/exit-node transition,
   and safe system stop rollback tests.
-- Saeid Linux Remote Commander connectivity is temporarily unavailable;
-  no claim of deployed coexistence there.
+- Saeid Linux Remote Commander became available again. Both Linux hosts
+  have been audited with the read-only Tailscale/RustDesk probe. Actual
+  protected Direct Method coexistence still has NOT been installed there.
 
 ## Technical references
 
@@ -76,3 +77,59 @@ global `all-sites` strategy is activated for split coexistence.
 Do not change Windows Smart App Control or Tailscale configuration to
 circumvent policy restrictions. Versioned release and installed
 acceptance remain separately blocked until independent proof exists.
+
+
+## RustDesk compatibility and private peer baseline — 2026-10-08
+
+Tailscale and RustDesk are installed on both Linux hosts. Each Tailscale
+device sees one online peer. All three of the limited peer pings on each
+host received DERP replies; no direct UDP path was established. This is
+**usable encrypted Tailscale relay connectivity**, not evidence of a
+direct P2P tunnel, and the CLI can exit nonzero when it was unable to
+upgrade from DERP to direct UDP.
+
+Route checks show the peer's private address uses `tailscale0`, while
+normal public internet uses the host's physical NIC. These separate
+paths are central to preserving RustDesk remote-access transport.
+
+RustDesk's direct-IP listener on port 21118 was NOT accepting
+connections on the two hosts in this audit. Saeid's user config had
+`direct-server=Y`, while Emad's user config lacked an explicit
+direct-server flag. The mere presence of RustDesk and Tailscale is not
+proof that live RustDesk desktop sessions use Tailscale direct IP;
+RustDesk may instead use its ordinary rendezvous/relay service.
+Do not turn on an unrestricted remote desktop listener, change a
+RustDesk password or firewall, or claim session success without an
+authorized end-to-end session test.
+
+Repeatable unprivileged diagnostics:
+`python3 tests/tailscale_rustdesk_transport_audit.py --selftest`
+for offline CI and
+`python3 tests/tailscale_rustdesk_transport_audit.py --live --probe`
+for limited read-only host evidence. Reports exclude peer addresses,
+passwords, tokens and device identifiers.
+
+Current source evidence:
+`evidence/DIM_TAILSCALE_RUSTDESK_BASELINE_20261008.json`.
+New Direct Method protected backend is NOT INSTALLED yet, so relay
+preservation under live Direct DPI remains UNPROVEN.
+
+### WireGuard data plane and NAT clarification
+
+The follow-up test used Tailscale's TSMP ping (encrypted data path) in
+both directions, not only DERP discovery. Both succeeded, confirming
+the private tailnet data plane is reachable through a relay. This does
+not prove that RustDesk accepts a desktop session over direct-IP mode:
+the port 21118 listener remains unavailable on both machines.
+
+A read-only Tailscale netcheck on both hosts reported outbound UDP
+available. On Emad Linux MappingVariesByDestIP was FALSE; on Saeid Linux
+it was TRUE, with no available router port-mapping protocol detected.
+That pattern is consistent with a hard-NAT side and a DERP-only link,
+but the precise network cause is not independently proven. Do not
+change router UPnP/port forwards or remote desktop security defaults
+without a separate safety assessment.
+
+The optional transport diagnostic distinguishes discovery/DERP from
+TSMP/WireGuard data-plane reachability. This baseline is captured in
+`evidence/DIM_TAILSCALE_RUSTDESK_TSMP_NETCHECK_20261008.json`.
