@@ -351,3 +351,37 @@ for kernel rule grammar and ownership/rollback under a fresh namespace,
 The package SHA, protected helper bytes and public v1.5.1 stable
 remain unchanged from R213. PR #26 and dependent #24 remain Draft
 until all installed/live/signing gates have proper acceptance.
+
+## 2026-10-08 R215 — exclusive mutating-action lock
+
+The Linux backend uses a shared system-wide `inet directinternetmethod`
+nft table, runtime hostlist and per-user `state.json`. A source audit found
+that root Start, Stop and Recovery could execute concurrently without an
+exclusive action lock. This was a **confirmed guard absence**; a real
+network/session collision was not claimed.
+
+**One narrow repair:** before any mutating action's state/network logic,
+require a single nonblocking OS `flock` on the root-only
+`/run/directinternetmethod-action.lock` (0600). If held by another action,
+return `ACTION_ALREADY_RUNNING` (86). If `flock` is absent or the lock
+path is unsafe/unavailable, return `ACTION_LOCK_UNAVAILABLE` (85).
+The kernel releases the lock when the action process exits, including
+failures. Read-only status remains nonblocking.
+
+New `tests/linux_mutation_action_lock_contract.py` proved mandatory
+lock placement for all three mutating actions, rejected concurrent
+execution, automatic unlock and rejection of a pre-existing malicious
+symlink — **4/4 PASS**. The rest of the Linux source/mocked regression
+suite also PASS. These tests are in the source/QA environment only:
+actual root-installed Start/Stop/Recovery alongside live Tailscale and
+RustDesk remain UNPROVEN, and flock does not serialize unrelated
+privileged third-party modifications to nftables.
+
+The new unpublished Linux 19-member candidate archive is 8,201,431
+bytes, SHA256
+`CA1664923662F2FCBC2A73BEB021D96A33809305A6E92A073F55632CE15938C2`.
+Previous R214 unpublished archive SHA `58E9F55C...D5AF5C` is
+**SUPERSEDED—DO NOT INSTALL**, preserved at
+`C:\Users\Aa.Emad\source\repos\DIM_R215_GATE\BASELINE_D5C5364.zip`.
+Public release v1.5.1 remains unchanged and Windows publication
+still requires a trusted signer/SAC clean-Sandbox acceptance.

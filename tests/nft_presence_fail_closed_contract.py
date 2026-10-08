@@ -79,6 +79,7 @@ RUN_HOSTS="{hosts}"
 NFQWS=/exact/mock/nfqws
 CTRLD=/exact/mock/ctrld
 require_root(){{ :; }}
+acquire_action_lock(){{ :; }}
 pid_owned(){{ return 0; }}
 kill(){{ touch "$MOCK_KILLS"; }}
 kill_all_owned_by_exe(){{ touch "$MOCK_KILLS"; }}

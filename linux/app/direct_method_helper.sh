@@ -46,6 +46,35 @@ require_root(){
   [ "$(id -u)" -eq 0 ] || { echo '{"ok":false,"error":"ROOT_REQUIRED"}'; exit 77; }
 }
 
+# The nft table, state.json and /run hostlist are system-global resources.
+# Every mutating action must hold this singleton nonblocking kernel flock.
+# The lock is released by the OS when the action process exits, including failure.
+acquire_action_lock(){
+  local lock_path="/run/directinternetmethod-action.lock"
+  command -v flock >/dev/null 2>&1 || {
+    echo '{"ok":false,"error":"ACTION_LOCK_UNAVAILABLE"}' >&2
+    return 85
+  }
+  if [ -L "$lock_path" ]; then
+    echo '{"ok":false,"error":"ACTION_LOCK_UNAVAILABLE"}' >&2
+    return 85
+  fi
+  umask 077
+  exec {DIM_ACTION_LOCK_FD}>"$lock_path" || {
+    echo '{"ok":false,"error":"ACTION_LOCK_UNAVAILABLE"}' >&2
+    return 85
+  }
+  chmod 0600 "$lock_path" || {
+    echo '{"ok":false,"error":"ACTION_LOCK_UNAVAILABLE"}' >&2
+    return 85
+  }
+  if ! flock -n "$DIM_ACTION_LOCK_FD"; then
+    echo '{"ok":false,"error":"ACTION_ALREADY_RUNNING"}' >&2
+    return 86
+  fi
+}
+
+
 pid_owned(){
   local pid="${1:-}" expected="${2:-}"
   [ -n "$pid" ] && [ -n "$expected" ] || return 1
@@ -426,6 +455,7 @@ case "$ACTION" in
 
   stop)
     require_root
+    acquire_action_lock
     if [ ! -f "$STATE" ]; then
       if nft_table_presence; then
         echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
@@ -448,6 +478,7 @@ case "$ACTION" in
 
   recovery)
     require_root
+    acquire_action_lock
     if [ -f "$STATE" ]; then
       cleanup_state_owned
     else
@@ -475,6 +506,7 @@ case "$ACTION" in
 
   start)
     require_root
+    acquire_action_lock
     trap rollback_on_exit EXIT
 
     if [ -f "$STATE" ]; then

@@ -82,6 +82,7 @@ NFQWS=/tmp/isolated/mock-nfqws
 CTRLD=/tmp/isolated/mock-ctrld
 STATE=""" + "'" + str(state) + "'" + "\nRUN_HOSTS='" + str(hosts) + "'" + r"""
 require_root(){ :; }
+acquire_action_lock(){ :; }
 kill_all_owned_by_exe(){ printf '%s\n' "$1" >>"$MOCK_KILLS"; }
 cleanup_state_owned(){ echo UNEXPECTED_CLEANUP_STATE; return 90; }
 nft_table_owned(){ return 1; }
