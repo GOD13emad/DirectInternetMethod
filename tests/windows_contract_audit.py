@@ -109,7 +109,16 @@ check("windows_installer_output_stability_guard", all(x in installer_builder for
 tracked_strong=subprocess.run(["git","ls-files","--error-unmatch","windows/bin/zapret/strong-override-hosts.txt"],cwd=R,text=True,capture_output=True).returncode==0
 check("windows_strong_override_source_tracked", tracked_strong)
 check("windows_hash_pinned_text_eol_policy", all(x in gitattributes for x in ("windows/bin/zapret/hosts.txt text eol=crlf","windows/bin/zapret/adult-fallback-hosts.txt text eol=lf","windows/bin/zapret/strong-override-hosts.txt text eol=crlf")))
-check("windows_distribution_signature_fail_closed", all(x in signature_gate for x in ("Get-AuthenticodeSignature","TRUSTED_AUTHENTICODE_SIGNATURE_REQUIRED","$sig.Status -ne 'Valid'","FAIL_CLOSED","exit 42")))
+check("windows_distribution_signature_fail_closed", all(x in signature_gate for x in (
+    "Get-AuthenticodeSignature",
+    "Assert-EligibleSignerForSmartAppControl -Signature $sig",
+    "if([string]$Signature.Status -ne 'Valid')",
+    "SELF_SIGNED_SIGNER_NOT_PUBLIC_TRUSTED",
+    "SMART_APP_CONTROL_RSA_SIGNER_REQUIRED",
+    "CODE_SIGNING_EKU_REQUIRED",
+    "PUBLIC_TRUST_CHAIN_UNVERIFIED",
+    "FAIL_CLOSED","exit 42"
+)))
 check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}

@@ -125,6 +125,12 @@ jobs:
       - name: Restore pinned PowerShell runtime
         shell: pwsh
         run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
+      - name: Fail-closed public signer and Smart App Control eligibility fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -File tests/windows_public_signer_trust_contract.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Full Windows and Router Gateway contract audits
         shell: pwsh
         run: |
@@ -147,6 +153,12 @@ jobs:
       - name: Restore pinned PowerShell runtime
         shell: pwsh
         run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
+      - name: Fail-closed public signer and Smart App Control eligibility fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -File tests/windows_public_signer_trust_contract.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Full Windows and Router Gateway contract audits
         shell: pwsh
         run: |

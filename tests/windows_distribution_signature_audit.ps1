@@ -2,6 +2,47 @@
 param([string]$InstallerPath='')
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
+function Assert-EligibleSignerForSmartAppControl {
+  [CmdletBinding()]
+  param([Parameter(Mandatory=$true)][object]$Signature)
+  if([string]$Signature.Status -ne 'Valid'){throw 'TRUSTED_AUTHENTICODE_SIGNATURE_REQUIRED'}
+  $cert=$Signature.SignerCertificate
+  if($null -eq $cert -or $cert -isnot [System.Security.Cryptography.X509Certificates.X509Certificate2]){
+    throw 'SIGNER_CERTIFICATE_MISSING'
+  }
+  if($cert.Subject -eq $cert.Issuer){throw 'SELF_SIGNED_SIGNER_NOT_PUBLIC_TRUSTED'}
+  # Smart App Control only supports RSA-based code signing, not ECC.
+  if([string]$cert.PublicKey.Oid.Value -ne '1.2.840.113549.1.1.1'){
+    throw 'SMART_APP_CONTROL_RSA_SIGNER_REQUIRED'
+  }
+  $hasCodeSigningEku=$false
+  foreach($ext in $cert.Extensions){
+    if($ext -is [System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]){
+      foreach($oid in $ext.EnhancedKeyUsages){
+        if([string]$oid.Value -eq '1.3.6.1.5.5.7.3.3'){$hasCodeSigningEku=$true}
+      }
+    }
+  }
+  if(-not $hasCodeSigningEku){throw 'CODE_SIGNING_EKU_REQUIRED'}
+  $chain=[System.Security.Cryptography.X509Certificates.X509Chain]::new()
+  try{
+    # Authenticode=Valid must still be checked first; independent issuer
+    # chain rejects locally generated, privately issued certificates.
+    $chain.ChainPolicy.RevocationMode=[System.Security.Cryptography.X509Certificates.X509RevocationMode]::NoCheck
+    $chain.ChainPolicy.VerificationFlags=[System.Security.Cryptography.X509Certificates.X509VerificationFlags]::NoFlag
+    # Artifact Signing leaf certs can be short-lived; trusted timestamps
+    # are adjudicated by Authenticode itself. Inspect chain at last valid time.
+    $now=[DateTime]::UtcNow
+    $validAt=if($now -gt $cert.NotAfter.ToUniversalTime()){$cert.NotAfter.ToUniversalTime().AddSeconds(-1)}else{$now}
+    if($validAt -lt $cert.NotBefore.ToUniversalTime()){throw 'SIGNER_CERTIFICATE_NOT_YET_VALID'}
+    $chain.ChainPolicy.VerificationTime=$validAt
+    if(-not $chain.Build($cert) -or $chain.ChainElements.Count -lt 2){
+      throw 'PUBLIC_TRUST_CHAIN_UNVERIFIED'
+    }
+  }finally{$chain.Dispose()}
+  return $cert
+}
+
 $Root=Split-Path $PSScriptRoot -Parent
 if([string]::IsNullOrWhiteSpace($InstallerPath)){
   $InstallerPath=Join-Path $Root 'delivery\DirectInternetMethod_1.5.2_Windows_Setup.exe'
@@ -23,7 +64,9 @@ try{
  $sig=Get-AuthenticodeSignature -LiteralPath $InstallerPath
  $Result.signatureStatus=[string]$sig.Status
  if($sig.SignerCertificate){$Result.trustCertificateSubject=[string]$sig.SignerCertificate.Subject}
- if($sig.Status -ne 'Valid'){throw 'TRUSTED_AUTHENTICODE_SIGNATURE_REQUIRED'}
+ $signer=Assert-EligibleSignerForSmartAppControl -Signature $sig
+ $Result['signerAlgorithm']='RSA'
+ $Result['signerEku']='CodeSigning'
  $Result.status='PASS_SIGNATURE_INTEGRITY_ONLY'
  $Result.reason='Still requires independent Windows App Control and installation acceptance on an enforced clean sandbox.'
 }catch{

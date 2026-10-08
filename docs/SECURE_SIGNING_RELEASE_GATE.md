@@ -81,3 +81,50 @@ independent installation evidence remain mandatory.
 PR #24 must remain Draft/HOLD, and issues #23/#25 stay open until the
 external signing and installed release gates genuinely pass. Never
 disable or bypass Smart App Control to obtain a false-green result.
+
+## 2026-10-09 R223 — Windows release signer eligibility guard
+
+The previous `windows_distribution_signature_audit.ps1` validated SHA and
+`Get-AuthenticodeSignature.Status == Valid`, but it did not independently
+reject a locally trusted self-signed development certificate, an ECC signer
+(unsupported by Smart App Control), missing Code Signing EKU, or a private
+untrusted CA. This omission is a **confirmed source-level gate weakness**;
+no real public signature forgery or unsafe Windows installation was performed.
+
+R223 adds `Assert-EligibleSignerForSmartAppControl` and a Windows-CI
+negative/positive contract. Six ephemeral in-memory certificate fixtures
+reject unsigned, missing signer, self-signed RSA, ECC leaf, untrusted CA RSA
+and missing EKU; a Microsoft Authenticode-signed OS reference passes the
+positive branch. No test certificate was imported into machine/user trust
+stores. Existing unsigned v1.5.2 Windows setup SHA
+`BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85`
+still fails closed with exit 42; no installation or security-policy mutation.
+
+**Do not mistake this source guard for public-trust acceptance.** A
+legitimate publisher identity, a genuine trusted RSA code-signing
+certificate/signing service and timestamped exact artifact remain required,
+then a **clean Smart App Control-ON Sandbox** must independently accept
+installation, payload signatures, service/GUI registration and update flow.
+A self-signed certificate, disabled SAC, manually injected trust root, or
+a merely positive Microsoft-signed reference sample cannot satisfy DoD.
+
+Microsoft-supported external choices (eligibility and identity validation
+NOT yet accepted):
+
+- Microsoft Artifact Signing Public Trust, subject to identity validation
+  and location eligibility; external publisher controls required.
+- CA-issued OV certificate, subject to legal publisher validation.
+- SignPath Foundation free signing for qualifying open-source projects;
+  independent application and approval required.
+- Microsoft Store MSIX re-signing at submission; this product's service,
+  WinDivert driver and privileged installer compatibility with MSIX is
+  **UNPROVEN** and must be evaluated before choosing that route. The Store
+  does **not** re-sign a submitted legacy EXE/MSI installer.
+
+Primary references:
+https://learn.microsoft.com/windows/apps/develop/smart-app-control/code-signing-for-smart-app-control
+https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options
+https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart
+
+R223 local signer-fixture tests PASS. Hosted exact-SHA CI must be accepted
+after commit. Keep PR #24/#26 Draft and public stable v1.5.1 unchanged.
