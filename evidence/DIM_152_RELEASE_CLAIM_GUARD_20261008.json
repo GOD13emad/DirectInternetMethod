@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "date": "2026-10-08",
+  "objective": "Prevent a false public/FINAL metadata claim on v1.5.2+ when the signed-installer and clean Smart App Control-on Sandbox acceptance gates are unmet",
+  "status": "LOCAL_REGRESSION_PASS_CI_PENDING",
+  "baselineHead": "3349cecc483edb84717840061892456bf1be9098",
+  "baselineNegativeTest": {
+    "fixture": "temporary minimal metadata/source copy only, no installed or network mutations",
+    "spoofedStatus": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED",
+    "unsignedSigner": "FAIL_NOTSIGNED_CORRELATED_3089_TOTAL_SIGNATURE_COUNT_0",
+    "sandbox": "FAIL_CONFIRMED_SMART_APP_CONTROL_ENFORCED_UNSIGNED_POLICY_DENIAL",
+    "oldAuditExit": 0,
+    "interpretation": "FALSE_GREEN_REPRODUCED"
+  },
+  "change": {
+    "productionAudit": "tests/release_metadata_audit.py",
+    "negativeTests": "tests/release_publication_negative_regression.py",
+    "workflow": ".github/workflows/ci.yml Linux source stage",
+    "documentation": "docs/SECURE_SIGNING_RELEASE_GATE.md",
+    "scope": "v1.5.2 and higher, v1.5.1 historical audit behavior intentionally unaffected"
+  },
+  "tests": {
+    "spoofPublishedStatusRejected": true,
+    "spoofPublicationFlagRejected": true,
+    "spoofPublishedTimestampRejected": true,
+    "spoofMissingSignatureProofRejected": true,
+    "blockedCandidateStillAcceptedAsCandidate": true,
+    "postPatchSpoofAuditExit": 1,
+    "negativeRegressionExit": 0,
+    "releaseMetadataAuditExit": 0
+  },
+  "limitations": [
+    "Source metadata consistency is not cryptographic signature verification",
+    "Signature status can only be validated against actual signed installer through Windows distribution audit",
+    "An independently enforced Smart App Control Sandbox and installed service/registry/manifest checks are still mandatory",
+    "No eligible signing identity or genuine publisher certificate currently available",
+    "Repository root has no LICENSE; open-source signing eligibility cannot be assumed"
+  ],
+  "release": "v1.5.2 candidate DRAFT/HOLD, NOT PUBLISHED",
+  "dependencies": [
+    "Trusted publisher identity",
+    "Public trust signing and signed installer hash",
+    "Clean Windows Sandbox acceptance",
+    "Versioned release post-publish verification"
+  ],
+  "risk": "Do not disable Smart App Control, forge signing trust, or promote metadata by bypassing independent checks"
+}

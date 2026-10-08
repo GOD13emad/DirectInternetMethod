@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "date": "2026-10-08",
+  "status": "CANDIDATE_UNPUBLISHED",
+  "objective": "Skip repeated pkexec only when prior 1.5.1 root-owned backend is byte-identical to 1.5.2 package with same UID and units",
+  "preExistingInstallerSha256": "4AE4D83F2B04A9D284A2FB52237CA1CE9647F71F2E64848024704E41484D96D8",
+  "candidateLinuxZipSha256": "2F13E15236F7AE3128C3A981605F5240F8A91F141246079A291561032130CFE7",
+  "candidateLinuxBytes": 8185930,
+  "compatibleProtectedBackendVersions": [
+    "1.5.1",
+    "1.5.2"
+  ],
+  "gate": "EXACT_HEAD_CI_AND_LIVE_UNPRIVILEGED_INSTALL_PENDING",
+  "failClosed": "Any mismatched protected file, unexpected backend version or UID must still request the normal authorized pkexec installation; no privilege bypass.",
+  "priorCandidateSha256": "2262BAB7D6B4BAB634803F674BA0CA61926C51850B9E3BD3E7350626A96B1130",
+  "windowsInstallerSha256": "BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85",
+  "immutableStableRelease": "v1.5.1 historical assets unchanged"
+}

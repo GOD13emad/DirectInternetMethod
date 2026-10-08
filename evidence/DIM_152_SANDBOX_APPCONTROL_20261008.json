@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "date": "2026-10-08",
+  "project": "Direct Internet Method",
+  "objective": "Validate unsigned Windows v1.5.2 installer under enforced Windows Sandbox App Control with networking disabled",
+  "status": "FAIL_CLOSED_DISTRIBUTION_UNPROVEN",
+  "release": "CANDIDATE_v1.5.2_NOT_PUBLISHED",
+  "exactCandidateSourceSha": "106bddb4b06eb758855589b51b3de8b35961faa8",
+  "installer": {
+    "name": "DirectInternetMethod_1.5.2_Windows_Setup.exe",
+    "sha256": "BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85",
+    "authenticodeStatus": "NotSigned",
+    "signingEvidence": "evidence/WINDOWS_152_INSTALLER_BUILD_20261008.json"
+  },
+  "sandbox": {
+    "networking": "Disabled",
+    "mappedInstallerReadOnly": true,
+    "adminToken": true,
+    "artifactShaVerified": true,
+    "isolatedCopyShaVerified": true,
+    "installerStart": "BLOCKED_BY_APPCONTROL",
+    "osError": "An Application Control policy has blocked this file.",
+    "installationPerformed": false,
+    "installedServiceRegistryHashChecks": "UNPROVEN",
+    "privateRawEvidenceSha256": "ABE8F759EF8552ACC0FC1A36D7384A36A52EEEE4AAC46BBBA2B103DDA6398C67"
+  },
+  "rootCause": {
+    "fact": "An enforced Application Control policy denied execution of this exact candidate installer",
+    "inference": "Missing trusted Authenticode signature may be the deciding condition, but policy ID/reason is unverified without correlated CodeIntegrity 3077 and 3089 event details",
+    "confidence": "PROBABLE_NOT_CONFIRMED"
+  },
+  "releaseGuard": "NO_PROMOTION_OR_PUBLIC_RELEASE_UNTIL_POLICY_COMPATIBILITY_AND_SIGNATURE_EVIDENCE",
+  "nextActions": [
+    "Obtain appropriate legitimate trusted Authenticode signing identity and sign exact Windows build, then recompute release hashes",
+    "Collect sandbox CodeIntegrity 3077/3089 signing and policy reason without disabling policy",
+    "Re-test clean offline Windows Sandbox installer/service/registry/680 manifest hashes",
+    "Test safe Windows upgrade on an inactive client; preserve current live v1.5.1 host network"
+  ],
+  "githubIssue": "https://github.com/GOD13emad/DirectInternetMethod/issues/25",
+  "policyDocs": "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/operations/appcontrol-debugging-and-troubleshooting",
+  "disallowedWorkaround": "Do not disable Windows App Control, create fake trust, or bypass code integrity",
+  "hostNetworkState": "ACTIVE_UNCHANGED",
+  "certStoreReadOnlyAudit": {
+    "currentUserValidCodeSigningPrivateKeys": 0,
+    "localMachineValidCodeSigningPrivateKeys": 0,
+    "status": "NO_TRUSTED_SIGNING_IDENTITY_AVAILABLE_TO_THIS_RUNTIME",
+    "signToolOnPath": false
+  }
+}

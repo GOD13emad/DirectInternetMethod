@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "version": "1.5.2",
+  "date": "2026-10-08",
+  "status": "BUILT_CANDIDATE_UNRELEASED",
+  "baseMainSha": "1aed8bafa3ce95ae3459d850a581d90b7f51d1e5",
+  "objective": "Versioned corrected Linux fresh-install permissions with Windows/Linux updater compatibility",
+  "artifacts": {
+    "windows": {
+      "file": "DirectInternetMethod_1.5.2_Windows_Setup.exe",
+      "bytes": 157128933,
+      "sha256": "BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85"
+    },
+    "linux": {
+      "file": "DirectInternetMethod_1.5.2_Linux_x86_64.zip",
+      "bytes": 8185665,
+      "sha256": "2262BAB7D6B4BAB634803F674BA0CA61926C51850B9E3BD3E7350626A96B1130"
+    }
+  },
+  "windowsPayload": {
+    "guiSha256": "2F26B772FC52FDEEA8EFEE1CD498AEBE47400D5D8F517A66AE029904B9503369",
+    "serviceSha256": "C2114B666B905D697F785F65F4B3BB8614BA95BF2ABF7A14770E659C074830E0",
+    "manifestSha256": "254968D12D400BC0E0BBF73A4086B3401890DED497063858A91D4AF059C26F0A",
+    "manifestFiles": 680
+  },
+  "checksumsSha256": "2AD592A127B8B14D29E1A57D0E72185A0534F8F4A2B74A1502C10DF19E755D94",
+  "releaseStatus": "NOT_PUBLISHED",
+  "openGates": [
+    "exact-head CI",
+    "independent Linux archive build",
+    "installed Windows and Linux update verification",
+    "actual clean install on isolated target",
+    "published asset digest re-download"
+  ],
+  "historicalTag": "v1.5.1",
+  "historicalTagAssetsUnchanged": true
+}

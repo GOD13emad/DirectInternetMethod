@@ -1,16 +1,16 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.5.1",
-  "date": "2026-10-06",
-  "status": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED",
+  "version": "1.5.2",
+  "date": "2026-10-08",
+  "status": "CANDIDATE_V152_HOLD_APP_CONTROL_SIGNING",
   "previousAccepted": {
-    "version": "1.5.0",
-    "tag": "v1.5.0",
-    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
-    "status": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED"
+    "version": "1.5.1",
+    "tag": "v1.5.1",
+    "tagCommit": "a79dfb8216c603d6e29236233e8d250b490a96cc",
+    "status": "PUBLISHED_HISTORICAL_UNCHANGED"
   },
-  "feature": "Opt-in maintained broad adult-domain coverage, full-page usability semantics, and preserved direct-only DNS/DPI architecture.",
+  "feature": "Linux fresh-install umask 077 permission repair and version-aligned Windows/Linux updater; direct-only runtime logic unchanged.",
   "directEngine": {
     "methods": [
       "encrypted-dns-doh",
@@ -58,7 +58,7 @@
     "gemini": "FAIL_HTTP_403_ON_CURRENT_EGRESS; direct DNS/DPI methods do not change public egress region"
   },
   "routerGateway": {
-    "version": "1.5.1",
+    "version": "1.5.2",
     "dataRevision": 3,
     "profileCount": 9,
     "providerCount": 3,
@@ -66,48 +66,56 @@
   },
   "platforms": {
     "windows": {
-      "status": "PASS_EXACT_INSTALLED_LIFECYCLE_SITE_MATRIX_ROLLBACK_RESTORED_ACTIVE",
-      "artifact": "delivery/DirectInternetMethod_1.5.1_Windows_Setup.exe",
-      "bytes": 157111497,
-      "sha256": "4E1974B5A40F96B49B7B4196FFE963DCDF65B05E4F2B89DE4EC06E794B77EE9B",
-      "guiSha256": "B85460B8225060E7C8C9C54F5C39D444457071E77C0BBD7CD39BF34343F8B619",
-      "serviceSha256": "A327B01DFB7C05896DDB9F81E123E8A0362B200E52A5EB061AFDB4A7BCA367A5",
-      "manifestSha256": "2114B625154C7E50DC6BD6C2B3D6B7A86FDEC6D4C700374F40A15612C55C0810",
+      "status": "BUILD_PASS_BUT_ISOLATED_EXECUTION_BLOCKED_BY_APP_CONTROL",
+      "artifact": "delivery/DirectInternetMethod_1.5.2_Windows_Setup.exe",
+      "bytes": 157128933,
+      "sha256": "BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85",
+      "guiSha256": "2F26B772FC52FDEEA8EFEE1CD498AEBE47400D5D8F517A66AE029904B9503369",
+      "serviceSha256": "C2114B666B905D697F785F65F4B3BB8614BA95BF2ABF7A14770E659C074830E0",
+      "manifestSha256": "254968D12D400BC0E0BBF73A4086B3401890DED497063858A91D4AF059C26F0A",
       "manifestFiles": 680,
       "authenticode": "NotSigned"
     },
     "linux": {
-      "status": "PASS_EXACT_INSTALLED_BALANCED_TARGETED_ADULT_MATRIX_ROLLBACK_RESTORED_ACTIVE",
-      "artifact": "delivery/DirectInternetMethod_1.5.1_Linux_x86_64.zip",
-      "bytes": 8185606,
-      "sha256": "21FE512444957008DA4D79F540ABCEAD5CC9CB18481F1FF8B620A4B90A9374B8",
-      "protectedBackendVersion": "1.5.1",
-      "packageFiles": 19
+      "status": "PASS_BUILT_ASSET_IDENTITY_ONLY_INSTALLED_VALIDATION_OPEN",
+      "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
+      "bytes": 8185930,
+      "sha256": "2F13E15236F7AE3128C3A981605F5240F8A91F141246079A291561032130CFE7",
+      "protectedBackendVersion": "1.5.2",
+      "packageFiles": 19,
+      "compatibleProtectedBackendVersions": [
+        "1.5.1",
+        "1.5.2"
+      ]
     }
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "BE9249CD5E326C2B47BC6DAC79EF62EFC9A2B4ACC9491E223A3DBE0064583DC0"
+    "sha256": "40DFA69A4A32E7325117BA8CAAF11E8F95DEA93D17D3CEAB43898C05953529E3"
   },
   "acceptance": {
-    "windowsPayload": "PASS_FINAL_BUILD",
-    "windowsInstaller": "PASS_FINAL_BUILD_STABLE_OUTPUT",
-    "windowsContract": "PASS_FINAL_CANDIDATE",
-    "linuxPackage": "PASS",
-    "linuxContract": "PASS",
-    "protectedCi": "RELEASE_HEAD_RUN_37427662880_FALSE_GREEN_WINDOWS_CONTRACT_CRASH_DETECTED_POST_PUBLISH; LINUX_JOB_PASS; POST_PUBLISH_SOURCE_REPRODUCIBILITY_FIX_CI_PENDING",
-    "publication": "PASS_PUBLIC_RELEASE_AND_ASSET_DIGESTS_VERIFIED",
-    "installedWindows": "PASS_EXACT_INSTALLED_ACTIVE_POST_PUBLISH_LATEST_V1_5_1",
-    "installedLinux": "PASS_EXACT_INSTALLED_ACTIVE_POST_PUBLISH_LATEST_V1_5_1",
-    "adultCoverage": "PASS_WINDOWS_AND_LINUX_NORMAL_CLIENT_PORNHUB_XVIDEOS_XNXX_XHAMSTER_REDDIT_REPRESENTATIVE_MATRIX_WITH_LINUX_EDGE_FAILOVER",
-    "gemini": "FAIL_HTTP_403_CURL_AND_REAL_CHROME_CURRENT_EGRESS_DIRECT_ONLY_EXHAUSTED",
-    "routerGatewayContract": "PASS",
-    "rejectedComponentAudit": "PASS",
-    "releaseMetadata": "PASS",
-    "fullTrackedSourceAudit": "PASS_56_PS1_16_PY_DOTNET_0_WARN_0_ERR",
-    "windowsDefender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME",
-    "linuxCrossHostRebuild": "PASS_EXACT_SHA_21FE5124",
-    "sourceReproducibility": "LOCAL_PASS_WINDOWS_OVERRIDE_TRACKED_HASH_PINNED_EOL_DETERMINISTIC_CI_FAIL_FAST; PROTECTED_CI_PENDING"
+    "windowsPayload": "PASS_BUILD_SERVICE_SELFTEST_AND_CONTRACT_V152",
+    "windowsInstaller": "PASS_BUILD_STABLE_OUTPUT_SHA_V152",
+    "windowsContract": "PASS_SOURCE_CONTRACT_V152",
+    "linuxPackage": "PASS_REBUILD_MANIFEST_SHA_V152_POST_COMPAT",
+    "linuxContract": "PASS_SOURCE_CONTRACT_V152",
+    "protectedCi": "PENDING_EXACT_HEAD_CI",
+    "publication": "NOT_PUBLISHED",
+    "installedWindows": "UNPROVEN_V152_NOT_INSTALLED",
+    "installedLinux": "UNPROVEN_V152_NOT_INSTALLED",
+    "adultCoverage": "PENDING_V152_VERIFICATION",
+    "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED",
+    "routerGatewayContract": "PENDING_V152_VERIFICATION",
+    "rejectedComponentAudit": "PENDING_V152_VERIFICATION",
+    "releaseMetadata": "PENDING_V152_VERIFICATION",
+    "fullTrackedSourceAudit": "PENDING_V152_VERIFICATION",
+    "windowsDefender": "PENDING_V152_VERIFICATION",
+    "linuxCrossHostRebuild": "PENDING_V152_VERIFICATION",
+    "sourceReproducibility": "NEEDS_INDEPENDENT_LINUX_V152_REBUILD",
+    "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING",
+    "windowsSandbox": "FAIL_CONFIRMED_SMART_APP_CONTROL_ENFORCED_UNSIGNED_POLICY_DENIAL",
+    "windowsDistributionSigning": "FAIL_NOTSIGNED_CORRELATED_3089_TOTAL_SIGNATURE_COUNT_0",
+    "installerIntegrity": "PASS_EXACT_HASH"
   },
   "validationBoundary": {
     "universalAdultGuarantee": "UNPROVABLE for every remote domain/CDN edge. Maintained opt-in catalog plus bounded platform profiles are used. Exact-installed normal-client matrices pass Pornhub/XVideos/XNXX/XHamster/Reddit. On validated Linux, forced Cloudflare edge 104.16.3.81 is unusable, but normal client operation failed over to 104.16.4.81 and returned HTTP 200 in 5/5 restart cycles.",
@@ -127,17 +135,6 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "v1.5.1 runtime/release is FINAL/PUBLISHED/POST-PUBLISH VERIFIED on Windows and Linux. One source-governance gate remains: merge the post-publish reproducibility/CI fail-fast repair after protected CI passes on a fresh checkout; no release asset/runtime mutation is required.",
-  "publication": {
-    "tag": "v1.5.1",
-    "tagCommit": "a79dfb8216c603d6e29236233e8d250b490a96cc",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.1",
-    "releaseId": 404451350,
-    "publishedAt": "2026-10-06T07:52:05Z",
-    "exactReleaseHead": "bfabb33015d32bda596144e2c5f30d8c870841ec",
-    "exactReleaseTree": "d0bfe6a230a3eefda064d33db25764a488611b90",
-    "protectedCiRun": 37427662880,
-    "publicAssetsVerified": true,
-    "protectedCiCaveat": "Run 37427662880 reported overall success but Windows contract actually crashed because strong-override-hosts.txt was not tracked; multi-command pwsh step masked the nonzero exit. Release artifact acceptance is based on exact-installed/live/hash evidence, not this false-green Windows job."
-  }
+  "exactNextAction": "Policy root cause CONFIRMED: Smart App Control VerifiedAndReputableDesktop enforced block (event 3077, correlated unsigned 3089). Obtain legitimate trusted publisher RSA code-signing identity, sign/re-hash and clean Sandbox retest before any v1.5.2 merge/release. Keep v1.5.1 live installation and release immutable. Gemini 403 remains FAIL.",
+  "publication": {}
 }

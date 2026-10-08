@@ -22,7 +22,7 @@ from gi.repository import Gtk, Adw, GLib, Gdk
 from router_gateway import RouterGatewayWindow
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
-VERSION="1.5.1"
+VERSION="1.5.2"
 GLib.set_prgname("DirectInternetMethod")
 GLib.set_application_name("Direct Internet Method")
 try:
@@ -102,7 +102,7 @@ def sync_adult_catalog(force=False):
     last_error=None
     for source_url in ADULT_CATALOG_URLS:
         try:
-            req=urllib.request.Request(source_url,headers={"User-Agent":"DirectInternetMethod/1.5.1"})
+            req=urllib.request.Request(source_url,headers={"User-Agent":"DirectInternetMethod/1.5.2"})
             with urllib.request.urlopen(req,timeout=20) as resp:
                 raw=resp.read(4*1024*1024+1)
             if len(raw)<100000 or len(raw)>4*1024*1024:
