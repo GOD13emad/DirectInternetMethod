@@ -206,7 +206,43 @@ def _top_default_iface():
     except Exception:
         return ""
 
+def _tailscale_split_safe():
+    # Same fail-closed guard as the privileged helper, read-only and bounded.
+    if not pathlib.Path("/sys/class/net/tailscale0").exists():
+        return False
+    top=_top_default_iface()
+    if not top or top.startswith(("tun","tap","wg","warp","tailscale","zt")):
+        return False
+    try:
+        links=subprocess.run(["ip","-o","link","show","up"],text=True,capture_output=True,timeout=2,check=True)
+        active=[line.split(": ",2)[1].split("@",1)[0] for line in links.stdout.splitlines() if line.count(": ")>=2]
+        if "tailscale0" not in active:
+            return False
+        if any(name.startswith(("tun","tap","wg","warp","tailscale","zt")) and name!="tailscale0" for name in active):
+            return False
+        nm=subprocess.run(["nmcli","-t","-f","TYPE,DEVICE","connection","show","--active"],
+                          text=True,capture_output=True,timeout=2)
+        if nm.returncode==0:
+            devs=[x.split(":",1)[-1] for x in nm.stdout.splitlines()]
+            if any(d.startswith(("tun","tap","wg","warp","tailscale","zt")) and d!="tailscale0" for d in devs):
+                return False
+        p=subprocess.run(["tailscale","status","--json"],text=True,capture_output=True,timeout=5,check=True)
+        d=json.loads(p.stdout)
+        if d.get("BackendState")!="Running" or d.get("ExitNodeStatus"):
+            return False
+        for version,exits in [("-4",{"default","0.0.0.0/0","0.0.0.0/1","128.0.0.0/1"}),
+                              ("-6",{"default","::/0","::/1","8000::/1"})]:
+            routes=subprocess.run(["ip",version,"route","show","table","52"],text=True,capture_output=True,timeout=2,check=True)
+            if any(line.split()[0] in exits for line in routes.stdout.splitlines() if line.split()):
+                return False
+        return True
+    except Exception:
+        return False
+
+
 def _external_tunnel_active():
+    if _tailscale_split_safe():
+        return False
     iface=_top_default_iface()
     if iface.startswith(("tun","tap","wg","warp","tailscale","zt")):
         return True
@@ -220,22 +256,40 @@ def _external_tunnel_active():
                 return True
     except Exception:
         pass
-    return False
+    try:
+        links=subprocess.run(["ip","-o","link","show","up"],text=True,capture_output=True,timeout=2)
+        for row in links.stdout.splitlines():
+            if row.count(": ")<2:
+                continue
+            name=row.split(": ",2)[1].split("@",1)[0]
+            if name.startswith(("tun","tap","wg","warp","tailscale","zt")):
+                return True
+    except Exception:
+        pass
+    return pathlib.Path("/sys/class/net/tailscale0").exists()
 
 def load_state():
     try:
         s=json.loads(STATE.read_text(encoding="utf-8"))
     except Exception:
         if _external_tunnel_active():
-            return {"mode":"BLOCKED","detail":"External VPN/tunnel owns the default route. Disconnect it before Start."}
+            return {"mode":"BLOCKED","detail":"External VPN/Exit Node or unsupported tunnel is active. Routes and DNS are preserved."}
+        if _tailscale_split_safe():
+            return {"mode":"OFF","detail":"Tailscale split network active. Start uses physical-interface DPI; system DNS/MagicDNS remain unchanged."}
         return {"mode":"OFF","detail":"No active Direct Internet Method state."}
     uid=os.getuid()
-    ctrld_ok=_systemd_unit_matches(s.get("ctrldUnit"),s.get("ctrldPid"),f"directinternetmethod-ctrld-{uid}.service")
+    preserved=s.get("dnsMode")=="system-preserved" and bool(s.get("tailscaleCoexistence"))
+    ctrld_ok=((int(s.get("ctrldPid") or 0)==0 and not s.get("ctrldUnit") and
+                not pathlib.Path("/sys/class/net/dimdns0").exists()) if preserved else
+              _systemd_unit_matches(s.get("ctrldUnit"),s.get("ctrldPid"),f"directinternetmethod-ctrld-{uid}.service"))
     nfqws_ok=_systemd_unit_matches(s.get("nfqwsUnit"),s.get("nfqwsPid"),f"directinternetmethod-nfqws-{uid}.service")
     if ctrld_ok and nfqws_ok:
-        detail=f"Physical: {s.get('physicalInterface','?')}  DNS link: {s.get('dnsInterface','?')}  DNS: {s.get('dnsIp','?')}  Methods: DoH + HTTP + TLS/SNI + QUIC"
+        if preserved:
+            detail=f"Tailscale coexistence: {s.get('physicalInterface','?')}  DNS/MagicDNS preserved  Methods: HTTP + TLS/SNI + QUIC (DPI only)"
+        else:
+            detail=f"Physical: {s.get('physicalInterface','?')}  DNS link: {s.get('dnsInterface','?')}  DNS: {s.get('dnsIp','?')}  Methods: DoH + HTTP + TLS/SNI + QUIC"
         if _external_tunnel_active():
-            return {"mode":"CONFLICT","detail":detail+"  External VPN/tunnel is also active."}
+            return {"mode":"CONFLICT","detail":detail+"  Unsupported tunnel/exit node appeared."}
         return {"mode":"ACTIVE","detail":detail}
     return {"mode":"STALE","detail":"Owned state exists but one or more owned processes are missing or mismatched. Use Recovery."}
 
@@ -274,7 +328,9 @@ def verify_live():
         and y["exit"]==0 and y["meta"].startswith(("200|","204|"))
         and o["exit"]==0 and o["meta"].startswith(("401|","403|"))
         and g["exit"]==0 and g["meta"].startswith(("200|")))
-    return {"ok":ok,"physicalInterface":physical,"directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"],"youtubeHttp80":h,"youtube":y,"openai":o,"github":g,"gemini":m}
+    dns_preserved=s.get("dnsMode")=="system-preserved"
+    methods=([] if dns_preserved else ["encrypted-dns-doh"])+["http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"]
+    return {"ok":ok,"physicalInterface":physical,"dnsMode":s.get("dnsMode","direct-doh"),"directMethods":methods,"youtubeHttp80":h,"youtube":y,"openai":o,"github":g,"gemini":m}
 
 def _version_tuple(text):
     s=text.strip().lstrip("vV")

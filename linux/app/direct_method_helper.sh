@@ -35,6 +35,8 @@ NFQWS_UNIT=""
 CREATED_LINK=0
 CREATED_TABLE=0
 START_COMMITTED=0
+DNS_MODE="direct-doh"
+TAILSCALE_COEXIST=0
 
 mkdir -p "$DM"
 chmod 0700 "$DM"
@@ -87,6 +89,9 @@ nft_table_owned(){
   if [ -n "$physical" ]; then
     grep -Fq "oifname \"$physical\"" <<<"$out" || grep -Fq "oifname $physical" <<<"$out" || return 1
   fi
+  if [ -f "$STATE" ] && [ "$(state_value dnsMode)" = "system-preserved" ]; then
+    grep -Eq 'meta mark & .*0x0*80000.*return' <<<"$out" || return 1
+  fi
 }
 
 state_value(){
@@ -125,7 +130,56 @@ external_tunnel_active(){
       esac
     done < <(nmcli -t -f TYPE,DEVICE connection show --active 2>/dev/null || true)
   fi
+  # Also protect non-NetworkManager tun/wg devices. Read-only detection.
+  while IFS= read -r dev; do
+    dev="$(printf '%s' "$dev" | cut -d@ -f1)"
+    case "$dev" in tun*|tap*|wg*|warp*|tailscale*|zt*) return 0 ;; esac
+  done < <(ip -o link show up | awk -F': ' '{print $2}')
   return 1
+}
+
+
+# Only Tailscale peer/subnet use on tailscale0 is supported; exit node and
+# any other VPN/tun remain fail-closed. Read-only: no tailscale set/up/down.
+tailscale_split_safe(){
+  local top ts_mode ip4 ip6 dev typ seen=0
+  top="$(top_iface)"
+  case "$top" in
+    ""|tun*|tap*|wg*|warp*|tailscale*|zt*) return 1 ;;
+  esac
+  [ "$top" = "$(physical_iface)" ] || return 1
+  ip link show tailscale0 >/dev/null 2>&1 || return 1
+  command -v tailscale >/dev/null 2>&1 || return 1
+  command -v timeout >/dev/null 2>&1 || return 1
+  while IFS= read -r dev; do
+    dev="$(printf '%s' "$dev" | cut -d@ -f1)"
+    case "$dev" in
+      tailscale0) seen=1 ;;
+      tun*|tap*|wg*|warp*|tailscale*|zt*) return 1 ;;
+    esac
+  done < <(ip -o link show up | awk -F': ' '{print $2}')
+  [ "$seen" -eq 1 ] || return 1
+  if command -v nmcli >/dev/null 2>&1; then
+    while IFS=: read -r typ dev; do
+      case "$dev" in
+        tailscale0) ;;
+        tun*|tap*|wg*|warp*|tailscale*|zt*) return 1 ;;
+      esac
+    done < <(nmcli -t -f TYPE,DEVICE connection show --active 2>/dev/null || true)
+  fi
+  ts_mode="$(timeout 5 tailscale status --json 2>/dev/null |
+    python3 -c 'import json,sys
+try:
+ d=json.load(sys.stdin)
+ ok=(d.get("BackendState")=="Running" and not d.get("ExitNodeStatus"))
+ print("split" if ok else "exit-or-offline")
+except Exception: print("invalid")')" || return 1
+  [ "$ts_mode" = "split" ] || return 1
+  ip4="$(ip -4 route show table 52 2>/dev/null)" || return 1
+  ip6="$(ip -6 route show table 52 2>/dev/null)" || return 1
+  ! grep -Eq '^(default|0[.]0[.]0[.]0/0|0[.]0[.]0[.]0/1|128[.]0[.]0[.]0/1)([[:space:]]|$)' <<<"$ip4" || return 1
+  ! grep -Eq '^(default|::/0|::/1|8000::/1)([[:space:]]|$)' <<<"$ip6" || return 1
+  return 0
 }
 
 remove_dns_link(){
@@ -174,18 +228,28 @@ verify_clean(){
 }
 
 status(){
-  local cp="" np="" ca=false na=false link=false table=false
+  local cp="" np="" ca=false na=false link=false table=false dns_ok=false mode=""
   if [ -f "$STATE" ]; then
     cp="$(state_value ctrldPid)"
     np="$(state_value nfqwsPid)"
+    mode="$(state_value dnsMode)"
     pid_owned "$cp" "$CTRLD" && ca=true || true
     pid_owned "$np" "$NFQWS" && na=true || true
   fi
   dns_link_owned && link=true || true
+  if [ "$mode" = "system-preserved" ]; then
+    # Intentional: DNS stays with systemd-resolved/Tailscale; no owned link.
+    if [ "$cp" = "0" ] && [ "$ca" = false ] &&
+       [ "$link" = false ] && [ ! -e "/sys/class/net/$DNS_IF" ]; then
+      dns_ok=true
+    fi
+  else
+    [ "$ca" = true ] && [ "$link" = true ] && dns_ok=true
+  fi
   local phy=""
   [ -f "$STATE" ] && phy="$(state_value physicalInterface)"
   nft_table_owned "$phy" && table=true || true
-  python3 - "$STATE" "$ca" "$na" "$link" "$table" <<'PY'
+  python3 - "$STATE" "$ca" "$na" "$link" "$table" "$dns_ok" <<'PY'
 import json,sys
 state={}
 try:
@@ -194,12 +258,14 @@ except Exception:
     pass
 flags=[x.lower()=="true" for x in sys.argv[2:]]
 print(json.dumps({
-    "ok":bool(state and all(flags)),
+    "ok":bool(state and flags[1] and flags[3] and flags[4]),
     "state":state,
     "ctrldAlive":flags[0],
     "nfqwsAlive":flags[1],
     "dnsLink":flags[2],
-    "nftTable":flags[3]
+    "nftTable":flags[3],
+    "dnsReady":flags[4],
+    "dnsMode":state.get("dnsMode","direct-doh")
 }))
 PY
 }
@@ -257,8 +323,14 @@ case "$ACTION" in
     if [ -f "$STATE" ]; then
       CPID="$(state_value ctrldPid)"
       NPID="$(state_value nfqwsPid)"
-      if pid_owned "$CPID" "$CTRLD" && pid_owned "$NPID" "$NFQWS" &&
-         dns_link_owned &&
+      PREVIOUS_DNS_MODE="$(state_value dnsMode)"
+      DNS_HEALTHY=0
+      if [ "$PREVIOUS_DNS_MODE" = "system-preserved" ]; then
+        [ "$CPID" = "0" ] && ! ip link show "$DNS_IF" >/dev/null 2>&1 && DNS_HEALTHY=1
+      else
+        pid_owned "$CPID" "$CTRLD" && dns_link_owned && DNS_HEALTHY=1
+      fi
+      if [ "$DNS_HEALTHY" -eq 1 ] && pid_owned "$NPID" "$NFQWS" &&
          nft_table_owned "$(state_value physicalInterface)"; then
         START_COMMITTED=1
         trap - EXIT
@@ -285,8 +357,13 @@ case "$ACTION" in
     PHY="$(physical_iface)"
     [ -n "$PHY" ] || { echo '{"ok":false,"error":"PHYSICAL_DEFAULT_ROUTE_MISSING"}'; exit 71; }
     if external_tunnel_active; then
-      echo '{"ok":false,"error":"EXTERNAL_TUNNEL_ACTIVE"}'
-      exit 72
+      if tailscale_split_safe; then
+        TAILSCALE_COEXIST=1
+        DNS_MODE="system-preserved"
+      else
+        echo '{"ok":false,"error":"EXTERNAL_TUNNEL_ACTIVE_OR_EXIT_NODE"}'
+        exit 72
+      fi
     fi
 
     for candidate in "$CUSTOM_HOSTS" "$ADULT_ENABLED" "$ADULT_HOSTS"; do
@@ -360,7 +437,12 @@ PY
     fi
     HOST_ARGS=()
     [ "$SCOPE" = "targeted" ] && HOST_ARGS=(--hostlist="$RUN_HOSTS")
+    if [ "$TAILSCALE_COEXIST" -eq 1 ] && [ "$SCOPE" != "targeted" ]; then
+      echo '{"ok":false,"error":"TAILSCALE_ALL_SITES_UNSUPPORTED"}'
+      exit 74
+    fi
 
+    if [ "$DNS_MODE" = "direct-doh" ]; then
     ip link add "$DNS_IF" type dummy
     CREATED_LINK=1
     ip addr add "$DNS_IP/32" dev "$DNS_IF"
@@ -412,10 +494,15 @@ EOF
     busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDNS 'ia(iay)' "$DIX" 1 2 4 192 0 2 53 >/dev/null
     busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDomains 'ia(sb)' "$DIX" 1 '.' true >/dev/null
     busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDefaultRoute 'ib' "$DIX" true >/dev/null
+    fi # Tailscale coexistence: preserve system DNS and MagicDNS unchanged.
 
     nft add table inet "$TABLE"
     CREATED_TABLE=1
     nft "add chain inet $TABLE output { type filter hook output priority mangle; policy accept; }"
+    if [ "$TAILSCALE_COEXIST" -eq 1 ]; then
+      # Tailscale LinuxBypassMark 0x80000/0xff0000 protects its own DERP/control traffic.
+      nft "add rule inet $TABLE output meta mark & 0xff0000 == 0x80000 return"
+    fi
     nft add rule inet "$TABLE" output oifname "$PHY" tcp dport 80 ct original packets 1-6 queue num "$QNUM" bypass
     nft add rule inet "$TABLE" output oifname "$PHY" tcp dport 443 ct original packets 1-6 queue num "$QNUM" bypass
     nft add rule inet "$TABLE" output oifname "$PHY" udp dport 443 ct original packets 1-6 queue num "$QNUM" bypass
@@ -470,14 +557,17 @@ EOF
     sleep .5
     pid_owned "$NPID" "$NFQWS" || { echo '{"ok":false,"error":"NFQWS_START_FAILED"}'; exit 76; }
 
-    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" "$ADULT_ON" "$ADULT_COUNT" <<'PY'
+    [ "$DNS_MODE" != "system-preserved" ] || CPID=0
+    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" "$ADULT_ON" "$ADULT_COUNT" "$DNS_MODE" "$TAILSCALE_COEXIST" <<'PY'
 import json,os,sys,time
 p=sys.argv[1]
 d={
   "schema":3,
   "status":"ACTIVE",
-  "architecture":"LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS_MULTIPROTOCOL",
-  "directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443","custom-hostlist","adult-catalog","strategy-profile"],
+  "architecture":("TAILSCALE_SPLIT_PRESERVED_DNS_NFT_NFQWS" if sys.argv[13]=="system-preserved" else "LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS_MULTIPROTOCOL"),
+  "directMethods":([] if sys.argv[13]=="system-preserved" else ["encrypted-dns-doh"])+["http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443","custom-hostlist","adult-catalog","strategy-profile"],
+  "dnsMode":sys.argv[13],
+  "tailscaleCoexistence":bool(int(sys.argv[14])),
   "strategy":sys.argv[9],
   "scope":sys.argv[10],
   "adultCoverage":bool(int(sys.argv[11])),
@@ -485,8 +575,8 @@ d={
   "ctrldPid":int(sys.argv[2]),
   "nfqwsPid":int(sys.argv[3]),
   "physicalInterface":sys.argv[4],
-  "dnsInterface":"dimdns0",
-  "dnsIp":"192.0.2.53",
+  "dnsInterface":("" if sys.argv[13]=="system-preserved" else "dimdns0"),
+  "dnsIp":("" if sys.argv[13]=="system-preserved" else "192.0.2.53"),
   "ctrldUnit":sys.argv[7],
   "nfqwsUnit":sys.argv[8],
   "started":time.time()

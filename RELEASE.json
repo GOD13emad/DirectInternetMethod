@@ -77,10 +77,10 @@
       "authenticode": "NotSigned"
     },
     "linux": {
-      "status": "PASS_BUILT_ASSET_IDENTITY_ONLY_INSTALLED_VALIDATION_OPEN",
+      "status": "SOURCE_CANDIDATE_TAILSCALE_COEXISTENCE_NOT_INSTALLED",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
-      "bytes": 8185930,
-      "sha256": "2F13E15236F7AE3128C3A981605F5240F8A91F141246079A291561032130CFE7",
+      "bytes": 8194229,
+      "sha256": "BBC0EB9C09148C05694072989D93DDB1D0846838170264D99418E5607697D001",
       "protectedBackendVersion": "1.5.2",
       "packageFiles": 19,
       "compatibleProtectedBackendVersions": [
@@ -91,18 +91,18 @@
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "40DFA69A4A32E7325117BA8CAAF11E8F95DEA93D17D3CEAB43898C05953529E3"
+    "sha256": "1987664FF5D1538226E0C5312D742E42F2721A2642CD6570CB72D11F346772DF"
   },
   "acceptance": {
     "windowsPayload": "PASS_BUILD_SERVICE_SELFTEST_AND_CONTRACT_V152",
     "windowsInstaller": "PASS_BUILD_STABLE_OUTPUT_SHA_V152",
     "windowsContract": "PASS_SOURCE_CONTRACT_V152",
-    "linuxPackage": "PASS_REBUILD_MANIFEST_SHA_V152_POST_COMPAT",
+    "linuxPackage": "PASS_LOCAL_BUILT_ARCHIVE_TAILSCALE_CANDIDATE",
     "linuxContract": "PASS_SOURCE_CONTRACT_V152",
-    "protectedCi": "PENDING_EXACT_HEAD_CI",
+    "protectedCi": "PENDING_NEW_EXACT_SHA",
     "publication": "NOT_PUBLISHED",
     "installedWindows": "UNPROVEN_V152_NOT_INSTALLED",
-    "installedLinux": "UNPROVEN_V152_NOT_INSTALLED",
+    "installedLinux": "UNPROVEN_PROTECTED_TAILSCALE_CODE_NOT_INSTALLED",
     "adultCoverage": "PENDING_V152_VERIFICATION",
     "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED",
     "routerGatewayContract": "PENDING_V152_VERIFICATION",
@@ -110,7 +110,7 @@
     "releaseMetadata": "PENDING_V152_VERIFICATION",
     "fullTrackedSourceAudit": "PENDING_V152_VERIFICATION",
     "windowsDefender": "PENDING_V152_VERIFICATION",
-    "linuxCrossHostRebuild": "PENDING_V152_VERIFICATION",
+    "linuxCrossHostRebuild": "PENDING_EXACT_FINAL_TAILSCALE_ZIP_INDEPENDENT_SHA",
     "sourceReproducibility": "NEEDS_INDEPENDENT_LINUX_V152_REBUILD",
     "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING",
     "windowsSandbox": "FAIL_CONFIRMED_SMART_APP_CONTROL_ENFORCED_UNSIGNED_POLICY_DENIAL",
@@ -135,6 +135,6 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Policy root cause CONFIRMED: Smart App Control VerifiedAndReputableDesktop enforced block (event 3077, correlated unsigned 3089). Obtain legitimate trusted publisher RSA code-signing identity, sign/re-hash and clean Sandbox retest before any v1.5.2 merge/release. Keep v1.5.1 live installation and release immutable. Gemini 403 remains FAIL.",
+  "exactNextAction": "Tailscale split coexistence source regression 10/10 Bash + 6/6 GUI and real Emad read-only preflight PASS; NEW candidate Linux SHA BBC0EB9C... still requires independent rebuild and root-installed live DNS/routes/MagicDNS/Tailscale peer lifecycle; Windows signing blocker persists.",
   "publication": {}
 }

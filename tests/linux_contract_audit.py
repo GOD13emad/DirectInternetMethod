@@ -27,6 +27,32 @@ check("dedicated_dns_link", all(x in helper for x in ('DNS_IF="dimdns0"','ip lin
 listener=re.search(r"\[listener\.0\](.*?)\[listener\.0\.policy\]",helper,re.S)
 check("ctrld_listener_owned_link", listener is not None and 'ip = "192.0.2.53"' in listener.group(1) and "allow_wan_clients = true" in listener.group(1) and 'ip = "0.0.0.0"' not in listener.group(1))
 check("external_tun_fail_closed_before_mutation", "EXTERNAL_TUNNEL_ACTIVE" in helper and helper.index("EXTERNAL_TUNNEL_ACTIVE") < helper.index('ip link add "$DNS_IF" type dummy'))
+
+check("tailscale_split_safe_before_network_mutation",
+      "tailscale_split_safe(){" in helper and "EXTERNAL_TUNNEL_ACTIVE_OR_EXIT_NODE" in helper
+      and helper.index("if tailscale_split_safe; then") < helper.index('ip link add "$DNS_IF" type dummy')
+      and "TAILSCALE_COEXIST=1" in helper)
+check("tailscale_no_exit_and_no_second_tunnel",
+      all(x in helper for x in ('ExitNodeStatus','ip -4 route show table 52',
+                                  'ip -6 route show table 52','tailscale0) seen=1',
+                                  'wg*|warp*|tailscale*|zt*) return 1')))
+check("tailscale_preserves_host_and_magicdns",
+      'DNS_MODE="system-preserved"' in helper
+      and 'if [ "$DNS_MODE" = "direct-doh" ]; then' in helper
+      and 'Tailscale coexistence: preserve system DNS and MagicDNS unchanged.' in helper
+      and '"dnsMode":sys.argv[13]' in helper and '"tailscaleCoexistence":bool(int(sys.argv[14]))' in helper)
+check("tailscale_marked_packets_excluded",
+      'meta mark & 0xff0000 == 0x80000 return' in helper
+      and helper.index('meta mark & 0xff0000 == 0x80000 return') <
+          helper.index('tcp dport 80 ct original packets 1-6 queue num "$QNUM" bypass'))
+check("tailscale_all_sites_remains_blocked",
+      'TAILSCALE_ALL_SITES_UNSUPPORTED' in helper and
+      'if [ "$TAILSCALE_COEXIST" -eq 1 ] && [ "$SCOPE" != "targeted" ]; then' in helper)
+check("tailscale_gui_mode_reflected",
+      all(x in ui for x in ('def _tailscale_split_safe():','DNS/MagicDNS preserved',
+                             'Tailscale split network active',
+                             'if _tailscale_split_safe():',
+                             'preserved=s.get("dnsMode")=="system-preserved"')))
 check("nft_owned_table", 'TABLE="directinternetmethod"' in helper and 'nft add table inet "$TABLE"' in helper and 'nft delete table inet "$TABLE"' in helper)
 check("multiprotocol_nft_queue_scope", all(x in helper for x in (
     'tcp dport 80 ct original packets 1-6 queue num "$QNUM" bypass',

@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "date": "2026-10-08",
+  "project": "Direct Internet Method",
+  "status": "SOURCE_TESTED_RUNTIME_NETWORK_UNPROVEN",
+  "baselineSourceHead": "e02d757ae5a399e43b88bc1d60be02f06726543a",
+  "candidate": "Tailscale non-exit split routing plus physical-interface DPI and system DNS preservation",
+  "linuxZip": {
+    "name": "DirectInternetMethod_1.5.2_Linux_x86_64.zip",
+    "sha256": "F5B744DE85FF3278DA876E358AB44203A1F8B635E81A6FC0AFB78BC0FA7826BF",
+    "bytes": 8194220,
+    "packageFiles": 19,
+    "publication": "NOT_PUBLISHED"
+  },
+  "source": {
+    "helperSha256": "CDBF53F969A73B394DB28A7E7F423EC886E9A48FF69F2C069E54F316127AA857",
+    "guiSha256": "E765376342D90776E789EA142CE47AE61ABE3D156D036FE89F4FFD080806BE4B"
+  },
+  "evidence": {
+    "bashSyntax": "PASS_ON_EMAD_LINUX_ISOLATED_COPY",
+    "liveReadOnlyPreflight": "PASS_EMAD_LINUX_TAILSCALE0_ACTIVE_NO_EXIT",
+    "mockBashPreflight": "PASS_10_CASES",
+    "mockGuiStates": "PASS_5_CASES",
+    "standaloneDoHPreserved": "STATIC_AND_GUI_STATE_PASS",
+    "nftTailscaleReservedFwmark": "0x80000/0xff0000_PRE_QUEUE_SOURCE_ASSERTED",
+    "tailscaleMagicDns": "SOURCE_PRESERVATION_QUALIFICATION_ONLY",
+    "physicalRoutesDnsMutation": "NONE_DURING_READ_ONLY_TEST"
+  },
+  "unverified": [
+    "Actual privileged nftables rule parse/run under cap_net_admin",
+    "Real installed TLS/QUIC probes",
+    "Tailscale MagicDNS and peer connectivity during live Direct Method runtime",
+    "Stop/Recovery DNS+route snapshot equality on live host",
+    "Independent candidate Linux archive rebuild",
+    "Installed admin authorization for changed protected backend",
+    "Public Windows Authenticode and App Control-on Sandbox acceptance"
+  ],
+  "limits": {
+    "onlyTailscaleSplit": true,
+    "exitNodeAllowed": false,
+    "otherTunnelAllowed": false,
+    "allSitesAllowed": false,
+    "dnsMode": "system-preserved",
+    "ownerTailscaleConfigChanges": false
+  },
+  "releaseBlocked": "Windows unsigned v1.5.2 Smart App Control policy blocks execution; tracked in Issue #25."
+}

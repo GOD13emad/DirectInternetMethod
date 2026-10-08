@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Python syntax
-        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/app/router_gateway.py tests/linux_contract_audit.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_152_lifecycle.py
+        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/app/router_gateway.py tests/linux_contract_audit.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_152_lifecycle.py tests/tailscale_coexistence_contract.py tests/tailscale_ui_state_contract.py
       - name: Shell syntax and LF guard
         shell: bash
         run: |
@@ -33,6 +33,8 @@ jobs:
       - name: Linux and Router Gateway contract audits
         run: |
           python3 tests/linux_contract_audit.py
+          python3 tests/tailscale_coexistence_contract.py
+          python3 tests/tailscale_ui_state_contract.py
           python3 tests/adult_coverage_data_audit.py
           python3 tests/router_gateway_contract_audit.py
           python3 tests/release_metadata_audit.py
@@ -40,6 +42,22 @@ jobs:
           python3 tests/rejected_component_audit.py
       - name: Build Linux archive
         run: python3 build_linux_package.py
+      - name: Verify exact Linux candidate artifact digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          r=json.loads(pathlib.Path("RELEASE.json").read_text(encoding="utf-8"))
+          meta=r["platforms"]["linux"]
+          p=pathlib.Path(meta["artifact"])
+          assert p.is_file(), "BUILT_LINUX_ARCHIVE_MISSING"
+          actual=hashlib.sha256(p.read_bytes()).hexdigest().upper()
+          expected=str(meta["sha256"]).upper()
+          assert actual==expected, f"BUILT_LINUX_SHA_MISMATCH {actual} != {expected}"
+          assert p.stat().st_size==int(meta["bytes"]), "BUILT_LINUX_SIZE_MISMATCH"
+          print("PASS built Linux archive exact SHA and size",actual)
+          PY
       - name: Validate shell syntax inside built archive
         shell: bash
         run: |
