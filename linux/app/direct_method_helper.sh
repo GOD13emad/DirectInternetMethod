@@ -441,11 +441,21 @@ PY
 }
 
 rollback_on_exit(){
-  local rc=$?
+  local original_rc=$? rollback_rc=0
+  # A failed rollback must not be represented as a successful Start.
+  trap - EXIT
   if [ "$ACTION" = "start" ] && [ "$START_COMMITTED" -eq 0 ]; then
-    cleanup_transient
+    cleanup_transient || rollback_rc=$?
+    if [ "$rollback_rc" -ne 0 ]; then
+      printf '{"ok":false,"error":"START_ROLLBACK_FAILED","originalExit":%s,"rollbackExit":%s}\n' "$original_rc" "$rollback_rc" >&2
+      exit "$rollback_rc"
+    fi
+    if [ "$original_rc" -eq 0 ]; then
+      echo '{"ok":false,"error":"START_NOT_COMMITTED"}' >&2
+      exit 87
+    fi
   fi
-  exit "$rc"
+  exit "$original_rc"
 }
 
 case "$ACTION" in

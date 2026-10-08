@@ -85,6 +85,13 @@ check("pid_exact_executable_ownership", "pid_owned()" in helper and 'readlink -f
 check("daemon_lifecycle_transient_services", "systemd-run --quiet --collect" in helper and '--service-type=exec' in helper and 'systemctl show "$CTRLD_UNIT" -p MainPID --value' in helper and 'systemctl show "$NFQWS_UNIT" -p MainPID --value' in helper and 'directinternetmethod-ctrld-${USER_UID}.service' in helper and 'directinternetmethod-nfqws-${USER_UID}.service' in helper and '"$CTRLD" run --config "$CTRLD_CFG" >"$DM/ctrld.log" 2>&1 &' not in helper)
 check("recovery_pid_extraction_fixed", 'pid="${p#/proc/}"' in helper and 'pid="${pid%/exe}"' in helper and 'kill "$pid"' in helper)
 check("start_rollback_trap", "trap rollback_on_exit EXIT" in helper and "cleanup_transient" in helper and "START_COMMITTED=1" in helper)
+check("start_rollback_error_integrity", all(x in helper for x in (
+    "cleanup_transient || rollback_rc=$?",
+    "START_ROLLBACK_FAILED",
+    "START_NOT_COMMITTED",
+    "trap - EXIT",
+    'exit "$rollback_rc"'
+)))
 check("ui_systemd_unit_ownership", '_systemd_unit_matches' in ui and '"systemctl","show",unit' in ui and 'MainPID' in ui and 'ActiveState' in ui and 'directinternetmethod-ctrld-{uid}.service' in ui and 'directinternetmethod-nfqws-{uid}.service' in ui)
 check("ui_identity", 'APP_ID="io.github.god13emad.DirectInternetMethod"' in ui and 'GLib.set_prgname("DirectInternetMethod")' in ui and 'GLib.set_application_name("Direct Internet Method")' in ui)
 check("ui_explicit_window_controls", all(x in ui for x in ("self.minimize()","self.maximize()","self.unmaximize()","self.close()","Gtk.WindowHandle")))

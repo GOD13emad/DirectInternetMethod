@@ -21,7 +21,7 @@ HELPER = ROOT / "linux/app/direct_method_helper.sh"
 REQUIRED = (
     "state_value", "nft_table_presence", "nft_table_owned",
     "nft_table_transient_owned", "cleanup_state_owned",
-    "cleanup_transient", "verify_clean",
+    "cleanup_transient", "verify_clean", "rollback_on_exit",
 )
 
 
@@ -167,7 +167,27 @@ nft list table inet "$TABLE" >/dev/null
 nft delete table inet "$TABLE"
 expect_absent
 echo "PASS_KERNEL_FOREIGN_STATE_CLEANUP_PRESERVATION"
-echo "PASS_KERNEL_NAMESPACE_NFT_CONTRACT_6_OF_6"
+# A real foreign table must cause the production EXIT trap to fail.
+put_state
+new_table; new_chain; mark; queues
+nft add rule inet "$TABLE" output ip daddr 203.0.113.7 drop
+export TABLE PHY TAILSCALE_COEXIST CREATED_TABLE CREATED_LINK RUN_HOSTS NPID CPID CTRLD NFQWS
+export -f rollback_on_exit cleanup_transient nft_table_presence nft_table_transient_owned pid_owned remove_dns_link
+if trap_output="$(bash -c 'set -euo pipefail; ACTION=start; START_COMMITTED=0; trap rollback_on_exit EXIT; exit 0' 2>&1)";then
+  trap_rc=0
+else
+  trap_rc=$?
+fi
+if [ "$trap_rc" -ne 83 ] || ! grep -q START_ROLLBACK_FAILED <<<"$trap_output";then
+  echo "FALSE_GREEN_KERNEL_ROLLBACK_TRAP_RC=$trap_rc $trap_output" >&2
+  exit 93
+fi
+nft list table inet "$TABLE" >/dev/null
+test -f "$STATE"
+nft delete table inet "$TABLE"
+expect_absent
+echo "PASS_KERNEL_FAILED_ROLLBACK_EXIT_NONZERO"
+echo "PASS_KERNEL_NAMESPACE_NFT_CONTRACT_7_OF_7"
 '''
     return functions + "\n" + cases
 

@@ -385,3 +385,6 @@ Previous R214 unpublished archive SHA `58E9F55C...D5AF5C` is
 `C:\Users\Aa.Emad\source\repos\DIM_R215_GATE\BASELINE_D5C5364.zip`.
 Public release v1.5.1 remains unchanged and Windows publication
 still requires a trusted signer/SAC clean-Sandbox acceptance.
+
+## R216: rollback EXIT failure propagation (2026-10-08)
+Negative-first test confirmed an uncommitted Start can return exit 0 despite rollback failure 83. The revised EXIT trap now returns a rollback failure, logs original and rollback exits, and marks uncommitted success as error 87. Six Bash negative/control tests PASS. A seventh isolated real-kernel test was added to CI but awaits exact-SHA hosted acceptance. Linux candidate SHA E5F26E322FFF80D86EC4335A25A2996FAC4118FBF3C2E456DEA3E67650C1F5D5 (8,201,886 bytes); former R215 ZIP is SUPERSEDED—DO NOT INSTALL. Installed production remains unchanged; root Tailscale/RustDesk live validation and Windows trusted signing remain OPEN.
