@@ -320,3 +320,34 @@ Previous R212 SHA `F916D5AC...678975` is
 Windows v1.5.2 trusted Authenticode and SAC Sandbox, Linux actual
 protected root Start/Stop/Recovery with TSMP/MagicDNS/RustDesk remain
 separate **OPEN** acceptance gates. Do not promote PR26 or PR24.
+
+## 2026-10-08 R214 — CI-enforced isolated real-kernel nft regression
+
+**Single revision goal:** make the previously observed WSL2 Kernel nft
+acceptance reproducible and mandatory in hosted Linux CI, without changing
+the protected helper/runtime. New `tests/linux_nft_kernel_namespace_contract.py`
+extracts actual `nft_table_presence`, `nft_table_owned`,
+`nft_table_transient_owned`, `cleanup_state_owned`,
+`cleanup_transient`, and `verify_clean` from the current helper.
+
+Its privileged path creates an independent `unshare --net` namespace,
+requires effective `CAP_NET_ADMIN`, proves that only isolated `lo`
+exists and there are initially no nft tables, and only then exercises
+the real Kernel. Direct execution in a host namespace or from a regular
+Linux account fails closed. It never configures Tailscale, modifies
+physical routes or queries user credentials.
+
+Local WSL2 root child namespace (Kernel 6.18.33.2, nftables 1.0.9):
+**6/6 PASS** — exact real owned table cleanup, empty/partial/full
+transient rollback, foreign table preservation during rollback and
+stateful cleanup. The unknown/foreign cases log the expected diagnostics
+but do not delete the foreign table.
+
+Linux-source CI adds an explicit mandatory isolated-kernel step using
+`sudo -n` plus a source-only check. A runner without authorization,
+namespace support or nftables cannot silently pass. This is evidence
+for kernel rule grammar and ownership/rollback under a fresh namespace,
+**not** active installed Linux/Tailscale/RustDesk Start/Stop/Recovery.
+The package SHA, protected helper bytes and public v1.5.1 stable
+remain unchanged from R213. PR #26 and dependent #24 remain Draft
+until all installed/live/signing gates have proper acceptance.

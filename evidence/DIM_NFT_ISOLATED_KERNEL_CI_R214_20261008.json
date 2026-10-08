@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "date": "2026-10-08",
+  "revision": "R214",
+  "previousAcceptedHead": "b1e9af8446375a768241212453cc4ea82323d53d",
+  "mutationObjective": "Add reproducible root-only, namespace-guarded REAL Linux Kernel nftables ownership/cleanup/rollback contract to CI. Existing production helper bytes unchanged.",
+  "status": "LOCAL_ISOLATED_KERNEL_PASS__HOSTED_CI_PENDING",
+  "source": {
+    "tests/linux_nft_kernel_namespace_contract.py": "F680D0C732F5DF92EF7BF3854D0A6B334B28626D58B05530A9A26BAC6F3CBD2F",
+    "linux/app/direct_method_helper.sh": "3F71F1055BEF6B36B46B96E6C5F63C664FE6DBDD9BFECBBE7D032FBB32E9A1E0"
+  },
+  "negativeGuard": "Unprivileged Emad Linux --kernel refuses with AUTHORIZED_ROOT_REQUIRED before any mutation; --inside verifies new network namespace differs from parent, CAP_NET_ADMIN, no non-loopback interfaces, and empty nft table list.",
+  "realKernel": {
+    "target": "Windows Emad WSL2 PCMClawUbuntu, root ephemeral child via unshare --net",
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "nftVersion": "1.0.9",
+    "sourceTransmission": "Exact required function text and exact Python runner transferred to WSL temporary filesystem with per-run cleanup; no Windows drive mounted",
+    "checks": [
+      "PASS_KERNEL_COMPLETE_OWNED_CLEANUP",
+      "PASS_KERNEL_TRANSIENT_empty",
+      "PASS_KERNEL_TRANSIENT_partial",
+      "PASS_KERNEL_TRANSIENT_full",
+      "PASS_KERNEL_FOREIGN_ROLLBACK_PRESERVATION",
+      "PASS_KERNEL_FOREIGN_STATE_CLEANUP_PRESERVATION",
+      "PASS_KERNEL_NAMESPACE_NFT_CONTRACT_6_OF_6"
+    ],
+    "noHostNetworkMutation": true,
+    "outputErrorsForIntentionallyRejectedForeignTables": [
+      "ROLLBACK_FOREIGN_NFT_PRESERVED",
+      "NFT_TABLE_OWNERSHIP_MISMATCH"
+    ]
+  },
+  "ciPlan": "Linux source job invokes source-only as unprivileged and root-only --kernel in fresh temporary unshare netns with sudo and dependency nft if not installed. Fail closed on root, cap or netns isolation failure; no skip.",
+  "openGates": [
+    "Hosted exact SHA CI for newly added test",
+    "Operational protected backend root install on safely recoverable Linux host",
+    "live Tailscale/RustDesk/MagicDNS Start/Stop/Recovery",
+    "Windows Trusted Authenticode enforced SAC clean-Sandbox",
+    "Merge release SHA postdownload",
+    "Gemini403"
+  ],
+  "note": "The isolated WSL2 namespace tests actual production functions extracted verbatim, but cannot establish Tailscale/RustDesk coexistence on actual Ubuntu hosts. No production code mutated in this R214 revision."
+}
