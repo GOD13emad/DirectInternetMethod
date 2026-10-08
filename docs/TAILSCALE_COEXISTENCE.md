@@ -133,3 +133,35 @@ without a separate safety assessment.
 The optional transport diagnostic distinguishes discovery/DERP from
 TSMP/WireGuard data-plane reachability. This baseline is captured in
 `evidence/DIM_TAILSCALE_RUSTDESK_TSMP_NETCHECK_20261008.json`.
+
+
+## Read-only nftables ownership and stop/recovery simulation
+
+The reserved Tailscale bypass mark `0x80000/0xff0000` has been
+checked against Tailscale's upstream `tsconst/linuxfw.go`. The
+coexistence-mode output NFT table is expected to include a marked
+packet RETURN before the ordinary physical-NIC TCP/UDP web queue rules.
+
+Two rootless automated test suites extract helper ownership and
+cleanup functions without executing the actual helper entry point:
+
+- `tests/tailscale_nft_ownership_contract.py`: six positive/negative
+  nftables table match cases including missing/wrong bypass mark,
+  foreign physical interface, and standalone behavior.
+- `tests/tailscale_cleanup_ownership_contract.py`: five stop/recovery
+  cases with mock `nft` and `ip` commands. Only a table that matches
+  the current Direct Method state is deleted; on ownership mismatch
+  the table AND recorded state remain untouched for safe diagnosis.
+
+The tests do **not** prove kernel nft syntax or service operation,
+because CAP_NET_ADMIN and a genuine authorized root install are
+needed for that. Do not treat them as a substitute for an actual
+Tailscale/RustDesk before-during-after live regression.
+
+Confirmed host prestate: both Linux hosts' Tailscale peers reachable
+over DERP discovery and encrypted TSMP data plane; Direct Method OFF,
+the physical internet routes remain independent of tailscale0, and
+there is no valid non-interactive sudo elevation available in the
+connected command sessions. An operating system administrator
+authorization is necessary before deploying changed root-owned
+backend bytes. Do not bypass the OS privilege boundary.
