@@ -60,9 +60,13 @@ normal={"ctrldPid":400,"ctrldUnit":"directinternetmethod-ctrld-1000.service",
         "physicalInterface":"enp1s0"}
 FakePath.files["mock-state.json"]=json.dumps(normal)
 state=env["load_state"]()
+assert state["mode"]=="CONFLICT" and "Stop then Start" in state["detail"],state
+print("PASS Tailscale appearing after standalone Direct DoH triggers conflict")
+env["_tailscale_split_safe"]=lambda:False
+state=env["load_state"]()
 assert state["mode"]=="ACTIVE" and "DoH" in state["detail"],state
 print("PASS standalone mode retains DoH status")
-print("PASS 5/5 GUI coexistence state fixtures, no network mutations")
+print("PASS 6/6 GUI coexistence state fixtures, no network mutations")
 
 
 # Regression: ip -o link prints "4: tailscale0: <...>" with TWO ": " separators.

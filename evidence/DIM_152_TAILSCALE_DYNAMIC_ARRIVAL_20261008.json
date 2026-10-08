@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "date": "2026-10-08",
+  "project": "Direct Internet Method",
+  "status": "SOURCE_TESTED_NOT_INSTALLED",
+  "finding": "If Tailscale starts after standalone Direct DoH is already active, DNS catch-all from Direct could conflict with new MagicDNS.",
+  "fix": "GUI marks CONFLICT and instructs Stop then Start for reconfiguration; does not silently overwrite Tailscale DNS or restart routes.",
+  "tests": [
+    "Mocked transition standalone ACTIVE + Tailscale SAFE -> CONFLICT",
+    "Mocked standalone no Tailscale -> DoH ACTIVE",
+    "Mocked preserved-DNS Tailscale -> ACTIVE",
+    "Actual read-only GUI and backend Linux preflights agree on running Tailscale split network"
+  ],
+  "linuxUnpublishedArchiveSha256": "313FFD200D6ABD506499DE79F3788B39B0B8E7B530C81C13EA1594A2DCE76642",
+  "archiveBytes": 8194416,
+  "previousUnpublishedArchiveSha256": "BBC0EB9C09148C05694072989D93DDB1D0846838170264D99418E5607697D001",
+  "publicReleaseState": "v1.5.1_STABLE; v1.5.2_NOT_PUBLISHED",
+  "windowsSigningGate": "BLOCKED_UNSIGNED"
+}

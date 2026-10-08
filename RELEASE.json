@@ -79,8 +79,8 @@
     "linux": {
       "status": "SOURCE_CANDIDATE_TAILSCALE_COEXISTENCE_NOT_INSTALLED",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
-      "bytes": 8194229,
-      "sha256": "BBC0EB9C09148C05694072989D93DDB1D0846838170264D99418E5607697D001",
+      "bytes": 8194416,
+      "sha256": "313FFD200D6ABD506499DE79F3788B39B0B8E7B530C81C13EA1594A2DCE76642",
       "protectedBackendVersion": "1.5.2",
       "packageFiles": 19,
       "compatibleProtectedBackendVersions": [
@@ -91,7 +91,7 @@
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "1987664FF5D1538226E0C5312D742E42F2721A2642CD6570CB72D11F346772DF"
+    "sha256": "9068CF98E15C20C38752A3AD3C072A640241516038938A3C40A968749FE2C183"
   },
   "acceptance": {
     "windowsPayload": "PASS_BUILD_SERVICE_SELFTEST_AND_CONTRACT_V152",
@@ -99,10 +99,10 @@
     "windowsContract": "PASS_SOURCE_CONTRACT_V152",
     "linuxPackage": "PASS_LOCAL_BUILT_ARCHIVE_TAILSCALE_CANDIDATE",
     "linuxContract": "PASS_SOURCE_CONTRACT_V152",
-    "protectedCi": "PENDING_NEW_EXACT_SHA",
+    "protectedCi": "PENDING_EXACT_DEPENDENT_FEATURE_SHA",
     "publication": "NOT_PUBLISHED",
     "installedWindows": "UNPROVEN_V152_NOT_INSTALLED",
-    "installedLinux": "UNPROVEN_PROTECTED_TAILSCALE_CODE_NOT_INSTALLED",
+    "installedLinux": "UNPROVEN_PROTECTED_TAILSCALE_COEXISTENCE_NOT_INSTALLED",
     "adultCoverage": "PENDING_V152_VERIFICATION",
     "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED",
     "routerGatewayContract": "PENDING_V152_VERIFICATION",
@@ -110,7 +110,7 @@
     "releaseMetadata": "PENDING_V152_VERIFICATION",
     "fullTrackedSourceAudit": "PENDING_V152_VERIFICATION",
     "windowsDefender": "PENDING_V152_VERIFICATION",
-    "linuxCrossHostRebuild": "PENDING_EXACT_FINAL_TAILSCALE_ZIP_INDEPENDENT_SHA",
+    "linuxCrossHostRebuild": "PENDING_INDEPENDENT_NEXT_HEAD_EXACT_SHA",
     "sourceReproducibility": "NEEDS_INDEPENDENT_LINUX_V152_REBUILD",
     "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING",
     "windowsSandbox": "FAIL_CONFIRMED_SMART_APP_CONTROL_ENFORCED_UNSIGNED_POLICY_DENIAL",
@@ -135,6 +135,6 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Tailscale split coexistence source regression 10/10 Bash + 6/6 GUI and real Emad read-only preflight PASS; NEW candidate Linux SHA BBC0EB9C... still requires independent rebuild and root-installed live DNS/routes/MagicDNS/Tailscale peer lifecycle; Windows signing blocker persists.",
+  "exactNextAction": "Tailscale split non-exit source candidate with real UI parser and late Tailscale arrival conflict guards; package SHA 313FFD... needs exact CI and crosshost SHA, and privileged installed-host lifecycle. Signed Windows v1.5.2 remains externally blocked.",
   "publication": {}
 }

@@ -290,6 +290,8 @@ def load_state():
             detail=f"Physical: {s.get('physicalInterface','?')}  DNS link: {s.get('dnsInterface','?')}  DNS: {s.get('dnsIp','?')}  Methods: DoH + HTTP + TLS/SNI + QUIC"
         if _external_tunnel_active():
             return {"mode":"CONFLICT","detail":detail+"  Unsupported tunnel/exit node appeared."}
+        if not preserved and _tailscale_split_safe():
+            return {"mode":"CONFLICT","detail":detail+"  Tailscale started after Direct DoH. Stop then Start to preserve MagicDNS."}
         return {"mode":"ACTIVE","detail":detail}
     return {"mode":"STALE","detail":"Owned state exists but one or more owned processes are missing or mismatched. Use Recovery."}
 
