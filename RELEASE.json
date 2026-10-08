@@ -113,8 +113,8 @@
     "linuxCrossHostRebuild": "PENDING_V152_VERIFICATION",
     "sourceReproducibility": "NEEDS_INDEPENDENT_LINUX_V152_REBUILD",
     "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING",
-    "windowsSandbox": "FAIL_APP_CONTROL_POLICY_BLOCKED_EXACT_SHA",
-    "windowsDistributionSigning": "FAIL_AUTHENTICODE_NOT_SIGNED",
+    "windowsSandbox": "FAIL_CONFIRMED_SMART_APP_CONTROL_ENFORCED_UNSIGNED_POLICY_DENIAL",
+    "windowsDistributionSigning": "FAIL_NOTSIGNED_CORRELATED_3089_TOTAL_SIGNATURE_COUNT_0",
     "installerIntegrity": "PASS_EXACT_HASH"
   },
   "validationBoundary": {
@@ -135,6 +135,6 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Windows v1.5.2 installer exact SHA is correct but Windows Sandbox App Control blocked its execution. Do NOT publish until signed/trusted distribution and clean Sandbox full install acceptance; Issue #25. Both Linux v1.5.2 user upgrades passed without repeat admin only with 10/10 byte-identical 1.5.1 protected backend. Gemini 403 remains FAIL.",
+  "exactNextAction": "Policy root cause CONFIRMED: Smart App Control VerifiedAndReputableDesktop enforced block (event 3077, correlated unsigned 3089). Obtain legitimate trusted publisher RSA code-signing identity, sign/re-hash and clean Sandbox retest before any v1.5.2 merge/release. Keep v1.5.1 live installation and release immutable. Gemini 403 remains FAIL.",
   "publication": {}
 }
