@@ -248,11 +248,75 @@ remove_dns_link(){
   fi
 }
 
+# During failed Start a table may have only a PREFIX of our intended rules.
+# Do not remove it if another actor added a rule/chain or the read is ambiguous.
+nft_table_transient_owned(){
+  local phy="$1" coexist="$2" output
+  [ -n "$phy" ] || return 1
+  case "$coexist" in 0|1) ;; *) return 1;; esac
+  output="$(nft list table inet "$TABLE" 2>/dev/null)" || return 1
+  printf '%s\n' "$output" | python3 -c '
+import re,sys
+table,iface,coexist=sys.argv[1:]
+lines=[line.strip() for line in sys.stdin if line.strip()]
+if not re.fullmatch(r"[a-zA-Z0-9_.-]+",iface) or len(lines)<2:
+    sys.exit(1)
+if lines[0]!=f"table inet {table} {{" or lines[-1]!="}":
+    sys.exit(1)
+inner=lines[1:-1]
+if not inner:
+    sys.exit(0)
+if len(inner)<3 or inner[0]!="chain output {" or inner[-1]!="}":
+    sys.exit(1)
+if not re.fullmatch(r"type filter hook output priority (?:mangle|-150); policy accept;",inner[1]):
+    sys.exit(1)
+dev=r"oifname (?:"+re.escape(iface)+r"|" + re.escape(chr(34)+iface+chr(34))+r")"
+queue=r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? bypass)"
+patterns=[]
+if coexist=="1":
+    patterns.append(r"meta mark & 0x0*ff0000 == 0x0*80000 return")
+for proto,port in (("tcp",80),("tcp",443),("udp",443)):
+    patterns.append(dev+r" "+proto+r" dport "+str(port)+r" "+queue)
+rules=inner[2:-1]
+if len(rules)>len(patterns):
+    sys.exit(1)
+if not all(re.fullmatch(pattern,actual) for pattern,actual in zip(patterns,rules)):
+    sys.exit(1)
+' "$TABLE" "$phy" "$coexist"
+}
+
 cleanup_transient(){
+  local nft_rc=0 can_delete=0
   set +e
+  if [ "$CREATED_TABLE" -eq 1 ]; then
+    if nft_table_presence; then
+      if nft_table_transient_owned "$PHY" "$TAILSCALE_COEXIST"; then
+        can_delete=1
+      else
+        echo '{"ok":false,"error":"ROLLBACK_FOREIGN_NFT_PRESERVED"}' >&2
+        return 83
+      fi
+    else
+      nft_rc=$?
+      if [ "$nft_rc" -ne 1 ]; then
+        echo '{"ok":false,"error":"ROLLBACK_NFT_PRESENCE_UNVERIFIED"}' >&2
+        return 84
+      fi
+    fi
+  fi
   pid_owned "$NPID" "$NFQWS" && kill "$NPID" 2>/dev/null
   pid_owned "$CPID" "$CTRLD" && kill "$CPID" 2>/dev/null
-  [ "$CREATED_TABLE" -eq 1 ] && nft delete table inet "$TABLE" >/dev/null 2>&1
+  if [ "$can_delete" -eq 1 ]; then
+    if nft_table_transient_owned "$PHY" "$TAILSCALE_COEXIST"; then
+      nft delete table inet "$TABLE" >/dev/null 2>&1 || {
+        echo '{"ok":false,"error":"ROLLBACK_NFT_DELETE_FAILED"}' >&2
+        return 83
+      }
+    else
+      echo '{"ok":false,"error":"ROLLBACK_NFT_CHANGED_PRESERVED"}' >&2
+      return 83
+    fi
+  fi
   [ "$CREATED_LINK" -eq 1 ] && remove_dns_link
   rm -f "$RUN_HOSTS"
   set -e

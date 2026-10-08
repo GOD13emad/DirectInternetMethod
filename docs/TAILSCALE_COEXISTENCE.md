@@ -285,3 +285,38 @@ R211 SHA `6D517949...3155C3` (**DO NOT INSTALL**), preserved at
 This does NOT close root-privileged Start/Stop/Recovery, installed
 Tailscale/RustDesk live reachability, trusted Windows signing/SAC Sandbox
 or publication. Maintain PR #26 Draft and public v1.5.1 unchanged.
+
+## 2026-10-08 R213 — failed-Start transient rollback preserves foreign nft state
+
+**Negative-first verified on actual Kernel in an isolated namespace.**
+The predecessor `fe501aa4` used `CREATED_TABLE=1` followed by unconditional
+`nft delete table` from `cleanup_transient`. A foreign `ip daddr ... drop`
+rule inserted after the app created its table was deleted along with the
+whole table. No real user network or service was involved in this test.
+
+**R213 one-objective guard:** `nft_table_transient_owned` checks that the
+table is exactly a prefix of the program's own sequence (empty table,
+empty output chain, optional Tailscale mark before queue, then three
+physical-interface TCP/UDP queue rules). Added rules/chains, mixed physical
+interfaces, wrong order, malformed tables or ambiguous query results
+are foreign. The rollback checks table ownership twice, just before
+deletion, and **preserves unknown/foreign state with an explicit error**.
+Partially built app-owned tables are still cleaned, preventing unrelated
+rollback degradation. Concurrent privileged modifications between final
+check and deletion remain a residual TOCTOU risk, not a proven impossibility.
+
+Offline tests: `tests/tailscale_transient_rollback_ownership_contract.py`
+10/10 negative/control cases PASS. Isolated **real WSL2 Kernel** (6.18.33.2,
+nftables v1.0.9, independent Network Namespace) proved valid empty, partial
+and full rollback deletion and preservation of foreign rule; 4/4 PASS.
+Existing Linux static/regression suite PASS on Emad Linux. No installed
+backend, Windows service, Tailscale, RustDesk or physical route mutation.
+
+New **unpublished source candidate Linux ZIP:** 8,200,436 bytes, 19 members,
+SHA256 `58E9F55C8B65BB51C9274298CB67D4682AD3B15E4789D04D137E9FB020D5AF5C`.
+Previous R212 SHA `F916D5AC...678975` is
+**SUPERSEDED—DO NOT INSTALL**, preserved at
+`C:\Users\Aa.Emad\source\repos\DIM_R213_GATE\BASELINE_FE501AA.zip`.
+Windows v1.5.2 trusted Authenticode and SAC Sandbox, Linux actual
+protected root Start/Stop/Recovery with TSMP/MagicDNS/RustDesk remain
+separate **OPEN** acceptance gates. Do not promote PR26 or PR24.

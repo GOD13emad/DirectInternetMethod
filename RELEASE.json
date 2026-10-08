@@ -79,8 +79,8 @@
     "linux": {
       "status": "SOURCE_CANDIDATE_TAILSCALE_COEXISTENCE_NOT_INSTALLED",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
-      "bytes": 8198183,
-      "sha256": "F916D5ACAA0BF884C67D0B552FBE973DEFD13E305C945BD1154C70DB37678975",
+      "bytes": 8200436,
+      "sha256": "58E9F55C8B65BB51C9274298CB67D4682AD3B15E4789D04D137E9FB020D5AF5C",
       "protectedBackendVersion": "1.5.2",
       "packageFiles": 19,
       "compatibleProtectedBackendVersions": [
@@ -91,7 +91,7 @@
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "B8B70CB24866E874B4C9CE289F931FEE4EE5350E31F49A8A4AB4F805E707BCAB"
+    "sha256": "C71235C684F921800D8650AC73B008F873BBC2F5EAA7D4E9344F49E32E06A378"
   },
   "acceptance": {
     "windowsPayload": "PASS_BUILD_SERVICE_SELFTEST_AND_CONTRACT_V152",
