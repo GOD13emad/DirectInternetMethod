@@ -35,6 +35,9 @@ cases=[
  ("split_coexistence_rejects_missing_mark", "system-preserved","",True,81,False),
  ("split_coexistence_rejects_wrong_mark", "system-preserved",
   "meta mark & 0xff0000 == 0x00010000 return",True,81,False),
+ ("split_coexistence_rejects_wrong_mask", "system-preserved",
+  "meta mark & 0x007f0000 == 0x00080000 return",True,81,False),
+ ("split_coexistence_rejects_late_mark", "system-preserved",mark,True,81,False),
  ("standalone_owns_unmarked_table","direct-doh","",True,0,True),
  ("split_coexistence_no_table","system-preserved","",False,0,True),
 ]
@@ -69,7 +72,13 @@ esac
   state.write_text(json.dumps({"dnsMode":mode,"physicalInterface":"enp1s0",
                                "ctrldPid":0,"nfqwsPid":0}),encoding="utf-8")
   fixture=d/"nft.out"
-  fixture.write_text(nft_output.replace("%%MARK%%",bypass),encoding="utf-8")
+  value=nft_output.replace("%%MARK%%",bypass)
+  if name=="split_coexistence_rejects_late_mark":
+   value=nft_output.replace("%%MARK%%","")
+   first='oifname "enp1s0" tcp dport 80 ct original packets 1-6 queue flags bypass to 200'
+   assert first in value
+   value=value.replace(first,first+"\n        "+mark,1)
+  fixture.write_text(value,encoding="utf-8")
   deleted=d/"deleted"
   deleted.unlink(missing_ok=True)
   runhost=d/"run_hosts"

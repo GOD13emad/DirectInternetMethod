@@ -77,13 +77,15 @@ class FakeCompleted:
         self.stdout=out
         self.returncode=0
 exit_enabled=[False]
+renamed_wireguard=[False]
 def fake_subprocess(args,*other,**kwargs):
     if args==["ip","-o","link","show","up"]:
         return FakeCompleted("\n".join(["1: lo: <LOOPBACK,UP>",
                                         "2: enp1s0: <BROADCAST,UP>",
                                         "4: tailscale0: <POINTOPOINT,UP>"])+"\n")
     if args[0]=="nmcli":
-        return FakeCompleted("802-3-ethernet:enp1s0\ntun:tailscale0\n")
+        return FakeCompleted("802-3-ethernet:enp1s0\ntun:tailscale0\n" +
+                             ("wireguard:private-office\n" if renamed_wireguard[0] else ""))
     if args==["tailscale","status","--json"]:
         return FakeCompleted(json.dumps({"BackendState":"Running",
                                          "ExitNodeStatus":{"ID":"exit"} if exit_enabled[0] else None}))
@@ -98,6 +100,9 @@ g={"subprocess":SimpleNamespace(run=fake_subprocess),
    "_top_default_iface":lambda:"enp1s0"}
 exec(compile(ast.Module(body=[f],type_ignores=[]),"<ui_ip_link_format>","exec"),g)
 assert g["_tailscale_split_safe"](), "GUI_REJECTED_VALID_TWO_SEPARATOR_IP_LINK"
+renamed_wireguard[0]=True
+assert not g["_tailscale_split_safe"](), "GUI_ACCEPTED_RENAMED_WIREGUARD"
+renamed_wireguard[0]=False
 exit_enabled[0]=True
 assert not g["_tailscale_split_safe"](), "GUI_ACCEPTED_EXIT_NODE"
 print("PASS real ip-link two-separator and exit-node UI regressions")

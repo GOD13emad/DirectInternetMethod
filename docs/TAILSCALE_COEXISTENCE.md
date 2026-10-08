@@ -165,3 +165,32 @@ there is no valid non-interactive sudo elevation available in the
 connected command sessions. An operating system administrator
 authorization is necessary before deploying changed root-owned
 backend bytes. Do not bypass the OS privilege boundary.
+
+## Safety regression closeout: NFT mark and renamed VPN — 2026-10-08
+
+Two Tailscale nftables ownership errors were reproduced with isolated mock
+fixtures before correction: an incorrect mask with the expected bypass
+mark value could be counted as owned, and a bypass-mark rule placed after
+an NFQUEUE rule could likewise be considered owned and removed during
+Recovery. The repaired ownership guard requires the exact Tailscale mark
+mask 0x00ff0000, bypass value 0x00080000 and the bypass rule before all
+queue rules. Negative/positive nft ownership fixtures 8/8 PASS, mock
+cleanup and Recovery fixtures 7/7 PASS on Linux; no kernel firewall table
+was changed.
+
+A third fail-closed bug was reproduced: NetworkManager could report an
+active WireGuard profile as wireguard:private-office, whose device name
+is not prefixed by wg. Earlier source treated that as safe coexistence.
+The guard now checks VPN/TUN/WireGuard connection TYPE as well as device
+name in both the privileged helper and GUI. Bash Tailscale split-mode
+preflight fixtures 11/11 PASS, including renamed WireGuard; GUI state and
+renamed-network negative regression PASS; actual Emad Linux read-only
+preflight continues to permit the legitimate Tailscale-only split setup.
+
+Current unreleased candidate Linux 1.5.2 ZIP SHA256:
+294F0BD037F688828130B2B26C20807503BFDD57981A9224EC5AD510DA10664B
+(size 8,195,241 bytes). Previous unreleased SHA 313FFD... is
+SUPERSEDED and must not be installed. This document does not claim a
+live nftables rule, Tailscale peer, RustDesk or Stop/Recovery PASS while
+Direct Method is running. Windows signing and policy-on Sandbox remain
+independent external release blockers.

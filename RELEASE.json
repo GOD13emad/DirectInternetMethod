@@ -79,8 +79,8 @@
     "linux": {
       "status": "SOURCE_CANDIDATE_TAILSCALE_COEXISTENCE_NOT_INSTALLED",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
-      "bytes": 8194416,
-      "sha256": "313FFD200D6ABD506499DE79F3788B39B0B8E7B530C81C13EA1594A2DCE76642",
+      "bytes": 8195241,
+      "sha256": "294F0BD037F688828130B2B26C20807503BFDD57981A9224EC5AD510DA10664B",
       "protectedBackendVersion": "1.5.2",
       "packageFiles": 19,
       "compatibleProtectedBackendVersions": [
@@ -91,7 +91,7 @@
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "9068CF98E15C20C38752A3AD3C072A640241516038938A3C40A968749FE2C183"
+    "sha256": "8496A6873698D4BB7E83A28BC8654FEEED7E416216DCECB4891B287E0FB413CB"
   },
   "acceptance": {
     "windowsPayload": "PASS_BUILD_SERVICE_SELFTEST_AND_CONTRACT_V152",
@@ -99,10 +99,10 @@
     "windowsContract": "PASS_SOURCE_CONTRACT_V152",
     "linuxPackage": "PASS_LOCAL_BUILT_ARCHIVE_TAILSCALE_CANDIDATE",
     "linuxContract": "PASS_SOURCE_CONTRACT_V152",
-    "protectedCi": "PENDING_EXACT_DEPENDENT_FEATURE_SHA",
+    "protectedCi": "PENDING_EXACT_SHA_WITH_NEW_NFT_AND_VPN_SAFETY",
     "publication": "NOT_PUBLISHED",
     "installedWindows": "UNPROVEN_V152_NOT_INSTALLED",
-    "installedLinux": "UNPROVEN_PROTECTED_TAILSCALE_COEXISTENCE_NOT_INSTALLED",
+    "installedLinux": "UNPROVEN_NEW_PROTECTED_COEXISTENCE_NOT_INSTALLED",
     "adultCoverage": "PENDING_V152_VERIFICATION",
     "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED",
     "routerGatewayContract": "PENDING_V152_VERIFICATION",
@@ -110,7 +110,7 @@
     "releaseMetadata": "PENDING_V152_VERIFICATION",
     "fullTrackedSourceAudit": "PENDING_V152_VERIFICATION",
     "windowsDefender": "PENDING_V152_VERIFICATION",
-    "linuxCrossHostRebuild": "PENDING_INDEPENDENT_NEXT_HEAD_EXACT_SHA",
+    "linuxCrossHostRebuild": "PENDING_NEW_EXACT_SHA_INDEPENDENT_REPRO",
     "sourceReproducibility": "NEEDS_INDEPENDENT_LINUX_V152_REBUILD",
     "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING",
     "windowsSandbox": "FAIL_CONFIRMED_SMART_APP_CONTROL_ENFORCED_UNSIGNED_POLICY_DENIAL",
@@ -135,6 +135,6 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Tailscale split non-exit source candidate with real UI parser and late Tailscale arrival conflict guards; package SHA 313FFD... needs exact CI and crosshost SHA, and privileged installed-host lifecycle. Signed Windows v1.5.2 remains externally blocked.",
+  "exactNextAction": "Tailscale coexistence source safeguards exact nft mark mask/order and NMcli typed VPN detection; independent SHA build and CI before privileged installed-host lifecycle. Windows public signing and Sandbox HOLD unchanged.",
   "publication": {}
 }

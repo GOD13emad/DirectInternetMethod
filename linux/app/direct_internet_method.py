@@ -222,9 +222,14 @@ def _tailscale_split_safe():
             return False
         nm=subprocess.run(["nmcli","-t","-f","TYPE,DEVICE","connection","show","--active"],
                           text=True,capture_output=True,timeout=2)
-        if nm.returncode==0:
-            devs=[x.split(":",1)[-1] for x in nm.stdout.splitlines()]
-            if any(d.startswith(("tun","tap","wg","warp","tailscale","zt")) and d!="tailscale0" for d in devs):
+        if nm.returncode != 0:
+            return False
+        for row in nm.stdout.splitlines():
+            kind,sep,dev=row.partition(":")
+            if dev=="tailscale0":
+                continue
+            if (kind in ("vpn","wireguard","tun","tap") or
+                dev.startswith(("tun","tap","wg","warp","tailscale","zt"))):
                 return False
         p=subprocess.run(["tailscale","status","--json"],text=True,capture_output=True,timeout=5,check=True)
         d=json.loads(p.stdout)
@@ -249,10 +254,12 @@ def _external_tunnel_active():
     try:
         p=subprocess.run(["nmcli","-t","-f","TYPE,DEVICE","connection","show","--active"],
                          text=True,capture_output=True,timeout=2)
+        if p.returncode != 0:
+            return True
         for line in p.stdout.splitlines():
-            parts=line.split(":",1)
-            dev=parts[1] if len(parts)>1 else ""
-            if dev.startswith(("tun","tap","wg","warp","tailscale","zt")):
+            kind,_,dev=line.partition(":")
+            if (kind in ("vpn","wireguard","tun","tap") or
+                dev.startswith(("tun","tap","wg","warp","tailscale","zt"))):
                 return True
     except Exception:
         pass

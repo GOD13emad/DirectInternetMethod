@@ -31,6 +31,8 @@ CASES=[
  ("coexist_missing_bypass_mark", "system-preserved", "", "enp1s0", False),
  ("coexist_wrong_interface", "system-preserved", MARK, "enp9s0", False),
  ("coexist_mark_on_wrong_value", "system-preserved", "meta mark & 0xff0000 == 0x00010000 return", "enp1s0", False),
+ ("coexist_wrong_mark_mask", "system-preserved", "meta mark & 0x007f0000 == 0x00080000 return", "enp1s0", False),
+ ("coexist_bypass_mark_after_first_queue", "system-preserved", MARK, "enp1s0", False),
  ("standalone_no_tailscale_mark", "direct-doh", "", "enp1s0", True),
  ("standalone_wrong_interface", "direct-doh", "", "enp9s0", False),
 ]
@@ -47,7 +49,13 @@ with tempfile.TemporaryDirectory(prefix="dim_tail_nft_mock_") as d:
  env["PATH"]=str(p)+os.pathsep+env.get("PATH","")
  env["MOCK_NFT_TABLE"]=str(table)
  for name,mode,mark,iface,expected in CASES:
-  table.write_text(table_template.replace("%%MARK%%",mark),encoding="utf-8")
+  value=table_template.replace("%%MARK%%",mark)
+  if name=="coexist_bypass_mark_after_first_queue":
+   value=table_template.replace("%%MARK%%","")
+   first='oifname "enp1s0" tcp dport 80 ct original packets 1-6 queue flags bypass to 200'
+   assert first in value
+   value=value.replace(first,first+"\n                "+MARK,1)
+  table.write_text(value,encoding="utf-8")
   state.write_text(json.dumps({"dnsMode":mode}),encoding="utf-8")
   script='TABLE="directinternetmethod"\nSTATE="'+str(state)+'"\n'+fragment+(
     '\nif nft_table_owned "'+iface+'";then echo OWNED;else echo FOREIGN;fi\n')

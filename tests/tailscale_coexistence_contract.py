@@ -63,6 +63,7 @@ fi
 echo "802-3-ethernet:enp1s0"
 [ "$MOCK_HAS_TS" = "1" ] && echo "tun:tailscale0"
 [ "$MOCK_OTHER_TUN" = "1" ] && echo "wireguard:wg0"
+[ "$MOCK_RENAMED_VPN" = "1" ] && echo "wireguard:private-office"
 exit 0
 """
 tailscale_script=r"""#!/usr/bin/env bash
@@ -83,6 +84,7 @@ cases=[
     ("tailscale_default_interface",{"MOCK_TOP_TS":"1"},"blocked"),
     ("tailscale_daemon_stopped",{"MOCK_TS_RUNNING":"0"},"blocked"),
     ("other_active_wireguard",{"MOCK_OTHER_TUN":"1"},"blocked"),
+    ("networkmanager_renamed_wireguard",{"MOCK_RENAMED_VPN":"1"},"blocked"),
     ("non_networkmanager_wireguard",{"MOCK_OTHER_TUN":"1","MOCK_NMCLI_EMPTY":"1"},"blocked"),
     ("tailscale_without_nmcli_visibility",{"MOCK_NMCLI_EMPTY":"1"},"coexist"),
     ("standalone_without_tailscale",{"MOCK_HAS_TS":"0"},"direct"),
@@ -102,7 +104,7 @@ fi
 """
     for name,overrides,expected in cases:
         env=os.environ.copy()
-        env.update({"MOCK_HAS_TS":"1","MOCK_TOP_TS":"0","MOCK_TS_RUNNING":"1","MOCK_EXIT_JSON":"0","MOCK_OTHER_TUN":"0","MOCK_EXIT_ROUTES":"0","MOCK_EXIT6":"0","MOCK_NMCLI_EMPTY":"0"})
+        env.update({"MOCK_HAS_TS":"1","MOCK_TOP_TS":"0","MOCK_TS_RUNNING":"1","MOCK_EXIT_JSON":"0","MOCK_OTHER_TUN":"0","MOCK_EXIT_ROUTES":"0","MOCK_EXIT6":"0","MOCK_NMCLI_EMPTY":"0","MOCK_RENAMED_VPN":"0"})
         env.update(overrides)
         env["PATH"]=str(binpath)+os.pathsep+env.get("PATH","")
         p=subprocess.run(["bash","-c",src],env=env,capture_output=True,text=True,timeout=15)

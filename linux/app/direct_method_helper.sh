@@ -90,7 +90,14 @@ nft_table_owned(){
     grep -Fq "oifname \"$physical\"" <<<"$out" || grep -Fq "oifname $physical" <<<"$out" || return 1
   fi
   if [ -f "$STATE" ] && [ "$(state_value dnsMode)" = "system-preserved" ]; then
-    grep -Eq 'meta mark & .*0x0*80000.*return' <<<"$out" || return 1
+    # Enforce BOTH the exact Tailscale mask and its position ahead of any queue.
+    # Otherwise Recovery could claim a foreign/misordered nftables table.
+    grep -Eq 'meta mark & 0x0*ff0000 == 0x0*80000 return' <<<"$out" || return 1
+    awk '
+      /meta mark & 0x0*ff0000 == 0x0*80000 return/ { bypass_seen=1 }
+      /queue (num|flags)/ && !bypass_seen { exit 1 }
+      END { if (!bypass_seen) exit 1 }
+    ' <<<"$out" || return 1
   fi
 }
 
@@ -124,11 +131,14 @@ external_tunnel_active(){
     tun*|tap*|wg*|warp*|tailscale*|zt*) return 0 ;;
   esac
   if command -v nmcli >/dev/null 2>&1; then
+    local nmout
+    nmout="$(timeout 4 nmcli -t -f TYPE,DEVICE connection show --active 2>/dev/null)" || return 0
     while IFS=: read -r typ dev; do
+      case "$typ" in vpn|wireguard|tun|tap) return 0 ;; esac
       case "$dev" in
         tun*|tap*|wg*|warp*|tailscale*|zt*) return 0 ;;
       esac
-    done < <(nmcli -t -f TYPE,DEVICE connection show --active 2>/dev/null || true)
+    done <<<"$nmout"
   fi
   # Also protect non-NetworkManager tun/wg devices. Read-only detection.
   while IFS= read -r dev; do
@@ -160,12 +170,16 @@ tailscale_split_safe(){
   done < <(ip -o link show up | awk -F': ' '{print $2}')
   [ "$seen" -eq 1 ] || return 1
   if command -v nmcli >/dev/null 2>&1; then
+    local nmout
+    nmout="$(timeout 4 nmcli -t -f TYPE,DEVICE connection show --active 2>/dev/null)" || return 1
     while IFS=: read -r typ dev; do
-      case "$dev" in
-        tailscale0) ;;
-        tun*|tap*|wg*|warp*|tailscale*|zt*) return 1 ;;
-      esac
-    done < <(nmcli -t -f TYPE,DEVICE connection show --active 2>/dev/null || true)
+      if [ "$dev" != tailscale0 ]; then
+        case "$typ" in vpn|wireguard|tun|tap) return 1 ;; esac
+        case "$dev" in
+          tun*|tap*|wg*|warp*|tailscale*|zt*) return 1 ;;
+        esac
+      fi
+    done <<<"$nmout"
   fi
   ts_mode="$(timeout 5 tailscale status --json 2>/dev/null |
     python3 -c 'import json,sys
