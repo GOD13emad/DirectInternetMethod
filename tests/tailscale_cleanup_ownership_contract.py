@@ -18,7 +18,7 @@ def f(name):
  assert m is not None,name
  return m.group(0)
 functions="\n".join(f(n) for n in (
- "nft_table_owned","state_value","cleanup_state_owned","verify_clean"
+ "nft_table_presence","nft_table_owned","state_value","cleanup_state_owned","verify_clean"
 ))
 nft_output='''table inet directinternetmethod {
     chain output {
@@ -51,6 +51,12 @@ if [ "$*" = "list table inet directinternetmethod" ]; then
   test ! -f "$MOCK_DELETED" || exit 1
   test "$MOCK_NFT_EXISTS" = "1" || exit 1
   cat "$MOCK_NFT_FIXTURE"
+elif [ "$*" = "-j list tables" ]; then
+  if [ "$MOCK_NFT_EXISTS" = "1" ] && [ ! -f "$MOCK_DELETED" ]; then
+    echo '{"nftables":[{"table":{"family":"inet","name":"directinternetmethod"}}]}'
+  else
+    echo '{"nftables":[]}'
+  fi
 elif [ "$*" = "delete table inet directinternetmethod" ]; then
   test "$MOCK_NFT_EXISTS" = "1" || exit 70
   touch "$MOCK_DELETED"

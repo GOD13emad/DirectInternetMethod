@@ -78,6 +78,36 @@ dns_link_owned(){
   ip -4 -o addr show dev "$DNS_IF" 2>/dev/null | grep -q " $DNS_IP/32 " || return 1
 }
 
+# nft query failures are ambiguous, never equivalent to table absence.
+# Return 0: exists; 1: demonstrably absent; 2: unable to verify.
+nft_table_presence(){
+  local listing
+  if nft list table inet "$TABLE" >/dev/null 2>&1; then
+    return 0
+  fi
+  listing="$(nft -j list tables 2>/dev/null)" || return 2
+  printf '%s\n' "$listing" | python3 -c '
+import json,sys
+try:
+    data=json.load(sys.stdin)
+    items=data["nftables"]
+    if not isinstance(items,list):
+        raise ValueError("no nftables array")
+    pairs=[]
+    for entry in items:
+        if not isinstance(entry,dict):
+            raise ValueError("invalid element")
+        if "table" in entry:
+            t=entry["table"]
+            if not isinstance(t,dict) or not isinstance(t.get("family"),str) or not isinstance(t.get("name"),str):
+                raise ValueError("invalid table")
+            pairs.append((t["family"],t["name"]))
+    sys.exit(0 if ("inet",sys.argv[1]) in pairs else 1)
+except (ValueError,TypeError,KeyError,IndexError):
+    sys.exit(2)
+' "$TABLE"
+}
+
 nft_table_owned(){
   # Ownership is a strict whole-table contract, not substring recognition.
   # If the state/physical context is missing, the table is NOT safe to delete.
@@ -230,23 +260,29 @@ cleanup_transient(){
 
 cleanup_state_owned(){
   [ -f "$STATE" ] || return 0
-  local cp np phy
+  local cp np phy nft_rc
   cp="$(state_value ctrldPid)"
   np="$(state_value nfqwsPid)"
   phy="$(state_value physicalInterface)"
   # Preflight EVERY owned resource before any destructive process or netfilter action.
   # Never terminate a running engine if an ambiguous foreign table/link is present.
-  if nft list table inet "$TABLE" >/dev/null 2>&1; then
+  if nft_table_presence; then
     nft_table_owned "$phy" || { echo '{"ok":false,"error":"NFT_TABLE_OWNERSHIP_MISMATCH"}' >&2; return 81; }
+  else
+    nft_rc=$?
+    [ "$nft_rc" -eq 1 ] || { echo '{"ok":false,"error":"NFT_PRESENCE_UNVERIFIED"}' >&2; return 84; }
   fi
   if ip link show "$DNS_IF" >/dev/null 2>&1; then
     dns_link_owned || { echo '{"ok":false,"error":"DNS_LINK_OWNERSHIP_MISMATCH"}' >&2; return 82; }
   fi
   pid_owned "$np" "$NFQWS" && kill "$np" 2>/dev/null || true
   pid_owned "$cp" "$CTRLD" && kill "$cp" 2>/dev/null || true
-  if nft list table inet "$TABLE" >/dev/null 2>&1; then
+  if nft_table_presence; then
     nft_table_owned "$phy" || { echo '{"ok":false,"error":"NFT_TABLE_OWNERSHIP_MISMATCH"}' >&2; return 81; }
     nft delete table inet "$TABLE"
+  else
+    nft_rc=$?
+    [ "$nft_rc" -eq 1 ] || { echo '{"ok":false,"error":"NFT_PRESENCE_UNVERIFIED"}' >&2; return 84; }
   fi
   if ip link show "$DNS_IF" >/dev/null 2>&1; then
     dns_link_owned || { echo '{"ok":false,"error":"DNS_LINK_OWNERSHIP_MISMATCH"}' >&2; return 82; }
@@ -256,9 +292,15 @@ cleanup_state_owned(){
 }
 
 verify_clean(){
+  local nft_rc
   [ ! -f "$STATE" ] || return 1
   ! ip link show "$DNS_IF" >/dev/null 2>&1 || return 1
-  ! nft list table inet "$TABLE" >/dev/null 2>&1 || return 1
+  if nft_table_presence; then
+    return 1
+  else
+    nft_rc=$?
+    [ "$nft_rc" -eq 1 ] || return 1
+  fi
   return 0
 }
 
@@ -321,6 +363,17 @@ case "$ACTION" in
   stop)
     require_root
     if [ ! -f "$STATE" ]; then
+      if nft_table_presence; then
+        echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+        exit 81
+      else
+        nft_rc=$?
+        [ "$nft_rc" -eq 1 ] || { echo '{"ok":false,"error":"NFT_PRESENCE_UNVERIFIED"}'; exit 84; }
+      fi
+      if ip link show "$DNS_IF" >/dev/null 2>&1; then
+        echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+        exit 81
+      fi
       echo '{"ok":true,"state":"PASS_NO_STATE","note":"No owned state; no network resources were removed."}'
       exit 0
     fi
@@ -336,8 +389,14 @@ case "$ACTION" in
     else
       # Without the ownership state, no table/link may be safely attributed.
       # Fail before orphan process cleanup; preserve ambiguous foreign resources.
-      if nft list table inet "$TABLE" >/dev/null 2>&1 ||
-         ip link show "$DNS_IF" >/dev/null 2>&1; then
+      if nft_table_presence; then
+        echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+        exit 81
+      else
+        nft_rc=$?
+        [ "$nft_rc" -eq 1 ] || { echo '{"ok":false,"error":"NFT_PRESENCE_UNVERIFIED"}'; exit 84; }
+      fi
+      if ip link show "$DNS_IF" >/dev/null 2>&1; then
         echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
         exit 81
       fi
@@ -374,7 +433,14 @@ case "$ACTION" in
       cleanup_state_owned
     fi
 
-    if nft list table inet "$TABLE" >/dev/null 2>&1 || ip link show "$DNS_IF" >/dev/null 2>&1; then
+    if nft_table_presence; then
+      echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+      exit 69
+    else
+      nft_rc=$?
+      [ "$nft_rc" -eq 1 ] || { echo '{"ok":false,"error":"NFT_PRESENCE_UNVERIFIED"}'; exit 84; }
+    fi
+    if ip link show "$DNS_IF" >/dev/null 2>&1; then
       echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
       exit 69
     fi

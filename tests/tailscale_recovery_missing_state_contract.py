@@ -31,6 +31,12 @@ with tempfile.TemporaryDirectory(prefix="dim_r211_stateless_") as work:
 case "$*" in
   "list table inet directinternetmethod")
     test "$MOCK_HAS_NFT" = 1 || { test "$MOCK_LATE_NFT" = 1 && test -f "$MOCK_KILLS"; } ;;
+  "-j list tables")
+    if [ "$MOCK_HAS_NFT" = 1 ] || { [ "$MOCK_LATE_NFT" = 1 ] && [ -f "$MOCK_KILLS" ]; }; then
+      echo '{"nftables":[{"table":{"family":"inet","name":"directinternetmethod"}}]}'
+    else
+      echo '{"nftables":[]}'
+    fi ;;
   "delete table inet directinternetmethod") touch "$MOCK_DELETED"; exit 0 ;;
   *) echo "MOCK_NFT_UNEXPECTED" >&2; exit 90 ;;
 esac
@@ -45,6 +51,10 @@ case "$*" in
 esac
 """, encoding="utf-8")
     mock_ip.chmod(0o755)
+    import textwrap
+    presence = re.search(r"^nft_table_presence\(\)\{\n.*?^\}\n", source, re.S | re.M)
+    verify = re.search(r"^verify_clean\(\)\{\n.*?^\}\n", source, re.S | re.M)
+    assert presence and verify, "PRESENCE_AND_CLEAN_VERIFICATION_REQUIRED"
     for name, has_nft, has_dns, late_nft, late_dns, expected_rc, expected_orphan_kills in CASES:
         actions = tmp / "orphan-kill-attempts"
         deleted = tmp / "resource-delete-attempt"
@@ -77,8 +87,8 @@ cleanup_state_owned(){ echo UNEXPECTED_CLEANUP_STATE; return 90; }
 nft_table_owned(){ return 1; }
 dns_link_owned(){ return 1; }
 remove_dns_link(){ touch "$MOCK_DELETED"; }
-verify_clean(){ ! nft list table inet "$TABLE" >/dev/null 2>&1 && ! ip link show "$DNS_IF" >/dev/null 2>&1; }
 sleep(){ :; }
+""" + presence.group() + "\n" + verify.group() + """
 case "$ACTION" in
 """ + recovery_case + """
 esac

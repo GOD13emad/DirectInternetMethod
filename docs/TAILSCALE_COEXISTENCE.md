@@ -256,3 +256,32 @@ Runtime caveat: No test of privileged production Start/Stop/Recovery,
 real nft rule syntax, MagicDNS, TSMP and active RustDesk session has
 been accepted. Windows Authenticode and Smart App Control-on installation
 remain release-blocking. Never merge/release merely from mock QA PASS.
+
+## 2026-10-08 R212 — nftables query-error tri-state safety guard
+
+A negative-first isolated mock confirmed a false-green Recovery: `nft list table`
+returned an access/read failure, but the old guard treated that as absence,
+ran orphan cleanup and returned `{"ok":true,"state":"RECOVERED"}`.
+The same confusion existed in Stop/Start preflight, cleanup and verify_clean.
+
+The source candidate now separates **PRESENT** (0), **VERIFIED ABSENT**
+(1; only after `nft -j list tables` succeeds and parses structurally)
+and **UNKNOWN/UNREADABLE** (2). The third case fails with
+`NFT_PRESENCE_UNVERIFIED` (exit 84) before mutation; cleanup/post-check
+cannot treat it as success. A confirmed foreign table is never treated as
+an owned table. `nft -j` is based on nftables documented JSON output,
+but the root kernel behavior still requires an independently recoverable
+authorized machine test.
+
+Regression: 6/6 query-error negative/normal fixtures, 12/12 existing
+nft ownership, 8/8 state-owned cleanup, 6/6 stateless Recovery, full
+read-only Linux QA PASS. New unpublished Linux 19-member archive
+8,198,183 bytes, SHA256
+`F916D5ACAA0BF884C67D0B552FBE973DEFD13E305C945BD1154C70DB37678975`,
+independently reproduced on Windows and Emad Linux. Supersedes unpublished
+R211 SHA `6D517949...3155C3` (**DO NOT INSTALL**), preserved at
+`C:\Users\Aa.Emad\source\repos\DIM_R212_GATE\BASELINE_34C4114.zip`.
+
+This does NOT close root-privileged Start/Stop/Recovery, installed
+Tailscale/RustDesk live reachability, trusted Windows signing/SAC Sandbox
+or publication. Maintain PR #26 Draft and public v1.5.1 unchanged.
