@@ -282,6 +282,20 @@ def load_state():
         if _external_tunnel_active():
             return {"mode":"BLOCKED","detail":"External VPN/Exit Node or unsupported tunnel is active. Routes and DNS are preserved."}
         if _tailscale_split_safe():
+            # Backend only permits targeted DPI alongside Tailscale split mode.
+            # Show an actionable local configuration gate, never suggest
+            # disconnecting Tailscale or silently modify the user's scope.
+            try:
+                if SCOPE_FILE.is_symlink():
+                    raise ValueError("unsafe scope symlink")
+                scope=SCOPE_FILE.read_text(encoding="utf-8").strip().lower()
+            except FileNotFoundError:
+                scope="targeted"
+            except Exception:
+                scope="invalid"
+            if scope!="targeted":
+                return {"mode":"CONFIG_REQUIRED",
+                        "detail":"Tailscale split mode is safe, but All Sites or an invalid scope is not supported. Open Strategy, uncheck Apply DPI strategy to all web sites, then Save Targeted. Tailscale and DNS remain unchanged."}
             return {"mode":"OFF","detail":"Tailscale split network active. Start uses physical-interface DPI; system DNS/MagicDNS remain unchanged."}
         return {"mode":"OFF","detail":"No active Direct Internet Method state."}
     uid=os.getuid()
@@ -520,7 +534,7 @@ class Window(Adw.ApplicationWindow):
         self.status.set_text("Status: "+mode);self.detail.set_text(s["detail"])
         for css in ("success","warning","error","dim-label"):
             self.status.remove_css_class(css)
-        self.status.add_css_class("success" if mode=="ACTIVE" else "warning" if mode in ("BLOCKED","CONFLICT") else "error" if mode=="STALE" else "dim-label")
+        self.status.add_css_class("success" if mode=="ACTIVE" else "warning" if mode in ("BLOCKED","CONFIG_REQUIRED","CONFLICT") else "error" if mode=="STALE" else "dim-label")
         start_ok=(mode=="OFF")
         stop_ok=(mode in ("ACTIVE","CONFLICT","STALE"))
         recovery_ok=(mode in ("CONFLICT","STALE"))
@@ -674,7 +688,7 @@ class Window(Adw.ApplicationWindow):
                 st.write_text(scope_value+"\n",encoding="utf-8")
                 os.replace(st,SCOPE_FILE)
                 self.result.set_text(f"Strategy saved: {value}; scope: {scope_value}. Stop/Start to apply.")
-                w.close()
+                w.close();self.refresh()
             except Exception as e:
                 self.result.set_text("Strategy save failed: "+str(e))
         save.connect("clicked",do_save)

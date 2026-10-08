@@ -18,12 +18,14 @@ class FakePath:
         self.path=str(path)
     def exists(self):
         return self.path in self.exists_on
+    def is_symlink(self):
+        return False
     def read_text(self,encoding="utf-8"):
         if self.path not in self.files:
             raise FileNotFoundError(self.path)
         return self.files[self.path]
 
-env={"STATE":FakePath("mock-state.json"),"pathlib":SimpleNamespace(Path=FakePath),
+env={"STATE":FakePath("mock-state.json"),"SCOPE_FILE":FakePath("mock-scope.txt"),"pathlib":SimpleNamespace(Path=FakePath),
      "json":json,"os":SimpleNamespace(getuid=lambda:1000),
      "_systemd_unit_matches":lambda u,p,w:bool(p) and int(p)==400 and u==w,
      "_external_tunnel_active":lambda:False,
