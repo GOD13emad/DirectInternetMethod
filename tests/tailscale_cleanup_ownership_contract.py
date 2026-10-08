@@ -40,6 +40,7 @@ cases=[
  ("split_coexistence_rejects_late_mark", "system-preserved",mark,True,81,False),
  ("standalone_owns_unmarked_table","direct-doh","",True,0,True),
  ("split_coexistence_no_table","system-preserved","",False,0,True),
+ ("split_coexistence_foreign_extra_rule", "system-preserved",mark,True,81,False),
 ]
 with tempfile.TemporaryDirectory(prefix="dim_tailscale_cleanup_") as td:
  d=Path(td)
@@ -78,6 +79,8 @@ esac
    first='oifname "enp1s0" tcp dport 80 ct original packets 1-6 queue flags bypass to 200'
    assert first in value
    value=value.replace(first,first+"\n        "+mark,1)
+  if name=="split_coexistence_foreign_extra_rule":
+   value=value.replace('        oifname "enp1s0" udp dport 443', '        ip daddr 203.0.113.7 drop\n        oifname "enp1s0" udp dport 443',1)
   fixture.write_text(value,encoding="utf-8")
   deleted=d/"deleted"
   deleted.unlink(missing_ok=True)
@@ -88,11 +91,14 @@ esac
   env["MOCK_NFT_FIXTURE"]=str(fixture)
   env["MOCK_NFT_EXISTS"]="1" if present else "0"
   env["MOCK_DELETED"]=str(deleted)
+  kills=d/"attempted-kills"
+  kills.unlink(missing_ok=True)
+  env["MOCK_KILLS"]=str(kills)
   shell=('set -uo pipefail\n'
        f'TABLE=directinternetmethod\nSTATE="{state}"\n'
        f'RUN_HOSTS="{runhost}"\nDNS_IF=dimdns0\nCTRLD=/nonexistent/ctrld\n'
-       f'NFQWS=/nonexistent/nfqws\n'
-       'pid_owned(){ return 1; }\n'
+       f'NFQWS=/nonexistent/nfqws\n' +
+       ('pid_owned(){ return 0; }\nkill(){ touch "$MOCK_KILLS"; }\n' if name=="split_coexistence_foreign_extra_rule" else 'pid_owned(){ return 1; }\n') +
        'remove_dns_link(){ echo UNEXPECTED_DNS_LINK_REMOVAL >&2; return 89; }\n'
        +functions+
        '\ncleanup_state_owned\n'
@@ -111,6 +117,8 @@ esac
    assert not runhost.exists(),(name,"run hosts residue")
   else:
    assert runhost.exists(),(name,"foreign hostlist removed without state")
+  if name=="split_coexistence_foreign_extra_rule":
+   assert not kills.exists(),(name,"KILL_BEFORE_FOREIGN_OWNERSHIP_CHECK")
   assert "UNEXPECTED" not in cp.stderr,(name,cp.stderr)
   print("PASS",name,"cleanup success" if success else "foreign table preserved")
 print(f"PASS {len(cases)}/{len(cases)} mock cleanup/recovery gates; no real network mutations")

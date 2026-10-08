@@ -79,26 +79,39 @@ dns_link_owned(){
 }
 
 nft_table_owned(){
-  local physical="${1:-}" out
+  # Ownership is a strict whole-table contract, not substring recognition.
+  # If the state/physical context is missing, the table is NOT safe to delete.
+  local physical="$1" mode out
+  [ -n "$physical" ] && [ -f "$STATE" ] || return 1
+  mode="$(state_value dnsMode)"
+  case "$mode" in system-preserved|direct-doh) ;; *) return 1 ;; esac
   out="$(nft list table inet "$TABLE" 2>/dev/null)" || return 1
-  grep -Fq 'chain output' <<<"$out" || return 1
-  grep -Eq 'hook output priority (mangle|[-]?[0-9]+)' <<<"$out" || return 1
-  grep -Eq 'tcp dport 80.*queue (num 200.*bypass|flags bypass to 200)' <<<"$out" || return 1
-  grep -Eq 'tcp dport 443.*queue (num 200.*bypass|flags bypass to 200)' <<<"$out" || return 1
-  grep -Eq 'udp dport 443.*queue (num 200.*bypass|flags bypass to 200)' <<<"$out" || return 1
-  if [ -n "$physical" ]; then
-    grep -Fq "oifname \"$physical\"" <<<"$out" || grep -Fq "oifname $physical" <<<"$out" || return 1
-  fi
-  if [ -f "$STATE" ] && [ "$(state_value dnsMode)" = "system-preserved" ]; then
-    # Enforce BOTH the exact Tailscale mask and its position ahead of any queue.
-    # Otherwise Recovery could claim a foreign/misordered nftables table.
-    grep -Eq 'meta mark & 0x0*ff0000 == 0x0*80000 return' <<<"$out" || return 1
-    awk '
-      /meta mark & 0x0*ff0000 == 0x0*80000 return/ { bypass_seen=1 }
-      /queue (num|flags)/ && !bypass_seen { exit 1 }
-      END { if (!bypass_seen) exit 1 }
-    ' <<<"$out" || return 1
-  fi
+  printf '%s\n' "$out" | python3 -c '
+import re, sys
+table, iface, mode = sys.argv[1:]
+lines = [line.strip() for line in sys.stdin if line.strip()]
+coexist = mode == "system-preserved"
+expected_count = 9 if coexist else 8
+if len(lines) != expected_count:
+    sys.exit(1)
+if lines[:2] != [f"table inet {table} {{", "chain output {"]:
+    sys.exit(1)
+if not re.fullmatch(r"type filter hook output priority (?:mangle|-150); policy accept;", lines[2]):
+    sys.exit(1)
+if lines[-2:] != ["}", "}"]:
+    sys.exit(1)
+offset = 3
+if coexist:
+    if not re.fullmatch(r"meta mark & 0x0*ff0000 == 0x0*80000 return", lines[3]):
+        sys.exit(1)
+    offset = 4
+queue = r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? bypass)"
+dev = r"oifname (?:" + re.escape(iface) + r"|" + re.escape(chr(34) + iface + chr(34)) + r")"
+for index, (proto, port) in enumerate((("tcp", 80), ("tcp", 443), ("udp", 443))):
+    rule = dev + " " + proto + " dport " + str(port) + " " + queue
+    if not re.fullmatch(rule, lines[offset + index]):
+        sys.exit(1)
+' "$TABLE" "$physical" "$mode"
 }
 
 state_value(){
@@ -221,6 +234,14 @@ cleanup_state_owned(){
   cp="$(state_value ctrldPid)"
   np="$(state_value nfqwsPid)"
   phy="$(state_value physicalInterface)"
+  # Preflight EVERY owned resource before any destructive process or netfilter action.
+  # Never terminate a running engine if an ambiguous foreign table/link is present.
+  if nft list table inet "$TABLE" >/dev/null 2>&1; then
+    nft_table_owned "$phy" || { echo '{"ok":false,"error":"NFT_TABLE_OWNERSHIP_MISMATCH"}' >&2; return 81; }
+  fi
+  if ip link show "$DNS_IF" >/dev/null 2>&1; then
+    dns_link_owned || { echo '{"ok":false,"error":"DNS_LINK_OWNERSHIP_MISMATCH"}' >&2; return 82; }
+  fi
   pid_owned "$np" "$NFQWS" && kill "$np" 2>/dev/null || true
   pid_owned "$cp" "$CTRLD" && kill "$cp" 2>/dev/null || true
   if nft list table inet "$TABLE" >/dev/null 2>&1; then

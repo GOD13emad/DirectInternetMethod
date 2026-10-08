@@ -69,7 +69,16 @@ check("multiprotocol_state_methods", all(x in helper for x in (
 )))
 check("secure_dns_no_os_leak", 'leak_on_upstream_failure = false' in helper)
 check("nft_ownership_guard", "nft_table_owned()" in helper and "NFT_TABLE_OWNERSHIP_MISMATCH" in helper and 'queue num "$QNUM" bypass' in helper)
-check("nft_queue_canonical_guard", "queue (num 200.*bypass|flags bypass to 200)" in helper)
+check("nft_queue_canonical_guard", (
+    'queue = r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? bypass)"' in helper
+    and "len(lines) != expected_count" in helper
+    and "lines[offset + index]" in helper
+))
+check("nft_ownership_preflight_before_kill", (
+    "# Preflight EVERY owned resource before any destructive" in helper
+    and helper.index("# Preflight EVERY owned resource before any destructive")
+        < helper.index('pid_owned "$np" "$NFQWS" && kill "$np"')
+))
 check("dns_link_ownership_guard", "dns_link_owned()" in helper and "DNS_LINK_OWNERSHIP_MISMATCH" in helper)
 check("nfqws_bounded_hostlist", 'RUN_HOSTS="/run/directinternetmethod-hosts.txt"' in helper and 'python3 - "$HOSTS" "$CUSTOM_HOSTS" "$ADULT_FALLBACK" "$ADULT_HOSTS" "$ADULT_ON" "$RUN_HOSTS"' in helper and 'accepted>=limit' in helper and 'rm -f "$RUN_HOSTS"' in helper)
 check("pid_exact_executable_ownership", "pid_owned()" in helper and 'readlink -f "/proc/$pid/exe"' in helper and 'pid_owned "$NPID" "$NFQWS"' in helper and 'pid_owned "$CPID" "$CTRLD"' in helper)

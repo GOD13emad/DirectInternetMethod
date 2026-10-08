@@ -35,6 +35,10 @@ CASES=[
  ("coexist_bypass_mark_after_first_queue", "system-preserved", MARK, "enp1s0", False),
  ("standalone_no_tailscale_mark", "direct-doh", "", "enp1s0", True),
  ("standalone_wrong_interface", "direct-doh", "", "enp9s0", False),
+ ("coexist_extra_foreign_rule", "system-preserved", MARK, "enp1s0", False),
+ ("coexist_extra_foreign_chain", "system-preserved", MARK, "enp1s0", False),
+ ("coexist_misrouted_tcp443", "system-preserved", MARK, "enp1s0", False),
+ ("standalone_unexpected_bypass", "direct-doh", MARK, "enp1s0", False),
 ]
 with tempfile.TemporaryDirectory(prefix="dim_tail_nft_mock_") as d:
  p=Path(d)
@@ -55,6 +59,13 @@ with tempfile.TemporaryDirectory(prefix="dim_tail_nft_mock_") as d:
    first='oifname "enp1s0" tcp dport 80 ct original packets 1-6 queue flags bypass to 200'
    assert first in value
    value=value.replace(first,first+"\n                "+MARK,1)
+  if name=="coexist_extra_foreign_rule":
+   value=value.replace('                oifname "enp1s0" udp dport 443',
+       '                ip daddr 203.0.113.7 drop\n                oifname "enp1s0" udp dport 443',1)
+  if name=="coexist_extra_foreign_chain":
+   value=value.replace('\n}\n','\n        chain input {\n                type filter hook input priority filter; policy accept;\n        }\n}\n',1)
+  if name=="coexist_misrouted_tcp443":
+   value=value.replace('oifname "enp1s0" tcp dport 443','oifname "enp9s0" tcp dport 443',1)
   table.write_text(value,encoding="utf-8")
   state.write_text(json.dumps({"dnsMode":mode}),encoding="utf-8")
   script='TABLE="directinternetmethod"\nSTATE="'+str(state)+'"\n'+fragment+(

@@ -194,3 +194,35 @@ SUPERSEDED and must not be installed. This document does not claim a
 live nftables rule, Tailscale peer, RustDesk or Stop/Recovery PASS while
 Direct Method is running. Windows signing and policy-on Sandbox remain
 independent external release blockers.
+
+## 2026-10-08 R210 strict nft ownership / pre-stop safety (candidate, NOT deployed)
+
+Negative-first regression on the exact e40f94f predecessor demonstrated a destructive false positive:
+a table retaining all three Direct Method queues but also containing a foreign `ip daddr ... drop`
+rule was classified `OWNED`. A second negative-first test showed that an attempted process
+kill occurred before foreign-table ownership was rejected. These are source-proven failure
+modes; there was no mutation of either host's live nftables.
+
+The successor candidate requires **exactly one** owned `inet directinternetmethod` output
+chain, approved filter-hook priority/policy, exactly three fixed queue rules all bound to
+the saved physical interface and, in Tailscale coexistence only, the exact earlier
+`0x80000/0xff0000` return mark. It rejects unknown rules/chains, mixed interfaces,
+extra queues, unrecognized DNS modes and missing state/physical context. Stop/Recovery
+preflights table **and** DNS-link ownership before stopping the Direct engine, with a
+second ownership check immediately before table deletion. Foreign material remains
+untouched and the operation fails closed.
+
+Proof: isolated Emad Linux QA `tests/tailscale_nft_ownership_contract.py` 12/12,
+`tests/tailscale_cleanup_ownership_contract.py` 8/8; full Linux source-contract
+suite PASS; independent Linux artifact reproduction from Windows and Emad Linux
+exactly **8,196,074 bytes**, SHA256
+`7BEE8DC4D8C63F4DAED82CB74A6636D7A989A472FC373E8613B5E60FE802D6F8`.
+The previous unpublished e40f94f archive SHA `294F0BD0...DA10664B` is
+**SUPERSEDED—DO NOT INSTALL**. Public v1.5.1 and all current installed runtimes unchanged.
+
+Limitation: nft kernel grammar, true service lifecycle, concurrent table replacement,
+Tailscale TSMP/MagicDNS/RustDesk while DPI runs, and actual OS-authorized backend
+installation are still UNPROVEN. Strict table ownership deliberately fails closed
+when the real nft output differs from the accepted schema; manual review is safer
+than deleting an unrecognized table. Windows signing / Smart App Control remains
+a separate mandatory release gate. This section does not authorize merge/release.
