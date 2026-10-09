@@ -47,7 +47,23 @@
     "defaultRouteMutation": false,
     "winHttpProxy": false,
     "windowsRuntime": "ctrld + zapret/winws v72.13 + WinDivert",
-    "linuxRuntime": "ctrld + systemd-resolved + nftables/NFQUEUE + zapret/nfqws v72.13"
+    "linuxRuntime": "ctrld + systemd-resolved + nftables/NFQUEUE + zapret/nfqws v72.13",
+    "optionalPhysicalAdapterDns": {
+      "defaultEnabled": false,
+      "scope": "targeted + balanced + Tailscale split mode only",
+      "userOptInRequired": true,
+      "privacyDisclosure": "Plaintext UDP third-party DNS to 194.225.152.10",
+      "selectedZones": [
+        "youtube.com",
+        "ytimg.com",
+        "googlevideo.com",
+        "youtu.be"
+      ],
+      "localForwarder": "127.0.0.1:10535",
+      "otherDns": "original physical upstream",
+      "tailscaleDns": "not modified",
+      "acceptance": "SOURCE_QA_ONLY; NATIVE_ROOT/PERSISTENCE/CRASH/REBOOT_UNPROVEN"
+    }
   },
   "liveChecks": {
     "semantics": {
@@ -77,12 +93,12 @@
       "authenticode": "NotSigned"
     },
     "linux": {
-      "status": "SOURCE_CANDIDATE_TAILSCALE_COEXISTENCE_NOT_INSTALLED",
+      "status": "SOURCE_CANDIDATE_SELECTIVE_DNS_OPTIN_NOT_LIVE_ACCEPTED",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
-      "bytes": 8204017,
-      "sha256": "F5FF1EDD0F737BDABBE49CB1CB5558F2C87BB94019C55FC793746AFDD002C923",
+      "bytes": 8231634,
+      "sha256": "93C89464BC2E9ABD4C27B5837B57B35989BE6A45AE39D85D520D1E4E6D27B85B",
       "protectedBackendVersion": "1.5.2",
-      "packageFiles": 19,
+      "packageFiles": 20,
       "compatibleProtectedBackendVersions": [
         "1.5.1",
         "1.5.2"
@@ -91,7 +107,7 @@
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "2F44BA247BB774FBE0775F20FF3086B021F7C817646537F4470D1B10B4851685"
+    "sha256": "48745971E5B16C8DB531A4C408C1B956DB7F7861270811053E51C73521EC6341"
   },
   "acceptance": {
     "windowsPayload": "PASS_BUILD_SERVICE_SELFTEST_AND_CONTRACT_V152",

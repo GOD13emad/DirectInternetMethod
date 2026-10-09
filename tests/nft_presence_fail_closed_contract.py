@@ -23,7 +23,7 @@ def action_case(name):
     return matches[0]
 fragments="\n".join(function(n,required=n!="nft_table_presence") for n in
     ("nft_table_presence","nft_table_owned","state_value",
-     "cleanup_state_owned","verify_clean"))
+     "cleanup_state_owned","restore_selective_dns","verify_clean"))
 actions={n:action_case(n) for n in ("stop","recovery")}
 cases=[
     ("stateless_recovery_permission_denied","recovery","denied",False,84,False),

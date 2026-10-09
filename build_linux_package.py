@@ -10,6 +10,7 @@ FILES=[
  ("linux/uninstall.sh","uninstall.sh"),
  ("linux/system/install_system.sh","system/install_system.sh"),
  ("linux/system/control.sh","system/control.sh"),
+ ("linux/system/selective_dns.py","system/selective_dns.py"),
  ("linux/system/uninstall_system.sh","system/uninstall_system.sh"),
  ("linux/app/direct_internet_method.py","app/direct_internet_method.py"),
  ("linux/app/router_gateway.py","app/router_gateway.py"),

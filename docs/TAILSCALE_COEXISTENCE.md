@@ -436,3 +436,18 @@ Exact new unpublished Linux ZIP (19 files; 8,204,017 bytes) SHA256:
 F5FF1EDD0F737BDABBE49CB1CB5558F2C87BB94019C55FC793746AFDD002C923.
 Prior R221 unpublished ZIP 6FCF8EE9...5B8D3F19 is
 SUPERSEDED--DO NOT INSTALL; it remains retained as historical evidence.
+
+## R247: experimental selective DNS with Balanced
+
+This Linux v1.5.2 candidate offers explicitly opt-in and default-OFF
+selective DNS while preserving Tailscale split routing and MagicDNS.
+The four YouTube-family domains are sent to 194.225.152.10 via plaintext,
+UNENCRYPTED UDP; other questions go to the original physical DNS router.
+The local high-port dnsmasq listens on loopback 127.0.0.1:10535 only.
+The GUI must show privacy warnings and require Targeted + Balanced.
+A root-owned systemd monitor and session record handle Stop/Recovery
+and crash protection, but native integration, reboot, prolonged uptime,
+real browser and authenticated RustDesk session acceptance are UNPROVEN.
+Do not silently activate, bypass Trusted Windows signing, or release
+publicly on source/CI success alone. R246 temporary protected trial
+normal YouTube HTTP200 3/3 remains valid only for that temporary setup.

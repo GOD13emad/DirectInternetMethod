@@ -21,6 +21,10 @@ ADULT_ENABLED="$STATE_BASE/adult-enabled.txt"
 ADULT_HOSTS="$STATE_BASE/adult-hosts.txt"
 STRATEGY_FILE="$STATE_BASE/strategy.txt"
 SCOPE_FILE="$STATE_BASE/scope.txt"
+SELECTIVE_DNS_OPT_IN="$STATE_BASE/selective-dns-optin.txt"
+SELECTIVE_DNS="/usr/lib/directinternetmethod/selective_dns.py"
+SELECTIVE_DNS_ENABLED=0
+CREATED_STATE=0
 CTRLD="$BIN/ctrld"
 NFQWS="$BIN/nfqws"
 TABLE="directinternetmethod"
@@ -317,6 +321,12 @@ if not all(re.fullmatch(pattern,actual) for pattern,actual in zip(patterns,rules
 cleanup_transient(){
   local nft_rc=0 can_delete=0
   set +e
+  # Restore original physical DNS FIRST, even if NFT ownership cannot
+  # subsequently be established. Never leave ordinary Internet pointing
+  # at a defunct local DNS service after a failed Start.
+  if [ -f /run/directinternetmethod-selective/session.json ]; then
+    python3 "$SELECTIVE_DNS" restore || return 88
+  fi
   if [ "$CREATED_TABLE" -eq 1 ]; then
     if nft_table_presence; then
       if nft_table_transient_owned "$PHY" "$TAILSCALE_COEXIST"; then
@@ -348,6 +358,7 @@ cleanup_transient(){
   fi
   [ "$CREATED_LINK" -eq 1 ] && remove_dns_link
   rm -f "$RUN_HOSTS"
+  [ "$CREATED_STATE" -eq 1 ] && rm -f "$STATE"
   set -e
 }
 
@@ -384,9 +395,23 @@ cleanup_state_owned(){
   rm -f "$RUN_HOSTS" "$STATE"
 }
 
+restore_selective_dns(){
+  if [ -e /run/directinternetmethod-selective/session.json ]; then
+    [ -x "$SELECTIVE_DNS" ] || { echo '{"ok":false,"error":"SELECTIVE_DNS_CONTROLLER_MISSING"}' >&2; return 88; }
+    python3 "$SELECTIVE_DNS" restore || {
+      echo '{"ok":false,"error":"SELECTIVE_DNS_RESTORE_FAILED"}' >&2
+      return 88
+    }
+  fi
+}
+
 verify_clean(){
   local nft_rc
   [ ! -f "$STATE" ] || return 1
+  # A stale protected DNS watchdog/session cannot be considered CLEAN.
+  [ ! -e /run/directinternetmethod-selective/session.json ] || return 1
+  [ ! -e /run/directinternetmethod-selective ] || return 1
+  [ ! -e /run/directinternetmethod-selective.conf ] || return 1
   ! ip link show "$DNS_IF" >/dev/null 2>&1 || return 1
   if nft_table_presence; then
     return 1
@@ -478,10 +503,12 @@ case "$ACTION" in
         echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
         exit 81
       fi
+      restore_selective_dns
       echo '{"ok":true,"state":"PASS_NO_STATE","note":"No owned state; no network resources were removed."}'
       exit 0
     fi
     cleanup_state_owned
+    restore_selective_dns
     verify_clean || { echo '{"ok":false,"error":"STOP_RESIDUE"}'; exit 78; }
     echo '{"ok":true,"state":"STOPPED"}'
     ;;
@@ -510,6 +537,7 @@ case "$ACTION" in
       sleep .3
       rm -f "$RUN_HOSTS"
     fi
+    restore_selective_dns
     verify_clean || { echo '{"ok":false,"error":"RECOVERY_RESIDUE"}'; exit 80; }
     echo '{"ok":true,"state":"RECOVERED"}'
     ;;
@@ -647,6 +675,14 @@ PY
       echo '{"ok":false,"error":"TAILSCALE_ALL_SITES_UNSUPPORTED"}'
       exit 74
     fi
+    # Explicit opt-in; presence of unknown/symlink data is NOT ignored.
+    if [ "$TAILSCALE_COEXIST" -eq 1 ] && { [ -e "$SELECTIVE_DNS_OPT_IN" ] || [ -L "$SELECTIVE_DNS_OPT_IN" ]; }; then
+      [ "$STRATEGY" = "balanced" ] && [ -x "$SELECTIVE_DNS" ] || {
+        echo '{"ok":false,"error":"SELECTIVE_DNS_REQUIRES_BALANCED_AND_BACKEND"}'
+        exit 88
+      }
+      SELECTIVE_DNS_ENABLED=1
+    fi
 
     if [ "$DNS_MODE" = "direct-doh" ]; then
     ip link add "$DNS_IF" type dummy
@@ -763,8 +799,20 @@ EOF
     sleep .5
     pid_owned "$NPID" "$NFQWS" || { echo '{"ok":false,"error":"NFQWS_START_FAILED"}'; exit 76; }
 
+    if [ "$SELECTIVE_DNS_ENABLED" -eq 1 ]; then
+      USER_HOME="$(getent passwd "$USER_UID" | cut -d: -f6)"
+      [ "$USER_HOME/.local/share/DirectInternetMethod" = "$STATE_BASE" ] || {
+        echo '{"ok":false,"error":"SELECTIVE_DNS_HOME_MISMATCH"}'
+        exit 88
+      }
+      python3 "$SELECTIVE_DNS" activate --uid "$USER_UID" --interface "$PHY" --home "$USER_HOME" || {
+        echo '{"ok":false,"error":"SELECTIVE_DNS_ACTIVATION_FAILED"}'
+        exit 88
+      }
+    fi
+
     [ "$DNS_MODE" != "system-preserved" ] || CPID=0
-    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" "$ADULT_ON" "$ADULT_COUNT" "$DNS_MODE" "$TAILSCALE_COEXIST" <<'PY'
+    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" "$ADULT_ON" "$ADULT_COUNT" "$DNS_MODE" "$TAILSCALE_COEXIST" "$SELECTIVE_DNS_ENABLED" <<'PY'
 import json,os,sys,time
 p=sys.argv[1]
 d={
@@ -774,6 +822,7 @@ d={
   "directMethods":([] if sys.argv[13]=="system-preserved" else ["encrypted-dns-doh"])+["http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443","custom-hostlist","adult-catalog","strategy-profile"],
   "dnsMode":sys.argv[13],
   "tailscaleCoexistence":bool(int(sys.argv[14])),
+  "selectiveDns":bool(int(sys.argv[15])),
   "strategy":sys.argv[9],
   "scope":sys.argv[10],
   "adultCoverage":bool(int(sys.argv[11])),
@@ -794,6 +843,13 @@ os.chmod(p,0o600)
 os.chown(p,int(sys.argv[5]),int(sys.argv[6]))
 PY
 
+    CREATED_STATE=1
+    if [ "$SELECTIVE_DNS_ENABLED" -eq 1 ]; then
+      python3 "$SELECTIVE_DNS" commit || {
+        echo '{"ok":false,"error":"SELECTIVE_DNS_COMMIT_FAILED"}'
+        exit 88
+      }
+    fi
     START_COMMITTED=1
     trap - EXIT
     echo '{"ok":true,"state":"ACTIVE"}'

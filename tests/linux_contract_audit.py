@@ -22,7 +22,18 @@ def check(name,cond):
 
 check("version_152_backend_152", 'VERSION="1.5.2"' in ui and '"version":"1.5.2"' in install and '"version":"1.5.2"' in sysinstall and 'd.get("version") in ("1.5.1","1.5.2")' in install)
 check("no_default_route_mutation", not re.search(r'ip\s+route\s+(add|del|replace).*default|nmcli\s+.*ipv4\.gateway',helper,re.I))
-check("no_physical_dns_mutation", "nmcli connection modify" not in helper and "resolvectl dns enp" not in helper and "resolvectl dns eth" not in helper)
+check("no_unconditional_physical_dns_mutation", "nmcli connection modify" not in helper and
+      "resolvectl dns enp" not in helper and "resolvectl dns eth" not in helper and
+      "SELECTIVE_DNS_OPT_IN" in helper and "SELECTIVE_DNS_ENABLED=0" in helper)
+selected=txt("system/selective_dns.py")
+check("optional_dns_experiment_default_off_optin_guard", all(x in selected for x in (
+      "SELECTIVE_DNS_EXPLICIT_CONSENT_REQUIRED", "I_ACCEPT_UNENCRYPTED_SELECTIVE_DNS_V1",
+      "TAILSCALE_SPLIT_REQUIRED", "SELECTIVE_DNS_REQUIRES_BALANCED_TARGETED",
+      "127.0.0.1", "194.225.152.10", "rollback", "monitor")))
+check("selective_dns_controller_root_installed_and_packaged",
+      "selective_dns.py" in sysinstall and "selective_dns.py" in build)
+check("selective_dns_disclosure_in_user_ui", "UNENCRYPTED" in ui and
+      "selective_dns_optin_save" in ui and "selectiveDns" in ui)
 check("dedicated_dns_link", all(x in helper for x in ('DNS_IF="dimdns0"','ip link add "$DNS_IF" type dummy','ip addr add "$DNS_IP/32" dev "$DNS_IF"','SetLinkDNS','SetLinkDomains','RevertLink','ip link del "$DNS_IF"')))
 listener=re.search(r"\[listener\.0\](.*?)\[listener\.0\.policy\]",helper,re.S)
 check("ctrld_listener_owned_link", listener is not None and 'ip = "192.0.2.53"' in listener.group(1) and "allow_wan_clients = true" in listener.group(1) and 'ip = "0.0.0.0"' not in listener.group(1))

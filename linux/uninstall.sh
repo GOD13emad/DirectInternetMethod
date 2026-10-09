@@ -5,6 +5,13 @@ BIN="$HOME/.local/bin"
 DESKTOP="$HOME/.local/share/applications/io.github.god13emad.DirectInternetMethod.desktop"
 ICON="$HOME/.local/share/icons/hicolor/scalable/apps/direct-internet-method.svg"
 
+if [ -e /run/directinternetmethod-selective/session.json ]; then
+  systemctl start directinternetmethod-recovery.service
+  [ ! -e /run/directinternetmethod-selective/session.json ] || {
+    echo "Selective DNS still active; refuse uninstall to preserve rollback." >&2
+    exit 88
+  }
+fi
 if [ -f "$APP/directmethod/state.json" ]; then
   systemctl start directinternetmethod-recovery.service
   [ ! -f "$APP/directmethod/state.json" ] || { echo "Recovery could not be verified; uninstall stopped." >&2; exit 20; }

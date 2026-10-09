@@ -36,6 +36,7 @@ env={"json":json,"STATE":state,"SCOPE_FILE":scope,"pathlib":SimpleNamespace(Path
      "_external_tunnel_active":lambda:False,
      "_tailscale_split_safe":lambda:True,
      "_coexistence_backend_ready":lambda:True,
+     "selective_dns_optin_state":lambda:"OFF",
      "_systemd_unit_matches":lambda *args:False}
 exec(code,env)
 def mode():return env["load_state"]()

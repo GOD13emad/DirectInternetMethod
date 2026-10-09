@@ -44,8 +44,43 @@ ADULT_CATALOG_URLS=(
 )
 STRATEGY_FILE=APP_HOME/"strategy.txt"
 SCOPE_FILE=APP_HOME/"scope.txt"
-COEXIST_HELPER_SHA256="e1ab8b26ed70d25f4fc4d36f0151a93e6b19f658cd52318cea4f638110b390fb"
+SELECTIVE_DNS_OPT_IN=APP_HOME/"selective-dns-optin.txt"
+SELECTIVE_DNS_TOKEN="I_ACCEPT_UNENCRYPTED_SELECTIVE_DNS_V1"
+COEXIST_HELPER_SHA256="e52fcaeb9c60d9e43d4a5b75462455ad8c5ee4d82fee679a0cc4a3520d8abea5"
 LATEST_API="https://api.github.com/repos/GOD13emad/DirectInternetMethod/releases/latest"
+
+def selective_dns_optin_state():
+    try:
+        if SELECTIVE_DNS_OPT_IN.is_symlink():
+            return "INVALID"
+        if not SELECTIVE_DNS_OPT_IN.exists():
+            return "OFF"
+        st=SELECTIVE_DNS_OPT_IN.stat()
+        if not SELECTIVE_DNS_OPT_IN.is_file() or st.st_uid!=os.getuid() or st.st_mode & 0o022:
+            return "INVALID"
+        return "ON" if SELECTIVE_DNS_OPT_IN.read_text(encoding="utf-8").strip()==SELECTIVE_DNS_TOKEN else "INVALID"
+    except Exception:
+        return "INVALID"
+
+def selective_dns_optin_save(enabled):
+    if SELECTIVE_DNS_OPT_IN.is_symlink():
+        raise ValueError("Refusing unsafe experimental DNS setting symlink")
+    if enabled:
+        SELECTIVE_DNS_OPT_IN.parent.mkdir(parents=True,exist_ok=True)
+        fd,temp=tempfile.mkstemp(prefix=".dim-selective-optin-",dir=str(SELECTIVE_DNS_OPT_IN.parent))
+        try:
+            with os.fdopen(fd,"w",encoding="utf-8") as stream:
+                stream.write(SELECTIVE_DNS_TOKEN+"\n")
+                stream.flush();os.fsync(stream.fileno())
+            os.chmod(temp,0o600)
+            os.replace(temp,SELECTIVE_DNS_OPT_IN)
+        finally:
+            if os.path.lexists(temp):os.unlink(temp)
+    elif SELECTIVE_DNS_OPT_IN.exists():
+        if SELECTIVE_DNS_OPT_IN.stat().st_uid!=os.getuid():
+            raise ValueError("Foreign experimental DNS settings cannot be deleted")
+        SELECTIVE_DNS_OPT_IN.unlink()
+
 
 def ui_test_log(message):
     p=os.environ.get("DIM_UI_TEST_LOG")
@@ -316,8 +351,20 @@ def load_state():
                         "detail":"Tailscale split mode is safe, but All Sites or an invalid scope is not supported. Open Strategy, uncheck Apply DPI strategy to all web sites, then Save Targeted. Tailscale and DNS remain unchanged."}
             if not _coexistence_backend_ready():
                 return {"mode":"BACKEND_UPDATE_REQUIRED",
-                        "detail":"Tailscale split mode is safe, but the installed privileged backend is older or unverified. Start is disabled until the verified v1.5.2 backend is installed with rollback; Tailscale and DNS are unchanged."}
-            return {"mode":"OFF","detail":"Tailscale split network active. Start uses physical-interface DPI; system DNS/MagicDNS remain unchanged."}
+                        "detail":"Tailscale split mode is safe, but the installed privileged backend is older or unverified. Start is disabled until the verified backend is installed with rollback; Tailscale and DNS are unchanged."}
+            opt=selective_dns_optin_state()
+            if opt=="INVALID":
+                return {"mode":"CONFIG_REQUIRED","detail":"Experimental split-DNS preference is unsafe or unrecognized. Reopen Strategy and explicitly set it."}
+            if opt=="ON":
+                try:
+                    method=STRATEGY_FILE.read_text(encoding="utf-8").strip().lower()
+                except Exception:
+                    method="invalid"
+                if method!="balanced":
+                    return {"mode":"CONFIG_REQUIRED",
+                            "detail":"Experimental split DNS requires Targeted + Balanced. Plain, unencrypted third-party UDP DNS is used only for selected sites; disable it or select Balanced in Strategy."}
+                return {"mode":"OFF","detail":"Tailscale split network active. Experimental selective DNS is OPTED IN: third-party UDP upstream is UNENCRYPTED; MagicDNS stays separate. Start runs Balanced DPI and crash-guarded local DNS."}
+            return {"mode":"OFF","detail":"Tailscale split network active. Start uses physical-interface DPI; system DNS/MagicDNS remain unchanged. Experimental selective DNS is OFF."}
         return {"mode":"OFF","detail":"No active Direct Internet Method state."}
     uid=os.getuid()
     preserved=s.get("dnsMode")=="system-preserved" and bool(s.get("tailscaleCoexistence"))
@@ -327,7 +374,10 @@ def load_state():
     nfqws_ok=_systemd_unit_matches(s.get("nfqwsUnit"),s.get("nfqwsPid"),f"directinternetmethod-nfqws-{uid}.service")
     if ctrld_ok and nfqws_ok:
         if preserved:
-            detail=f"Tailscale coexistence: {s.get('physicalInterface','?')}  DNS/MagicDNS preserved  Methods: HTTP + TLS/SNI + QUIC (DPI only)"
+            if s.get("selectiveDns"):
+                detail=f"Tailscale coexistence: {s.get('physicalInterface','?')}  Local experimental selective DNS ACTIVE; third-party upstream UDP is UNENCRYPTED, MagicDNS remains separate; Balanced DPI running"
+            else:
+                detail=f"Tailscale coexistence: {s.get('physicalInterface','?')}  DNS/MagicDNS preserved  Methods: HTTP + TLS/SNI + QUIC (DPI only)"
         else:
             detail=f"Physical: {s.get('physicalInterface','?')}  DNS link: {s.get('dnsInterface','?')}  DNS: {s.get('dnsIp','?')}  Methods: DoH + HTTP + TLS/SNI + QUIC"
         if _external_tunnel_active():
@@ -363,7 +413,7 @@ def verify_live():
         return {"exit":p.returncode,"meta":p.stdout.strip(),"error":p.stderr.strip()}
     d=subprocess.run(["getent","ahostsv4","www.youtube.com"],text=True,capture_output=True)
     h=curl("http://www.youtube.com/")
-    y=curl("https://www.youtube.com/generate_204")
+    y=curl("https://www.youtube.com/" if s.get("selectiveDns") else "https://www.youtube.com/generate_204")
     o=curl("https://api.openai.com/v1/models")
     g=curl("https://github.com/")
     m=curl("https://gemini.google.com/")
@@ -691,6 +741,11 @@ class Window(Adw.ApplicationWindow):
         outer.append(combo)
         scope_toggle=Gtk.CheckButton(label="Apply DPI strategy to all web sites (experimental)")
         scope_toggle.set_active(all_sites);outer.append(scope_toggle)
+        selective_toggle=Gtk.CheckButton(label="Opt in: experimental selected-sites DNS (unencrypted third-party UDP)")
+        selective_toggle.set_active(selective_dns_optin_state()=="ON")
+        outer.append(selective_toggle)
+        warn=Gtk.Label(label="Privacy warning: experimental DNS sends selected site names to 194.225.152.10 over UNENCRYPTED UDP; this is not DoH. Only Targeted + Balanced with Tailscale split mode is supported. Disabled by default. Route, Google DNS and MagicDNS must stay protected.",xalign=0,wrap=True)
+        warn.add_css_class("dim-label");outer.append(warn)
         hint=Gtk.Label(label="Targeted mode affects only built-in and Custom Sites. All Sites mode can help unknown blocked domains, but may reduce compatibility or speed on some sites. Neither mode creates a VPN, proxy, or default-route tunnel.",xalign=0,wrap=True)
         hint.add_css_class("dim-label");outer.append(hint)
         row=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8);row.set_halign(Gtk.Align.END)
@@ -700,7 +755,12 @@ class Window(Adw.ApplicationWindow):
         def do_save(*_):
             try:
                 value=("balanced","compatibility","strong")[int(combo.get_selected())]
+                enable_dns=bool(selective_toggle.get_active())
+                if enable_dns and (value!="balanced" or scope_toggle.get_active()):
+                    raise ValueError("Experimental unencrypted split DNS requires Balanced and Targeted. Select those options first.")
                 STRATEGY_FILE.parent.mkdir(parents=True,exist_ok=True)
+                if STRATEGY_FILE.is_symlink() or SCOPE_FILE.is_symlink():
+                    raise ValueError("Unsafe strategy/scope preference symlink.")
                 temp=STRATEGY_FILE.with_suffix(".tmp")
                 temp.write_text(value+"\n",encoding="utf-8")
                 os.replace(temp,STRATEGY_FILE)
@@ -708,7 +768,9 @@ class Window(Adw.ApplicationWindow):
                 st=SCOPE_FILE.with_suffix(".tmp")
                 st.write_text(scope_value+"\n",encoding="utf-8")
                 os.replace(st,SCOPE_FILE)
-                self.result.set_text(f"Strategy saved: {value}; scope: {scope_value}. Stop/Start to apply.")
+                selective_dns_optin_save(enable_dns)
+                privacy=(" experimental UNENCRYPTED selected DNS is opted in" if enable_dns else " experimental DNS off")
+                self.result.set_text(f"Strategy saved: {value}; scope: {scope_value};{privacy}. Stop/Start to apply.")
                 w.close();self.refresh()
             except Exception as e:
                 self.result.set_text("Strategy save failed: "+str(e))
