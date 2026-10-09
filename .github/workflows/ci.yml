@@ -179,3 +179,10 @@ jobs:
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/rejected_component_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+
+      - name: Enforce final Windows installer Authenticode, trusted publisher and exact release SHA
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -NonInteractive -File tests/windows_distribution_signature_audit.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }

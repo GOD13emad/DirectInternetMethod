@@ -119,6 +119,13 @@ check("windows_distribution_signature_fail_closed", all(x in signature_gate for 
     "PUBLIC_TRUST_CHAIN_UNVERIFIED",
     "FAIL_CLOSED","exit 42"
 )))
+tag_job_source = ci_workflow.split("  windows-release-contract:",1)[1] if ci_workflow.count("  windows-release-contract:")==1 else ""
+check("tag_release_invokes_exact_signed_installer_audit",
+    tag_job_source.count("pwsh.exe -NoProfile -NonInteractive -File tests/windows_distribution_signature_audit.ps1")==1
+    and "if: startsWith(github.ref, 'refs/tags/v')" in tag_job_source
+    and "if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }" in tag_job_source
+    and "continue-on-error: true" not in tag_job_source)
+
 check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
