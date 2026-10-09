@@ -87,6 +87,7 @@ QNUM=200
 TAILSCALE_COEXIST=1
 CREATED_TABLE=1
 CREATED_LINK=0
+CREATED_STATE=0
 RUN_HOSTS="$TMP/hosts.txt"
 STATE="$TMP/state.json"
 NPID=0
@@ -171,7 +172,7 @@ echo "PASS_KERNEL_FOREIGN_STATE_CLEANUP_PRESERVATION"
 put_state
 new_table; new_chain; mark; queues
 nft add rule inet "$TABLE" output ip daddr 203.0.113.7 drop
-export TABLE PHY TAILSCALE_COEXIST CREATED_TABLE CREATED_LINK RUN_HOSTS NPID CPID CTRLD NFQWS
+export TABLE PHY TAILSCALE_COEXIST CREATED_TABLE CREATED_LINK CREATED_STATE RUN_HOSTS NPID CPID CTRLD NFQWS
 export -f rollback_on_exit cleanup_transient nft_table_presence nft_table_transient_owned pid_owned remove_dns_link
 if trap_output="$(bash -c 'set -euo pipefail; ACTION=start; START_COMMITTED=0; trap rollback_on_exit EXIT; exit 0' 2>&1)";then
   trap_rc=0
@@ -189,7 +190,12 @@ expect_absent
 echo "PASS_KERNEL_FAILED_ROLLBACK_EXIT_NONZERO"
 echo "PASS_KERNEL_NAMESPACE_NFT_CONTRACT_7_OF_7"
 '''
-    return functions + "\n" + cases
+    script = functions + "\n" + cases
+    # Fixture variables must be initialized before Bash set -u cleanup.
+    assert re.search(r"^CREATED_STATE=0$", script, re.M), "CREATED_STATE_UNBOUND_IN_KERNEL_FIXTURE"
+    assert "export TABLE PHY TAILSCALE_COEXIST CREATED_TABLE CREATED_LINK CREATED_STATE" in script, (
+        "CREATED_STATE_NOT_EXPORTED_TO_TRAP_CHILD")
+    return script
 
 
 def main() -> int:
@@ -200,7 +206,7 @@ def main() -> int:
     mode.add_argument("--inside", action="store_true", help=argparse.SUPPRESS)
     cli.add_argument("--parent-ns", default=None, help=argparse.SUPPRESS)
     opts = cli.parse_args()
-    extract_functions()
+    kernel_script()
     if opts.source_only:
         print("PASS_SOURCE_ONLY_NFT_KERNEL_CONTRACT_SYNTAX")
         return 0
