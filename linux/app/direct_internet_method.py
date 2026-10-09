@@ -44,6 +44,7 @@ ADULT_CATALOG_URLS=(
 )
 STRATEGY_FILE=APP_HOME/"strategy.txt"
 SCOPE_FILE=APP_HOME/"scope.txt"
+COEXIST_HELPER_SHA256="e1ab8b26ed70d25f4fc4d36f0151a93e6b19f658cd52318cea4f638110b390fb"
 LATEST_API="https://api.github.com/repos/GOD13emad/DirectInternetMethod/releases/latest"
 
 def ui_test_log(message):
@@ -245,6 +246,23 @@ def _tailscale_split_safe():
         return False
 
 
+
+def _coexistence_backend_ready():
+    # A newer GUI alone must never enable Start against an old privileged
+    # backend: split-Tailscale rules require an accepted, exact helper.
+    try:
+        helper=PRIV_HOME/"direct_method_helper.sh"
+        meta=pathlib.Path("/var/lib/directinternetmethod/install.json")
+        if (helper.is_symlink() or meta.is_symlink() or
+                not helper.is_file() or not meta.is_file()):
+            return False
+        installed=json.loads(meta.read_text(encoding="utf-8"))
+        return (installed.get("version")=="1.5.2" and
+                installed.get("uid")==os.getuid() and
+                hashlib.sha256(helper.read_bytes()).hexdigest()==COEXIST_HELPER_SHA256)
+    except Exception:
+        return False
+
 def _external_tunnel_active():
     if _tailscale_split_safe():
         return False
@@ -296,6 +314,9 @@ def load_state():
             if scope!="targeted":
                 return {"mode":"CONFIG_REQUIRED",
                         "detail":"Tailscale split mode is safe, but All Sites or an invalid scope is not supported. Open Strategy, uncheck Apply DPI strategy to all web sites, then Save Targeted. Tailscale and DNS remain unchanged."}
+            if not _coexistence_backend_ready():
+                return {"mode":"BACKEND_UPDATE_REQUIRED",
+                        "detail":"Tailscale split mode is safe, but the installed privileged backend is older or unverified. Start is disabled until the verified v1.5.2 backend is installed with rollback; Tailscale and DNS are unchanged."}
             return {"mode":"OFF","detail":"Tailscale split network active. Start uses physical-interface DPI; system DNS/MagicDNS remain unchanged."}
         return {"mode":"OFF","detail":"No active Direct Internet Method state."}
     uid=os.getuid()
@@ -534,7 +555,7 @@ class Window(Adw.ApplicationWindow):
         self.status.set_text("Status: "+mode);self.detail.set_text(s["detail"])
         for css in ("success","warning","error","dim-label"):
             self.status.remove_css_class(css)
-        self.status.add_css_class("success" if mode=="ACTIVE" else "warning" if mode in ("BLOCKED","CONFIG_REQUIRED","CONFLICT") else "error" if mode=="STALE" else "dim-label")
+        self.status.add_css_class("success" if mode=="ACTIVE" else "warning" if mode in ("BLOCKED","CONFIG_REQUIRED","BACKEND_UPDATE_REQUIRED","CONFLICT") else "error" if mode=="STALE" else "dim-label")
         start_ok=(mode=="OFF")
         stop_ok=(mode in ("ACTIVE","CONFLICT","STALE"))
         recovery_ok=(mode in ("CONFLICT","STALE"))

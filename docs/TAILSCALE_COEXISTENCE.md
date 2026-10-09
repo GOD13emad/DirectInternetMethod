@@ -394,3 +394,45 @@ Read-only on BOTH Linux hosts: installed user GUI SHA 5A592FAD883FE8E717EA106540
 Negative-first source GUI test proved unsafe all-sites Scope appeared actionable OFF despite protected helper's fail-closed TAILSCALE_ALL_SITES_UNSUPPORTED. Narrow GUI change adds CONFIG_REQUIRED with Strategy -> Targeted guidance for all-sites, invalid, symlink or unreadable Scope. Existing targeted/default shows OFF; true Exit Node/foreign tunnel still BLOCKED. Save Strategy refreshes immediately. No silent user/Tailscale setting modifications.
 Verification: R221 new Scope GUI 8/8 PASS, pre-existing GUI 6/6 PASS, Tailscale coexistence 11/11 PASS, existing Linux source audits PASS. Protected helper bytes unchanged. Windows/Emad Linux independently reproduced unpublished 19-file ZIP, 8,202,797 bytes, SHA256 6FCF8EE9765E8E548C5F142D9FCFD483B3A2DCFD7D129E2ECB7EB3F75B8D3F19. Prior unpublished ZIP E5F26E32...50C1F5D5 archived under C:\Users\Aa.Emad\source\repos\DIM_R221_GATE\BASELINE_737850A.zip, SUPERSEDED--DO NOT INSTALL.
 Source/CI acceptance alone does not imply GUI installed, backend persistent upgraded, RustDesk authenticated session PASS, Windows Authenticode/SAC or published product release. Those remain gates.
+
+
+## R229: GUI refuses mismatched privileged backend (2026-10-09)
+
+Negative-first reproduction: the R221 GUI could show OFF / enable Start
+for targeted Tailscale split mode even when the installed root-owned
+backend was still v1.5.1 and lacked approved coexistence safeguards.
+R227 adds a fail-closed BACKEND_UPDATE_REQUIRED UI state: both the
+root-owned /var/lib/directinternetmethod/install.json schema/version/UID
+and the exact SHA256 of /usr/lib/directinternetmethod/direct_method_helper.sh
+must match the accepted v1.5.2 backend. Missing/unreadable/symlinked/foreign
+metadata or helper means Start remains disabled. All-sites remains
+CONFIG_REQUIRED; Exit Nodes and unknown tunnels remain BLOCKED.
+
+Evidence: R227 negative failed before the mutation and the updated GUI
+test passed 9/9 state cases, 7/7 protected backend identity cases, plus
+six prior GUI fixtures and all eight selected source regression suites.
+Actual MMZ Linux read-only runtime: all-sites=>CONFIG_REQUIRED,
+hypothetical targeted with old backend=>BACKEND_UPDATE_REQUIRED.
+
+Two R227/R228 GUI-only promotion preflights FAILED safely with no changes:
+(1) the physical default switched legitimately from disconnected Ethernet
+enp7s0 to connected Wi-Fi wlp8s0, (2) a generated runner had an incorrect
+candidate source path. Independent deterministic preflight in R229
+verified all source paths, SHA, connected physical interface, Tailscale,
+and DNS/route readability before any file mutation. R229 GUI-only
+atomic installation then PASS with 22 guards, preserved the old GUI
+at /home/mmz/source/repos/DIM_R229_QA/backup/direct_internet_method.before.py,
+left the root-owned backend v1.5.1 and scope all-sites unchanged, and
+proved pre/post route/rule/DNS SHA equality. Evidence:
+  /home/mmz/source/repos/DIM_R229_QA/RETURN_R229.json
+
+The full v1.5.2 privileged backend has NOT been installed on MMZ because
+two PolicyKit root prompts expired without approval. No live MMZ
+Start/Stop/Recovery acceptance is claimed. Linux Emad's previously
+accepted R222 installation is independent. Public Windows release is
+still HOLD pending trusted signer/SAC. No other product RELEASE is implied.
+
+Exact new unpublished Linux ZIP (19 files; 8,204,017 bytes) SHA256:
+F5FF1EDD0F737BDABBE49CB1CB5558F2C87BB94019C55FC793746AFDD002C923.
+Prior R221 unpublished ZIP 6FCF8EE9...5B8D3F19 is
+SUPERSEDED--DO NOT INSTALL; it remains retained as historical evidence.
