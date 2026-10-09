@@ -158,5 +158,26 @@ expected={
 "pwsh":"BFB46AF89433268872DDB43D1CA7A3F433452EE91ED356A9786940F90118E285"}
 for name,rel in (("ctrld","bin/ctrld/ctrld.exe"),("winws","bin/zapret/winws.exe"),("windivertdll","bin/zapret/WinDivert.dll"),("windivertsys","bin/zapret/WinDivert64.sys"),("pwsh","vendor/pwsh/pwsh.exe")):
     h=hashlib.sha256((W/rel).read_bytes()).hexdigest().upper();D["hashes"][name]=h;check("runtime_"+name+"_pin",h==expected[name])
+
+thirdparty_notice_hashes={
+    "LICENSE.WinDivert.txt":"14A0CB5214D536E4FDAE6AA3F5696F981EEDA106CD026E9794BBA489EE79D628",
+    "LICENSE.Cygwin.txt":"794433752103CF4BBB4A84A1BDB8FBC150ABB1762704BB35FECC9F7F820BE984",
+    "LGPL3.Cygwin.txt":"DA7EABB7BAFDF7D3AE5E9F223AA5BDC1EECE45AC569DC21B3B037520B4464768",
+    "GPL3.Cygwin.txt":"8CEB4B9EE5ADEDDE47B31E975C1D90C73AD27B6B165A1DCD80C7C545EB65B903",
+}
+def checked_notice_mapping(filename):
+    src = r"..\bin\zapret" + "\\" + filename
+    dest = r"{commonpf}\DirectInternetMethod\Privileged\bin\zapret"
+    line = 'Source: "' + src + '"; DestDir: "' + dest + '"; Flags: ignoreversion'
+    return iss.splitlines().count(line)==1
+check("installer_four_upstream_license_notices_byte_pinned",
+    all(
+       (W/"bin"/"zapret"/filename).is_file()
+       and hashlib.sha256((W/"bin"/"zapret"/filename).read_bytes()).hexdigest().upper()==expected
+       and checked_notice_mapping(filename)
+       and "windows/bin/zapret/"+filename+" text eol=lf" in gitattributes
+       for filename,expected in thirdparty_notice_hashes.items()
+    ))
+
 print(json.dumps(D,indent=2))
 sys.exit(0 if D["status"]=="PASS" else 20)
