@@ -62,7 +62,13 @@
       "localForwarder": "127.0.0.1:10535",
       "otherDns": "original physical upstream",
       "tailscaleDns": "not modified",
-      "acceptance": "SOURCE_QA_ONLY; NATIVE_ROOT/PERSISTENCE/CRASH/REBOOT_UNPROVEN"
+      "acceptance": "SOURCE_QA_ONLY; NATIVE_ROOT/PERSISTENCE/CRASH/REBOOT_UNPROVEN",
+      "independentPeriodicBackstop": {
+        "timer": "systemd repeating monotonic timer every 40 seconds, AccuracySec=1s",
+        "failureMode": "if primary monitor ends unexpectedly, restore original physical DNS before engine Recovery",
+        "default": "not activated unless experimental DNS explicit opt-in is active",
+        "acceptance": "QA simulation/native user timer passed; installed privileged crash/reboot test OPEN"
+      }
     }
   },
   "liveChecks": {
@@ -95,8 +101,8 @@
     "linux": {
       "status": "SOURCE_CANDIDATE_SELECTIVE_DNS_OPTIN_NOT_LIVE_ACCEPTED",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
-      "bytes": 8231634,
-      "sha256": "93C89464BC2E9ABD4C27B5837B57B35989BE6A45AE39D85D520D1E4E6D27B85B",
+      "bytes": 8234805,
+      "sha256": "0218BEBD0DC8F88670374FF0E12A61D45229A03092C606678C5C00FD81DC2C9E",
       "protectedBackendVersion": "1.5.2",
       "packageFiles": 20,
       "compatibleProtectedBackendVersions": [
@@ -107,7 +113,7 @@
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "48745971E5B16C8DB531A4C408C1B956DB7F7861270811053E51C73521EC6341"
+    "sha256": "B2AB0F679C4EA77DBB013B950B83FE279093C6D46316113CCCD53A1AC830A419"
   },
   "acceptance": {
     "windowsPayload": "PASS_BUILD_SERVICE_SELFTEST_AND_CONTRACT_V152",

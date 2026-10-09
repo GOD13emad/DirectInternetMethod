@@ -45,6 +45,7 @@ def state():
          "baseline":{"dns":["192.168.20.1"],"domains":["bwrouter"],"defaultRoute":True},
          "dnsUnit":"dim-sdns-dns-1000-0123456789.service",
          "monitorUnit":"dim-sdns-watch-1000-0123456789.service",
+         "backstopTimer":"dim-sdns-backstop-1000-0123456789.timer",
          "configPath":str(m.CONF)}
 yes("valid protected marker recognized",(m.validate_state(state()) is None))
 s=state();s["dnsUnit"]="ssh.service"

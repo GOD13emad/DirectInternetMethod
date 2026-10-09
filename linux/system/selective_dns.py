@@ -25,6 +25,8 @@ POLL_SECONDS=4
 ACTION_LOCK=pathlib.Path("/run/directinternetmethod-action.lock")
 IFACE_RE=re.compile(r"^[a-zA-Z0-9_.:-]{1,15}$")
 UNIT_RE=re.compile(r"^dim-sdns-(?:dns|watch)-[0-9]{1,10}-[0-9a-f]{10}\.service$")
+TIMER_RE=re.compile(r"^dim-sdns-backstop-[0-9]{1,10}-[0-9a-f]{10}\.timer$")
+BACKSTOP_INTERVAL=40
 LINE_RE=re.compile(r"^Link \d+ \(([A-Za-z0-9_.:-]+)\):(?: (.*))?$")
 
 def call(*args, timeout=9, ok=True):
@@ -74,6 +76,9 @@ def validate_state(state):
     need(state.get("session") and re.fullmatch("[0-9a-f]{10}",state["session"]),"STATE_SESSION")
     need(state["dnsUnit"]==f"dim-sdns-dns-{uid}-{state['session']}.service","DNS_UNIT_SESSION")
     need(state["monitorUnit"]==f"dim-sdns-watch-{uid}-{state['session']}.service","WATCH_UNIT_SESSION")
+    need(bool(TIMER_RE.fullmatch(str(state.get("backstopTimer","")))),"BACKSTOP_TIMER_UNIT")
+    need(state["backstopTimer"]==f"dim-sdns-backstop-{uid}-{state['session']}.timer",
+         "BACKSTOP_TIMER_SESSION")
     need(state.get("upstream")==UPSTREAM,"STATE_UPSTREAM")
     need(isinstance(state.get("baseline"),dict),"STATE_BASELINE")
     base=state["baseline"]
@@ -160,6 +165,11 @@ def status_unit(unit):
     p=call("systemctl","show",unit,"-p","ActiveState","--value",ok=False)
     return p.stdout.strip()
 
+def status_timer(unit):
+    need(bool(TIMER_RE.fullmatch(unit)),"INVALID_OWNED_TIMER")
+    p=call("systemctl","show",unit,"-p","ActiveState","--value",ok=False)
+    return p.stdout.strip()
+
 def protect_marker():
     if STATE_DIR.exists():raise RuntimeError("PREEXISTING_OWNED_DNS_SESSION")
     if CONF.exists() or CONF.is_symlink():raise RuntimeError("DNS_FORWARDER_CONFIG_CONFLICT")
@@ -218,6 +228,9 @@ def rollback(reason="MANUAL",stop_monitor=True):
     need(status_unit(state["dnsUnit"])!="active","OWNED_FORWARDER_STILL_RUNNING")
     if stop_monitor and status_unit(state["monitorUnit"])=="active":
         call("systemctl","stop",state["monitorUnit"],timeout=15)
+    if status_timer(state["backstopTimer"])=="active":
+        call("systemctl","stop",state["backstopTimer"],timeout=15)
+    need(status_timer(state["backstopTimer"])!="active","BACKSTOP_TIMER_REMAINS_ACTIVE")
     if CONF.exists():
         need(not CONF.is_symlink() and CONF.is_file() and
              CONF.read_bytes()==make_conf(original),"DNS_CONFIG_FOREIGN_PRESERVED")
@@ -254,6 +267,7 @@ def activate(uid:int,iface:str,home:str):
            "home":str(h),"tailscaleDnsSha":tsdns,
            "dnsUnit":f"dim-sdns-dns-{uid}-{session}.service",
            "monitorUnit":f"dim-sdns-watch-{uid}-{session}.service",
+           "backstopTimer":f"dim-sdns-backstop-{uid}-{session}.timer",
            "configPath":str(CONF)}
     try:
         write_atomic(CONF,make_conf(base),0o644)
@@ -264,6 +278,16 @@ def activate(uid:int,iface:str,home:str):
              "--property=RestartSec=2s","/usr/bin/python3",str(SELECTOR),"monitor",
              timeout=15)
         need(status_unit(state["monitorUnit"])=="active","MONITOR_NOT_ARMED")
+        # Independent repeating systemd TIMER. If the monitor is killed
+        # without a failure code, this timer still restores physical DNS.
+        call("systemd-run","--quiet",
+             f"--unit={state['backstopTimer'][:-6]}",
+             f"--on-active={BACKSTOP_INTERVAL}s",
+             f"--on-unit-active={BACKSTOP_INTERVAL}s",
+             "--timer-property=AccuracySec=1s",
+             "/usr/bin/python3",str(SELECTOR),"backstop",timeout=15)
+        need(status_timer(state["backstopTimer"])=="active",
+             "BACKSTOP_TIMER_NOT_ARMED")
         import pwd
         name=pwd.getpwuid(uid).pw_name
         call("systemd-run","--quiet",f"--unit={state['dnsUnit'][:-8]}",
@@ -298,7 +322,9 @@ def commit():
          data.get("selectiveDns") is True and
          int(data.get("nfqwsPid") or 0)>1,"NATIVE_ENGINE_NOT_COMMITTED")
     need(status_unit(s["dnsUnit"])=="active" and
-         status_unit(s["monitorUnit"])=="active","DNS_MONITOR_OR_SERVER_FAILED")
+         status_unit(s["monitorUnit"])=="active" and
+         status_timer(s["backstopTimer"])=="active",
+         "DNS_MONITOR_BACKSTOP_OR_SERVER_FAILED")
     need(link_fields(s["interface"])==expected_active(s["baseline"]),"DNS_LINK_CHANGED")
     s["phase"]="ACTIVE";s["committed"]=time.time()
     json_atomic(s)
@@ -376,17 +402,54 @@ def monitor():
             raise
         time.sleep(POLL_SECONDS)
 
+def backstop():
+    require_root()
+    recover=False
+    reason=""
+    # This periodic check runs as a separate systemd timer/service.
+    # Never modify DNS while an ordinary Start/Stop owns the global lock.
+    with action_lock_observe() as available:
+        if not available:
+            return {"ok":True,"state":"ACTION_LOCK_BUSY_RETRY_NEXT_TICK"}
+        s=read_state()
+        if s is None:return {"ok":True,"state":"NO_SESSION"}
+        phase=s["phase"]
+        if phase=="ARMING" and time.time()-s["started"]<=MONITOR_GRACE:
+            return {"ok":True,"state":"START_GRACE_PENDING"}
+        if phase=="ACTIVE":
+            try:
+                need(status_unit(s["monitorUnit"])=="active","MONITOR_STOPPED")
+                need(status_unit(s["dnsUnit"])=="active","FORWARDER_STOPPED")
+                need(link_fields(s["interface"])==expected_active(s["baseline"]),
+                     "DNS_LINK_DRIFT")
+                split_tailscale_ready()
+                need(tailscale_dns_fingerprint()==s["tailscaleDnsSha"],
+                     "TAILSCALE_DNS_DRIFT")
+                return {"ok":True,"state":"HEALTHY"}
+            except Exception as error:
+                reason=str(error)
+        else:
+            reason="NONACTIVE_PHASE_"+phase
+        rollback("INDEPENDENT_BACKSTOP:"+reason,stop_monitor=True)
+        recover=True
+    # Critical: call Recovery only AFTER releasing the action lock.
+    if recover:
+        call("systemctl","start","directinternetmethod-recovery.service",
+             timeout=35,ok=False)
+    return {"ok":True,"state":"RESTORED_BY_BACKSTOP","reason":reason}
+
 def status():
     s=read_state()
     if not s:return {"ok":True,"state":"INACTIVE"}
     return {"ok":True,"state":s["phase"],"interface":s["interface"],
             "unencryptedDns":True,
             "dnsRunning":status_unit(s["dnsUnit"])=="active",
-            "monitorRunning":status_unit(s["monitorUnit"])=="active"}
+            "monitorRunning":status_unit(s["monitorUnit"])=="active",
+            "backstopRunning":status_timer(s["backstopTimer"])=="active"}
 
 def main():
     ap=argparse.ArgumentParser()
-    ap.add_argument("action",choices=("activate","commit","restore","monitor","status"))
+    ap.add_argument("action",choices=("activate","commit","restore","monitor","backstop","status"))
     ap.add_argument("--uid",type=int)
     ap.add_argument("--interface")
     ap.add_argument("--home")
@@ -397,6 +460,7 @@ def main():
         elif args.action=="commit":result=commit()
         elif args.action=="restore":result=rollback()
         elif args.action=="monitor":monitor();result={"ok":True,"state":"MONITOR_DONE"}
+        elif args.action=="backstop":result=backstop()
         else:result=status()
         print(json.dumps(result,sort_keys=True))
     except Exception as err:

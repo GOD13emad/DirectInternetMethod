@@ -23,10 +23,11 @@ def fixture(d):
            "baseline":base,"tailscaleDnsSha":"a"*64,
            "dnsUnit":"dim-sdns-dns-1000-0123456789.service",
            "monitorUnit":"dim-sdns-watch-1000-0123456789.service",
+           "backstopTimer":"dim-sdns-backstop-1000-0123456789.timer",
            "configPath":str(conf)}
     return folder,conf,base,active,state
 old={k:getattr(m,k) for k in ("STATE_DIR","STATE_FILE","CONF","require_root",
-                              "read_state","link_fields","change_link","status_unit","call")}
+                              "read_state","link_fields","change_link","status_unit","status_timer","call")}
 try:
     with tempfile.TemporaryDirectory(prefix="dim-r247-restore-tests-") as td:
         f,c,base,active,s=fixture(td)
@@ -34,7 +35,7 @@ try:
         m.require_root=lambda:None
         m.validate_state(s)
         c.write_bytes(m.make_conf(base));m.STATE_FILE.write_text(json.dumps(s))
-        modes={s["dnsUnit"]:"active",s["monitorUnit"]:"active"}
+        modes={s["dnsUnit"]:"active",s["monitorUnit"]:"active",s["backstopTimer"]:"active"}
         observed=[dict(active)]
         actions=[]
         m.read_state=lambda:s
@@ -44,6 +45,7 @@ try:
             observed[0]={"dns":list(dns),"domains":list(domains),"defaultRoute":droute}
         m.change_link=change
         m.status_unit=lambda unit:modes[unit]
+        m.status_timer=lambda unit:modes[unit]
         def call(*args,**kwargs):
             assert args[:2]==("systemctl","stop"),args
             actions.append("STOP_"+str(args[2]))
@@ -59,6 +61,7 @@ try:
             actions[0]=="RESTORE_PHYSICAL_DNS_FIRST" and
             actions[1]=="STOP_"+s["dnsUnit"])
         yes("monitor stopped after dnsmasq",actions[2]=="STOP_"+s["monitorUnit"])
+        yes("backstop timer stopped after monitor",actions[3]=="STOP_"+s["backstopTimer"])
         yes("owned config and state cleaned",not c.exists() and not f.exists())
 
     with tempfile.TemporaryDirectory(prefix="dim-r247-foreign-drift-") as td:

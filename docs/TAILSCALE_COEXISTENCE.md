@@ -451,3 +451,23 @@ real browser and authenticated RustDesk session acceptance are UNPROVEN.
 Do not silently activate, bypass Trusted Windows signing, or release
 publicly on source/CI success alone. R246 temporary protected trial
 normal YouTube HTTP200 3/3 remains valid only for that temporary setup.
+
+
+## R248 independent DNS backstop (2026-10-09)
+
+The R247 source monitor was missing an independent fallback if the
+monitor process exited normally rather than with a failure code.
+Negative-first test detected this missing layer. R248 registers an
+independent repeating systemd timer before changing any DNS. Every
+40 seconds (AccuracySec=1s) its isolated service audits the root-owned
+session, primary monitor and selected upstream and restores the
+original physical-link DNS if the monitored service is dead or
+inconsistent. Recovery of native Direct Method is dispatched only
+AFTER the exclusive action lock is released. A user-mode native
+systemd test produced 3 runs in 14 seconds and then shut down
+its test timer. Twenty rootless injected cases tested healthy,
+missing-monitor, foreign-DNS, incomplete Start and busy-lock states.
+
+This is still QA/source acceptance: physical-host integrated service,
+reboot, signal-stop and trusted Windows installer gates are OPEN.
+The upstream selected DNS remains plaintext UDP; not a secure DoH.
