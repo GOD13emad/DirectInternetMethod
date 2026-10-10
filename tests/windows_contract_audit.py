@@ -126,6 +126,27 @@ check("tag_release_invokes_exact_signed_installer_audit",
     and "if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }" in tag_job_source
     and "continue-on-error: true" not in tag_job_source)
 
+draft_stage_source=(R/"tests"/"windows_release_draft_asset_stage.ps1").read_text(encoding="utf-8-sig")
+draft_fixture_source=(R/"tests"/"windows_release_draft_asset_contract.ps1").read_text(encoding="utf-8-sig")
+windows_source_section=ci_workflow.split("  windows-source:",1)[1].split("  windows-release-contract:",1)[0]
+check("windows_ci_runs_offline_draft_staging_negative_regressions",
+    windows_source_section.count("pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_contract.ps1")==1
+    and "continue-on-error: true" not in windows_source_section)
+check("windows_tag_stage_private_signed_asset_before_authenticode",
+    tag_job_source.count("pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_stage.ps1")==1
+    and "GITHUB_TOKEN:" in tag_job_source
+    and tag_job_source.find("windows_release_draft_asset_stage.ps1") < tag_job_source.find("windows_distribution_signature_audit.ps1")
+    and "continue-on-error: true" not in tag_job_source)
+check("draft_release_stager_fails_closed_on_identity_digest_and_rerun",
+    all(s in draft_stage_source for s in (
+        "RELEASE_NOT_PRIVATE_DRAFT","RELEASE_TARGET_COMMIT_MISMATCH","SIGNED_DRAFT_INSTALLER_DIGEST_MISMATCH",
+        "SIGNED_DRAFT_INSTALLER_ASSET_ORIGIN_MISMATCH","UNSAFE_RERUN_STAGING_PATH_OCCUPIED",
+        "TAG_CHECKOUT_COMMIT_MISMATCH","SIGNED_DRAFT_INSTALLER_DOWNLOADED_SHA_MISMATCH","exit 42")))
+check("draft_release_negative_fixtures_present",
+    all(s in draft_fixture_source for s in (
+        "Deny 'published'","Deny 'tag'","Deny 'commit'","Deny 'duplicate'",
+        "Deny 'digest'","Deny 'origin'","PASS 10/10")))
+
 check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}

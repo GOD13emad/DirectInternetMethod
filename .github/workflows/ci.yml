@@ -141,6 +141,12 @@ jobs:
           $ErrorActionPreference='Stop'
           & pwsh.exe -NoProfile -File tests/windows_public_signer_trust_contract.ps1
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+      - name: Private draft Windows release asset metadata contracts (offline)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_contract.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Full Windows and Router Gateway contract audits
         shell: pwsh
         run: |
@@ -180,6 +186,14 @@ jobs:
           python tests/rejected_component_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
 
+      - name: Stage exact signed Windows Setup from owner-controlled private draft
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_stage.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Enforce final Windows installer Authenticode, trusted publisher and exact release SHA
         shell: pwsh
         run: |
