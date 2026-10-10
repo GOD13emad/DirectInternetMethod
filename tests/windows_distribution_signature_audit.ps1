@@ -58,7 +58,23 @@ try{
  if([string]$Rel.version -ne '1.5.2'){throw 'RELEASE_VERSION_MISMATCH'}
  $Result.expectedSha256=[string]$Rel.platforms.windows.sha256
  if($Result.expectedSha256 -notmatch '^[A-Fa-f0-9]{64}$'){throw 'EXPECTED_HASH_MISSING'}
+ # An Authenticode Valid executable with a matching declared SHA is not
+ # automatically the Inno Setup distribution for this product (e.g. signed Notepad).
+ $expectedLeaf='DirectInternetMethod_1.5.2_Windows_Setup.exe'
+ $declaredArtifact=([string]$Rel.platforms.windows.artifact).Replace('\','/')
+ if($declaredArtifact -cne ('delivery/'+$expectedLeaf)){
+   throw 'RELEASE_INSTALLER_ARTIFACT_IDENTITY_MISMATCH'
+ }
+ if([IO.Path]::GetFileName($InstallerPath) -cne $expectedLeaf){
+   throw 'INSTALLER_FILENAME_MISMATCH'
+ }
  if(!(Test-Path -LiteralPath $InstallerPath -PathType Leaf)){throw 'INSTALLER_FILE_MISSING'}
+ $ver=(Get-Item -LiteralPath $InstallerPath).VersionInfo
+ if((([string]$ver.ProductName).Trim() -cne 'Direct Internet Method') -or
+    (([string]$ver.FileDescription).Trim() -cne 'Direct Internet Method Setup') -or
+    (([string]$ver.CompanyName).Trim() -cne 'Direct Internet Method')){
+   throw 'INSTALLER_PRODUCT_IDENTITY_MISMATCH'
+ }
  $Result.actualSha256=(Get-FileHash -LiteralPath $InstallerPath -Algorithm SHA256).Hash
  if($Result.actualSha256 -ne $Result.expectedSha256){throw 'INSTALLER_SHA_MISMATCH'}
  $sig=Get-AuthenticodeSignature -LiteralPath $InstallerPath
