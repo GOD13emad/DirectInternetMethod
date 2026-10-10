@@ -71,3 +71,39 @@ $platformSigner=Assert-EligibleSignerForSmartAppControl -Signature $platformSig
 if(-not $platformSigner){throw 'PLATFORM_REFERENCE_POSITIVE_REJECTED'}
 Write-Output 'PASS Microsoft-authenticode-signed OS reference, positive branch (not Direct Method)'
 Write-Output 'PASS 6/6 negative signer eligibility fixtures; production Windows signed installer still UNPROVEN'
+# R302: permanent, disk-free installer identity regressions; no signed binaries copied or renamed.
+$identityNames=@('Assert-ExpectedInstallerArtifact','Assert-ExpectedInstallerVersion')
+foreach($identityName in $identityNames){
+  $identityDefs=@($ast.FindAll({
+    param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $identityName
+  },$true))
+  if($identityDefs.Count -ne 1){throw ('INSTALLER_IDENTITY_GUARD_FUNCTION_MISSING_'+$identityName)}
+  $identityCalls=@($ast.FindAll({
+    param($node) $node -is [Management.Automation.Language.CommandAst] -and $node.GetCommandName() -eq $identityName
+  },$true))
+  if($identityCalls.Count -ne 1){throw ('INSTALLER_IDENTITY_GUARD_NOT_USED_'+$identityName)}
+  . ([scriptblock]::Create($identityDefs[0].Extent.Text))
+}
+function Expect-IdentityDenial([scriptblock]$Action,[string]$Expected,[string]$Case){
+  $actual=$null
+  try { & $Action } catch { $actual=[string]$_.Exception.Message }
+  if($actual -cne $Expected){throw ('INSTALLER_IDENTITY_FALSE_ACCEPT_'+$Case+'_EXPECTED_'+$Expected+'_ACTUAL_'+$actual)}
+  Write-Output ('PASS identity-denied '+$Case+' '+$Expected)
+}
+$qaSetup=Join-Path $PSScriptRoot 'DirectInternetMethod_1.5.2_Windows_Setup.exe'
+$qaArtifact='delivery/DirectInternetMethod_1.5.2_Windows_Setup.exe'
+$qaVersion=[pscustomobject]@{
+  ProductName='Direct Internet Method'
+  FileDescription='Direct Internet Method Setup'
+  CompanyName='Direct Internet Method'
+}
+Assert-ExpectedInstallerArtifact -DeclaredArtifact $qaArtifact -InstallerPath $qaSetup
+Assert-ExpectedInstallerArtifact -DeclaredArtifact 'delivery\DirectInternetMethod_1.5.2_Windows_Setup.exe' -InstallerPath $qaSetup
+Assert-ExpectedInstallerVersion -VersionInfo $qaVersion
+Write-Output 'PASS identity-positive synthetic setup metadata'
+Expect-IdentityDenial { Assert-ExpectedInstallerArtifact -DeclaredArtifact 'delivery/Other.exe' -InstallerPath $qaSetup } 'RELEASE_INSTALLER_ARTIFACT_IDENTITY_MISMATCH' 'foreign-declared-artifact'
+Expect-IdentityDenial { Assert-ExpectedInstallerArtifact -DeclaredArtifact $qaArtifact -InstallerPath (Join-Path $PSScriptRoot 'notepad.exe') } 'INSTALLER_FILENAME_MISMATCH' 'foreign-executable-filename'
+Expect-IdentityDenial { Assert-ExpectedInstallerVersion -VersionInfo ([pscustomobject]@{ProductName='Unrelated';FileDescription='Direct Internet Method Setup';CompanyName='Direct Internet Method'}) } 'INSTALLER_PRODUCT_IDENTITY_MISMATCH' 'foreign-product-name'
+Expect-IdentityDenial { Assert-ExpectedInstallerVersion -VersionInfo ([pscustomobject]@{ProductName='Direct Internet Method';FileDescription='Unrelated';CompanyName='Direct Internet Method'}) } 'INSTALLER_PRODUCT_IDENTITY_MISMATCH' 'foreign-file-description'
+Expect-IdentityDenial { Assert-ExpectedInstallerVersion -VersionInfo ([pscustomobject]@{ProductName='Direct Internet Method';FileDescription='Direct Internet Method Setup';CompanyName='Unrelated'}) } 'INSTALLER_PRODUCT_IDENTITY_MISMATCH' 'foreign-company'
+Write-Output 'PASS 5/5 dynamic installer identity negative fixtures; actual public signed installer remains UNPROVEN'
