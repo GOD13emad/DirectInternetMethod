@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "date": "2026-10-08",
+  "status": "READ_ONLY_RUSTDESK_TAILSCALE_BASELINE_ACCEPTED_NOT_YET_COEXISTENCE_RUNTIME",
+  "sourceBranch": "feature/tailscale-split-coexist-20261008",
+  "sourceParent": "ad1cf693f634f1f8eae694d4199b9f990d93b51f",
+  "purpose": "Preserve remote RustDesk connectivity and Tailscale while preparing physical-interface-only DPI coexistence",
+  "hosts": {
+    "EmadLinux": {
+      "tailscale": "Running",
+      "exitNodeActive": false,
+      "onlinePeers": 1,
+      "peerRouteInterface": "tailscale0",
+      "publicRouteInterface": "enp1s0",
+      "tailnetPeerReachable": true,
+      "derpPongs": 3,
+      "directPongs": 0,
+      "RustDeskInstalled": true,
+      "directIpConfig": "UNKNOWN_OR_DEFAULT_DISABLED",
+      "localPort21118Listening": false,
+      "peerPort21118": "NOT_OPEN"
+    },
+    "SaeidLinux": {
+      "tailscale": "Running",
+      "exitNodeActive": false,
+      "onlinePeers": 1,
+      "peerRouteInterface": "tailscale0",
+      "publicRouteInterface": "enp7s0",
+      "tailnetPeerReachable": true,
+      "derpPongs": 3,
+      "directPongs": 0,
+      "RustDeskInstalled": true,
+      "directIpConfig": "YES",
+      "directIpPort": 21118,
+      "localPort21118Listening": false,
+      "peerPort21118": "NOT_OPEN"
+    }
+  },
+  "transportSemantics": "tailscale ping can exit 1 when a DERP pong succeeds but no direct UDP route forms; 3/3 DERP pongs prove authenticated relay-layer reachability, not direct peer-to-peer or RustDesk functional desktop session.",
+  "privacy": {
+    "peerAddressesInEvidence": false,
+    "deviceIdentifiersInEvidence": false,
+    "tokensPasswordsReadOrEmitted": false
+  },
+  "verified": {
+    "testSelftests": "6/6 on Windows and both Linux hosts",
+    "liveReadOnlyProbeOnBothLinuxHosts": true,
+    "noUserNetworkMutation": true
+  },
+  "openGates": [
+    "Install changed Linux protected backend only through permitted OS authorization and known rollback",
+    "Prove Tailscale RustDesk actual desktop session without breaking current remote access",
+    "Verify peer DERP availability and DNS/routes during and after Direct Method Start/Stop/Recovery",
+    "Verify RustDesk direct IP port listening and restricted security configuration through RustDesk owner-approved controls if required",
+    "Exact-source GitHub CI",
+    "Windows signed installer and public trust gate"
+  ],
+  "externalDocs": [
+    "https://tailscale.com/docs/solutions/access-remote-desktops-with-rustdesk",
+    "https://tailscale.com/docs/reference/connection-types",
+    "https://rustdesk.com/docs/en/self-host/client-configuration/advanced-settings/"
+  ]
+}

@@ -22,11 +22,48 @@ def check(name,cond):
 
 check("version_152_backend_152", 'VERSION="1.5.2"' in ui and '"version":"1.5.2"' in install and '"version":"1.5.2"' in sysinstall and 'd.get("version") in ("1.5.1","1.5.2")' in install)
 check("no_default_route_mutation", not re.search(r'ip\s+route\s+(add|del|replace).*default|nmcli\s+.*ipv4\.gateway',helper,re.I))
-check("no_physical_dns_mutation", "nmcli connection modify" not in helper and "resolvectl dns enp" not in helper and "resolvectl dns eth" not in helper)
+check("no_unconditional_physical_dns_mutation", "nmcli connection modify" not in helper and
+      "resolvectl dns enp" not in helper and "resolvectl dns eth" not in helper and
+      "SELECTIVE_DNS_OPT_IN" in helper and "SELECTIVE_DNS_ENABLED=0" in helper)
+selected=txt("system/selective_dns.py")
+check("optional_dns_experiment_default_off_optin_guard", all(x in selected for x in (
+      "SELECTIVE_DNS_EXPLICIT_CONSENT_REQUIRED", "I_ACCEPT_UNENCRYPTED_SELECTIVE_DNS_V1",
+      "TAILSCALE_SPLIT_REQUIRED", "SELECTIVE_DNS_REQUIRES_BALANCED_TARGETED",
+      "127.0.0.1", "194.225.152.10", "rollback", "monitor")))
+check("selective_dns_controller_root_installed_and_packaged",
+      "selective_dns.py" in sysinstall and "selective_dns.py" in build)
+check("selective_dns_disclosure_in_user_ui", "UNENCRYPTED" in ui and
+      "selective_dns_optin_save" in ui and "selectiveDns" in ui)
 check("dedicated_dns_link", all(x in helper for x in ('DNS_IF="dimdns0"','ip link add "$DNS_IF" type dummy','ip addr add "$DNS_IP/32" dev "$DNS_IF"','SetLinkDNS','SetLinkDomains','RevertLink','ip link del "$DNS_IF"')))
 listener=re.search(r"\[listener\.0\](.*?)\[listener\.0\.policy\]",helper,re.S)
 check("ctrld_listener_owned_link", listener is not None and 'ip = "192.0.2.53"' in listener.group(1) and "allow_wan_clients = true" in listener.group(1) and 'ip = "0.0.0.0"' not in listener.group(1))
 check("external_tun_fail_closed_before_mutation", "EXTERNAL_TUNNEL_ACTIVE" in helper and helper.index("EXTERNAL_TUNNEL_ACTIVE") < helper.index('ip link add "$DNS_IF" type dummy'))
+
+check("tailscale_split_safe_before_network_mutation",
+      "tailscale_split_safe(){" in helper and "EXTERNAL_TUNNEL_ACTIVE_OR_EXIT_NODE" in helper
+      and helper.index("if tailscale_split_safe; then") < helper.index('ip link add "$DNS_IF" type dummy')
+      and "TAILSCALE_COEXIST=1" in helper)
+check("tailscale_no_exit_and_no_second_tunnel",
+      all(x in helper for x in ('ExitNodeStatus','ip -4 route show table 52',
+                                  'ip -6 route show table 52','tailscale0) seen=1',
+                                  'wg*|warp*|tailscale*|zt*) return 1')))
+check("tailscale_preserves_host_and_magicdns",
+      'DNS_MODE="system-preserved"' in helper
+      and 'if [ "$DNS_MODE" = "direct-doh" ]; then' in helper
+      and 'Tailscale coexistence: preserve system DNS and MagicDNS unchanged.' in helper
+      and '"dnsMode":sys.argv[13]' in helper and '"tailscaleCoexistence":bool(int(sys.argv[14]))' in helper)
+check("tailscale_marked_packets_excluded",
+      'meta mark & 0xff0000 == 0x80000 return' in helper
+      and helper.index('meta mark & 0xff0000 == 0x80000 return') <
+          helper.index('tcp dport 80 ct original packets 1-6 queue num "$QNUM" bypass'))
+check("tailscale_all_sites_remains_blocked",
+      'TAILSCALE_ALL_SITES_UNSUPPORTED' in helper and
+      'if [ "$TAILSCALE_COEXIST" -eq 1 ] && [ "$SCOPE" != "targeted" ]; then' in helper)
+check("tailscale_gui_mode_reflected",
+      all(x in ui for x in ('def _tailscale_split_safe():','DNS/MagicDNS preserved',
+                             'Tailscale split network active',
+                             'if _tailscale_split_safe():',
+                             'preserved=s.get("dnsMode")=="system-preserved"')))
 check("nft_owned_table", 'TABLE="directinternetmethod"' in helper and 'nft add table inet "$TABLE"' in helper and 'nft delete table inet "$TABLE"' in helper)
 check("multiprotocol_nft_queue_scope", all(x in helper for x in (
     'tcp dport 80 ct original packets 1-6 queue num "$QNUM" bypass',
@@ -43,13 +80,29 @@ check("multiprotocol_state_methods", all(x in helper for x in (
 )))
 check("secure_dns_no_os_leak", 'leak_on_upstream_failure = false' in helper)
 check("nft_ownership_guard", "nft_table_owned()" in helper and "NFT_TABLE_OWNERSHIP_MISMATCH" in helper and 'queue num "$QNUM" bypass' in helper)
-check("nft_queue_canonical_guard", "queue (num 200.*bypass|flags bypass to 200)" in helper)
+check("nft_queue_canonical_guard", (
+    'queue = r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? bypass)"' in helper
+    and "len(lines) != expected_count" in helper
+    and "lines[offset + index]" in helper
+))
+check("nft_ownership_preflight_before_kill", (
+    "# Preflight EVERY owned resource before any destructive" in helper
+    and helper.index("# Preflight EVERY owned resource before any destructive")
+        < helper.index('pid_owned "$np" "$NFQWS" && kill "$np"')
+))
 check("dns_link_ownership_guard", "dns_link_owned()" in helper and "DNS_LINK_OWNERSHIP_MISMATCH" in helper)
 check("nfqws_bounded_hostlist", 'RUN_HOSTS="/run/directinternetmethod-hosts.txt"' in helper and 'python3 - "$HOSTS" "$CUSTOM_HOSTS" "$ADULT_FALLBACK" "$ADULT_HOSTS" "$ADULT_ON" "$RUN_HOSTS"' in helper and 'accepted>=limit' in helper and 'rm -f "$RUN_HOSTS"' in helper)
 check("pid_exact_executable_ownership", "pid_owned()" in helper and 'readlink -f "/proc/$pid/exe"' in helper and 'pid_owned "$NPID" "$NFQWS"' in helper and 'pid_owned "$CPID" "$CTRLD"' in helper)
 check("daemon_lifecycle_transient_services", "systemd-run --quiet --collect" in helper and '--service-type=exec' in helper and 'systemctl show "$CTRLD_UNIT" -p MainPID --value' in helper and 'systemctl show "$NFQWS_UNIT" -p MainPID --value' in helper and 'directinternetmethod-ctrld-${USER_UID}.service' in helper and 'directinternetmethod-nfqws-${USER_UID}.service' in helper and '"$CTRLD" run --config "$CTRLD_CFG" >"$DM/ctrld.log" 2>&1 &' not in helper)
 check("recovery_pid_extraction_fixed", 'pid="${p#/proc/}"' in helper and 'pid="${pid%/exe}"' in helper and 'kill "$pid"' in helper)
 check("start_rollback_trap", "trap rollback_on_exit EXIT" in helper and "cleanup_transient" in helper and "START_COMMITTED=1" in helper)
+check("start_rollback_error_integrity", all(x in helper for x in (
+    "cleanup_transient || rollback_rc=$?",
+    "START_ROLLBACK_FAILED",
+    "START_NOT_COMMITTED",
+    "trap - EXIT",
+    'exit "$rollback_rc"'
+)))
 check("ui_systemd_unit_ownership", '_systemd_unit_matches' in ui and '"systemctl","show",unit' in ui and 'MainPID' in ui and 'ActiveState' in ui and 'directinternetmethod-ctrld-{uid}.service' in ui and 'directinternetmethod-nfqws-{uid}.service' in ui)
 check("ui_identity", 'APP_ID="io.github.god13emad.DirectInternetMethod"' in ui and 'GLib.set_prgname("DirectInternetMethod")' in ui and 'GLib.set_application_name("Direct Internet Method")' in ui)
 check("ui_explicit_window_controls", all(x in ui for x in ("self.minimize()","self.maximize()","self.unmaximize()","self.close()","Gtk.WindowHandle")))

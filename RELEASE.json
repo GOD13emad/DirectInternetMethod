@@ -47,7 +47,29 @@
     "defaultRouteMutation": false,
     "winHttpProxy": false,
     "windowsRuntime": "ctrld + zapret/winws v72.13 + WinDivert",
-    "linuxRuntime": "ctrld + systemd-resolved + nftables/NFQUEUE + zapret/nfqws v72.13"
+    "linuxRuntime": "ctrld + systemd-resolved + nftables/NFQUEUE + zapret/nfqws v72.13",
+    "optionalPhysicalAdapterDns": {
+      "defaultEnabled": false,
+      "scope": "targeted + balanced + Tailscale split mode only",
+      "userOptInRequired": true,
+      "privacyDisclosure": "Plaintext UDP third-party DNS to 194.225.152.10",
+      "selectedZones": [
+        "youtube.com",
+        "ytimg.com",
+        "googlevideo.com",
+        "youtu.be"
+      ],
+      "localForwarder": "127.0.0.1:10535",
+      "otherDns": "original physical upstream",
+      "tailscaleDns": "not modified",
+      "acceptance": "SOURCE_QA_ONLY; NATIVE_ROOT/PERSISTENCE/CRASH/REBOOT_UNPROVEN",
+      "independentPeriodicBackstop": {
+        "timer": "systemd repeating monotonic timer every 40 seconds, AccuracySec=1s",
+        "failureMode": "if primary monitor ends unexpectedly, restore original physical DNS before engine Recovery",
+        "default": "not activated unless experimental DNS explicit opt-in is active",
+        "acceptance": "QA simulation/native user timer passed; installed privileged crash/reboot test OPEN"
+      }
+    }
   },
   "liveChecks": {
     "semantics": {
@@ -77,12 +99,12 @@
       "authenticode": "NotSigned"
     },
     "linux": {
-      "status": "PASS_BUILT_ASSET_IDENTITY_ONLY_INSTALLED_VALIDATION_OPEN",
+      "status": "SOURCE_CANDIDATE_SELECTIVE_DNS_OPTIN_NOT_LIVE_ACCEPTED",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
-      "bytes": 8185930,
-      "sha256": "2F13E15236F7AE3128C3A981605F5240F8A91F141246079A291561032130CFE7",
+      "bytes": 8234805,
+      "sha256": "0218BEBD0DC8F88670374FF0E12A61D45229A03092C606678C5C00FD81DC2C9E",
       "protectedBackendVersion": "1.5.2",
-      "packageFiles": 19,
+      "packageFiles": 20,
       "compatibleProtectedBackendVersions": [
         "1.5.1",
         "1.5.2"
@@ -91,18 +113,18 @@
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "40DFA69A4A32E7325117BA8CAAF11E8F95DEA93D17D3CEAB43898C05953529E3"
+    "sha256": "B2AB0F679C4EA77DBB013B950B83FE279093C6D46316113CCCD53A1AC830A419"
   },
   "acceptance": {
     "windowsPayload": "PASS_BUILD_SERVICE_SELFTEST_AND_CONTRACT_V152",
     "windowsInstaller": "PASS_BUILD_STABLE_OUTPUT_SHA_V152",
     "windowsContract": "PASS_SOURCE_CONTRACT_V152",
-    "linuxPackage": "PASS_REBUILD_MANIFEST_SHA_V152_POST_COMPAT",
+    "linuxPackage": "PASS_LOCAL_BUILT_ARCHIVE_TAILSCALE_CANDIDATE",
     "linuxContract": "PASS_SOURCE_CONTRACT_V152",
-    "protectedCi": "PENDING_EXACT_HEAD_CI",
+    "protectedCi": "PENDING_EXACT_SHA_WITH_NEW_NFT_AND_VPN_SAFETY",
     "publication": "NOT_PUBLISHED",
     "installedWindows": "UNPROVEN_V152_NOT_INSTALLED",
-    "installedLinux": "UNPROVEN_V152_NOT_INSTALLED",
+    "installedLinux": "UNPROVEN_NEW_PROTECTED_COEXISTENCE_NOT_INSTALLED",
     "adultCoverage": "PENDING_V152_VERIFICATION",
     "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED",
     "routerGatewayContract": "PENDING_V152_VERIFICATION",
@@ -110,7 +132,7 @@
     "releaseMetadata": "PENDING_V152_VERIFICATION",
     "fullTrackedSourceAudit": "PENDING_V152_VERIFICATION",
     "windowsDefender": "PENDING_V152_VERIFICATION",
-    "linuxCrossHostRebuild": "PENDING_V152_VERIFICATION",
+    "linuxCrossHostRebuild": "PENDING_NEW_EXACT_SHA_INDEPENDENT_REPRO",
     "sourceReproducibility": "NEEDS_INDEPENDENT_LINUX_V152_REBUILD",
     "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING",
     "windowsSandbox": "FAIL_CONFIRMED_SMART_APP_CONTROL_ENFORCED_UNSIGNED_POLICY_DENIAL",
@@ -135,6 +157,6 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Policy root cause CONFIRMED: Smart App Control VerifiedAndReputableDesktop enforced block (event 3077, correlated unsigned 3089). Obtain legitimate trusted publisher RSA code-signing identity, sign/re-hash and clean Sandbox retest before any v1.5.2 merge/release. Keep v1.5.1 live installation and release immutable. Gemini 403 remains FAIL.",
+  "exactNextAction": "Tailscale coexistence source safeguards exact nft mark mask/order and NMcli typed VPN detection; independent SHA build and CI before privileged installed-host lifecycle. Windows public signing and Sandbox HOLD unchanged.",
   "publication": {}
 }

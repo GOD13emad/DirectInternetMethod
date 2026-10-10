@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Python syntax
-        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/app/router_gateway.py tests/linux_contract_audit.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_152_lifecycle.py
+        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/system/selective_dns.py linux/app/router_gateway.py tests/selective_dns_integration_safety_contract.py tests/selective_dns_monitor_lock_contract.py tests/selective_dns_full_lifecycle_mock.py tests/selective_dns_bindings_contract.py tests/selective_dns_backstop_contract.py tests/selective_dns_backstop_runtime_mock.py tests/linux_contract_audit.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_152_lifecycle.py tests/tailscale_coexistence_contract.py tests/tailscale_ui_state_contract.py tests/tailscale_gui_scope_guard_contract.py tests/tailscale_rustdesk_transport_audit.py tests/tailscale_nft_ownership_contract.py tests/tailscale_cleanup_ownership_contract.py tests/tailscale_recovery_missing_state_contract.py tests/nft_presence_fail_closed_contract.py tests/tailscale_transient_rollback_ownership_contract.py tests/linux_nft_kernel_namespace_contract.py tests/linux_mutation_action_lock_contract.py tests/linux_rollback_exit_integrity_contract.py
       - name: Shell syntax and LF guard
         shell: bash
         run: |
@@ -33,13 +33,64 @@ jobs:
       - name: Linux and Router Gateway contract audits
         run: |
           python3 tests/linux_contract_audit.py
+          python3 tests/tailscale_coexistence_contract.py
+          python3 tests/selective_dns_optin_contract.py
+          python3 tests/selective_dns_isolated_runtime.py
+          python3 tests/selective_dns_restore_mock_contract.py
+          python3 tests/selective_dns_gui_optin_contract.py
+          python3 tests/selective_dns_integration_safety_contract.py
+          python3 tests/selective_dns_monitor_lock_contract.py
+          python3 tests/selective_dns_full_lifecycle_mock.py
+          python3 tests/selective_dns_bindings_contract.py
+          python3 tests/selective_dns_backstop_contract.py
+          python3 tests/selective_dns_backstop_runtime_mock.py
+          python3 tests/tailscale_ui_state_contract.py
+          python3 tests/tailscale_gui_scope_guard_contract.py
+          python3 tests/tailscale_rustdesk_transport_audit.py --selftest
+          python3 tests/tailscale_nft_ownership_contract.py
+          python3 tests/tailscale_cleanup_ownership_contract.py
+          python3 tests/tailscale_recovery_missing_state_contract.py
+          python3 tests/nft_presence_fail_closed_contract.py
+          python3 tests/tailscale_transient_rollback_ownership_contract.py
+          python3 tests/linux_nft_kernel_namespace_contract.py --source-only
+          python3 tests/linux_mutation_action_lock_contract.py
+          python3 tests/linux_rollback_exit_integrity_contract.py
           python3 tests/adult_coverage_data_audit.py
           python3 tests/router_gateway_contract_audit.py
           python3 tests/release_metadata_audit.py
           python3 tests/release_publication_negative_regression.py
           python3 tests/rejected_component_audit.py
+      - name: Isolated real-kernel nftables contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Reject direct execution against the host network namespace.
+          # The contract checks an empty isolated loopback-only namespace.
+          command -v unshare
+          command -v ip
+          if ! command -v nft >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y nftables
+          fi
+          sudo -n python3 tests/linux_nft_kernel_namespace_contract.py --kernel
       - name: Build Linux archive
         run: python3 build_linux_package.py
+      - name: Verify exact Linux candidate artifact digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          r=json.loads(pathlib.Path("RELEASE.json").read_text(encoding="utf-8"))
+          meta=r["platforms"]["linux"]
+          p=pathlib.Path(meta["artifact"])
+          assert p.is_file(), "BUILT_LINUX_ARCHIVE_MISSING"
+          actual=hashlib.sha256(p.read_bytes()).hexdigest().upper()
+          expected=str(meta["sha256"]).upper()
+          assert actual==expected, f"BUILT_LINUX_SHA_MISMATCH {actual} != {expected}"
+          assert p.stat().st_size==int(meta["bytes"]), "BUILT_LINUX_SIZE_MISMATCH"
+          print("PASS built Linux archive exact SHA and size",actual)
+          PY
       - name: Validate shell syntax inside built archive
         shell: bash
         run: |
@@ -84,6 +135,18 @@ jobs:
       - name: Restore pinned PowerShell runtime
         shell: pwsh
         run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
+      - name: Fail-closed public signer and Smart App Control eligibility fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -File tests/windows_public_signer_trust_contract.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+      - name: Private draft Windows release asset metadata contracts (offline)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_contract.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Full Windows and Router Gateway contract audits
         shell: pwsh
         run: |
@@ -106,6 +169,12 @@ jobs:
       - name: Restore pinned PowerShell runtime
         shell: pwsh
         run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
+      - name: Fail-closed public signer and Smart App Control eligibility fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -File tests/windows_public_signer_trust_contract.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Full Windows and Router Gateway contract audits
         shell: pwsh
         run: |
@@ -115,4 +184,19 @@ jobs:
           python tests/router_gateway_contract_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/rejected_component_audit.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+
+      - name: Stage exact signed Windows Setup from owner-controlled private draft
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_stage.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+      - name: Enforce final Windows installer Authenticode, trusted publisher and exact release SHA
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -NonInteractive -File tests/windows_distribution_signature_audit.ps1
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }

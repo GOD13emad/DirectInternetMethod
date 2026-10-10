@@ -109,7 +109,44 @@ check("windows_installer_output_stability_guard", all(x in installer_builder for
 tracked_strong=subprocess.run(["git","ls-files","--error-unmatch","windows/bin/zapret/strong-override-hosts.txt"],cwd=R,text=True,capture_output=True).returncode==0
 check("windows_strong_override_source_tracked", tracked_strong)
 check("windows_hash_pinned_text_eol_policy", all(x in gitattributes for x in ("windows/bin/zapret/hosts.txt text eol=crlf","windows/bin/zapret/adult-fallback-hosts.txt text eol=lf","windows/bin/zapret/strong-override-hosts.txt text eol=crlf")))
-check("windows_distribution_signature_fail_closed", all(x in signature_gate for x in ("Get-AuthenticodeSignature","TRUSTED_AUTHENTICODE_SIGNATURE_REQUIRED","$sig.Status -ne 'Valid'","FAIL_CLOSED","exit 42")))
+check("windows_distribution_signature_fail_closed", all(x in signature_gate for x in (
+    "Get-AuthenticodeSignature",
+    "Assert-EligibleSignerForSmartAppControl -Signature $sig",
+    "if([string]$Signature.Status -ne 'Valid')",
+    "SELF_SIGNED_SIGNER_NOT_PUBLIC_TRUSTED",
+    "SMART_APP_CONTROL_RSA_SIGNER_REQUIRED",
+    "CODE_SIGNING_EKU_REQUIRED",
+    "PUBLIC_TRUST_CHAIN_UNVERIFIED",
+    "FAIL_CLOSED","exit 42"
+)))
+tag_job_source = ci_workflow.split("  windows-release-contract:",1)[1] if ci_workflow.count("  windows-release-contract:")==1 else ""
+check("tag_release_invokes_exact_signed_installer_audit",
+    tag_job_source.count("pwsh.exe -NoProfile -NonInteractive -File tests/windows_distribution_signature_audit.ps1")==1
+    and "if: startsWith(github.ref, 'refs/tags/v')" in tag_job_source
+    and "if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }" in tag_job_source
+    and "continue-on-error: true" not in tag_job_source)
+
+draft_stage_source=(R/"tests"/"windows_release_draft_asset_stage.ps1").read_text(encoding="utf-8-sig")
+draft_fixture_source=(R/"tests"/"windows_release_draft_asset_contract.ps1").read_text(encoding="utf-8-sig")
+windows_source_section=ci_workflow.split("  windows-source:",1)[1].split("  windows-release-contract:",1)[0]
+check("windows_ci_runs_offline_draft_staging_negative_regressions",
+    windows_source_section.count("pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_contract.ps1")==1
+    and "continue-on-error: true" not in windows_source_section)
+check("windows_tag_stage_private_signed_asset_before_authenticode",
+    tag_job_source.count("pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_stage.ps1")==1
+    and "GITHUB_TOKEN:" in tag_job_source
+    and tag_job_source.find("windows_release_draft_asset_stage.ps1") < tag_job_source.find("windows_distribution_signature_audit.ps1")
+    and "continue-on-error: true" not in tag_job_source)
+check("draft_release_stager_fails_closed_on_identity_digest_and_rerun",
+    all(s in draft_stage_source for s in (
+        "RELEASE_NOT_PRIVATE_DRAFT","RELEASE_TARGET_COMMIT_MISMATCH","SIGNED_DRAFT_INSTALLER_DIGEST_MISMATCH",
+        "SIGNED_DRAFT_INSTALLER_ASSET_ORIGIN_MISMATCH","UNSAFE_RERUN_STAGING_PATH_OCCUPIED",
+        "TAG_CHECKOUT_COMMIT_MISMATCH","SIGNED_DRAFT_INSTALLER_DOWNLOADED_SHA_MISMATCH","exit 42")))
+check("draft_release_negative_fixtures_present",
+    all(s in draft_fixture_source for s in (
+        "Deny 'published'","Deny 'tag'","Deny 'commit'","Deny 'duplicate'",
+        "Deny 'digest'","Deny 'origin'","PASS 10/10")))
+
 check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
@@ -149,5 +186,26 @@ expected={
 "pwsh":"BFB46AF89433268872DDB43D1CA7A3F433452EE91ED356A9786940F90118E285"}
 for name,rel in (("ctrld","bin/ctrld/ctrld.exe"),("winws","bin/zapret/winws.exe"),("windivertdll","bin/zapret/WinDivert.dll"),("windivertsys","bin/zapret/WinDivert64.sys"),("pwsh","vendor/pwsh/pwsh.exe")):
     h=hashlib.sha256((W/rel).read_bytes()).hexdigest().upper();D["hashes"][name]=h;check("runtime_"+name+"_pin",h==expected[name])
+
+thirdparty_notice_hashes={
+    "LICENSE.WinDivert.txt":"14A0CB5214D536E4FDAE6AA3F5696F981EEDA106CD026E9794BBA489EE79D628",
+    "LICENSE.Cygwin.txt":"794433752103CF4BBB4A84A1BDB8FBC150ABB1762704BB35FECC9F7F820BE984",
+    "LGPL3.Cygwin.txt":"DA7EABB7BAFDF7D3AE5E9F223AA5BDC1EECE45AC569DC21B3B037520B4464768",
+    "GPL3.Cygwin.txt":"8CEB4B9EE5ADEDDE47B31E975C1D90C73AD27B6B165A1DCD80C7C545EB65B903",
+}
+def checked_notice_mapping(filename):
+    src = r"..\bin\zapret" + "\\" + filename
+    dest = r"{commonpf}\DirectInternetMethod\Privileged\bin\zapret"
+    line = 'Source: "' + src + '"; DestDir: "' + dest + '"; Flags: ignoreversion'
+    return iss.splitlines().count(line)==1
+check("installer_four_upstream_license_notices_byte_pinned",
+    all(
+       (W/"bin"/"zapret"/filename).is_file()
+       and hashlib.sha256((W/"bin"/"zapret"/filename).read_bytes()).hexdigest().upper()==expected
+       and checked_notice_mapping(filename)
+       and "windows/bin/zapret/"+filename+" text eol=lf" in gitattributes
+       for filename,expected in thirdparty_notice_hashes.items()
+    ))
+
 print(json.dumps(D,indent=2))
 sys.exit(0 if D["status"]=="PASS" else 20)

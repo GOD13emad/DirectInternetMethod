@@ -18,3 +18,8 @@ delivery/SHA256SUMS.txt text eol=lf
 windows/bin/zapret/hosts.txt text eol=crlf
 windows/bin/zapret/adult-fallback-hosts.txt text eol=lf
 windows/bin/zapret/strong-override-hosts.txt text eol=crlf
+# Exact upstream legal notices: retain original LF bytes across Windows/Linux checkout.
+windows/bin/zapret/LICENSE.WinDivert.txt text eol=lf whitespace=-blank-at-eof
+windows/bin/zapret/LICENSE.Cygwin.txt text eol=lf whitespace=-blank-at-eol,-blank-at-eof
+windows/bin/zapret/LGPL3.Cygwin.txt text eol=lf
+windows/bin/zapret/GPL3.Cygwin.txt text eol=lf

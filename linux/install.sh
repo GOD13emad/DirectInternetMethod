@@ -17,6 +17,10 @@ gi.require_version("Gtk","4.0")
 gi.require_version("Adw","1")
 PY
 
+if [ -e /run/directinternetmethod-selective/session.json ]; then
+  echo "Protected selected-sites DNS is active. Stop/Recovery before updating." >&2
+  exit 21
+fi
 if [ -f "$APP/directmethod/state.json" ]; then
   echo "Direct Internet Method is active or has owned state. Stop/Recovery it before installing or upgrading." >&2
   exit 21
@@ -40,6 +44,7 @@ PY
     [ "$(sha256sum "$src" | awk '{print $1}')" = "$(sha256sum "$dst" | awk '{print $1}')" ] || return 1
   done <<EOF
 $HERE/app/direct_method_helper.sh|/usr/lib/directinternetmethod/direct_method_helper.sh
+$HERE/system/selective_dns.py|/usr/lib/directinternetmethod/selective_dns.py
 $HERE/system/control.sh|/usr/lib/directinternetmethod/control.sh
 $HERE/system/uninstall_system.sh|/usr/lib/directinternetmethod/uninstall_system.sh
 $HERE/app/hosts.txt|/usr/lib/directinternetmethod/direct_hosts.txt

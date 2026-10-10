@@ -53,3 +53,17 @@ Router Gateway remains a separate non-privileged configuration panel for compati
 - `SHA256SUMS.txt`
 
 Authoritative acceptance/provenance records are stored under `evidence/`.
+
+## Tailscale split-network coexistence — v1.5.2 development candidate
+
+On Linux, Tailscale peer/subnet mode **without an Exit Node** may run alongside Direct Internet Method in `targeted` DPI-only mode. The Direct Method preserves existing DNS/MagicDNS, Tailscale routes and daemon state, and bypasses the Tailscale-reserved packet mark before passing ordinary physical-interface web traffic to NFQUEUE. It does **not** activate its own DoH listener in coexistence mode. Exit nodes, an unknown second tunnel or all-sites DPI fail closed. The original DoH + DPI configuration remains available when Tailscale is not running. See `docs/TAILSCALE_COEXISTENCE.md` for safety preconditions and outstanding real-host acceptance.
+
+This mode is **source candidate only**, not yet installed or tested end-to-end on Tailscale-active hosts; changing the protected Linux helper requires the normal authorized administrative install. The Windows v1.5.2 public release remains HOLD pending trusted signing and policy-on Sandbox installation. Neither always-on global connectivity nor usable Gemini HTTP 403 is guaranteed.
+
+## R247 experimental selected-site DNS (unpublished)
+Experimental Linux option, default OFF: plaintext UDP to a third-party
+resolver at 194.225.152.10 for YouTube-family DNS, requires explicit
+user opt-in, Targeted scope, Balanced strategy, and split Tailscale mode.
+No encrypted DoH, anonymity, universal bypass or uptime guarantees.
+Source package is NOT a published final release; native installed
+crash/reboot tests and Windows trusted RSA/SAC gates remain OPEN.

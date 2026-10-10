@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "date": "2026-10-08",
+  "revision": "R216",
+  "stage": "SOURCE_VERIFICATION",
+  "status": "LOCAL_QA_PASS__HOSTED_CI_PENDING__LIVE_RUNTIME_UNPROVEN",
+  "previousAccepted": {
+    "head": "c0353d1787ca88f3993e14f96670d6aefdd2e9b8",
+    "ciRun": 37807667637,
+    "linuxCandidateSha256": "CA1664923662F2FCBC2A73BEB021D96A33809305A6E92A073F55632CE15938C2",
+    "brain": "BRAIN_R20261008N.zip",
+    "brainSHA256": "90DCC8BD5628115E9ED42996B2BF80F1EA6B205FB68089FA6EFCBD9B2AE6EE24"
+  },
+  "issue": {
+    "id": "R216-ROLLBACK-EXIT-RESULT-MASKED",
+    "class": "FAILURE_TRANSPARENCY_FALSE_SUCCESS",
+    "phase": "Start EXIT trap",
+    "trigger": "Uncommitted Start process EXIT trap with cleanup_transient returning 83 after original exit code 0",
+    "observedBefore": "Rollback mock executed and returned 83, overall process exit code 0; expected error",
+    "rootCause": "rollback_on_exit ignores cleanup result and always exits original pre-rollback code"
+  },
+  "mutationObjective": "When uncommitted Start exits, propagate rollback failure as explicit nonzero, report original and rollback exit codes. If original success without START_COMMITTED and cleanup succeeds, return 87 START_NOT_COMMITTED. Preserve original failure if cleanup succeeded. Disarm EXIT trap before calling cleanup.",
+  "verification": {
+    "originalNegativeTest": "FAILED_BEFORE_FIX_EXPECTED_83_OBSERVED_0",
+    "afterFixIsolatedBash": "PASS_6_OF_6",
+    "sourceStaticGuard": "PASS",
+    "fullLinuxSourceAndRegression": "PASS",
+    "bashSyntax": "PASS",
+    "WindowsEmadAndEmadLinuxArchiveRepro": "PASS",
+    "realKernelRegression": "UPDATED_TO_CHECK_NONZERO_IN_PRIVATE_NETNS__HOSTED_PENDING",
+    "liveRootHostLifecycle": "UNPROVEN"
+  },
+  "hashes": {
+    "linux/app/direct_method_helper.sh": "E1AB8B26ED70D25F4FC4D36F0151A93E6B19F658CD52318CEA4F638110B390FB",
+    "tests/linux_rollback_exit_integrity_contract.py": "A24EB2BDAAD6E7EF841C6AE9382525046172587328BEE37C01BB02686AA16DEB",
+    "tests/linux_nft_kernel_namespace_contract.py": "AEA687C8E1C3A6DC624D6E6DBA64FBC83D4457A9FE6BEA1CD533B273FD01DA2F",
+    "tests/linux_contract_audit.py": "5C28C98BA198B357B6DFBF389F8E7186C481B84296951781A0545D11799B0EEE"
+  },
+  "outputCandidate": {
+    "version": "1.5.2_UNPUBLISHED",
+    "zipName": "DirectInternetMethod_1.5.2_Linux_x86_64.zip",
+    "bytes": 8201886,
+    "files": 19,
+    "sha256": "E5F26E322FFF80D86EC4335A25A2996FAC4118FBF3C2E456DEA3E67650C1F5D5",
+    "reproducedOn": [
+      "Windows Emad",
+      "Linux Emad"
+    ],
+    "previousArchiveStatus": "SUPERSEDED_DO_NOT_INSTALL",
+    "previousBackupPath": "C:\\Users\\Aa.Emad\\source\\repos\\DIM_R216_GATE\\BASELINE_C0353D1.zip"
+  },
+  "safety": {
+    "allRootProductionInstallUntouched": true,
+    "windowsServiceUntouched": true,
+    "tailscaleUntouched": true,
+    "rustdeskUntouched": true,
+    "windowsSmartAppControlUntouched": true,
+    "noRelease": true
+  },
+  "executionNote": "Initial Windows WSL2 local harness setup returned ENAMETOOLONG before child spawn (transport length); no kernel command executed by that attempt. New isolated Kernel regression added to official hosted Linux CI.",
+  "openGates": [
+    "hosted exact successor CI",
+    "independent Linux Saeid source/ZIP",
+    "real authorized Linux protected backend Start/Stop/Recovery preserving Tailscale/RustDesk",
+    "genuine trusted Windows Authenticode and enforced Smart App Control Sandbox",
+    "merge/release/download SHA",
+    "Gemini HTTP403"
+  ],
+  "next": "Commit/push exact feature, CI and independent QA, cumulative Project Brain O; hold promotion pending external operational gates."
+}

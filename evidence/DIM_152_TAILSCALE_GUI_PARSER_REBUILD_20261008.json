@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "date": "2026-10-08",
+  "status": "SOURCE_QA_PASS_NOT_LIVE_INSTALLED",
+  "finding": "Real Linux ip -o link output has two ': ' separators. Prior GUI parsed the entire description and wrongly labeled Tailscale split as BLOCKED, while backend said PASS.",
+  "rootCause": "line.split(': ',1) returns 'tailscale0: <...>' rather than 'tailscale0'.",
+  "correction": "Use line.split(': ',2)[1] for both GUI preflight and non-NetworkManager tunnel detection.",
+  "regressions": {
+    "realEmadLinuxBefore": "GUI_SPLIT_SAFE_FALSE_BACKEND_TRUE",
+    "realEmadLinuxAfter": "GUI_SPLIT_SAFE_TRUE_BACKEND_TRUE",
+    "mockPreflight": "10/10 PASS",
+    "mockGui": "5/5 plus real ip-link format regression PASS",
+    "noLiveNetworkMutation": true
+  },
+  "artifact": {
+    "version": "1.5.2",
+    "platform": "linux-x86_64",
+    "sha256": "BBC0EB9C09148C05694072989D93DDB1D0846838170264D99418E5607697D001",
+    "bytes": 8194229,
+    "state": "NEW_CANDIDATE_NOT_PUBLISHED"
+  },
+  "supersededArchive": "F5B744DE85FF3278DA876E358AB44203A1F8B635E81A6FC0AFB78BC0FA7826BF",
+  "criticalOpen": [
+    "exact CI",
+    "independent Linux rebuild",
+    "privileged backend deployment requiring valid OS authorization",
+    "real Tailscale/Direct coexistence lifecycle and peer/DNS/rollback",
+    "Windows public signing and Sandbox distribution"
+  ]
+}

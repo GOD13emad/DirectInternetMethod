@@ -44,7 +44,43 @@ ADULT_CATALOG_URLS=(
 )
 STRATEGY_FILE=APP_HOME/"strategy.txt"
 SCOPE_FILE=APP_HOME/"scope.txt"
+SELECTIVE_DNS_OPT_IN=APP_HOME/"selective-dns-optin.txt"
+SELECTIVE_DNS_TOKEN="I_ACCEPT_UNENCRYPTED_SELECTIVE_DNS_V1"
+COEXIST_HELPER_SHA256="e52fcaeb9c60d9e43d4a5b75462455ad8c5ee4d82fee679a0cc4a3520d8abea5"
 LATEST_API="https://api.github.com/repos/GOD13emad/DirectInternetMethod/releases/latest"
+
+def selective_dns_optin_state():
+    try:
+        if SELECTIVE_DNS_OPT_IN.is_symlink():
+            return "INVALID"
+        if not SELECTIVE_DNS_OPT_IN.exists():
+            return "OFF"
+        st=SELECTIVE_DNS_OPT_IN.stat()
+        if not SELECTIVE_DNS_OPT_IN.is_file() or st.st_uid!=os.getuid() or st.st_mode & 0o022:
+            return "INVALID"
+        return "ON" if SELECTIVE_DNS_OPT_IN.read_text(encoding="utf-8").strip()==SELECTIVE_DNS_TOKEN else "INVALID"
+    except Exception:
+        return "INVALID"
+
+def selective_dns_optin_save(enabled):
+    if SELECTIVE_DNS_OPT_IN.is_symlink():
+        raise ValueError("Refusing unsafe experimental DNS setting symlink")
+    if enabled:
+        SELECTIVE_DNS_OPT_IN.parent.mkdir(parents=True,exist_ok=True)
+        fd,temp=tempfile.mkstemp(prefix=".dim-selective-optin-",dir=str(SELECTIVE_DNS_OPT_IN.parent))
+        try:
+            with os.fdopen(fd,"w",encoding="utf-8") as stream:
+                stream.write(SELECTIVE_DNS_TOKEN+"\n")
+                stream.flush();os.fsync(stream.fileno())
+            os.chmod(temp,0o600)
+            os.replace(temp,SELECTIVE_DNS_OPT_IN)
+        finally:
+            if os.path.lexists(temp):os.unlink(temp)
+    elif SELECTIVE_DNS_OPT_IN.exists():
+        if SELECTIVE_DNS_OPT_IN.stat().st_uid!=os.getuid():
+            raise ValueError("Foreign experimental DNS settings cannot be deleted")
+        SELECTIVE_DNS_OPT_IN.unlink()
+
 
 def ui_test_log(message):
     p=os.environ.get("DIM_UI_TEST_LOG")
@@ -206,36 +242,148 @@ def _top_default_iface():
     except Exception:
         return ""
 
+def _tailscale_split_safe():
+    # Same fail-closed guard as the privileged helper, read-only and bounded.
+    if not pathlib.Path("/sys/class/net/tailscale0").exists():
+        return False
+    top=_top_default_iface()
+    if not top or top.startswith(("tun","tap","wg","warp","tailscale","zt")):
+        return False
+    try:
+        links=subprocess.run(["ip","-o","link","show","up"],text=True,capture_output=True,timeout=2,check=True)
+        active=[line.split(": ",2)[1].split("@",1)[0] for line in links.stdout.splitlines() if line.count(": ")>=2]
+        if "tailscale0" not in active:
+            return False
+        if any(name.startswith(("tun","tap","wg","warp","tailscale","zt")) and name!="tailscale0" for name in active):
+            return False
+        nm=subprocess.run(["nmcli","-t","-f","TYPE,DEVICE","connection","show","--active"],
+                          text=True,capture_output=True,timeout=2)
+        if nm.returncode != 0:
+            return False
+        for row in nm.stdout.splitlines():
+            kind,sep,dev=row.partition(":")
+            if dev=="tailscale0":
+                continue
+            if (kind in ("vpn","wireguard","tun","tap") or
+                dev.startswith(("tun","tap","wg","warp","tailscale","zt"))):
+                return False
+        p=subprocess.run(["tailscale","status","--json"],text=True,capture_output=True,timeout=5,check=True)
+        d=json.loads(p.stdout)
+        if d.get("BackendState")!="Running" or d.get("ExitNodeStatus"):
+            return False
+        for version,exits in [("-4",{"default","0.0.0.0/0","0.0.0.0/1","128.0.0.0/1"}),
+                              ("-6",{"default","::/0","::/1","8000::/1"})]:
+            routes=subprocess.run(["ip",version,"route","show","table","52"],text=True,capture_output=True,timeout=2,check=True)
+            if any(line.split()[0] in exits for line in routes.stdout.splitlines() if line.split()):
+                return False
+        return True
+    except Exception:
+        return False
+
+
+
+def _coexistence_backend_ready():
+    # A newer GUI alone must never enable Start against an old privileged
+    # backend: split-Tailscale rules require an accepted, exact helper.
+    try:
+        helper=PRIV_HOME/"direct_method_helper.sh"
+        meta=pathlib.Path("/var/lib/directinternetmethod/install.json")
+        if (helper.is_symlink() or meta.is_symlink() or
+                not helper.is_file() or not meta.is_file()):
+            return False
+        installed=json.loads(meta.read_text(encoding="utf-8"))
+        return (installed.get("version")=="1.5.2" and
+                installed.get("uid")==os.getuid() and
+                hashlib.sha256(helper.read_bytes()).hexdigest()==COEXIST_HELPER_SHA256)
+    except Exception:
+        return False
+
 def _external_tunnel_active():
+    if _tailscale_split_safe():
+        return False
     iface=_top_default_iface()
     if iface.startswith(("tun","tap","wg","warp","tailscale","zt")):
         return True
     try:
         p=subprocess.run(["nmcli","-t","-f","TYPE,DEVICE","connection","show","--active"],
                          text=True,capture_output=True,timeout=2)
+        if p.returncode != 0:
+            return True
         for line in p.stdout.splitlines():
-            parts=line.split(":",1)
-            dev=parts[1] if len(parts)>1 else ""
-            if dev.startswith(("tun","tap","wg","warp","tailscale","zt")):
+            kind,_,dev=line.partition(":")
+            if (kind in ("vpn","wireguard","tun","tap") or
+                dev.startswith(("tun","tap","wg","warp","tailscale","zt"))):
                 return True
     except Exception:
         pass
-    return False
+    try:
+        links=subprocess.run(["ip","-o","link","show","up"],text=True,capture_output=True,timeout=2)
+        for row in links.stdout.splitlines():
+            if row.count(": ")<2:
+                continue
+            name=row.split(": ",2)[1].split("@",1)[0]
+            if name.startswith(("tun","tap","wg","warp","tailscale","zt")):
+                return True
+    except Exception:
+        pass
+    return pathlib.Path("/sys/class/net/tailscale0").exists()
 
 def load_state():
     try:
         s=json.loads(STATE.read_text(encoding="utf-8"))
     except Exception:
         if _external_tunnel_active():
-            return {"mode":"BLOCKED","detail":"External VPN/tunnel owns the default route. Disconnect it before Start."}
+            return {"mode":"BLOCKED","detail":"External VPN/Exit Node or unsupported tunnel is active. Routes and DNS are preserved."}
+        if _tailscale_split_safe():
+            # Backend only permits targeted DPI alongside Tailscale split mode.
+            # Show an actionable local configuration gate, never suggest
+            # disconnecting Tailscale or silently modify the user's scope.
+            try:
+                if SCOPE_FILE.is_symlink():
+                    raise ValueError("unsafe scope symlink")
+                scope=SCOPE_FILE.read_text(encoding="utf-8").strip().lower()
+            except FileNotFoundError:
+                scope="targeted"
+            except Exception:
+                scope="invalid"
+            if scope!="targeted":
+                return {"mode":"CONFIG_REQUIRED",
+                        "detail":"Tailscale split mode is safe, but All Sites or an invalid scope is not supported. Open Strategy, uncheck Apply DPI strategy to all web sites, then Save Targeted. Tailscale and DNS remain unchanged."}
+            if not _coexistence_backend_ready():
+                return {"mode":"BACKEND_UPDATE_REQUIRED",
+                        "detail":"Tailscale split mode is safe, but the installed privileged backend is older or unverified. Start is disabled until the verified backend is installed with rollback; Tailscale and DNS are unchanged."}
+            opt=selective_dns_optin_state()
+            if opt=="INVALID":
+                return {"mode":"CONFIG_REQUIRED","detail":"Experimental split-DNS preference is unsafe or unrecognized. Reopen Strategy and explicitly set it."}
+            if opt=="ON":
+                try:
+                    method=STRATEGY_FILE.read_text(encoding="utf-8").strip().lower()
+                except Exception:
+                    method="invalid"
+                if method!="balanced":
+                    return {"mode":"CONFIG_REQUIRED",
+                            "detail":"Experimental split DNS requires Targeted + Balanced. Plain, unencrypted third-party UDP DNS is used only for selected sites; disable it or select Balanced in Strategy."}
+                return {"mode":"OFF","detail":"Tailscale split network active. Experimental selective DNS is OPTED IN: third-party UDP upstream is UNENCRYPTED; MagicDNS stays separate. Start runs Balanced DPI and crash-guarded local DNS."}
+            return {"mode":"OFF","detail":"Tailscale split network active. Start uses physical-interface DPI; system DNS/MagicDNS remain unchanged. Experimental selective DNS is OFF."}
         return {"mode":"OFF","detail":"No active Direct Internet Method state."}
     uid=os.getuid()
-    ctrld_ok=_systemd_unit_matches(s.get("ctrldUnit"),s.get("ctrldPid"),f"directinternetmethod-ctrld-{uid}.service")
+    preserved=s.get("dnsMode")=="system-preserved" and bool(s.get("tailscaleCoexistence"))
+    ctrld_ok=((int(s.get("ctrldPid") or 0)==0 and not s.get("ctrldUnit") and
+                not pathlib.Path("/sys/class/net/dimdns0").exists()) if preserved else
+              _systemd_unit_matches(s.get("ctrldUnit"),s.get("ctrldPid"),f"directinternetmethod-ctrld-{uid}.service"))
     nfqws_ok=_systemd_unit_matches(s.get("nfqwsUnit"),s.get("nfqwsPid"),f"directinternetmethod-nfqws-{uid}.service")
     if ctrld_ok and nfqws_ok:
-        detail=f"Physical: {s.get('physicalInterface','?')}  DNS link: {s.get('dnsInterface','?')}  DNS: {s.get('dnsIp','?')}  Methods: DoH + HTTP + TLS/SNI + QUIC"
+        if preserved:
+            if s.get("selectiveDns"):
+                detail=f"Tailscale coexistence: {s.get('physicalInterface','?')}  Local experimental selective DNS ACTIVE; third-party upstream UDP is UNENCRYPTED, MagicDNS remains separate; Balanced DPI running"
+            else:
+                detail=f"Tailscale coexistence: {s.get('physicalInterface','?')}  DNS/MagicDNS preserved  Methods: HTTP + TLS/SNI + QUIC (DPI only)"
+        else:
+            detail=f"Physical: {s.get('physicalInterface','?')}  DNS link: {s.get('dnsInterface','?')}  DNS: {s.get('dnsIp','?')}  Methods: DoH + HTTP + TLS/SNI + QUIC"
         if _external_tunnel_active():
-            return {"mode":"CONFLICT","detail":detail+"  External VPN/tunnel is also active."}
+            return {"mode":"CONFLICT","detail":detail+"  Unsupported tunnel/exit node appeared."}
+        if not preserved and _tailscale_split_safe():
+            return {"mode":"CONFLICT","detail":detail+"  Tailscale started after Direct DoH. Stop then Start to preserve MagicDNS."}
         return {"mode":"ACTIVE","detail":detail}
     return {"mode":"STALE","detail":"Owned state exists but one or more owned processes are missing or mismatched. Use Recovery."}
 
@@ -265,7 +413,7 @@ def verify_live():
         return {"exit":p.returncode,"meta":p.stdout.strip(),"error":p.stderr.strip()}
     d=subprocess.run(["getent","ahostsv4","www.youtube.com"],text=True,capture_output=True)
     h=curl("http://www.youtube.com/")
-    y=curl("https://www.youtube.com/generate_204")
+    y=curl("https://www.youtube.com/" if s.get("selectiveDns") else "https://www.youtube.com/generate_204")
     o=curl("https://api.openai.com/v1/models")
     g=curl("https://github.com/")
     m=curl("https://gemini.google.com/")
@@ -274,7 +422,9 @@ def verify_live():
         and y["exit"]==0 and y["meta"].startswith(("200|","204|"))
         and o["exit"]==0 and o["meta"].startswith(("401|","403|"))
         and g["exit"]==0 and g["meta"].startswith(("200|")))
-    return {"ok":ok,"physicalInterface":physical,"directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"],"youtubeHttp80":h,"youtube":y,"openai":o,"github":g,"gemini":m}
+    dns_preserved=s.get("dnsMode")=="system-preserved"
+    methods=([] if dns_preserved else ["encrypted-dns-doh"])+["http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"]
+    return {"ok":ok,"physicalInterface":physical,"dnsMode":s.get("dnsMode","direct-doh"),"directMethods":methods,"youtubeHttp80":h,"youtube":y,"openai":o,"github":g,"gemini":m}
 
 def _version_tuple(text):
     s=text.strip().lstrip("vV")
@@ -455,7 +605,7 @@ class Window(Adw.ApplicationWindow):
         self.status.set_text("Status: "+mode);self.detail.set_text(s["detail"])
         for css in ("success","warning","error","dim-label"):
             self.status.remove_css_class(css)
-        self.status.add_css_class("success" if mode=="ACTIVE" else "warning" if mode in ("BLOCKED","CONFLICT") else "error" if mode=="STALE" else "dim-label")
+        self.status.add_css_class("success" if mode=="ACTIVE" else "warning" if mode in ("BLOCKED","CONFIG_REQUIRED","BACKEND_UPDATE_REQUIRED","CONFLICT") else "error" if mode=="STALE" else "dim-label")
         start_ok=(mode=="OFF")
         stop_ok=(mode in ("ACTIVE","CONFLICT","STALE"))
         recovery_ok=(mode in ("CONFLICT","STALE"))
@@ -591,6 +741,11 @@ class Window(Adw.ApplicationWindow):
         outer.append(combo)
         scope_toggle=Gtk.CheckButton(label="Apply DPI strategy to all web sites (experimental)")
         scope_toggle.set_active(all_sites);outer.append(scope_toggle)
+        selective_toggle=Gtk.CheckButton(label="Opt in: experimental selected-sites DNS (unencrypted third-party UDP)")
+        selective_toggle.set_active(selective_dns_optin_state()=="ON")
+        outer.append(selective_toggle)
+        warn=Gtk.Label(label="Privacy warning: experimental DNS sends selected site names to 194.225.152.10 over UNENCRYPTED UDP; this is not DoH. Only Targeted + Balanced with Tailscale split mode is supported. Disabled by default. Route, Google DNS and MagicDNS must stay protected.",xalign=0,wrap=True)
+        warn.add_css_class("dim-label");outer.append(warn)
         hint=Gtk.Label(label="Targeted mode affects only built-in and Custom Sites. All Sites mode can help unknown blocked domains, but may reduce compatibility or speed on some sites. Neither mode creates a VPN, proxy, or default-route tunnel.",xalign=0,wrap=True)
         hint.add_css_class("dim-label");outer.append(hint)
         row=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8);row.set_halign(Gtk.Align.END)
@@ -600,7 +755,12 @@ class Window(Adw.ApplicationWindow):
         def do_save(*_):
             try:
                 value=("balanced","compatibility","strong")[int(combo.get_selected())]
+                enable_dns=bool(selective_toggle.get_active())
+                if enable_dns and (value!="balanced" or scope_toggle.get_active()):
+                    raise ValueError("Experimental unencrypted split DNS requires Balanced and Targeted. Select those options first.")
                 STRATEGY_FILE.parent.mkdir(parents=True,exist_ok=True)
+                if STRATEGY_FILE.is_symlink() or SCOPE_FILE.is_symlink():
+                    raise ValueError("Unsafe strategy/scope preference symlink.")
                 temp=STRATEGY_FILE.with_suffix(".tmp")
                 temp.write_text(value+"\n",encoding="utf-8")
                 os.replace(temp,STRATEGY_FILE)
@@ -608,8 +768,10 @@ class Window(Adw.ApplicationWindow):
                 st=SCOPE_FILE.with_suffix(".tmp")
                 st.write_text(scope_value+"\n",encoding="utf-8")
                 os.replace(st,SCOPE_FILE)
-                self.result.set_text(f"Strategy saved: {value}; scope: {scope_value}. Stop/Start to apply.")
-                w.close()
+                selective_dns_optin_save(enable_dns)
+                privacy=(" experimental UNENCRYPTED selected DNS is opted in" if enable_dns else " experimental DNS off")
+                self.result.set_text(f"Strategy saved: {value}; scope: {scope_value};{privacy}. Stop/Start to apply.")
+                w.close();self.refresh()
             except Exception as e:
                 self.result.set_text("Strategy save failed: "+str(e))
         save.connect("clicked",do_save)

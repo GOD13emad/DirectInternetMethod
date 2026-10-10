@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 [ "$(id -u)" -eq 0 ] || exit 77
+if [ -e /run/directinternetmethod-selective/session.json ]; then
+  [ -x /usr/lib/directinternetmethod/selective_dns.py ] || exit 88
+  /usr/bin/python3 /usr/lib/directinternetmethod/selective_dns.py restore || exit 88
+  [ ! -e /run/directinternetmethod-selective/session.json ] || exit 88
+fi
 for action in start stop recovery; do
   rm -f "/etc/systemd/system/directinternetmethod-$action.service"
 done

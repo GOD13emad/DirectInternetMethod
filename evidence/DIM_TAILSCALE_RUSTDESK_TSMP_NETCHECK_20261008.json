@@ -1,0 +1,81 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "observedAt": "2026-10-08",
+  "status": "REAL_READONLY_WIREGUARD_TAILSCALE_PATH_PASS_RUSTDESK_DIRECT_IP_NOT_PROVEN",
+  "sourceParentHead": "ad1cf693f634f1f8eae694d4199b9f990d93b51f",
+  "objective": "Validate remote access lifeline before allowing Direct Internet Method and Tailscale simultaneous operation",
+  "privacy": {
+    "deviceIdentifiersSaved": false,
+    "tailnetIPsSaved": false,
+    "authTokensPasswordsSaved": false
+  },
+  "hosts": {
+    "EmadLinux": {
+      "tailscaleRunning": true,
+      "exitNode": false,
+      "peerOnlineCount": 1,
+      "peerRouteInterface": "tailscale0",
+      "publicRouteInterface": "enp1s0",
+      "derpPongs": 3,
+      "directUdpPongs": 0,
+      "wireGuardTsmpDataPlane": true,
+      "rustdeskInstalled": true,
+      "rustdeskDirectPortListening": false,
+      "rustdeskPeerPort21118": "NOT_OPEN",
+      "netcheck": {
+        "udpOutbound": true,
+        "mappingVariesByDestination": false,
+        "portMappingDetected": false
+      }
+    },
+    "SaeidLinux": {
+      "tailscaleRunning": true,
+      "exitNode": false,
+      "peerOnlineCount": 1,
+      "peerRouteInterface": "tailscale0",
+      "publicRouteInterface": "enp7s0",
+      "derpPongs": 3,
+      "directUdpPongs": 0,
+      "wireGuardTsmpDataPlane": true,
+      "rustdeskInstalled": true,
+      "rustdeskDirectAccessConfigured": true,
+      "rustdeskDirectPortListening": false,
+      "rustdeskPeerPort21118": "NOT_OPEN",
+      "netcheck": {
+        "udpOutbound": true,
+        "mappingVariesByDestination": true,
+        "portMappingDetected": false
+      }
+    }
+  },
+  "interpretation": "Both hosts can exchange authenticated Tailscale discovery and encrypted WireGuard TSMP data through DERP. A direct UDP path did not establish in bounded tests. Saeid destination-varying NAT and no detected port mapping are consistent with a relayed path; not a proof of unique causation. RustDesk direct-IP TCP 21118 is not listening/accessible on either host, so functional RustDesk desktop session over Tailscale is UNPROVEN. RustDesk may still work through its separate ID/relay system.",
+  "tests": {
+    "rustdeskDiagnosticSelftest": "PASS_7_OF_7_ON_WINDOWS_AND_BOTH_LINUX",
+    "readOnlyHostRuns": "PASS_BOTH_LINUX",
+    "tailscaleTsmp": "PASS_BOTH_DIRECTIONS",
+    "tailscalePeerRoute": "PASS_TAILSCALE0",
+    "publicInternetRoute": "PASS_PHYSICAL_INTERFACES",
+    "actualInstalledDirectMethodCoexistence": "UNPROVEN_NOT_DEPLOYED",
+    "networkMutation": false
+  },
+  "security": {
+    "configurationChangesToTailscale": false,
+    "configurationChangesToRustDesk": false,
+    "openedRemoteDesktopPorts": false,
+    "networkServiceRestarts": false
+  },
+  "references": [
+    "https://tailscale.com/docs/solutions/access-remote-desktops-with-rustdesk",
+    "https://tailscale.com/docs/reference/connection-types",
+    "https://tailscale.com/docs/reference/device-connectivity",
+    "https://rustdesk.com/docs/en/self-host/client-configuration/advanced-settings/"
+  ],
+  "nextGates": [
+    "Exact-SHA GitHub CI for read-only host diagnostic and negative regression",
+    "Real protected Linux helper deployment only through authorized OS privileges",
+    "Measure RustDesk and TSMP/DERP connectivity before-during-after coexistence start/stop/recovery",
+    "Validate Tailscale route and MagicDNS invariance under nftables rule and Direct method",
+    "Do not promote public v1.5.2 while Windows Authenticode and Smart App Control acceptance is missing"
+  ]
+}

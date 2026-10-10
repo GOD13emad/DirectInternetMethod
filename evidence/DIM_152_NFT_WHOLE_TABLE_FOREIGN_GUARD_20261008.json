@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "revision": "R210",
+  "date": "2026-10-08",
+  "status": "SOURCE_REGRESSION_PASS__LIVE_ROOT_UNPROVEN",
+  "precedingSourceSha": "e40f94fc23f88bf1e64c7f8ca1ca06ac964efbf7",
+  "branch": "feature/tailscale-split-coexist-20261008",
+  "pullRequest": 26,
+  "rootCause": "Old nft_table_owned accepted three expected queue substrings despite foreign extra rules/chains and did not ensure that all rules use saved physical interface; cleanup_state_owned stopped processes before ownership validation.",
+  "failureEvidence": [
+    {
+      "test": "coexist_extra_foreign_rule",
+      "expected": "FOREIGN",
+      "observedBeforeFix": "OWNED",
+      "outcome": "NEGATIVE_FIRST_REPRODUCED",
+      "environment": "Emad Linux isolated rootless mock"
+    },
+    {
+      "test": "split_coexistence_foreign_extra_rule",
+      "expected": "NO_KILL_ATTEMPT",
+      "observedBeforeFix": "KILL_BEFORE_FOREIGN_OWNERSHIP_CHECK",
+      "outcome": "NEGATIVE_FIRST_REPRODUCED",
+      "environment": "Emad Linux isolated mock process kill override"
+    }
+  ],
+  "mutation": "Strict line-wise exact nft structure, physical interface and state-mode validation; preflight both nft and DNS link ownership before any PID kill and repeat nft ownership check before deletion.",
+  "staticChecks": {
+    "bashSyntax": "PASS",
+    "pythonSyntax": "PASS",
+    "nftMock": "PASS_12_OF_12",
+    "cleanupMock": "PASS_8_OF_8",
+    "linuxSourceContracts": "PASS",
+    "tailscalePreflight": "PASS_11_OF_11",
+    "guiCoexistence": "PASS_6_OF_6",
+    "tailscaleRustdeskParse": "PASS_7_OF_7",
+    "releasePromotionNegative": "PASS_4_OF_4"
+  },
+  "executableSha256": {
+    "linux/app/direct_method_helper.sh": "5541FF2EBD0DF79BC5E5331C2F518E7A03B96F551C0E9016A339FB766D3C6A83",
+    "tests/tailscale_nft_ownership_contract.py": "A7F746FCA964FC77C9FCED882E574975D664D93C54ED506D16C974B9848006D5",
+    "tests/tailscale_cleanup_ownership_contract.py": "52CA4C03A8A53C7B009BF0842F1D927D666EE9EA061E9E40F9B378CEC2C62D84",
+    "tests/linux_contract_audit.py": "D5759C27262EC492FBF582FAF254C45C4A67EEEBCA174ACB124DEE99D6403C57"
+  },
+  "artifacts": {
+    "previousCandidate": {
+      "sha256": "294F0BD037F688828130B2B26C20807503BFDD57981A9224EC5AD510DA10664B",
+      "bytes": 8195241,
+      "status": "SUPERSEDED_DO_NOT_INSTALL"
+    },
+    "newCandidate": {
+      "sha256": "7BEE8DC4D8C63F4DAED82CB74A6636D7A989A472FC373E8613B5E60FE802D6F8",
+      "bytes": 8196074,
+      "archiveEntries": 19,
+      "verifiedPlatforms": [
+        "Windows Emad",
+        "Linux Emad"
+      ],
+      "status": "UNPUBLISHED_SOURCE_CANDIDATE"
+    },
+    "rootSHA256SUMS": "65AD5883FBF36B2BD670BB35BCA286F079BA201326FDECF3A4843A11A0BBA0AE"
+  },
+  "nonMutatingOnly": true,
+  "limitations": [
+    "Production nftables syntax and root privilege unverified",
+    "Real Start/Stop/Recovery with live Tailscale/RustDesk not tested",
+    "Strict grammar may fail closed on unexpected legitimate nft output",
+    "Independent Windows trusted signer and Smart App Control enforced install absent",
+    "Gemini HTTP403 unresolved",
+    "GitHub CI pending exact successor commit"
+  ],
+  "stage": "VERIFICATION",
+  "completion": "NOT_FINAL",
+  "nextAction": "Verify exact candidate SHA in hosted CI and independent second host QA; retain Draft PR until privileged controlled lifecycle, trusted Windows signing/Sandbox, and immutable public post-download acceptance."
+}

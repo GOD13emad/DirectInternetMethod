@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "revision": "R221",
+  "date": "2026-10-08",
+  "objective": "Eliminate stale Linux GUI false BLOCKED when physical default route is intact and Tailscale uses split peer routes; align GUI Start availability with backend targeted-only Tailscale guard.",
+  "previousAccepted": {
+    "sourceCommit": "737850a6050e8f44b8710d30144a962f065d3aec",
+    "brain": "BRAIN_R20261008Q.zip",
+    "brainSha256": "97CB1BAB70B8F955943BD8916BF9C18F49284F0D926C035F804440379FF4B312",
+    "linuxZipSha256": "E5F26E322FFF80D86EC4335A25A2996FAC4118FBF3C2E456DEA3E67650C1F5D5"
+  },
+  "facts": {
+    "installedGUIOnBothHostsSha256": "5A592FAD883FE8E717EA106540C8F47BA293F6D05CE89009A5100DE50E6B783D",
+    "sourcePriorGUISha256": "453764AD59C8E81CA24B2AE53436B1218EF4DAA856EA63A56E65F18AF9961C13",
+    "rootCause": "Linux user-home GUI v1.5.2 had an obsolete tunnel detector that counted tailscale0 as external VPN; backend now allows split-only Tailscale but protected v1.5.1 still installed pending promotion.",
+    "confirmedLiveExistingGUI": [
+      "EMAD=BLOCKED:External VPN/tunnel owns the default route",
+      "SAEID=BLOCKED:External VPN/tunnel owns the default route"
+    ],
+    "acceptedCandidatePreMutation": [
+      "EMAD=OFF:Tailscale split network active",
+      "SAEID=OFF:Tailscale split network active"
+    ],
+    "defaultRoute": [
+      "EMAD=enp1s0",
+      "SAEID=enp7s0"
+    ],
+    "tailscaleBackend": "Running_NO_EXIT_NODE_BOTH_HOSTS",
+    "uiBackendConfigConflict": "Emad scope.txt is all-sites, which backend blocks with TAILSCALE_ALL_SITES_UNSUPPORTED in coexist mode. Candidate GUI previously offered Start even though backend rejected."
+  },
+  "negativeFirst": {
+    "test": "tests/tailscale_gui_scope_guard_contract.py",
+    "before": "Candidate source returned OFF for all-sites while split Tailscale Running, expected CONFIG_REQUIRED",
+    "after": "8/8 PASS: targeted/absent scope OFF, all-sites/invalid/symlink/unreadable CONFIG_REQUIRED, unknown tunnel BLOCKED, Strategy UI state and refresh guards."
+  },
+  "singleMutation": "Patch GUI source to flag incompatible scope with CONFIG_REQUIRED and Strategy->Targeted instructions, preserve original user scope, block Start until valid, warning color, refresh after Strategy Save. No backend, Tailscale or OS settings mutation.",
+  "checks": {
+    "newGuiScope": "8/8 PASS",
+    "existingGUIState": "6/6 PASS",
+    "realIpLinkFormatAndExitNode": "PASS",
+    "tailscaleCoexistence": "11/11 PASS",
+    "linuxSourceAudit": "PASS",
+    "BashBackend": "UNCHANGED"
+  },
+  "sourceSha256": {
+    "linux/app/direct_internet_method.py": "2F598D5958C972F9ACEE2B02AC9F3DD50410EC09DD7BBFA1F60603C0B51BA5F9",
+    "tests/tailscale_ui_state_contract.py": "394BD4205D0776D2A3C5549CD51190B07E4A25CDD16F83A848E73820C9EF4A66",
+    "tests/tailscale_gui_scope_guard_contract.py": "530B0D76513A148B274A35F55A33E1864B338522E8B94C812C0F2EE53190E1F0",
+    "linux/app/direct_method_helper.sh": "E1AB8B26ED70D25F4FC4D36F0151A93E6B19F658CD52318CEA4F638110B390FB"
+  },
+  "candidateZip": {
+    "bytes": 8202797,
+    "files": 19,
+    "sha256": "6FCF8EE9765E8E548C5F142D9FCFD483B3A2DCFD7D129E2ECB7EB3F75B8D3F19",
+    "reproduced": [
+      "Windows Emad",
+      "Linux Emad QA"
+    ],
+    "status": "UNPUBLISHED_NOT_INSTALLED"
+  },
+  "baselineArchive": "C:\\Users\\Aa.Emad\\source\\repos\\DIM_R221_GATE\\BASELINE_737850A.zip",
+  "safety": "Protected v1.5.1 backend still installed and all active Tailscale/RustDesk sessions preserved. GUI deployment must never expose unsupported backend Start as working before protected helper promotion; no automatic user scope change.",
+  "open": [
+    "Exact-SHA hosted CI and independent Saeid source/package QA",
+    "GUI user-home transactional installation on both hosts",
+    "Protected Linux backend R216 persistent installation with independent rollback; previous R220 prepared but not executed",
+    "Emad all-sites choice requires explicit compatible targeted preference or user-aware action",
+    "Windows publicly trusted signing and Smart App Control",
+    "Release+postdownload+Gemini403"
+  ],
+  "next": "Run hosted exact-SHA CI; independently reproduce candidate; deploy GUI through atomic backup verified installer with backend pairing gate, then pending protected helper promotion on each host under native watcher. Keep public v1.5.1 stable."
+}

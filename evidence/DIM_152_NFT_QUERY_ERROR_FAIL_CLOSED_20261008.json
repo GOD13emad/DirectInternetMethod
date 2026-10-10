@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "date": "2026-10-08",
+  "revision": "R212",
+  "baseline": "34c411453a4b584acd59328c5f339158b5c6511d",
+  "status": "SOURCE_QA_PASS__LIVE_KERNEL_UNPROVEN",
+  "class": "R212_NFT_QUERY_ERROR_FALSE_ABSENCE",
+  "trigger": "nft list table inet directinternetmethod returns nonzero due permission error or transient kernel introspection failure",
+  "before": {
+    "negativeFirstTest": "stateless_recovery_permission_denied",
+    "expectedExitCode": 84,
+    "actualExitCode": 0,
+    "actualOutput": {
+      "ok": true,
+      "state": "RECOVERED"
+    },
+    "result": "CONFIRMED_FAILURE_IN_ISOLATED_MOCK"
+  },
+  "rootCause": "Shell condition interpreted every nonzero nft list table exit status as table absence; successful cleanup and RECOVERED were possible without proving absence",
+  "mutation": "Root-owned nft_table_presence tri-state: table exists (0), structurally verified absent using nft -j list tables (1), unknown/failed JSON or ioctl (2). Ambiguous status returns NFT_PRESENCE_UNVERIFIED (84) before any process cleanup. Applied to Start, Stop, Recovery, state-owned cleanup and verify_clean.",
+  "verification": {
+    "negativeFixtures": "PASS_6_OF_6",
+    "tableOwnership": "PASS_12_OF_12",
+    "ownedStateCleanup": "PASS_8_OF_8",
+    "statelessRecovery": "PASS_6_OF_6",
+    "linuxContracts": "PASS_EMAD_QA",
+    "bashSyntax": "PASS",
+    "sourceNoLiveNetworkMutation": true
+  },
+  "filesSha256": {
+    "linux/app/direct_method_helper.sh": "77F9E9906E147D8AE9193125258D6CE49CEED67BD935B69C05768F1E16DEB2F7",
+    "tests/nft_presence_fail_closed_contract.py": "B6328670880E6AB1A18B49B03C097515B65737D487ED3B038ACEA1B211623A62",
+    "tests/tailscale_cleanup_ownership_contract.py": "00FBC98F53F54462892B2758D13A9FC27FEEABA9F86A09A190E98CFCC9569907",
+    "tests/tailscale_recovery_missing_state_contract.py": "E3AF353D1E4A6178EFE7F53197DB2D4B99AD03B9B192F8DBA9C530470CB639CE"
+  },
+  "linuxCandidate": {
+    "bytes": 8198183,
+    "sha256": "F916D5ACAA0BF884C67D0B552FBE973DEFD13E305C945BD1154C70DB37678975",
+    "archiveEntries": 19,
+    "independentReproduction": [
+      "Windows Emad",
+      "Linux Emad"
+    ],
+    "status": "UNPUBLISHED_CANDIDATE"
+  },
+  "superseded": {
+    "previousUnpublishedSha256": "6D517949DC044122C5E19B5F7C82608C9E798BD56741E6424EB5CD81D23155C3",
+    "backupPath": "C:\\Users\\Aa.Emad\\source\\repos\\DIM_R212_GATE\\BASELINE_34C4114.zip"
+  },
+  "primaryReference": "https://manpages.debian.org/testing/nftables/nftables.8.en.html",
+  "releaseState": "DRAFT_HOLD",
+  "open": [
+    "actual privileged nft read and rule grammar",
+    "root-installed backend with rollback",
+    "Tailscale/RustDesk/MagicDNS real Start/Stop/Recovery",
+    "Windows trusted Authenticode and Smart App Control-on sandbox",
+    "merge/tag/release/public checksum",
+    "Gemini 403"
+  ],
+  "exactNext": "Exact candidate SHA CI and independent second-host deterministic build then live test only on independently recoverable authorized Linux maintenance machine."
+}

@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "revision": "R223",
+  "date": "2026-10-09",
+  "stage": "WINDOWS_SIGNATURE_SOURCE_VERIFICATION",
+  "currentFeatureParentCommit": "e4dfb23787a4390325f0a46e69fdbd011bddc86f",
+  "pr": 26,
+  "dependencyPr": 24,
+  "prStatus": "DRAFT_HOLD",
+  "problem": {
+    "class": "RELEASE_GATE_INSUFFICIENT_SIGNER_ELIGIBILITY",
+    "phase": "Windows candidate Authenticode/SAC acceptance",
+    "knownLegacyLogic": "Get-AuthenticodeSignature status Valid was the only signer gate. The source did not independently check local self-signed, RSA-only Smart App Control compatibility, CodeSigning EKU or system-trusted issuer chain.",
+    "negativeFirst": "Source contractual fixture refused missing Assert-EligibleSignerForSmartAppControl; missing guard CONFIRMED",
+    "liveAttackReproduced": false
+  },
+  "mutationObjective": "Fail-close non-production Windows release signature guard with independent RSA code signing signer eligibility validation and test 6 negative fixtures plus trusted Microsoft OS signed positive reference; keep clean enforced SAC Sandbox installation as separate acceptance.",
+  "sourceSha256": {
+    "tests/windows_distribution_signature_audit.ps1": "0000A8EAE400B2740B5D7DE7110DBE9A8E124BF5241AF8FFAB8CB19FC6F1CDA5",
+    "tests/windows_public_signer_trust_contract.ps1": "403CE7EA3BAF344FE0834F2E280147992212C28E8AEC3E00E241D28DF12A0F7E",
+    "tests/windows_contract_audit.py": "8522E9B9585B5EDBCE059D0EA027A81100EEDE85929830E670FDA22485241B99",
+    ".github/workflows/ci.yml": "6EED268CB9E888743EB97D717DF0EED8A78FF8902086C04D30806280CB617A70"
+  },
+  "tests": {
+    "unsigned_signer_fixture": "PASS",
+    "missing_signer_certificate": "PASS",
+    "self_signed_local_dev_valid_mock": "PASS_REJECTED",
+    "ecc_certificate": "PASS_REJECTED",
+    "untrusted_root_ca_rsa": "PASS_REJECTED",
+    "missing_code_signing_eku": "PASS_REJECTED",
+    "trusted_Microsoft_notepad_exe_positive_control": "PASS",
+    "actual_unsigned_candidate": "FAIL_CLOSED_EXPECTED_RC42",
+    "release_metadata_audit": "PASS",
+    "negative_release_promotion": "PASS_4_OF_4",
+    "source_python_compile": "PASS",
+    "hosted_exact_head_CI": "PENDING"
+  },
+  "actualInstaller": {
+    "path": "C:\\Users\\Aa.Emad\\source\\repos\\DIM_152\\delivery\\DirectInternetMethod_1.5.2_Windows_Setup.exe",
+    "sha256": "BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85",
+    "status": "NotSigned",
+    "publicTrustedSignerPresent": false,
+    "smartAppControlCleanSandboxInstalled": "UNPROVEN"
+  },
+  "currentOperational": {
+    "Windows_Emad": "ctrld+winws+main_Service_RUNNING_NO_MUTATION",
+    "Linux_Emad": "R222_PERSISTENT_BACKEND_GUI_TARGETED_RUNNING_TAILSCALE_SPLIT_RUSTDESK_ACTIVE",
+    "Linux_baseline_route_rule_dns_SHA": "FC4117FEDB1F28226D928AFE8931BAFF22A466F08C2C6CFE80D3D7EAC62A6075",
+    "Linux_active_route_rule_dns_matches_R222": "PASS",
+    "Windows_SAC_host_registry_0": "OBSERVED_ONLY_NOT_CLEAN_SANDBOX_ENFORCEMENT_PROOF"
+  },
+  "externalSigningPaths": [
+    "Microsoft Artifact Signing Public Trust: identity validation + geographic eligibility + account needed; not accessible automatically.",
+    "Legitimate CA-issued organization-validation code signer: external identity verification and signing-key custody.",
+    "SignPath Foundation for eligible open-source project: application/acceptance external.",
+    "Microsoft Store MSIX signed by Store after certification; Windows service and WinDivert driver packaging compatibility must be independently proved."
+  ],
+  "primarySources": [
+    "https://learn.microsoft.com/windows/apps/develop/smart-app-control/code-signing-for-smart-app-control",
+    "https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options",
+    "https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart"
+  ],
+  "scopeRestriction": "Only Emad Windows and Emad Linux. MMZ all devices deferred; no MMZ access.",
+  "cannotClaim": [
+    "Windows public signed release",
+    "enforced Smart App Control-on pristine Sandbox install",
+    "Real RustDesk authenticated interactive desktop session",
+    "MMZ acceptance",
+    "Gemini403 resolved"
+  ],
+  "exactNext": "Hosted exact-head CI then Brain S; obtain legitimate CA trust publisher credentials and clean SAC-on Sandbox acceptance before tag; keep PR24 and PR26 Draft."
+}
