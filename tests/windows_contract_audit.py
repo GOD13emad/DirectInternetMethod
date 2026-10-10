@@ -70,6 +70,15 @@ check("ui_adult_check_default_off_persisted", all(x in gui for x in ("adultSiteL
 check("adult_catalog_opt_in", all(x in gui for x in ("adultCoverageEnabled","adult-enabled.txt","adult-hosts.txt","nsfw-onlydomains.txt","EnsureAdultCatalogAsync","Adult catalog is unexpectedly small","xvideos.com","xnxx.com","xhamster.com")) and all(x in start for x in ("$AdultEnabledFile","$AdultHosts","$AdultFallback","adultHostCount","ADULT_CATALOG_INVALID")) and 'adult-fallback-hosts.txt' in iss)
 check("startup_https_health_quorum", all(x in start for x in ("Curl-Probe-Retry","HTTPS_HEALTH_QUORUM_FAIL","$httpsProbePassCount -lt 2","httpsHealth=[ordered]@{required=2")) and all(x not in start for x in ("throw 'YOUTUBE_HTTP80_FAIL'","throw 'YOUTUBE_HTTPS_FAIL'","throw 'OPENAI_HTTPS_FAIL'","throw 'GITHUB_HTTPS_FAIL'")))
 check("adult_strong_override_profile", all(x in strong_override.splitlines() for x in ("xhamster.com","xhamsterlive.com","xhcdn.com","reddit.com","redditstatic.com","redditmedia.com","redd.it")) and all(x in start for x in ("$StrongOverrideHostList","strong-override-hosts.txt","--hostlist='+$StrongOverrideHostList","--dpi-desync=fake,hostfakesplit","--dpi-desync-repeats=11")) and 'strong-override-hosts.txt' in iss)
+check("ui_openai_403_cannot_be_chatgpt_login_pass",
+    'FmtOpenAiApiProbe(await oaTask)' in gui
+    and 'ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401" })' in gui
+    and 'ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401", "403" })' not in gui
+    and '"403" when p.Reached => "API HTTP 403 forbidden · login unverified"' in gui
+    and '"401" when p.Reached => "API HTTP 401 auth required · login unverified"' in gui
+    and '"200" when p.Reached => "API HTTP 200 reachable · login unverified"' in gui
+    and '"API transport unavailable · login unverified"' in gui)
+
 check("ui_live_probe_semantics", "FAIL · HTTP" in gui and 'https://gemini.google.com/' in gui and "adultTasks is not null" in gui and "full pages" in gui)
 check("ui_direct_update_service_handoff", 'ServiceClient.Send("update")' in gui and 'ServiceClient.Send("recovery")' in gui and '"handoff"' in gui and "300000" in gui and "DownloadVerifiedAsync" not in gui and "LaunchInstaller" not in gui)
 check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "digest" in updater and "SHA256SUMS.txt" in updater and "DownloadVerifiedAsync" not in updater and "Process.Start" not in updater)

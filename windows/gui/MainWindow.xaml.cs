@@ -242,6 +242,16 @@ public partial class MainWindow : Window
         p.Reached ? $"FAIL · HTTP {p.Code} · {p.Ms} ms" :
         "FAIL · transport";
 
+    // OpenAI API is an endpoint transport probe, never evidence of a signed-in ChatGPT browser.
+    static string FmtOpenAiApiProbe(ProbeResult p) => p.Code switch
+    {
+        "403" when p.Reached => "API HTTP 403 forbidden · login unverified",
+        "401" when p.Reached => "API HTTP 401 auth required · login unverified",
+        "200" when p.Reached => "API HTTP 200 reachable · login unverified",
+        _ when p.Reached => $"API HTTP {p.Code} unexpected · login unverified",
+        _ => "API transport unavailable · login unverified"
+    };
+
     static string FmtAdult(IReadOnlyCollection<ProbeResult> probes)
     {
         var okCount = probes.Count(x => x.Ok);
@@ -301,7 +311,7 @@ public partial class MainWindow : Window
             if (ownedHealthy && mode == "ACTIVE" && !string.IsNullOrWhiteSpace(IpText.Text) && IpText.Text != "—")
             {
                 var ytTask = ProbeAsync("https://www.youtube.com/generate_204", IpText.Text, new[] { "200", "204" });
-                var oaTask = ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401", "403" });
+                var oaTask = ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401" });
                 var ghTask = ProbeAsync("https://github.com/", IpText.Text, new[] { "200", "301", "302" });
                 var geminiTask = ProbeAsync("https://gemini.google.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" });
                 Task<ProbeResult>[]? adultTasks = adultCheckEnabled
@@ -317,7 +327,7 @@ public partial class MainWindow : Window
                 if (adultTasks is not null) tasks.AddRange(adultTasks);
                 await Task.WhenAll(tasks);
                 YoutubeText.Text = FmtHttp(await ytTask);
-                OpenAiText.Text = FmtHttp(await oaTask);
+                OpenAiText.Text = FmtOpenAiApiProbe(await oaTask);
                 GithubText.Text = FmtHttp(await ghTask);
                 GeminiText.Text = FmtHttp(await geminiTask);
                 AdultSiteText.Text = adultTasks is null ? "Disabled" : FmtAdult(await Task.WhenAll(adultTasks));

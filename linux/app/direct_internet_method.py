@@ -208,11 +208,16 @@ def probe_url(url,physical,allowed):
         return {"ok":False,"reached":False,"code":"","remote":"","meta":"","exit":-1,"error":str(e)}
 
 def format_probe(name,result):
-    if result.get("ok"):
-        return f"{name}: PASS · HTTP {result.get('code','')}"
+    """HTTP endpoint probe only; does not confirm browser rendering or account access."""
+    code=str(result.get("code") or "")
+    suffix="browser/login unverified"
+    if code=="403":
+        return f"{name}: HTTP 403 forbidden · {suffix}"
+    if result.get("reached") and result.get("ok"):
+        return f"{name}: HTTP {code} reachable · {suffix}"
     if result.get("reached"):
-        return f"{name}: FAIL · HTTP {result.get('code','')}"
-    return f"{name}: FAIL · transport"
+        return f"{name}: HTTP {code} unexpected · {suffix}"
+    return f"{name}: transport unavailable · {suffix}"
 
 def format_adult_probes(results):
     ok=sum(1 for r in results if r.get("ok"))

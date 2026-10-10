@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import hashlib,json,re,sys
+import ast,hashlib,json,re,sys
 R=Path(__file__).resolve().parents[1]
 L=R/"linux"
 def txt(rel): return (L/rel).read_text(encoding="utf-8")
@@ -120,6 +120,27 @@ check("ui_gemini_adult_live_checks", all(x in ui for x in ('Gemini','Adult cover
 check("ui_adult_check_default_off_persisted", 'adultCoverageEnabled' in ui and 'get("adultSiteLiveCheck",False)' in ui and 'self.adult_check_enabled=load_adult_site_check()' in ui)
 check("adult_catalog_opt_in", all(x in ui for x in ("ADULT_ENABLED","ADULT_HOSTS","raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt","cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/nsfw-onlydomains.txt","sync_adult_catalog","Adult catalog is unexpectedly small","xvideos.com","xnxx.com","xhamster.com")) and all(x in helper for x in ("ADULT_FALLBACK","ADULT_ENABLED","ADULT_HOSTS","ADULT_CATALOG_INVALID","adultHostCount")) and 'adult_hosts_fallback.txt' in build and 'adult_hosts_fallback.txt' in install and 'adult_hosts_fallback.txt' in sysinstall)
 check("adult_strong_override_profile", all(x in strong_override.splitlines() for x in ("xhamster.com","xhamsterlive.com","xhcdn.com")) and all(x not in strong_override.splitlines() for x in ("reddit.com","redditstatic.com","redditmedia.com","redd.it")) and all(x in helper for x in ('STRONG_OVERRIDE="$APP_HOME/strong_override_hosts.txt"',"--hostlist=\"$STRONG_OVERRIDE\"","--dpi-desync=multisplit","--dpi-desync-split-pos=sniext+1","--dpi-desync-repeats=11","STRONG_OVERRIDE_HOSTLIST_MISSING")) and 'strong_override_hosts.txt' in build and 'strong_override_hosts.txt' in install and 'strong_override_hosts.txt' in sysinstall)
+# Dynamic negative fixtures for the pure GUI HTTP-probe formatter, without importing GTK or touching the host.
+_ui_fmt_ast=next((node for node in ast.parse(ui).body if isinstance(node,ast.FunctionDef) and node.name=="format_probe"),None)
+_ui_fmt_ns={}
+if _ui_fmt_ast is not None:
+    exec(compile(ast.Module(body=[_ui_fmt_ast],type_ignores=[]),"<pure-format-probe>","exec"),_ui_fmt_ns)
+_fmt=_ui_fmt_ns.get("format_probe")
+check("ui_http_403_forbidden_even_with_inconsistent_ok_flag",
+    _fmt is not None and all(
+        "HTTP 403 forbidden" in _fmt("Gemini",x)
+        and "browser/login unverified" in _fmt("Gemini",x)
+        and "PASS" not in _fmt("Gemini",x)
+        for x in ({"ok":False,"reached":True,"code":"403"},
+                  {"ok":True,"reached":True,"code":"403"})
+    ))
+check("ui_http_200_and_transport_status_separate_from_auth",
+    _fmt is not None
+    and "HTTP 200 reachable" in _fmt("Gemini",{"ok":True,"reached":True,"code":"200"})
+    and "browser/login unverified" in _fmt("Gemini",{"ok":True,"reached":True,"code":"200"})
+    and "transport unavailable" in _fmt("Gemini",{"ok":False,"reached":False,"code":""})
+    and "PASS" not in _fmt("Gemini",{"ok":True,"reached":True,"code":"200"}))
+
 check("ui_live_probe_non_gating", 'g=curl("https://github.com/")' in ui and 'm=curl("https://gemini.google.com/")' in ui and 'and g["exit"]==0' in ui and 'and m["exit"]==0' not in ui)
 check("install_no_network_start", 'systemctl start directinternetmethod-start.service' not in install and 'direct_method_helper.sh" start' not in install)
 check("install_active_state_guard", "Stop/Recovery it before installing or upgrading." in install)
