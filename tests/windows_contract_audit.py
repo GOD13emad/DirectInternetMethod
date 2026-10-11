@@ -120,8 +120,8 @@ check("windows_build_python_portability_failfast", all(x in payload_builder for 
     "WINDOWS_BUILD_VENDOR_PWSH_SHA_INVALID",
     "WINDOWS_BUILD_PORTABLE_PYTHON_SHA_INVALID",
     "4942B86A6597E5AEE0128DAA00050ED79BC21F6E709A78EB19CBFEB0C2F39AC9",
-    "& $PythonExe '.\tests\build_windows_manifest.py'",
-    "& $PythonExe '.\tests\windows_contract_audit.py'",
+    r"& $PythonExe '.\tests\build_windows_manifest.py'",
+    r"& $PythonExe '.\tests\windows_contract_audit.py'",
 )) and "& py " not in payload_builder and
     payload_builder.index("WINDOWS_BUILD_PYTHON_MISSING:") < payload_builder.index("& dotnet publish"))
 check("windows_installer_output_stability_guard", all(x in installer_builder for x in ("OUTPUT_STILL_LOCKED_AFTER_ISCC_EXIT","@($Sizes | Select-Object -Unique).Count","OUTPUT_SIZE_UNSTABLE_","outputStableSamples")))
