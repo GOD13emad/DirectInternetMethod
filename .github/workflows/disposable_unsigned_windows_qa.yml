@@ -1,0 +1,69 @@
+name: Disposable unsigned Windows installer lifecycle QA
+on:
+  push:
+    branches: ['feature/unsigned-windows-hosted-install-20261011']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dim-r384-disposable-windows
+  cancel-in-progress: false
+
+jobs:
+  native-installer:
+    name: native-installer-ephemeral
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Source and hosted-runner safety guards
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if($env:RUNNER_ENVIRONMENT -ne 'github-hosted'){throw 'SELF_HOSTED_REFUSED'}
+          if($env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'X64'){throw 'WRONG_RUNNER_PLATFORM'}
+          if($env:GITHUB_REF -ne 'refs/heads/feature/unsigned-windows-hosted-install-20261011'){throw 'WRONG_BRANCH'}
+          if($env:GITHUB_REPOSITORY -ne 'GOD13emad/DirectInternetMethod'){throw 'WRONG_REPOSITORY'}
+          $f='tests/windows_unsigned_hosted_lifecycle.ps1'
+          $tokens=$null; $errors=$null
+          [void][System.Management.Automation.Language.Parser]::ParseFile($f,[ref]$tokens,[ref]$errors)
+          if($errors.Count){$errors | Format-List | Out-String | Write-Error;exit 90}
+          & $f -StaticOnly
+          if(-not $?){throw 'QA_STATIC_ONLY_FAILED'}
+          Write-Output 'R384_HOSTED_STATIC_PREFLIGHT_PASS'
+      - name: Download SHA-pinned private draft installer
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          if($env:RUNNER_ENVIRONMENT -ne 'github-hosted'){throw 'NOT_A_HOSTED_VM'}
+          $dir=Join-Path $env:RUNNER_TEMP 'DIM_R384_DOWNLOAD'
+          if(Test-Path $dir){throw 'DUPLICATE_DOWNLOAD_FOLDER'}
+          New-Item -Path $dir -ItemType Directory -ErrorAction Stop | Out-Null
+          & gh release download 'unsigned-1.5.2-preview.3' --repo 'GOD13emad/DirectInternetMethod' --pattern 'DirectInternetMethod_1.5.2_Windows_Setup.exe' --dir $dir
+          if($LASTEXITCODE -ne 0){throw 'GITHUB_PRIVATE_DRAFT_DOWNLOAD_FAILED'}
+          $installer=Join-Path $dir 'DirectInternetMethod_1.5.2_Windows_Setup.exe'
+          if(-not (Test-Path -LiteralPath $installer -PathType Leaf)){throw 'INSTALLER_NOT_FOUND'}
+          if((Get-Item -LiteralPath $installer).Length -ne 157124929){throw 'INSTALLER_WRONG_BYTES'}
+          $sha=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
+          if($sha -ne '2F054752E3B1B4715D68958CA49639AEA6FE43E0E4CBC6611DDEEBABAE2C7EB5'){throw ('INSTALLER_SHA_DRIFT '+$sha)}
+          if((Get-AuthenticodeSignature -FilePath $installer).Status.ToString() -ne 'NotSigned'){throw 'UNEXPECTED_SIGNATURE_STATE'}
+          Write-Output ('R384_PRIVATE_DRAFT_ASSET_SHA_PASS '+$sha)
+      - name: Real fresh install, service verification, uninstall and rollback
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $installer=Join-Path $env:RUNNER_TEMP 'DIM_R384_DOWNLOAD\DirectInternetMethod_1.5.2_Windows_Setup.exe'
+          & ./tests/windows_unsigned_hosted_lifecycle.ps1 -Installer $installer
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+      - name: Archive exact host lifecycle evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r384-disposable-windows-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIM_R384_HOSTED
+          if-no-files-found: warn
+          retention-days: 30
