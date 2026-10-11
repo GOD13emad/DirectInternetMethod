@@ -114,6 +114,16 @@ check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Rec
 check("windows_install_registration_guard", all(x in install_registration_guard for x in ("HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall","HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall","noSameAppIdPerUserDuplicate","registeredUninstallerPresent","installedReleaseMatches")))
 check("installed_release_verifier_delegates_registration_guard", "windows_install_registration_audit.ps1" in installed_release_verifier and "Where-Object DisplayName" not in installed_release_verifier and "pwsh.exe" in installed_release_verifier)
 check("windows_build_shared_exclusive_lock", all(x in payload_builder for x in ("windows-152-build.lock","FileShare]::None","WINDOWS_152_BUILD_LOCKED")) and all(x in installer_builder for x in ("windows-152-build.lock","FileShare]::None","WINDOWS_152_BUILD_LOCKED")))
+check("windows_build_python_portability_failfast", all(x in payload_builder for x in (
+    "param([switch]$PreflightOnly)",
+    "WINDOWS_BUILD_PYTHON_MISSING:",
+    "WINDOWS_BUILD_VENDOR_PWSH_SHA_INVALID",
+    "WINDOWS_BUILD_PORTABLE_PYTHON_SHA_INVALID",
+    "4942B86A6597E5AEE0128DAA00050ED79BC21F6E709A78EB19CBFEB0C2F39AC9",
+    "& $PythonExe '.\tests\build_windows_manifest.py'",
+    "& $PythonExe '.\tests\windows_contract_audit.py'",
+)) and "& py " not in payload_builder and
+    payload_builder.index("WINDOWS_BUILD_PYTHON_MISSING:") < payload_builder.index("& dotnet publish"))
 check("windows_installer_output_stability_guard", all(x in installer_builder for x in ("OUTPUT_STILL_LOCKED_AFTER_ISCC_EXIT","@($Sizes | Select-Object -Unique).Count","OUTPUT_SIZE_UNSTABLE_","outputStableSamples")))
 tracked_strong=subprocess.run(["git","ls-files","--error-unmatch","windows/bin/zapret/strong-override-hosts.txt"],cwd=R,text=True,capture_output=True).returncode==0
 check("windows_strong_override_source_tracked", tracked_strong)
