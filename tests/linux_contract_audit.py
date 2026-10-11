@@ -123,11 +123,28 @@ check("adult_strong_override_profile", all(x in strong_override.splitlines() for
 check("ui_live_probe_non_gating", 'g=curl("https://github.com/")' in ui and 'm=curl("https://gemini.google.com/")' in ui and 'and g["exit"]==0' in ui and 'and m["exit"]==0' not in ui)
 check("install_no_network_start", 'systemctl start directinternetmethod-start.service' not in install and 'direct_method_helper.sh" start' not in install)
 check("install_active_state_guard", "Stop/Recovery it before installing or upgrading." in install)
-check("install_backup_excludes_runtime_state", 'for f in direct_internet_method.py router_gateway.py router_gateway_core.py direct-internet-method.svg uninstall.sh INSTALL.json' in install and 'cp -a "$APP" "$BACKUP"' not in install)
+check("install_one_slot_transaction_no_backup_proliferation",
+      all(s in install for s in ("user_update_transaction.py", "--stage", "--apply", "--commit", "--rollback"))
+      and "DirectInternetMethod-backup-$(date" not in install
+      and 'cp -a "$APP" "$BACKUP"' not in install
+      and 'rm -rf "$APP"' not in uninstall)
+check("uninstall_preserves_user_configuration",
+      "user_uninstall_preserve.py" in uninstall and "--verify" in uninstall
+      and "--remove-after-backend" in uninstall and 'rm -rf "$APP"' not in uninstall)
+check("package_ships_single_slot_update_and_safe_uninstaller",
+      all(x in build for x in (
+       '("linux/app/user_update_transaction.py","app/user_update_transaction.py")',
+       '("linux/app/user_uninstall_preserve.py","app/user_uninstall_preserve.py")')))
 check("linux_package_includes_router_core", '("linux/app/router_gateway_core.py","app/router_gateway_core.py")' in build)
 check("install_one_time_admin", 'pkexec /bin/bash "$HERE/system/install_system.sh"' in install)
-check("install_idempotent_backend_hash_gate", "backend_matches_current()" in install and 'sha256sum "$src"' in install and "skipping admin authorization" in install)
-check("linux_hash_compatible_prior_backend_no_repeat_admin", 'd.get("version") in ("1.5.1","1.5.2")' in install and 'sha256sum "$src"' in install and 'if backend_matches_current; then' in install and 'skipping admin authorization' in install)
+check("install_idempotent_backend_hash_gate", "backend_matches_current()" in install and 'sha256sum "$src"' in install and "keeping root-owned code unchanged" in install)
+check("installed_root_backend_mismatch_triggers_explicit_rollback_and_no_root_overwrite",
+      "Protected backend differs; update refused until root rollback is verified" in install
+      and "rollback_failed_install 25" in install
+      and "rollback_failed_install 22" in install
+      and "rollback_failed_install 24" in install
+      and "if [ -e /var/lib/directinternetmethod/install.json ]" in install)
+check("linux_hash_compatible_prior_backend_no_repeat_admin", 'd.get("version") in ("1.5.1","1.5.2")' in install and 'sha256sum "$src"' in install and 'if backend_matches_current; then' in install and 'keeping root-owned code unchanged' in install)
 check("linux_install_reports_backend_version_authoritatively", 'protectedBackendVersion' in install and 'protectedBackendByteCompatible' in install and '/var/lib/directinternetmethod/install.json' in install)
 check("linux_lifecycle_acceptance_old_backend_sha_gated", "COMPATIBLE_OLD_BACKEND_HASH_MISMATCH" in (R/"tests"/"linux_installed_152_lifecycle.py").read_text(encoding="utf-8") and "compatibleBackendHashChecks" in (R/"tests"/"linux_installed_152_lifecycle.py").read_text(encoding="utf-8"))
 check("linux_fresh_install_parent_permissions", 'install -d -m 0755 "$ROOT" "$ROOT/runtime" "$ROOT/runtime/usr" "$ROOT/runtime/usr/bin" "$ROOT/licenses"' in sysinstall and 'install -d -m 0755 /var/lib/directinternetmethod' in sysinstall and 'mkdir -p /var/lib/directinternetmethod' not in sysinstall)

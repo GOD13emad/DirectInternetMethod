@@ -85,7 +85,7 @@ check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "dig
 
 check("service_custom_controls", all(x in svc for x in ("CTRL_START = 128","CTRL_STOP = 129","CTRL_RECOVERY = 130","CTRL_UPDATE = 131")) and "case CTRL_UPDATE:" in svc and "_ = Task.Run(RunUpdateAsync)" in svc)
 check("service_direct_update_security", all(x in svc for x in ("LatestReleaseApi","SHA256SUMS.txt","ApiSha256","SHA256.HashDataAsync","CryptographicException","GetLatestUpdateAsync","ParseExpectedSha256")) and "expected.Equals(package.ApiSha256" in svc and "actual.Equals(expected" in svc)
-check("service_direct_update_atomic_download", '".part"' in svc and "DownloadWithSystemCurlAsync" in svc and '"-L", "--fail", "--silent", "--show-error"' in svc and '"--max-time", "210"' in svc and "File.Move(partPath, finalPath, true)" in svc)
+check("service_direct_update_atomic_download", '".part"' in svc and "DownloadWithSystemCurlAsync" in svc and '"-L", "--fail", "--silent", "--show-error"' in svc and '"--max-time", "210"' in svc and "File.Move(partPath, finalPath);" in svc and "OwnedUpdateInstallerPath" in svc and "Prior update still needs verification" in svc and "update-incomplete-preserved" in svc)
 check("service_direct_update_silent_installer", all(x in svc for x in ('"/VERYSILENT"','"/SUPPRESSMSGBOXES"','"/NORESTART"','"/NORESTARTAPPLICATIONS"','"/CLOSEAPPLICATIONS"','"/SP-"')) and "UseShellExecute = false" in svc and 'Verb = "runas"' not in svc)
 check("service_direct_update_requires_clean_off", "NetworkStatePath" in svc and "Direct Method must be OFF before update." in svc)
 check("service_direct_update_post_restart_finalize", "PendingUpdatePath" in svc and "FinalizePendingUpdate()" in svc and '"update", "done"' in svc and "targetVersion" in svc)
@@ -101,6 +101,23 @@ check("ui_wait_timeout_exceeds_service_timeout", "int timeoutMs = 130000" in gui
 check("client_minimum_access", "SERVICE_QUERY_STATUS | SERVICE_USER_DEFINED_CONTROL" in client and "SERVICE_CHANGE_CONFIG" not in client and "SERVICE_START" not in client and "SERVICE_STOP" not in client)
 check("installer_service_acl_interactive_users_minimum", "(A;;LCCR;;;IU)" in iss and "sdset" in iss and "(A;;LCCR;;;AU)" not in iss)
 check("installer_service_protected_root", "{commonpf}\\DirectInternetMethod\\Privileged" in iss)
+check("single_registered_Windows_install_and_preserve_user_evidence",
+    'AppId={{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}' in iss
+    and "UsePreviousAppDir=yes" in iss and "UninstallLogMode=overwrite" in iss
+    and "DIMExistingAppPathConflicts()" in iss
+    and "RegQueryStringValue(HKLM, Key, 'InstallLocation', OldDir)" in iss
+    and r'Type: filesandordirs; Name: "{app}\evidence"' not in iss
+    and r'Type: filesandordirs; Name: "{app}\bin"' not in iss
+    and r'Type: filesandordirs; Name: "{commonpf}\DirectInternetMethod\Privileged"' not in iss
+    and r'Type: dirifempty; Name: "{commonpf}\DirectInternetMethod\Privileged"' in iss)
+check("owned_update_cache_never_duplicates_versioned_installers",
+    all(x in svc for x in ("OwnedUpdateInstallerPath", "DirectInternetMethod-update-stage.exe",
+       "Previous update is pending" if False else "Prior update still needs verification",
+       "File.Move(partPath, finalPath);",
+       "update-incomplete-preserved",
+       "update-stage-file-locked-preserving-single-pending-slot"))
+    and "File.Move(partPath, finalPath, true)" not in svc)
+
 check("installer_admin_only_install", "PrivilegesRequired=admin" in iss)
 check("installer_service_recovery", 'failure "' in iss and "failureflag" in iss)
 check("installer_direct_update_completion_marker", "CompletePendingDirectUpdate" in iss and "pending-update.json" in iss and '"action":"update","phase":"done"' in iss and "DeleteFile(PendingPath)" in iss)

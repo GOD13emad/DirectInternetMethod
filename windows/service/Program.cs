@@ -134,6 +134,8 @@ internal static class Program
 
     static string UpdatesDir => Path.Combine(RuntimeDir, "updates");
     static string PendingUpdatePath => Path.Combine(RuntimeDir, "pending-update.json");
+    // Only one owned staging installer may exist for an active update.
+    static string OwnedUpdateInstallerPath => Path.Combine(UpdatesDir, "DirectInternetMethod-update-stage.exe");
     static string NetworkStatePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "DirectDnsDpiHarness", "state.json");
@@ -302,6 +304,12 @@ internal static class Program
                 WriteActionStatus(action, "error", -10, "Direct Method must be OFF before update.");
                 return;
             }
+            if (File.Exists(PendingUpdatePath))
+            {
+                FinalizePendingUpdate();
+                if (File.Exists(PendingUpdatePath))
+                    throw new IOException("Prior update still needs verification or cleanup; refusing a second installer.");
+            }
 
             Log("action-begin:update");
             WriteActionStatus(action, "running", null, "Checking official GitHub release.");
@@ -320,9 +328,10 @@ internal static class Program
             if (!expected.Equals(package.ApiSha256, StringComparison.OrdinalIgnoreCase))
                 throw new CryptographicException("GitHub asset digest does not match SHA256SUMS.txt.");
 
-            var finalPath = Path.Combine(UpdatesDir, package.InstallerName);
+            var finalPath = OwnedUpdateInstallerPath;
             var partPath = finalPath + ".part";
-            File.Delete(partPath);
+            if (File.Exists(finalPath) || File.Exists(partPath))
+                throw new IOException("Single owned updater staging slot is occupied; no replacement permitted.");
 
             await DownloadWithSystemCurlAsync(package.InstallerUrl, partPath, timeout.Token);
 
@@ -332,7 +341,7 @@ internal static class Program
                 File.Delete(partPath);
                 throw new CryptographicException("Downloaded installer failed SHA-256 verification.");
             }
-            File.Move(partPath, finalPath, true);
+            File.Move(partPath, finalPath); // Never overwrite a pending/foreign installer.
 
             var installDir = GetRegisteredInstallDirectory();
 
@@ -392,15 +401,38 @@ internal static class Program
             var installed = CurrentVersion;
             if (installed >= target)
             {
-                WriteActionStatus("update", "done", 0, $"Updated to v{installed.ToString(3)}.");
-                Log($"update-complete:{installed.ToString(3)}");
+                // Setup can still be running from this EXE while the service restarts.
+                // Keep one pending record until the verified file can be removed.
+                var stage = doc.RootElement.GetProperty("installer").GetString() ?? "";
+                var expectedSha = doc.RootElement.GetProperty("sha256").GetString() ?? "";
+                if (!Path.IsPathFullyQualified(stage) ||
+                    !Path.GetFullPath(stage).Equals(Path.GetFullPath(OwnedUpdateInstallerPath),
+                        StringComparison.OrdinalIgnoreCase) ||
+                    expectedSha.Length != 64 || !expectedSha.All(Uri.IsHexDigit))
+                    throw new CryptographicException("Foreign staging path or invalid pending checksum.");
+                if (File.Exists(stage))
+                {
+                    string observed;
+                    using (var input = File.OpenRead(stage))
+                        observed = Convert.ToHexString(SHA256.HashData(input));
+                    if (!observed.Equals(expectedSha, StringComparison.OrdinalIgnoreCase))
+                        throw new CryptographicException("Owned staged installer changed; preserving for review.");
+                    try { File.Delete(stage); }
+                    catch (IOException)
+                    {
+                        WriteActionStatus("update", "running", null, "Installed; waiting for owned installer file to unlock.");
+                        Log("update-stage-file-locked-preserving-single-pending-slot");
+                        return;
+                    }
+                }
                 File.Delete(PendingUpdatePath);
+                WriteActionStatus("update", "done", 0, $"Updated to v{installed.ToString(3)}.");
+                Log($"update-complete:{installed.ToString(3)}:no-cache-duplicate");
             }
             else
             {
-                WriteActionStatus("update", "error", -3, $"Update target v{target.ToString(3)} was not installed.");
-                Log($"update-incomplete:target={target.ToString(3)}:current={installed.ToString(3)}");
-                File.Delete(PendingUpdatePath);
+                WriteActionStatus("update", "error", -3, $"Update target v{target.ToString(3)} was not installed; evidence preserved.");
+                Log($"update-incomplete-preserved:target={target.ToString(3)}:current={installed.ToString(3)}");
             }
         }
         catch (Exception ex)

@@ -6,7 +6,19 @@ APP="$HOME/.local/share/DirectInternetMethod"
 BIN="$HOME/.local/bin"
 DESKTOP="$HOME/.local/share/applications"
 ICONS="$HOME/.local/share/icons/hicolor/scalable/apps"
-BACKUP="$HOME/.local/share/DirectInternetMethod-backup-$(date +%Y%m%d_%H%M%S)"
+USER_TRANSACTION="$HERE/app/user_update_transaction.py"
+TRANSACTION_ACTIVE=0
+rollback_failed_install() {
+  local code="$1"
+  trap - ERR HUP INT TERM
+  if [ "$TRANSACTION_ACTIVE" -eq 1 ]; then
+    if ! python3 "$USER_TRANSACTION" --rollback; then
+      echo "DEGRADED: code rollback requires review; user settings have not been deleted." >&2
+      echo "Inspect $HOME/.local/state/DirectInternetMethod/update-pending" >&2
+    fi
+  fi
+  exit "$code"
+}
 
 for c in python3 sha256sum pkexec systemctl nft busctl ip curl getent; do
   command -v "$c" >/dev/null 2>&1 || { echo "Missing required command: $c" >&2; exit 3; }
@@ -25,6 +37,25 @@ if [ -f "$APP/directmethod/state.json" ]; then
   echo "Direct Internet Method is active or has owned state. Stop/Recovery it before installing or upgrading." >&2
   exit 21
 fi
+[ -f "$USER_TRANSACTION" ] || { echo "Transaction helper missing." >&2; exit 23; }
+# Fixed launchers are user-visible files; never overwrite unknown custom ones.
+# A symlink or nonregular node is an ownership conflict, not a cleanup target.
+for entry in "$BIN/direct-internet-method" \
+             "$BIN/direct-internet-method-uninstall" \
+             "$DESKTOP/io.github.god13emad.DirectInternetMethod.desktop" \
+             "$ICONS/direct-internet-method.svg"; do
+  if [ -L "$entry" ] || { [ -e "$entry" ] && [ ! -f "$entry" ]; }; then
+    echo "Existing launcher or icon has unsafe type; preserve and refuse update: $entry" >&2
+    exit 24
+  fi
+done
+# Snapshot ONLY managed code; unknown user configuration never enters this backup.
+python3 "$USER_TRANSACTION" --source "$HERE" --stage
+TRANSACTION_ACTIVE=1
+trap 'rollback_failed_install "$?"' ERR
+trap 'rollback_failed_install 130' INT
+trap 'rollback_failed_install 143' TERM
+trap 'rollback_failed_install 129' HUP
 
 backend_matches_current() {
   local uid
@@ -59,44 +90,48 @@ EOF
 
 # Administrative authorization is required only when the protected backend is absent or differs.
 if backend_matches_current; then
-  echo "Protected backend 1.5.2 already matches current package; skipping admin authorization."
+  echo "Protected backend already matches current package; keeping root-owned code unchanged."
 else
+  # A running/installed protected backend is NOT an atomic user-level update:
+  # never replace it in-place without an independently accepted root rollback.
+  if [ -e /var/lib/directinternetmethod/install.json ] ||
+     [ -e /usr/lib/directinternetmethod ]; then
+    echo "Protected backend differs; update refused until root rollback is verified. User data and old backend preserved." >&2
+    rollback_failed_install 25
+  fi
+  # Only a genuinely fresh root-backend install may request PolicyKit.
   pkexec /bin/bash "$HERE/system/install_system.sh" "$HERE" "$(id -u)"
 fi
-backend_matches_current || { echo "Protected backend verification failed." >&2; exit 22; }
-if [ -d "$APP" ]; then
-  mkdir -p "$BACKUP"
-  for f in direct_internet_method.py router_gateway.py router_gateway_core.py direct-internet-method.svg uninstall.sh INSTALL.json; do
-    [ -f "$APP/$f" ] && cp -a "$APP/$f" "$BACKUP/$f"
-  done
-fi
+backend_matches_current || { echo "Protected backend verification failed." >&2; rollback_failed_install 22; }
+# Atomically replace version-managed code in the ONE installed app directory.
+# The transaction preserves and verifies settings, custom hosts, scope, strategy,
+# adult coverage and user-modified Router Gateway provider data.
+python3 "$USER_TRANSACTION" --source "$HERE" --apply
 mkdir -p "$APP/directmethod" "$APP/router_gateway" "$BIN" "$DESKTOP" "$ICONS"
 chmod 0700 "$APP" "$APP/directmethod"
-install -m 0755 "$HERE/app/direct_internet_method.py" "$APP/direct_internet_method.py"
-install -m 0755 "$HERE/app/router_gateway.py" "$APP/router_gateway.py"
-install -m 0644 "$HERE/app/router_gateway_core.py" "$APP/router_gateway_core.py"
-ROUTER_DATA="$HERE/app/router_gateway/providers.json"
-[ -f "$ROUTER_DATA" ] || ROUTER_DATA="$HERE/../router_gateway/providers.json"
-[ -f "$ROUTER_DATA" ] || { echo "Missing Router Gateway provider data." >&2; exit 23; }
-install -m 0644 "$ROUTER_DATA" "$APP/router_gateway/providers.json"
-install -m 0644 "$HERE/app/direct-internet-method.svg" "$APP/direct-internet-method.svg"
-install -m 0755 "$HERE/uninstall.sh" "$APP/uninstall.sh"
 
-cat > "$BIN/direct-internet-method" <<'EOF'
+if [ ! -e "$BIN/direct-internet-method" ]; then
+  cat > "$BIN/direct-internet-method" <<'EOF'
 #!/usr/bin/env bash
 export G_APPLICATION_NAME="Direct Internet Method"
 exec -a DirectInternetMethod python3 "$HOME/.local/share/DirectInternetMethod/direct_internet_method.py"
 EOF
-cat > "$BIN/direct-internet-method-uninstall" <<'EOF'
+  chmod 0755 "$BIN/direct-internet-method"
+fi
+if [ ! -e "$BIN/direct-internet-method-uninstall" ]; then
+  cat > "$BIN/direct-internet-method-uninstall" <<'EOF'
 #!/usr/bin/env bash
 exec "$HOME/.local/share/DirectInternetMethod/uninstall.sh"
 EOF
-chmod 0755 "$BIN/direct-internet-method" "$BIN/direct-internet-method-uninstall"
-
-install -m 0644 "$HERE/app/direct-internet-method.svg" "$ICONS/direct-internet-method.svg"
+  chmod 0755 "$BIN/direct-internet-method-uninstall"
+fi
+if [ ! -e "$ICONS/direct-internet-method.svg" ]; then
+  install -m 0644 "$HERE/app/direct-internet-method.svg" "$ICONS/direct-internet-method.svg"
+fi
 DESKTOP_FILE="$DESKTOP/io.github.god13emad.DirectInternetMethod.desktop"
-rm -f "$DESKTOP/direct-internet-method.desktop"
-cat > "$DESKTOP_FILE" <<EOF
+# Never delete or overwrite the old/renamed desktop shortcut without ownership proof.
+if [ ! -e "$DESKTOP_FILE" ]; then
+  cat > "$DESKTOP_FILE" <<EOF
 [Desktop Entry]
 Type=Application
 Name=Direct Internet Method
@@ -108,20 +143,61 @@ Categories=Network;Utility;
 StartupNotify=true
 StartupWMClass=DirectInternetMethod
 EOF
-chmod 0644 "$DESKTOP_FILE"
+  chmod 0644 "$DESKTOP_FILE"
+fi
 
 DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || true)"
 if [ -n "$DESKTOP_DIR" ] && [ -d "$DESKTOP_DIR" ]; then
-  cp "$DESKTOP_FILE" "$DESKTOP_DIR/Direct Internet Method.desktop"
-  chmod 0755 "$DESKTOP_DIR/Direct Internet Method.desktop"
-  command -v gio >/dev/null 2>&1 && gio set "$DESKTOP_DIR/Direct Internet Method.desktop" metadata::trusted true >/dev/null 2>&1 || true
+  if [ -L "$DESKTOP_DIR/Direct Internet Method.desktop" ]; then
+    echo "Desktop shortcut is a symlink; refusing to overwrite it." >&2
+    rollback_failed_install 24
+  fi
+  if [ ! -e "$DESKTOP_DIR/Direct Internet Method.desktop" ]; then
+    cp "$DESKTOP_FILE" "$DESKTOP_DIR/Direct Internet Method.desktop"
+    chmod 0755 "$DESKTOP_DIR/Direct Internet Method.desktop"
+    command -v gio >/dev/null 2>&1 && gio set "$DESKTOP_DIR/Direct Internet Method.desktop" metadata::trusted true >/dev/null 2>&1 || true
+  fi
 fi
 
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP" >/dev/null 2>&1 || true
 command -v gtk4-update-icon-cache >/dev/null 2>&1 && gtk4-update-icon-cache -f "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
 
 python3 - "$APP/INSTALL.json" <<'PY'
-import json,pathlib,sys,time
+import json,pathlib,sys,time,hashlib
+home=pathlib.Path.home()
+# Only exact program-generated launchers are owned by the uninstaller.
+# A user-modified launcher/shortcut is preserved and never claimed as owned.
+expected_launchers={
+    ".local/bin/direct-internet-method": (
+        '#!/usr/bin/env bash\n'
+        'export G_APPLICATION_NAME="Direct Internet Method"\n'
+        'exec -a DirectInternetMethod python3 "$HOME/.local/share/DirectInternetMethod/direct_internet_method.py"\n'
+    ).encode(),
+    ".local/bin/direct-internet-method-uninstall": (
+        '#!/usr/bin/env bash\n'
+        'exec "$HOME/.local/share/DirectInternetMethod/uninstall.sh"\n'
+    ).encode(),
+    ".local/share/applications/io.github.god13emad.DirectInternetMethod.desktop": (
+        '[Desktop Entry]\n'
+        'Type=Application\n'
+        'Name=Direct Internet Method\n'
+        'Comment=Encrypted DNS + HTTP/TLS/QUIC DPI bypass without VPN or proxy\n'
+        f'Exec={home}/.local/bin/direct-internet-method\n'
+        'Icon=direct-internet-method\n'
+        'Terminal=false\n'
+        'Categories=Network;Utility;\n'
+        'StartupNotify=true\n'
+        'StartupWMClass=DirectInternetMethod\n'
+    ).encode(),
+    ".local/share/icons/hicolor/scalable/apps/direct-internet-method.svg":
+        (home/".local/share/DirectInternetMethod/direct-internet-method.svg").read_bytes(),
+}
+launchers={}
+for name, expected in expected_launchers.items():
+    p=home/name
+    if p.is_file() and not p.is_symlink() and p.read_bytes()==expected:
+        launchers[name]=hashlib.sha256(expected).hexdigest()
+transaction=json.loads((pathlib.Path.home()/".local/state/DirectInternetMethod/update-pending/manifest.json").read_text(encoding="utf8"))
 protected=json.loads(pathlib.Path("/var/lib/directinternetmethod/install.json").read_text(encoding="utf-8"))
 assert protected.get("version") in ("1.5.1","1.5.2")
 pathlib.Path(sys.argv[1]).write_text(json.dumps({
@@ -135,10 +211,20 @@ pathlib.Path(sys.argv[1]).write_text(json.dumps({
   "systemBackend":"/usr/lib/directinternetmethod",
   "protectedBackendVersion":protected["version"],
   "protectedBackendByteCompatible":True,
-  "onlineUpdate":"GitHub latest release + SHA256SUMS verification"
+  "onlineUpdate":"GitHub latest release + SHA256SUMS verification",
+  "managedProviderSha256":transaction["providerSha"],
+  "preservedCustomProviderData":not transaction["providerManaged"],
+  "managedCodeSha256":{k:v["sha"] for k,v in transaction["managed"].items() if k!="router_gateway/providers.json"},
+  "managedLaunchersSha256":launchers,
+  "updateMode":"IN_PLACE_SINGLE_INSTALL_DATA_PRESERVED"
 },indent=2)+"\n")
 PY
 
-echo "Installed Direct Internet Method 1.5.2."
+# Commit only after managed code and mutable data hashes are reverified.
+# On success, the one temporary rollback slot is removed; no dated copies remain.
+python3 "$USER_TRANSACTION" --commit
+TRANSACTION_ACTIVE=0
+trap - ERR HUP INT TERM
+echo "Updated Direct Internet Method 1.5.2 in place; user data preserved."
 echo "Normal Start / Stop / Recovery do not require an admin password."
 echo "Install/update/uninstall of the protected backend may authenticate once."

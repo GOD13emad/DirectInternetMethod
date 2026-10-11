@@ -15,6 +15,8 @@ FILES=[
  ("linux/app/direct_internet_method.py","app/direct_internet_method.py"),
  ("linux/app/router_gateway.py","app/router_gateway.py"),
  ("linux/app/router_gateway_core.py","app/router_gateway_core.py"),
+ ("linux/app/user_update_transaction.py","app/user_update_transaction.py"),
+ ("linux/app/user_uninstall_preserve.py","app/user_uninstall_preserve.py"),
  ("router_gateway/providers.json","app/router_gateway/providers.json"),
  ("linux/app/direct_method_helper.sh","app/direct_method_helper.sh"),
  ("linux/app/hosts.txt","app/hosts.txt"),
