@@ -116,7 +116,7 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Python syntax
         shell: pwsh
-        run: python -m py_compile tests/windows_contract_audit.py tests/build_windows_manifest.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py
+        run: python -m py_compile tests/windows_contract_audit.py tests/windows_native_scm_stop_contract.py tests/build_windows_manifest.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py
       - name: PowerShell syntax
         shell: pwsh
         run: |
@@ -147,6 +147,12 @@ jobs:
           $ErrorActionPreference='Stop'
           & pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_contract.ps1
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+      - name: Native SCM stopped-state and bounded-stop regression
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          python tests/windows_native_scm_stop_contract.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Full Windows and Router Gateway contract audits
         shell: pwsh
         run: |
@@ -174,6 +180,12 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           & pwsh.exe -NoProfile -File tests/windows_public_signer_trust_contract.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+      - name: Native SCM stopped-state and bounded-stop regression
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          python tests/windows_native_scm_stop_contract.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Full Windows and Router Gateway contract audits
         shell: pwsh
