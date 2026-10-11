@@ -1,0 +1,131 @@
+name: R409 disposable Windows exact-SHA in-place data preservation QA
+on:
+  push:
+    branches: ['feature/qa-inplace-preserve-user-data-20261012']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dim-r409-disposable-data-preservation
+  cancel-in-progress: false
+
+jobs:
+  upgrade-with-seeded-data:
+    name: windows-inplace-upgrade-seeded-data
+    runs-on: windows-2025
+    timeout-minutes: 45
+    steps:
+      - name: Checkout one-off guarded QA runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout exact product source under candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 5f0cb30e7520b1ba22128c5d62496fc859ed84d6
+          path: candidate
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Fail-closed native security and source identity
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if($env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'X64'){throw 'HOSTED_WINDOWS_ONLY'}
+          if($env:GITHUB_REPOSITORY -ne 'GOD13emad/DirectInternetMethod' -or $env:GITHUB_REF -ne 'refs/heads/feature/qa-inplace-preserve-user-data-20261012'){throw 'SOURCE_QA_BRANCH_DRIFT'}
+          $head=(git -C candidate rev-parse HEAD).Trim()
+          if($head -ne '5f0cb30e7520b1ba22128c5d62496fc859ed84d6'){throw 'CANDIDATE_SOURCE_SHA_WRONG'}
+          $script='tests/R409_QA.ps1'
+          $tokens=$null;$errors=$null
+          [void][Management.Automation.Language.Parser]::ParseFile($script,[ref]$tokens,[ref]$errors)
+          if($errors.Count){throw 'R409_QA_SCRIPT_SYNTAX_ERROR'}
+          & $script -StaticOnly
+          if(-not $?){throw 'R409_STATIC_PREFLIGHT_FAILED'}
+
+      - name: Restore pinned native PowerShell runtime in candidate QA
+        shell: pwsh
+        working-directory: candidate
+        run: |
+          $ErrorActionPreference='Stop'
+          & ./tests/prepare_powershell_runtime.ps1
+          if($LASTEXITCODE -ne 0){throw 'PINNED_VENDOR_RUNTIME_PREPARE_FAILED'}
+
+      - name: Rebuild exact-source WPF GUI service and manifest
+        shell: pwsh
+        working-directory: candidate
+        run: |
+          $ErrorActionPreference='Stop'
+          & ./tests/build_windows_152_payload.ps1 -PreflightOnly
+          & ./tests/build_windows_152_payload.ps1
+          if($LASTEXITCODE -ne 0){throw 'EXACT_CANDIDATE_NATIVE_BUILD_FAILED'}
+
+      - name: Compile genuine unsigned candidate Inno on host
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:GITHUB_WORKSPACE 'candidate'
+          $iscc=Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'
+          if(!(Test-Path -LiteralPath $iscc)){ $found=Get-Command iscc.exe -ErrorAction SilentlyContinue; if($found){$iscc=$found.Source} }
+          if(!(Test-Path -LiteralPath $iscc)){
+            choco install innosetup -y --no-progress --limit-output
+            if($LASTEXITCODE -ne 0){throw 'NATIVE_INNO_COMPILER_UNAVAILABLE'}
+            $iscc='C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          }
+          if(!(Test-Path -LiteralPath $iscc)){throw 'NATIVE_INNO_COMPILER_NOT_PRESENT'}
+          $output=Join-Path $env:RUNNER_TEMP 'DIM_R409_CANDIDATE'
+          if(Test-Path $output){throw 'QA_INSTALLER_OUTPUT_ALREADY_PRESENT'}
+          New-Item -Path $output -ItemType Directory -ErrorAction Stop |Out-Null
+          & $iscc '/Qp' ('/O'+$output) '/FDirectInternetMethod_1.5.2_Windows_Setup' (Join-Path $root 'windows\installer\DirectInternetMethod.iss')
+          if($LASTEXITCODE -ne 0){throw 'R409_INNO_COMPILE_FAILED'}
+          $setup=Join-Path $output 'DirectInternetMethod_1.5.2_Windows_Setup.exe'
+          if(!(Test-Path $setup -PathType Leaf)){throw 'NATIVE_INNO_OUTPUT_NOT_FOUND'}
+          if((Get-AuthenticodeSignature $setup).Status.ToString() -ne 'NotSigned'){throw 'OWNER_UNSIGNED_BUNDLE_STATUS_WRONG'}
+          $m=@{
+            schema=1;status='PASS_NATIVE_SOURCE_COMPILE_INNO_QA';source='5f0cb30e7520b1ba22128c5d62496fc859ed84d6'
+            setupSHA=(Get-FileHash $setup -Algorithm SHA256).Hash;setupBytes=(Get-Item $setup).Length
+            guiSHA=(Get-FileHash (Join-Path $root 'windows\app\DirectInternetMethod.exe') -Algorithm SHA256).Hash
+            serviceSHA=(Get-FileHash (Join-Path $root 'windows\app\DirectInternetMethod.Service.exe') -Algorithm SHA256).Hash
+            manifestSHA=(Get-FileHash (Join-Path $root 'windows\manifest.json') -Algorithm SHA256).Hash
+            nativeCompiler=$iscc;osPolicyChanged=$false
+          }
+          $p=Join-Path $env:RUNNER_TEMP 'DIM_R409_BUILD.json'
+          if(Test-Path $p){throw 'BUILD_RECEIPT_ALREADY_CREATED'}
+          [IO.File]::WriteAllText($p,($m|ConvertTo-Json -Depth 6),[Text.UTF8Encoding]::new($false))
+          Write-Output ('R409_REAL_CANDIDATE_SETUP_SHA='+$m.setupSHA)
+
+      - name: Fetch exact published unsigned stable v1.5.1 baseline
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          $dir=Join-Path $env:RUNNER_TEMP 'DIM_R409_BASELINE'
+          if(Test-Path $dir){throw 'BASELINE_SOURCE_ALREADY_PRESENT'}
+          New-Item -Path $dir -ItemType Directory -ErrorAction Stop|Out-Null
+          & gh release download v1.5.1 --repo GOD13emad/DirectInternetMethod --pattern 'DirectInternetMethod_1.5.1_Windows_Setup.exe' --dir $dir
+          if($LASTEXITCODE -ne 0){throw 'STABLE_INSTALLER_DOWNLOAD_FAILED'}
+          $p=Join-Path $dir 'DirectInternetMethod_1.5.1_Windows_Setup.exe'
+          if((Get-FileHash $p -Algorithm SHA256).Hash -ne '4E1974B5A40F96B49B7B4196FFE963DCDF65B05E4F2B89DE4EC06E794B77EE9B'){throw 'STABLE_SHA_NOT_PINNED'}
+
+      - name: Real in-place upgrade user-data retention and rollback
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $installer=Join-Path $env:RUNNER_TEMP 'DIM_R409_CANDIDATE\DirectInternetMethod_1.5.2_Windows_Setup.exe'
+          $stable=Join-Path $env:RUNNER_TEMP 'DIM_R409_BASELINE\DirectInternetMethod_1.5.1_Windows_Setup.exe'
+          & ./tests/R409_QA.ps1 -Installer $installer -BaselineInstaller $stable
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+
+      - name: Retain raw installed acceptance receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r409-inplace-userdata-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/DIM_R409_HOSTED
+            ${{ runner.temp }}/DIM_R409_BUILD.json
+          retention-days: 30
+          if-no-files-found: warn
