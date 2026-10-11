@@ -2,49 +2,57 @@ from __future__ import annotations
 import hashlib, json, pathlib, re, subprocess
 
 
-def assert_trusted_publication_acceptance(meta):
-    # Source-level claim consistency only. Actual artifact trust is independently
-    # verified by windows_distribution_signature_audit.ps1 and a real sandbox receipt.
+def assert_unsigned_publication_acceptance(meta):
+    """Source metadata guards. Real public SHA/download/hosted receipts are checked
+    separately by unsigned_public_release_contract.py --public-tag on the tagged
+    GitHub-hosted runner. A textual PASS value is never cryptographic evidence."""
     ver = str(meta.get('version', ''))
     if not re.fullmatch(r'[0-9]+[.][0-9]+[.][0-9]+', ver):
         raise SystemExit('RELEASE_VERSION_NOT_SEMVER')
     if tuple(map(int, ver.split('.'))) < (1, 5, 2):
         return
+    policy = meta.get('publicUnsignedDistribution', {})
+    if (not isinstance(policy, dict) or
+        policy.get('onePublicLine') is not True or
+        policy.get('codeSigningCertificateRequired') is not False or
+        policy.get('disableWindowsSecurity') is not False):
+        raise SystemExit('OWNER_UNSIGNED_DISTRIBUTION_POLICY_MISSING_OR_UNSAFE')
     status = str(meta.get('status', ''))
-    accept = meta.get('acceptance', {})
-    if not isinstance(accept, dict):
-        raise SystemExit('RELEASE_ACCEPTANCE_NOT_OBJECT')
-    pub = meta.get('publication', {})
-    if not isinstance(pub, dict):
-        raise SystemExit('RELEASE_PUBLICATION_NOT_OBJECT')
-    pub_status = str(accept.get('publication', ''))
-    promotion_claim = (
-        (status.startswith(('PASS_FINAL', 'FINAL_', 'PUBLISHED_')) and 'CANDIDATE' not in status)
-        or pub_status.startswith(('PASS_PUBLIC', 'PUBLISHED_VERIFIED'))
-        or bool(pub.get('publishedAt'))
-    )
-    if not promotion_claim:
+    if 'HOLD_APP_CONTROL_SIGNING' in status:
+        raise SystemExit('SUPERSEDED_SIGNING_RELEASE_BLOCKER_STILL_ACTIVE')
+    acceptance = meta.get('acceptance', {})
+    publication = meta.get('publication', {})
+    if not isinstance(acceptance, dict) or not isinstance(publication, dict):
+        raise SystemExit('RELEASE_ACCEPTANCE_OR_PUBLICATION_NOT_OBJECT')
+    published = (status.startswith(('PASS_FINAL', 'FINAL_', 'PUBLISHED_')) or
+        str(acceptance.get('publication', '')).startswith(('PASS_PUBLIC', 'PUBLISHED_VERIFIED')) or
+        bool(publication.get('publishedAt')))
+    if not published:
         return
-    signer = str(accept.get('windowsDistributionSigning', ''))
-    sandbox = str(accept.get('windowsSandbox', ''))
-    if not (signer.startswith('PASS_TRUSTED_AUTHENTICODE_') and
-            sandbox.startswith('PASS_ISOLATED_INSTALL_')):
-        raise SystemExit('TRUSTED_WINDOWS_SIGNATURE_AND_SANDBOX_REQUIRED: '
-                         'release claims may not be promoted without actual signed-installer '
-                         'and security-policy-on isolated installation acceptance')
-    # These values are references for independent human/CI audit, NOT
-    # cryptographic attestation. Never treat metadata fields alone as release proof.
-    sign_proof = meta.get('windowsTrustEvidence', {})
-    if not isinstance(sign_proof, dict):
-        raise SystemExit('WINDOWS_PUBLICATION_PROOF_MISSING')
-    fields = ('signedInstallerSha256', 'signerThumbprint', 'sandboxReceiptSha256')
-    if any(not re.fullmatch(r'[A-Fa-f0-9]{64}', str(sign_proof.get(k, '')))
-           for k in fields if k != 'signerThumbprint'):
-        raise SystemExit('WINDOWS_PUBLICATION_PROOF_MISSING')
-    if not re.fullmatch(r'[A-Fa-f0-9]{40,64}', str(sign_proof.get('signerThumbprint', ''))):
-        raise SystemExit('WINDOWS_PUBLICATION_PROOF_MISSING')
-    if str(sign_proof['signedInstallerSha256']).upper() !=        str(meta.get('platforms', {}).get('windows', {}).get('sha256', '')).upper():
-        raise SystemExit('WINDOWS_PUBLICATION_SIGNED_SHA_MISMATCH')
+    if (acceptance.get('windowsFreshInstall') != 'PASS_HOSTED_REAL_INSTALL_UNINSTALL' or
+        acceptance.get('windowsUpgradeRollback') != 'PASS_HOSTED_151_TO_152_AND_151_RESTORE_ZERO_ERRORS' or
+        acceptance.get('windowsSecurityPolicyUnchanged') is not True):
+        raise SystemExit('REAL_UNSIGNED_WINDOWS_INSTALL_AND_ROLLBACK_REQUIRED')
+    receipts = meta.get('windowsHostAcceptanceEvidence', {})
+    if not isinstance(receipts, dict):
+        raise SystemExit('HOSTED_RELEASE_RECEIPT_MISSING')
+    hashes = ('installerSha256', 'freshReportSha256', 'upgradeReportSha256')
+    if any(not re.fullmatch('[A-Fa-f0-9]{64}', str(receipts.get(k,''))) for k in hashes):
+        raise SystemExit('HOSTED_RELEASE_RECEIPT_HASH_MISSING')
+    if any(not isinstance(receipts.get(k),int) or receipts[k] <= 10000000000
+           for k in ('freshRunId', 'upgradeRunId')):
+        raise SystemExit('HOSTED_RELEASE_RECEIPT_RUN_ID_MISSING')
+    if receipts.get('installerSha256','').upper() != str(meta.get('platforms',{}).get('windows',{}).get('sha256','')).upper():
+        raise SystemExit('HOSTED_RELEASE_INSTALLER_SHA_MISMATCH')
+    if (publication.get('tag') != 'v'+ver or
+        not re.fullmatch('[a-f0-9]{40}', str(publication.get('tagCommit',''))) or
+        not str(publication.get('releaseUrl','')).startswith('https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v') or
+        not publication.get('publishedAt')):
+        raise SystemExit('PUBLIC_STABLE_RELEASE_AUTHORITY_INCOMPLETE')
+    # Source-only checks cannot establish a real GitHub publication.
+    # Mandatory hosted tag job must run actual downloads and validate the raw
+    # reports independently; metadata labels never substitute for that evidence.
+
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 release = json.loads((ROOT / 'RELEASE.json').read_text(encoding='utf-8-sig'))
@@ -131,7 +139,7 @@ win_release = json.loads((ROOT / 'windows' / 'RELEASE.json').read_text(encoding=
 if str(win_release.get('version')) != version:
     raise SystemExit(f"windows/RELEASE.json version {win_release.get('version')} != {version}")
 
-assert_trusted_publication_acceptance(release)
+assert_unsigned_publication_acceptance(release)
 root_status = str(release.get('status',''))
 root_published = ('PUBLISHED' in root_status and 'VERIFIED' in root_status) or str(release.get('acceptance',{}).get('publication','')).startswith('PASS_PUBLIC')
 if root_published:

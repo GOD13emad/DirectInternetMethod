@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.2",
   "date": "2026-10-08",
-  "status": "CANDIDATE_V152_HOLD_APP_CONTROL_SIGNING",
+  "status": "CANDIDATE_PUBLIC_UNSIGNED_PREVIEW3_WITH_HOSTED_INSTALL_ROLLBACK_NOT_FINAL",
   "previousAccepted": {
     "version": "1.5.1",
     "tag": "v1.5.1",
@@ -88,18 +88,20 @@
   },
   "platforms": {
     "windows": {
-      "status": "BUILD_PASS_BUT_ISOLATED_EXECUTION_BLOCKED_BY_APP_CONTROL",
+      "status": "PASS_NATIVE_UNSIGNED_INNO_HOSTED_FRESH_AND_UPGRADE_TO_ROLLBACK",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Windows_Setup.exe",
-      "bytes": 157128933,
-      "sha256": "BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85",
-      "guiSha256": "2F26B772FC52FDEEA8EFEE1CD498AEBE47400D5D8F517A66AE029904B9503369",
-      "serviceSha256": "C2114B666B905D697F785F65F4B3BB8614BA95BF2ABF7A14770E659C074830E0",
-      "manifestSha256": "254968D12D400BC0E0BBF73A4086B3401890DED497063858A91D4AF059C26F0A",
+      "bytes": 157124929,
+      "sha256": "2F054752E3B1B4715D68958CA49639AEA6FE43E0E4CBC6611DDEEBABAE2C7EB5",
+      "guiSha256": "B8B2BBDBA477E6E7CAACC5C2E0E11F408309000FA0657EF95E36E212376D6C4F",
+      "serviceSha256": "314B1E3D8D83F386CB54CD0819C7571014F3A5EAC6970F9026DA5146154C85B5",
+      "manifestSha256": "44434B0B03391A7BCF9513443DED1B608703225B5900F5DBDAB7F558D011AC38",
       "manifestFiles": 680,
-      "authenticode": "NotSigned"
+      "authenticode": "NotSigned",
+      "artifactSourceCommit": "3ead24911ca583932ed8fbcb5820b8a25b20303f",
+      "metadataScope": "LAST_PUBLIC_PREVIEW_ARTIFACT_SOURCE_SHA; source-only metadata is not proof of a future tag's newly rebuilt binaries"
     },
     "linux": {
-      "status": "SOURCE_CANDIDATE_SELECTIVE_DNS_OPTIN_NOT_LIVE_ACCEPTED",
+      "status": "PASS_EXACT_SHA_THREE_HOST_SOURCE_REPRO_3EAD",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
       "bytes": 8234805,
       "sha256": "0218BEBD0DC8F88670374FF0E12A61D45229A03092C606678C5C00FD81DC2C9E",
@@ -108,23 +110,24 @@
       "compatibleProtectedBackendVersions": [
         "1.5.1",
         "1.5.2"
-      ]
+      ],
+      "artifactSourceCommit": "3ead24911ca583932ed8fbcb5820b8a25b20303f"
     }
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "B2AB0F679C4EA77DBB013B950B83FE279093C6D46316113CCCD53A1AC830A419"
+    "sha256": "B0A89D10D8AF5E39E0CF2AA17FB96178AB44ED82D0346450FA3C94285C3B82DD"
   },
   "acceptance": {
-    "windowsPayload": "PASS_BUILD_SERVICE_SELFTEST_AND_CONTRACT_V152",
-    "windowsInstaller": "PASS_BUILD_STABLE_OUTPUT_SHA_V152",
+    "windowsPayload": "PASS_PR30_EXACT_SOURCE_TWO_WINDOWS_HOSTS",
+    "windowsInstaller": "PASS_GENUINE_INNO_AND_REAL_DISPOSABLE_INSTALLED_LIFECYCLE",
     "windowsContract": "PASS_SOURCE_CONTRACT_V152",
     "linuxPackage": "PASS_LOCAL_BUILT_ARCHIVE_TAILSCALE_CANDIDATE",
     "linuxContract": "PASS_SOURCE_CONTRACT_V152",
-    "protectedCi": "PENDING_EXACT_SHA_WITH_NEW_NFT_AND_VPN_SAFETY",
-    "publication": "NOT_PUBLISHED",
-    "installedWindows": "UNPROVEN_V152_NOT_INSTALLED",
-    "installedLinux": "UNPROVEN_NEW_PROTECTED_COEXISTENCE_NOT_INSTALLED",
+    "protectedCi": "PASS_PR30_SOURCE_WINDOWS_LINUX_38152706915",
+    "publication": "PUBLIC_PREVIEW3_NOT_STABLE",
+    "installedWindows": "PASS_EPHEMERAL_WINDOWS_2025_ONLY_NOT_USER_MACHINE",
+    "installedLinux": "PASS_LINUX_EMAD_AND_MMZ_TARGETED_SAFE_ROLLBACK",
     "adultCoverage": "PENDING_V152_VERIFICATION",
     "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED",
     "routerGatewayContract": "PENDING_V152_VERIFICATION",
@@ -132,17 +135,20 @@
     "releaseMetadata": "PENDING_V152_VERIFICATION",
     "fullTrackedSourceAudit": "PENDING_V152_VERIFICATION",
     "windowsDefender": "PENDING_V152_VERIFICATION",
-    "linuxCrossHostRebuild": "PENDING_NEW_EXACT_SHA_INDEPENDENT_REPRO",
-    "sourceReproducibility": "NEEDS_INDEPENDENT_LINUX_V152_REBUILD",
+    "linuxCrossHostRebuild": "PASS_EXACT_THREE_HOST_SAME_SHA",
+    "sourceReproducibility": "PASS_2_WINDOWS_GUI_SERVICE_AND_3_LINUX",
     "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING",
-    "windowsSandbox": "FAIL_CONFIRMED_SMART_APP_CONTROL_ENFORCED_UNSIGNED_POLICY_DENIAL",
-    "windowsDistributionSigning": "FAIL_NOTSIGNED_CORRELATED_3089_TOTAL_SIGNATURE_COUNT_0",
-    "installerIntegrity": "PASS_EXACT_HASH"
+    "windowsSandbox": "UNSIGNED_NOT_SUPPORTED_WHEN_SAC_BLOCKS; NO_SECURITY_BYPASS",
+    "windowsDistributionSigning": "NOT_SIGNED_BY_OWNER_CHOICE; NOT_A_RELEASE_GATE",
+    "installerIntegrity": "PASS_NATIVE_INNO_SHA_PLUS_HOSTED_INSTALL_UNINSTALL",
+    "windowsFreshInstall": "PASS_HOSTED_REAL_INSTALL_UNINSTALL",
+    "windowsUpgradeRollback": "PASS_HOSTED_151_TO_152_AND_151_RESTORE_ZERO_ERRORS",
+    "windowsSecurityPolicyUnchanged": true
   },
   "validationBoundary": {
     "universalAdultGuarantee": "UNPROVABLE for every remote domain/CDN edge. Maintained opt-in catalog plus bounded platform profiles are used. Exact-installed normal-client matrices pass Pornhub/XVideos/XNXX/XHamster/Reddit. On validated Linux, forced Cloudflare edge 104.16.3.81 is unusable, but normal client operation failed over to 104.16.4.81 and returned HTTP 200 in 5/5 restart cycles.",
     "gemini": "Direct-only architecture cannot change public egress geolocation. Gemini is HTTP 403 in curl and real Chrome on the validated current egress; HTTP 403 remains FAIL_HTTP and a usable Gemini page requires a separate egress-changing architecture.",
-    "authenticode": "NOT_SIGNED_EXTERNAL_TRUST_CERTIFICATE_MISSING",
+    "authenticode": "NotSigned is explicitly accepted by the owner for the one public release line; no SAC/Defender bypass is permitted.",
     "proxyVpn": "NOT_USED"
   },
   "evidence": {
@@ -157,6 +163,25 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Tailscale coexistence source safeguards exact nft mark mask/order and NMcli typed VPN detection; independent SHA build and CI before privileged installed-host lifecycle. Windows public signing and Sandbox HOLD unchanged.",
-  "publication": {}
+  "exactNextAction": "Controlled new-release unsigned verifier: source CI, rebuild binaries for exact tag commit, native hosted fresh upgrade rollback with new SHA, public release asset SHA+SUMS+download acceptance; owner must separately verify source/third-party redistribution obligations and remaining real web site usability.",
+  "publication": {},
+  "publicUnsignedDistribution": {
+    "ownerDecisionDate": "2026-10-11",
+    "onePublicLine": true,
+    "codeSigningCertificateRequired": false,
+    "disableWindowsSecurity": false,
+    "previousPublicStable": "v1.5.1",
+    "currentPublicPreview": "unsigned-1.5.2-preview.3",
+    "unsupportedPolicy": "Windows devices disallowing unsigned execution may refuse installation",
+    "noUniversalWebsiteGuarantee": true
+  },
+  "windowsHostAcceptanceEvidence": {
+    "artifactSourceCommit": "3ead24911ca583932ed8fbcb5820b8a25b20303f",
+    "installerSha256": "2F054752E3B1B4715D68958CA49639AEA6FE43E0E4CBC6611DDEEBABAE2C7EB5",
+    "freshRunId": 38167341910,
+    "freshReportSha256": "8CB53DF4A6FCD0E2C27DBB292F7093D628DA65D30FDDD3BAEF5F00DAD009FC2E",
+    "upgradeRunId": 38168392209,
+    "upgradeReportSha256": "990090D9B00FA1E84094FBDEFAD5A37990AC2A23C19349BFA7CD97963C42D234",
+    "scope": "Host reports refer ONLY to PR30 last public preview exact binaries; new git commits must rebuild and reaccept before stable tag"
+  }
 }

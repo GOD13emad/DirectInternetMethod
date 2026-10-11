@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   linux-source:
@@ -59,6 +60,7 @@ jobs:
           python3 tests/router_gateway_contract_audit.py
           python3 tests/release_metadata_audit.py
           python3 tests/release_publication_negative_regression.py
+          python3 tests/unsigned_public_release_contract.py --fixtures
           python3 tests/rejected_component_audit.py
       - name: Isolated real-kernel nftables contract
         shell: bash
@@ -165,50 +167,43 @@ jobs:
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/rejected_component_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+          python tests/unsigned_public_release_contract.py --fixtures
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
 
   windows-release-contract:
-    name: windows-release-contract
+    name: windows-release-contract-unsigned
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-latest
+    runs-on: windows-2025
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Restore pinned PowerShell runtime
-        shell: pwsh
-        run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
-      - name: Fail-closed public signer and Smart App Control eligibility fixtures
+      - name: Offline unsigned publication negative fixtures and metadata
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          & pwsh.exe -NoProfile -File tests/windows_public_signer_trust_contract.ps1
+          python -B tests/release_metadata_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
-      - name: Native SCM stopped-state and bounded-stop regression
-        shell: pwsh
-        run: |
-          $ErrorActionPreference='Stop'
-          python tests/windows_native_scm_stop_contract.py
+          python -B tests/release_publication_negative_regression.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
-      - name: Full Windows and Router Gateway contract audits
-        shell: pwsh
-        run: |
-          $ErrorActionPreference='Stop'
-          python tests/windows_contract_audit.py
+          python -B tests/unsigned_public_release_contract.py --fixtures
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
-          python tests/router_gateway_contract_audit.py
-          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
-          python tests/rejected_component_audit.py
-          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
-
-      - name: Stage exact signed Windows Setup from owner-controlled private draft
+      - name: Verify published unsigned public assets with exact hosted Windows install and rollback
         shell: pwsh
         env:
+          GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference='Stop'
-          & pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_stage.ps1
+          python -B tests/unsigned_public_release_contract.py --public-tag
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
-      - name: Enforce final Windows installer Authenticode, trusted publisher and exact release SHA
-        shell: pwsh
-        run: |
-          $ErrorActionPreference='Stop'
-          & pwsh.exe -NoProfile -NonInteractive -File tests/windows_distribution_signature_audit.ps1
-          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+      - name: Archive independently verified public release receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: unsigned-release-gate-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIRECT_R394_PUBLIC_TAG_VERIFICATION.json
+          if-no-files-found: warn
+          retention-days: 30

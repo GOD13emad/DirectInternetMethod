@@ -128,7 +128,7 @@ check("windows_installer_output_stability_guard", all(x in installer_builder for
 tracked_strong=subprocess.run(["git","ls-files","--error-unmatch","windows/bin/zapret/strong-override-hosts.txt"],cwd=R,text=True,capture_output=True).returncode==0
 check("windows_strong_override_source_tracked", tracked_strong)
 check("windows_hash_pinned_text_eol_policy", all(x in gitattributes for x in ("windows/bin/zapret/hosts.txt text eol=crlf","windows/bin/zapret/adult-fallback-hosts.txt text eol=lf","windows/bin/zapret/strong-override-hosts.txt text eol=crlf")))
-check("windows_distribution_signature_fail_closed", all(x in signature_gate for x in (
+check("optional_signed_diagnostic_fails_closed_but_is_not_public_gate", all(x in signature_gate for x in (
     "Get-AuthenticodeSignature",
     "Assert-EligibleSignerForSmartAppControl -Signature $sig",
     "if([string]$Signature.Status -ne 'Valid')",
@@ -139,11 +139,15 @@ check("windows_distribution_signature_fail_closed", all(x in signature_gate for 
     "FAIL_CLOSED","exit 42"
 )))
 tag_job_source = ci_workflow.split("  windows-release-contract:",1)[1] if ci_workflow.count("  windows-release-contract:")==1 else ""
-check("tag_release_invokes_exact_signed_installer_audit",
-    tag_job_source.count("pwsh.exe -NoProfile -NonInteractive -File tests/windows_distribution_signature_audit.ps1")==1
+check("tag_release_invokes_real_unsigned_three_way_sha_and_hosted_rollback",
+    tag_job_source.count("python -B tests/unsigned_public_release_contract.py --public-tag")==1
     and "if: startsWith(github.ref, 'refs/tags/v')" in tag_job_source
-    and "if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }" in tag_job_source
-    and "continue-on-error: true" not in tag_job_source)
+    and "GH_TOKEN:" in tag_job_source and "GITHUB_TOKEN:" in tag_job_source
+    and "actions: read" in tag_job_source
+    and "windows_distribution_signature_audit.ps1" not in tag_job_source
+    and "windows_release_draft_asset_stage.ps1" not in tag_job_source
+    and "continue-on-error: true" not in tag_job_source
+    and "if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }" in tag_job_source)
 
 draft_stage_source=(R/"tests"/"windows_release_draft_asset_stage.ps1").read_text(encoding="utf-8-sig")
 draft_fixture_source=(R/"tests"/"windows_release_draft_asset_contract.ps1").read_text(encoding="utf-8-sig")
@@ -151,11 +155,20 @@ windows_source_section=ci_workflow.split("  windows-source:",1)[1].split("  wind
 check("windows_ci_runs_offline_draft_staging_negative_regressions",
     windows_source_section.count("pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_contract.ps1")==1
     and "continue-on-error: true" not in windows_source_section)
-check("windows_tag_stage_private_signed_asset_before_authenticode",
-    tag_job_source.count("pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_stage.ps1")==1
-    and "GITHUB_TOKEN:" in tag_job_source
-    and tag_job_source.find("windows_release_draft_asset_stage.ps1") < tag_job_source.find("windows_distribution_signature_audit.ps1")
+check("windows_source_ci_runs_unsigned_release_negative_fixtures",
+    windows_source_section.count("python tests/unsigned_public_release_contract.py --fixtures")==1)
+check("unsigned_publication_never_requires_private_signed_draft_staging",
+    "windows_release_draft_asset_stage.ps1" not in tag_job_source
+    and "windows_distribution_signature_audit.ps1" not in tag_job_source
+    and "unsigned_public_release_contract.py --fixtures" in tag_job_source
+    and "unsigned_public_release_contract.py --public-tag" in tag_job_source
     and "continue-on-error: true" not in tag_job_source)
+check("unsigned_verifier_checks_remote_sha_and_raw_hosted_receipts",
+    all(s in (R/"tests"/"unsigned_public_release_contract.py").read_text(encoding="utf-8-sig") for s in (
+    "PUBLIC_THREE_WAY_SHA_DISAGREEMENT", "HOSTED_RAW_REPORT_SHA_MISMATCH",
+    "HOSTED_REPORT_UNRESOLVED_ERRORS", "GITHUB_RUN_NOT_SUCCESS",
+    "SIGNING_POLICY_MUST_NOT_BE_REQUIRED")))
+
 check("draft_release_stager_fails_closed_on_identity_digest_and_rerun",
     all(s in draft_stage_source for s in (
         "RELEASE_NOT_PRIVATE_DRAFT","RELEASE_TARGET_COMMIT_MISMATCH","SIGNED_DRAFT_INSTALLER_DIGEST_MISMATCH",
