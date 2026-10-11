@@ -85,10 +85,17 @@ check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "dig
 
 check("service_custom_controls", all(x in svc for x in ("CTRL_START = 128","CTRL_STOP = 129","CTRL_RECOVERY = 130","CTRL_UPDATE = 131")) and "case CTRL_UPDATE:" in svc and "_ = Task.Run(RunUpdateAsync)" in svc)
 check("service_direct_update_security", all(x in svc for x in ("LatestReleaseApi","SHA256SUMS.txt","ApiSha256","SHA256.HashDataAsync","CryptographicException","GetLatestUpdateAsync","ParseExpectedSha256")) and "expected.Equals(package.ApiSha256" in svc and "actual.Equals(expected" in svc)
-check("service_direct_update_atomic_download", '".part"' in svc and "DownloadWithSystemCurlAsync" in svc and '"-L", "--fail", "--silent", "--show-error"' in svc and '"--max-time", "210"' in svc and "File.Move(partPath, finalPath, true)" in svc)
+check("service_direct_update_atomic_download", '".part"' in svc and "DownloadWithSystemCurlAsync" in svc and '"-L", "--fail", "--silent", "--show-error"' in svc and '"--max-time", "210"' in svc and "File.Move(partPath, finalPath);" in svc and "OwnedUpdateInstallerPath" in svc and "Prior update still needs verification" in svc and "update-incomplete-preserved" in svc)
 check("service_direct_update_silent_installer", all(x in svc for x in ('"/VERYSILENT"','"/SUPPRESSMSGBOXES"','"/NORESTART"','"/NORESTARTAPPLICATIONS"','"/CLOSEAPPLICATIONS"','"/SP-"')) and "UseShellExecute = false" in svc and 'Verb = "runas"' not in svc)
 check("service_direct_update_requires_clean_off", "NetworkStatePath" in svc and "Direct Method must be OFF before update." in svc)
-check("service_direct_update_post_restart_finalize", "PendingUpdatePath" in svc and "FinalizePendingUpdate()" in svc and '"update", "done"' in svc and "targetVersion" in svc)
+check("service_direct_update_post_restart_finalize",
+    all(x in svc for x in ("FinalizePendingAfterServiceRestartAsync",
+      "_ = Task.Run(FinalizePendingAfterServiceRestartAsync);",
+      "FinalizePendingUpdate();",
+      "pending-update-finalization-deferred-no-overwrite",
+      "update-stage-file-locked-preserving-single-pending-slot",
+      "pending-update.json", '"update", "done"', "targetVersion"))
+    and "StopEvent.IsSet" in svc)
 check("service_direct_update_preserves_registered_user_install", "GetRegisteredInstallDirectory" in svc and "Registry.LocalMachine.OpenSubKey" in svc and "InstallLocation" in svc and '"/DIR=" + installDir' in svc and "DirectInternetMethod.exe" in svc and "manifest.json" in svc)
 check("service_action_gate", "SemaphoreSlim ActionGate" in svc and "WaitAsync(0)" in svc)
 check("service_action_status", "action-status.json" in svc and "WriteActionStatus" in svc and 'phase = "done"' not in svc)
@@ -101,9 +108,33 @@ check("ui_wait_timeout_exceeds_service_timeout", "int timeoutMs = 130000" in gui
 check("client_minimum_access", "SERVICE_QUERY_STATUS | SERVICE_USER_DEFINED_CONTROL" in client and "SERVICE_CHANGE_CONFIG" not in client and "SERVICE_START" not in client and "SERVICE_STOP" not in client)
 check("installer_service_acl_interactive_users_minimum", "(A;;LCCR;;;IU)" in iss and "sdset" in iss and "(A;;LCCR;;;AU)" not in iss)
 check("installer_service_protected_root", "{commonpf}\\DirectInternetMethod\\Privileged" in iss)
+check("single_registered_Windows_install_and_preserve_user_evidence",
+    'AppId={{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}' in iss
+    and "UsePreviousAppDir=yes" in iss and "UninstallLogMode=overwrite" in iss
+    and "DIMExistingAppPathConflicts()" in iss
+    and "RegQueryStringValue(HKLM, Key, 'InstallLocation', OldDir)" in iss
+    and r'Type: filesandordirs; Name: "{app}\evidence"' not in iss
+    and r'Type: filesandordirs; Name: "{app}\bin"' not in iss
+    and r'Type: filesandordirs; Name: "{commonpf}\DirectInternetMethod\Privileged"' not in iss
+    and r'Type: dirifempty; Name: "{commonpf}\DirectInternetMethod\Privileged"' in iss)
+check("owned_update_cache_never_duplicates_versioned_installers",
+    all(x in svc for x in ("OwnedUpdateInstallerPath", "DirectInternetMethod-update-stage.exe",
+       "Previous update is pending" if False else "Prior update still needs verification",
+       "File.Move(partPath, finalPath);",
+       "update-incomplete-preserved",
+       "update-stage-file-locked-preserving-single-pending-slot"))
+    and "File.Move(partPath, finalPath, true)" not in svc)
+
+check("inno_preserves_custom_router_gateway_provider_on_upgrade",
+    'Source: "..\\..\\router_gateway\\providers.json"; DestDir: "{app}\\app\\router_gateway"; Flags: ignoreversion onlyifdoesntexist' in iss)
 check("installer_admin_only_install", "PrivilegesRequired=admin" in iss)
 check("installer_service_recovery", 'failure "' in iss and "failureflag" in iss)
-check("installer_direct_update_completion_marker", "CompletePendingDirectUpdate" in iss and "pending-update.json" in iss and '"action":"update","phase":"done"' in iss and "DeleteFile(PendingPath)" in iss)
+check("installer_preserves_pending_update_until_service_SHA_verifies",
+    "CompletePendingDirectUpdate" in iss and "pending-update.json" in iss
+    and "new service completes SHA-checked cleanup" in iss
+    and r"PendingPath := ExpandConstant('{commonappdata}\DirectInternetMethod\pending-update.json')" in iss
+    and "DeleteFile(PendingPath)" not in iss
+    and '"action":"update","phase":"done"' not in iss)
 check("installer_ctrld_owned_demand_service", "CtrldServiceName = 'ctrld'" in iss and "InstallOrUpdateCtrldService" in iss and "start= demand" in iss and "CurrentControlSet\\Services\\" in iss)
 check("installer_ctrld_collision_fail_closed", "A different Windows service named ctrld already exists" in iss and "CtrldServiceOwned()" in iss)
 check("installer_ctrld_owned_uninstall", "StopCtrldServiceIfOwned" in iss and "delete \"" in iss and "CtrldServiceName" in iss)

@@ -43,7 +43,17 @@ check("linux_offline_first","DATA_PATH" in lmod and "RAW_URL" in lmod and "_refr
 check("linux_non_mutating_test","socket.create_connection" in lcore and "systemctl" not in lcore and "nmcli" not in lcore)
 check("linux_protocol_health_truthful","PPTP control TCP/1723 reachable" in lcore and "L2TP/IPsec UDP 500/4500/authentication not verified" in lcore)
 check("linux_private_dns_guard","ipaddress.ip_address(ip).is_global" in lcore and "DNS intercepted/private address" in lcore)
-check("linux_installer_data",'router_gateway/providers.json' in linstall and 'router_gateway.py' in linstall and 'router_gateway_core.py' in linstall)
+user_tx=(R/"linux/app/user_update_transaction.py").read_text(encoding="utf-8")
+builder=(R/"build_linux_package.py").read_text(encoding="utf-8")
+check("linux_installer_data",
+      "user_update_transaction.py" in linstall
+      and "preservedCustomProviderData" in linstall
+      and "router_gateway/providers.json" in user_tx
+      and "router_gateway.py" in user_tx
+      and "router_gateway_core.py" in user_tx
+      and '("router_gateway/providers.json","app/router_gateway/providers.json")' in builder
+      and 'del payload[PROVIDERS]' in user_tx
+      and 'managedProviderSha256' in linstall)
 check("no_router_auto_mutation",all(x not in wclient+lmod+lcore for x in ["192.168.0.1/admin","192.168.1.1/admin","selenium","Playwright"]))
 smoke=(R/"tests/router_gateway_runtime_smoke.py").read_text(encoding="utf-8")
 check("runtime_smoke_live_probe_bounded","q.get(timeout=5.0)" in smoke and "threading.Thread" in smoke and "daemon=True" in smoke)

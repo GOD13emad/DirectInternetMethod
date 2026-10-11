@@ -10,6 +10,11 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\DirectInternetMethod
 UsePreviousAppDir=yes
+; Historical 1.5.1 appended uninstall logs contain broad cleanup entries.
+; Overwriting the old uninstaller log on an accepted same-AppId in-place update
+; prevents previously recorded recursive deletion of user-generated evidence.
+; New [Files] records remain authoritative, and unknown old files stay preserved.
+UninstallLogMode=overwrite
 DefaultGroupName=Direct Internet Method
 DisableProgramGroupPage=yes
 OutputDir=..\..\delivery
@@ -34,7 +39,7 @@ Name: "{commonappdata}\DirectInternetMethod\UserConfig"; Permissions: users-modi
 Source: "..\app\DirectInternetMethod.exe"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\DirectInternetMethod.ico"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\Status.ps1"; DestDir: "{app}\app"; Flags: ignoreversion
-Source: "..\..\router_gateway\providers.json"; DestDir: "{app}\app\router_gateway"; Flags: ignoreversion
+Source: "..\..\router_gateway\providers.json"; DestDir: "{app}\app\router_gateway"; Flags: ignoreversion onlyifdoesntexist
 Source: "..\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\manifest.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\RELEASE.json"; DestDir: "{app}"; Flags: ignoreversion
@@ -72,17 +77,18 @@ Type: files; Name: "{app}\app\Start-Direct.ps1"
 Type: files; Name: "{app}\app\Stop-Direct.ps1"
 Type: files; Name: "{app}\app\Recovery.ps1"
 Type: files; Name: "{app}\app\DirectInternetMethod.Helper.exe"
-Type: filesandordirs; Name: "{app}\bin"
+; Legacy {app}\bin could contain user files and is not recursively deleted.
 Type: files; Name: "{app}\is-*.tmp"
 Type: files; Name: "{app}\app\is-*.tmp"
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{app}\evidence"
+; Keep user-generated evidence on uninstall (no broad recursive deletion).
 Type: files; Name: "{app}\is-*.tmp"
 Type: files; Name: "{app}\app\is-*.tmp"
 Type: dirifempty; Name: "{app}\app"
 Type: dirifempty; Name: "{app}"
-Type: filesandordirs; Name: "{commonpf}\DirectInternetMethod\Privileged"
+; Uninstaller tracks each managed file under Privileged; never delete a mixed directory recursively.
+Type: dirifempty; Name: "{commonpf}\DirectInternetMethod\Privileged"
 Type: dirifempty; Name: "{commonpf}\DirectInternetMethod"
 
 [Icons]
@@ -209,6 +215,30 @@ begin
   Result := Pos(LowerCase(OwnedExe), LowerCase(ImagePath)) > 0;
 end;
 
+// Refuse a second installation path. Existing AppId updates in the same directory.
+function DIMExistingAppPathConflicts(): Boolean;
+var
+  OldDir: String;
+  OtherDir: String;
+  Key: String;
+begin
+  Result := False;
+  Key := 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}_is1';
+  if RegQueryStringValue(HKCU, Key, 'InstallLocation', OtherDir) then
+  begin
+    Result := True;
+    exit;
+  end;
+  if RegQueryStringValue(HKLM, Key, 'InstallLocation', OldDir) then
+  begin
+    Result := LowerCase(AddBackslash(OldDir)) <>
+      LowerCase(AddBackslash(ExpandConstant('{app}')));
+    exit;
+  end;
+  if FileExists(ExpandConstant('{app}\app\DirectInternetMethod.exe')) then
+    Result := True;  // Unknown orphan program copy preserved; not overwritten.
+end;
+
 procedure StopCtrldServiceIfOwned();
 begin
   if CtrldServiceExists() and CtrldServiceOwned() then
@@ -293,6 +323,11 @@ var
   StatePath: String;
 begin
   StatePath := ExpandConstant('{commonappdata}\DirectDnsDpiHarness\state.json');
+  if DIMExistingAppPathConflicts() then
+  begin
+    Result := 'Existing Direct Internet Method installation is registered in a different location, or a previous unregistered program copy exists. Side-by-side installation refused.';
+    exit;
+  end;
   if FileExists(StatePath) then
   begin
     Result := 'Direct Internet Method is active. Use Stop or Recovery before installing/upgrading.';
@@ -311,24 +346,13 @@ end;
 procedure CompletePendingDirectUpdate();
 var
   PendingPath: String;
-  StatusPath: String;
-  TempPath: String;
-  Payload: String;
 begin
   PendingPath := ExpandConstant('{commonappdata}\DirectInternetMethod\pending-update.json');
-  if not FileExists(PendingPath) then
-    exit;
-
-  StatusPath := ExpandConstant('{commonappdata}\DirectInternetMethod\action-status.json');
-  TempPath := StatusPath + '.tmp';
-  Payload := '{"schema":1,"action":"update","phase":"done","exitCode":0,"message":"Updated to v{#MyAppVersion}.","updatedUtc":"installer-postinstall"}';
-  if not SaveStringToFile(TempPath, Payload, False) then
-    RaiseException('Unable to write direct-update completion status.');
-  if FileExists(StatusPath) then
-    DeleteFile(StatusPath);
-  if not RenameFile(TempPath, StatusPath) then
-    RaiseException('Unable to promote direct-update completion status.');
-  DeleteFile(PendingPath);
+  // Do not report an update as completed or delete SHA/provenance while Setup
+  // is still running. Only the installed service, after restart, may verify
+  // the exact staged installer hash and then close its one pending slot.
+  if FileExists(PendingPath) then
+    Log('Direct Internet Method updater pending verification retained until new service completes SHA-checked cleanup.');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
