@@ -1,30 +1,51 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
+
 APP="$HOME/.local/share/DirectInternetMethod"
-BIN="$HOME/.local/bin"
-DESKTOP="$HOME/.local/share/applications/io.github.god13emad.DirectInternetMethod.desktop"
-ICON="$HOME/.local/share/icons/hicolor/scalable/apps/direct-internet-method.svg"
+HELPER="$APP/user_uninstall_preserve.py"
+
+# Refuse unsafe uninstall while a version-managed user transaction is pending.
+[ ! -e "$HOME/.local/state/DirectInternetMethod/update-pending" ] || {
+  echo "An interrupted update needs code rollback/acceptance before uninstall." >&2
+  exit 87
+}
+[ -f "$HELPER" ] && [ ! -L "$HELPER" ] || {
+  echo "The exact owned-file uninstall manifest helper is missing. User data preserved." >&2
+  exit 85
+}
+
+# First establish that every program file, icon and launcher selected for removal
+# still has the exact SHA recorded by the installed version. Unknowns stay intact.
+python3 "$HELPER" --verify
 
 if [ -e /run/directinternetmethod-selective/session.json ]; then
   systemctl start directinternetmethod-recovery.service
   [ ! -e /run/directinternetmethod-selective/session.json ] || {
-    echo "Selective DNS still active; refuse uninstall to preserve rollback." >&2
+    echo "Selective DNS remains active. Uninstall cancelled." >&2
     exit 88
   }
 fi
 if [ -f "$APP/directmethod/state.json" ]; then
   systemctl start directinternetmethod-recovery.service
-  [ ! -f "$APP/directmethod/state.json" ] || { echo "Recovery could not be verified; uninstall stopped." >&2; exit 20; }
+  [ ! -f "$APP/directmethod/state.json" ] || {
+    echo "Recovery could not be verified; uninstall cancelled." >&2
+    exit 20
+  }
 fi
 
-DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || true)"
-rm -f "$BIN/direct-internet-method" "$BIN/direct-internet-method-uninstall" "$DESKTOP" "$HOME/.local/share/applications/direct-internet-method.desktop" "$ICON"
-if [ -n "$DESKTOP_DIR" ]; then rm -f "$DESKTOP_DIR/Direct Internet Method.desktop"; fi
-rm -rf "$APP"
-command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
-
+# Delete root-owned backend FIRST. A declined PolicyKit prompt or failed
+# protected cleanup must never remove the working user app.
 if [ -x /usr/lib/directinternetmethod/uninstall_system.sh ]; then
   pkexec /bin/bash /usr/lib/directinternetmethod/uninstall_system.sh
 fi
 
-echo "Direct Internet Method removed."
+# Only exact SHA-owned managed executable files are removed. Keep settings,
+# strategy, scope, custom hosts, adult coverage, router providers and logs.
+python3 "$HELPER" --remove-after-backend
+
+DESKTOP="$HOME/.local/share/applications"
+command -v update-desktop-database >/dev/null 2>&1 &&
+  update-desktop-database "$DESKTOP" >/dev/null 2>&1 || true
+echo "Direct Internet Method uninstalled. User configuration preserved in $APP."
+echo "No user data was deleted; reinstall can reuse the same settings."
