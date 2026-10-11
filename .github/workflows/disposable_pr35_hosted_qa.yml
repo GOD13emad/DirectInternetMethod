@@ -1,0 +1,137 @@
+name: DIM 1.5.2 unsigned PR35 exact-SHA native Windows acceptance
+on:
+  push:
+    branches: ['feature/unsigned-v152-pr35-hosted-validation-20261011']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dim-r399-r400-public-unsigned-qa
+  cancel-in-progress: false
+
+jobs:
+  fresh-install:
+    name: native-installer-ephemeral
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Source and hosted-runner safety guards
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if($env:RUNNER_ENVIRONMENT -ne 'github-hosted'){throw 'SELF_HOSTED_REFUSED'}
+          if($env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'X64'){throw 'WRONG_RUNNER_PLATFORM'}
+          if($env:GITHUB_REF -ne 'refs/heads/feature/unsigned-v152-pr35-hosted-validation-20261011'){throw 'WRONG_BRANCH'}
+          if($env:GITHUB_REPOSITORY -ne 'GOD13emad/DirectInternetMethod'){throw 'WRONG_REPOSITORY'}
+          $f='tests/windows_unsigned_fresh_R399.ps1'
+          $tokens=$null; $errors=$null
+          [void][System.Management.Automation.Language.Parser]::ParseFile($f,[ref]$tokens,[ref]$errors)
+          if($errors.Count){$errors | Format-List | Out-String | Write-Error;exit 90}
+          & $f -StaticOnly
+          if(-not $?){throw 'QA_STATIC_ONLY_FAILED'}
+          Write-Output 'R399_HOSTED_STATIC_PREFLIGHT_PASS'
+      - name: Download SHA-pinned private draft installer
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          if($env:RUNNER_ENVIRONMENT -ne 'github-hosted'){throw 'NOT_A_HOSTED_VM'}
+          $dir=Join-Path $env:RUNNER_TEMP 'DIM_R399_DOWNLOAD'
+          if(Test-Path $dir){throw 'DUPLICATE_DOWNLOAD_FOLDER'}
+          New-Item -Path $dir -ItemType Directory -ErrorAction Stop | Out-Null
+          & gh release download 'unsigned-1.5.2-preview.4' --repo 'GOD13emad/DirectInternetMethod' --pattern 'DirectInternetMethod_1.5.2_Windows_Setup.exe' --dir $dir
+          if($LASTEXITCODE -ne 0){throw 'PUBLIC_UNSIGNED_PREVIEW4_DOWNLOAD_FAILED'}
+          $installer=Join-Path $dir 'DirectInternetMethod_1.5.2_Windows_Setup.exe'
+          if(-not (Test-Path -LiteralPath $installer -PathType Leaf)){throw 'INSTALLER_NOT_FOUND'}
+          if((Get-Item -LiteralPath $installer).Length -ne 157112111){throw 'INSTALLER_WRONG_BYTES'}
+          $sha=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
+          if($sha -ne '752B967B44D7B549508F25E442F4B464A01A4C0B573E1BA09AB28CEF20B3C706'){throw ('INSTALLER_SHA_DRIFT '+$sha)}
+          if((Get-AuthenticodeSignature -FilePath $installer).Status.ToString() -ne 'NotSigned'){throw 'UNEXPECTED_SIGNATURE_STATE'}
+          Write-Output ('R399_PRIVATE_DRAFT_ASSET_SHA_PASS '+$sha)
+      - name: Real fresh install, service verification, uninstall and rollback
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $installer=Join-Path $env:RUNNER_TEMP 'DIM_R399_DOWNLOAD\DirectInternetMethod_1.5.2_Windows_Setup.exe'
+          & ./tests/windows_unsigned_fresh_R399.ps1 -Installer $installer
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+      - name: Archive exact host lifecycle evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r399-disposable-windows-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIM_R399_HOSTED
+          if-no-files-found: warn
+          retention-days: 30
+
+  upgrade-rollback:
+    name: native-installer-ephemeral
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Source and hosted-runner safety guards
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if($env:RUNNER_ENVIRONMENT -ne 'github-hosted'){throw 'SELF_HOSTED_REFUSED'}
+          if($env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'X64'){throw 'WRONG_RUNNER_PLATFORM'}
+          if($env:GITHUB_REF -ne 'refs/heads/feature/unsigned-v152-pr35-hosted-validation-20261011'){throw 'WRONG_BRANCH'}
+          if($env:GITHUB_REPOSITORY -ne 'GOD13emad/DirectInternetMethod'){throw 'WRONG_REPOSITORY'}
+          $f='tests/windows_unsigned_upgrade_R400.ps1'
+          $tokens=$null; $errors=$null
+          [void][System.Management.Automation.Language.Parser]::ParseFile($f,[ref]$tokens,[ref]$errors)
+          if($errors.Count){$errors | Format-List | Out-String | Write-Error;exit 90}
+          & $f -StaticOnly
+          if(-not $?){throw 'QA_STATIC_ONLY_FAILED'}
+          Write-Output 'R400_HOSTED_STATIC_PREFLIGHT_PASS'
+      - name: Download SHA-pinned unsigned 1.5.1 stable and 1.5.2 candidate
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          if($env:RUNNER_ENVIRONMENT -ne 'github-hosted'){throw 'NOT_A_HOSTED_VM'}
+          $dir=Join-Path $env:RUNNER_TEMP 'DIM_R400_DOWNLOAD'
+          if(Test-Path $dir){throw 'DUPLICATE_DOWNLOAD_FOLDER'}
+          New-Item -Path $dir -ItemType Directory -ErrorAction Stop | Out-Null
+          & gh release download 'unsigned-1.5.2-preview.4' --repo 'GOD13emad/DirectInternetMethod' --pattern 'DirectInternetMethod_1.5.2_Windows_Setup.exe' --dir $dir
+          if($LASTEXITCODE -ne 0){throw 'PUBLIC_PREVIEW_152_DOWNLOAD_FAILED'}
+          $oldDir=Join-Path $env:RUNNER_TEMP 'DIM_R400_BASELINE'
+          if(Test-Path $oldDir){throw 'BASELINE_DOWNLOAD_FOLDER_EXISTS'}
+          New-Item -Path $oldDir -ItemType Directory -ErrorAction Stop | Out-Null
+          & gh release download 'v1.5.1' --repo 'GOD13emad/DirectInternetMethod' --pattern 'DirectInternetMethod_1.5.1_Windows_Setup.exe' --dir $oldDir
+          if($LASTEXITCODE -ne 0){throw 'PUBLIC_STABLE_V151_DOWNLOAD_FAILED'}
+          $baseline=Join-Path $oldDir 'DirectInternetMethod_1.5.1_Windows_Setup.exe'
+          if((Get-FileHash -LiteralPath $baseline -Algorithm SHA256).Hash -ne '4E1974B5A40F96B49B7B4196FFE963DCDF65B05E4F2B89DE4EC06E794B77EE9B'){throw 'BASELINE_V151_SHA_DRIFT'}
+          if((Get-Item -LiteralPath $baseline).Length -ne 157111497){throw 'BASELINE_V151_BYTES_DRIFT'}
+          if((Get-AuthenticodeSignature -FilePath $baseline).Status.ToString() -ne 'NotSigned'){throw 'BASELINE_PUBLIC_STABLE_SIGNATURE_UNEXPECTED'}
+          Write-Output 'R400_PUBLIC_UNSIGNED_STABLE_151_PIN_PASS'
+          $installer=Join-Path $dir 'DirectInternetMethod_1.5.2_Windows_Setup.exe'
+          if(-not (Test-Path -LiteralPath $installer -PathType Leaf)){throw 'INSTALLER_NOT_FOUND'}
+          if((Get-Item -LiteralPath $installer).Length -ne 157112111){throw 'INSTALLER_WRONG_BYTES'}
+          $sha=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
+          if($sha -ne '752B967B44D7B549508F25E442F4B464A01A4C0B573E1BA09AB28CEF20B3C706'){throw ('INSTALLER_SHA_DRIFT '+$sha)}
+          if((Get-AuthenticodeSignature -FilePath $installer).Status.ToString() -ne 'NotSigned'){throw 'UNEXPECTED_SIGNATURE_STATE'}
+          Write-Output ('R400_PUBLIC_UNSIGNED_152_SHA_PASS '+$sha)
+      - name: Real 1.5.1 install, upgrade to 1.5.2, restore 1.5.1 and clean
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $installer=Join-Path $env:RUNNER_TEMP 'DIM_R400_DOWNLOAD\DirectInternetMethod_1.5.2_Windows_Setup.exe'
+          $baseline=Join-Path $env:RUNNER_TEMP 'DIM_R400_BASELINE\DirectInternetMethod_1.5.1_Windows_Setup.exe'
+          & ./tests/windows_unsigned_upgrade_R400.ps1 -Installer $installer -BaselineInstaller $baseline
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+      - name: Archive exact host lifecycle evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r400-disposable-windows-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIM_R400_HOSTED
+          if-no-files-found: warn
+          retention-days: 30
