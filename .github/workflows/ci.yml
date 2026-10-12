@@ -557,17 +557,7 @@ jobs:
             $doc['sameVMTestRun']= $true
             [IO.File]::WriteAllText($dest,($doc|ConvertTo-Json -Depth 16),[Text.UTF8Encoding]::new($false))
             $sha=(Get-FileHash -LiteralPath $dest -Algorithm SHA256).Hash
-            if(!$sha -or $sha -notmatch '^[A-F0-9]{64}
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: dim-r450-official-draft-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/DIM_R435_HOSTED
-            ${{ runner.temp }}/DIM_R435_BUILD.json
-          retention-days: 30
-          if-no-files-found: warn
-){throw 'DERIVED_RECEIPT_SHA_INVALID'}
+            if(!$sha -or $sha -notmatch '^[A-F0-9]{64}$'){throw 'DERIVED_RECEIPT_SHA_INVALID'}
             Write-Output ("PASS_"+$number+"_EXACT_GENUINE_LIFECYCLE_RECEIPT_SHA="+$sha)
           }
           # Validate both derived documents against the exact tagged-source
