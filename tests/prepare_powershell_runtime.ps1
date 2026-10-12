@@ -30,5 +30,5 @@ $r=[ordered]@{
  pwshSha256=(Get-FileHash $Pwsh -Algorithm SHA256).Hash;
  pwshBytes=(Get-Item $Pwsh).Length
 }
-$r|ConvertTo-Json -Depth 4|Set-Content -LiteralPath (Join-Path $Root 'evidence\POWERSHELL_RUNTIME_7.6.6_20260930.json') -Encoding UTF8
+$r|ConvertTo-Json -Depth 4|Set-Content -LiteralPath (Join-Path $Root 'evidence\POWERSHELL_RUNTIME_7.6.6_20261008_V152.json') -Encoding UTF8
 $r|ConvertTo-Json -Depth 4

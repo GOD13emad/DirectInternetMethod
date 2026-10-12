@@ -2,18 +2,21 @@
 from __future__ import annotations
 import hashlib,json,pathlib,zipfile,tempfile,os
 R=pathlib.Path(__file__).resolve().parent
-OUT=R/"delivery"/"DirectInternetMethod_1.5.1_Linux_x86_64.zip"
-ROOT="DirectInternetMethod_1.5.1_Linux_x86_64"
+OUT=R/"delivery"/"DirectInternetMethod_1.5.2_Linux_x86_64.zip"
+ROOT="DirectInternetMethod_1.5.2_Linux_x86_64"
 FILES=[
  ("README.md","README.md"),
  ("linux/install.sh","install.sh"),
  ("linux/uninstall.sh","uninstall.sh"),
  ("linux/system/install_system.sh","system/install_system.sh"),
  ("linux/system/control.sh","system/control.sh"),
+ ("linux/system/selective_dns.py","system/selective_dns.py"),
  ("linux/system/uninstall_system.sh","system/uninstall_system.sh"),
  ("linux/app/direct_internet_method.py","app/direct_internet_method.py"),
  ("linux/app/router_gateway.py","app/router_gateway.py"),
  ("linux/app/router_gateway_core.py","app/router_gateway_core.py"),
+ ("linux/app/user_update_transaction.py","app/user_update_transaction.py"),
+ ("linux/app/user_uninstall_preserve.py","app/user_uninstall_preserve.py"),
  ("router_gateway/providers.json","app/router_gateway/providers.json"),
  ("linux/app/direct_method_helper.sh","app/direct_method_helper.sh"),
  ("linux/app/hosts.txt","app/hosts.txt"),
@@ -38,7 +41,7 @@ for src,dst in FILES:
  if not p.is_file(): raise SystemExit("MISSING:"+src)
  data=payload_bytes(src,dst)
  rows.append({"file":dst,"bytes":len(data),"sha256":sha_bytes(data)})
-manifest={"schema":1,"product":"Direct Internet Method","version":"1.5.1","platform":"linux-x86_64","files":rows}
+manifest={"schema":1,"product":"Direct Internet Method","version":"1.5.2","platform":"linux-x86_64","files":rows}
 OUT.parent.mkdir(parents=True,exist_ok=True)
 fd,tmp_name=tempfile.mkstemp(prefix="dim-build-",suffix=".zip",dir=OUT.parent)
 os.close(fd)

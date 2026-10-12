@@ -1,3 +1,13 @@
+# v1.5.2 — corrective candidate (NOT PUBLISHED)
+
+- Fix Linux fresh install under umask 077. Explicitly set root-owned nonsecret parent directories to mode 0755 so user-level backend verification can traverse them; files stay root-owned.
+- Add negative/positive regression and keep Windows/Linux release and updater versions aligned.
+- No new DNS/DPI features; preserve opt-in Adult coverage, original direct-only design, rollback and historical v1.5.1.
+- Gemini real-browser HTTP 403 remains FAIL and cannot be marked usable by transport-only tests.
+- Publication only after exact SHA asset verification, CI and installed host acceptance.
+
+---
+
 # Direct Internet Method v1.5.1
 
 ## Main change

@@ -1,5 +1,5 @@
 #define MyAppName "Direct Internet Method"
-#define MyAppVersion "1.5.1"
+#define MyAppVersion "1.5.2"
 #define MyAppPublisher "Direct Internet Method"
 #define MyAppExeName "DirectInternetMethod.exe"
 
@@ -10,10 +10,15 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\DirectInternetMethod
 UsePreviousAppDir=yes
+; Historical 1.5.1 appended uninstall logs contain broad cleanup entries.
+; Overwriting the old uninstaller log on an accepted same-AppId in-place update
+; prevents previously recorded recursive deletion of user-generated evidence.
+; New [Files] records remain authoritative, and unknown old files stay preserved.
+UninstallLogMode=overwrite
 DefaultGroupName=Direct Internet Method
 DisableProgramGroupPage=yes
 OutputDir=..\..\delivery
-OutputBaseFilename=DirectInternetMethod_1.5.1_Windows_Setup
+OutputBaseFilename=DirectInternetMethod_1.5.2_Windows_Setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -34,7 +39,7 @@ Name: "{commonappdata}\DirectInternetMethod\UserConfig"; Permissions: users-modi
 Source: "..\app\DirectInternetMethod.exe"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\DirectInternetMethod.ico"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\Status.ps1"; DestDir: "{app}\app"; Flags: ignoreversion
-Source: "..\..\router_gateway\providers.json"; DestDir: "{app}\app\router_gateway"; Flags: ignoreversion
+Source: "..\..\router_gateway\providers.json"; DestDir: "{app}\app\router_gateway"; Flags: ignoreversion onlyifdoesntexist
 Source: "..\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\manifest.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\RELEASE.json"; DestDir: "{app}"; Flags: ignoreversion
@@ -44,6 +49,7 @@ Source: "..\vendor\pwsh\*"; DestDir: "{commonpf}\DirectInternetMethod\Privileged
 Source: "..\app\Start-Direct.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
 Source: "..\app\Stop-Direct.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
 Source: "..\app\Recovery.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
+Source: "..\app\SafeLegacyProviderRollback.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
 Source: "..\bin\ctrld\ctrld.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
 Source: "..\bin\ctrld\ctrld.toml"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
 Source: "..\bin\ctrld\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
@@ -51,10 +57,14 @@ Source: "..\bin\zapret\winws.exe"; DestDir: "{commonpf}\DirectInternetMethod\Pri
 Source: "..\bin\zapret\WinDivert.dll"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\WinDivert64.sys"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\cygwin1.dll"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\LICENSE.Cygwin.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\LGPL3.Cygwin.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\GPL3.Cygwin.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\adult-fallback-hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\strong-override-hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 Source: "..\bin\zapret\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\bin\zapret\LICENSE.WinDivert.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
 
 [InstallDelete]
 Type: files; Name: "{app}\app\ControlPanel.cmd"
@@ -68,17 +78,18 @@ Type: files; Name: "{app}\app\Start-Direct.ps1"
 Type: files; Name: "{app}\app\Stop-Direct.ps1"
 Type: files; Name: "{app}\app\Recovery.ps1"
 Type: files; Name: "{app}\app\DirectInternetMethod.Helper.exe"
-Type: filesandordirs; Name: "{app}\bin"
+; Legacy {app}\bin could contain user files and is not recursively deleted.
 Type: files; Name: "{app}\is-*.tmp"
 Type: files; Name: "{app}\app\is-*.tmp"
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{app}\evidence"
+; Keep user-generated evidence on uninstall (no broad recursive deletion).
 Type: files; Name: "{app}\is-*.tmp"
 Type: files; Name: "{app}\app\is-*.tmp"
 Type: dirifempty; Name: "{app}\app"
 Type: dirifempty; Name: "{app}"
-Type: filesandordirs; Name: "{commonpf}\DirectInternetMethod\Privileged"
+; Uninstaller tracks each managed file under Privileged; never delete a mixed directory recursively.
+Type: dirifempty; Name: "{commonpf}\DirectInternetMethod\Privileged"
 Type: dirifempty; Name: "{commonpf}\DirectInternetMethod"
 
 [Icons]
@@ -92,10 +103,91 @@ Filename: "{app}\app\DirectInternetMethod.exe"; Description: "Open Direct Intern
 const
   ServiceName = 'DirectInternetMethodSvc';
   CtrldServiceName = 'ctrld';
+  DIM_SC_MANAGER_CONNECT = $0001;
+  DIM_SERVICE_QUERY_STATUS = $0004;
+  DIM_SERVICE_STOPPED = 1;
+  DIM_SERVICE_STOP_PENDING = 3;
+
+type
+  TDIMServiceStatus = record
+    dwServiceType: DWORD;
+    dwCurrentState: DWORD;
+    dwControlsAccepted: DWORD;
+    dwWin32ExitCode: DWORD;
+    dwServiceSpecificExitCode: DWORD;
+    dwCheckPoint: DWORD;
+    dwWaitHint: DWORD;
+  end;
+
+function DIMOpenSCManager(MachineName: String; DatabaseName: String; DesiredAccess: DWORD): THandle;
+  external 'OpenSCManagerW@advapi32.dll stdcall';
+function DIMOpenService(Manager: THandle; ServiceName: String; DesiredAccess: DWORD): THandle;
+  external 'OpenServiceW@advapi32.dll stdcall';
+function DIMQueryServiceStatus(Service: THandle; var Status: TDIMServiceStatus): Boolean;
+  external 'QueryServiceStatus@advapi32.dll stdcall';
+function DIMCloseServiceHandle(Handle: THandle): Boolean;
+  external 'CloseServiceHandle@advapi32.dll stdcall';
 
 function RunSc(Params: String; var ResultCode: Integer): Boolean;
 begin
   Result := Exec(ExpandConstant('{sys}\sc.exe'), Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+// Native SCM checks avoid locale-dependent text parsing of sc.exe query.
+// Any inability to query SCM aborts Setup/Uninstall rather than guessing.
+function DIMReadServiceState(const Target: String): DWORD;
+var
+  Manager: THandle;
+  Service: THandle;
+  Status: TDIMServiceStatus;
+begin
+  Manager := DIMOpenSCManager('', '', DIM_SC_MANAGER_CONNECT);
+  if Manager = 0 then
+    RaiseException('Unable to open Windows Service Control Manager: ' +
+      SysErrorMessage(DLLGetLastError));
+  try
+    Service := DIMOpenService(Manager, Target, DIM_SERVICE_QUERY_STATUS);
+    if Service = 0 then
+      RaiseException('Unable to query service ' + Target + ': ' +
+        SysErrorMessage(DLLGetLastError));
+    try
+      if not DIMQueryServiceStatus(Service, Status) then
+        RaiseException('QueryServiceStatus failed for ' + Target + ': ' +
+          SysErrorMessage(DLLGetLastError));
+      Result := Status.dwCurrentState;
+    finally
+      DIMCloseServiceHandle(Service);
+    end;
+  finally
+    DIMCloseServiceHandle(Manager);
+  end;
+end;
+
+// A successful sc stop request does not mean STOPPED. Wait at most 30s.
+procedure DIMStopServiceAndWait(const Target: String);
+var
+  ResultCode: Integer;
+  State: DWORD;
+  Attempt: Integer;
+begin
+  State := DIMReadServiceState(Target);
+  if State = DIM_SERVICE_STOPPED then
+    exit;
+  if State <> DIM_SERVICE_STOP_PENDING then
+  begin
+    if (not RunSc('stop "' + Target + '"', ResultCode)) or
+       ((ResultCode <> 0) and (ResultCode <> 1062)) then
+      RaiseException('Unable to stop ' + Target + '. sc.exe exit=' +
+        IntToStr(ResultCode));
+  end;
+  for Attempt := 1 to 120 do
+  begin
+    if DIMReadServiceState(Target) = DIM_SERVICE_STOPPED then
+      exit;
+    Sleep(250);
+  end;
+  RaiseException('Service ' + Target +
+    ' did not reach STOPPED in 30 seconds; installation/uninstall aborted.');
 end;
 
 function ServiceExists(): Boolean;
@@ -124,15 +216,34 @@ begin
   Result := Pos(LowerCase(OwnedExe), LowerCase(ImagePath)) > 0;
 end;
 
-procedure StopCtrldServiceIfOwned();
+// Refuse a second installation path. Existing AppId updates in the same directory.
+function DIMExistingAppPathConflicts(): Boolean;
 var
-  ResultCode: Integer;
+  OldDir: String;
+  OtherDir: String;
+  Key: String;
+begin
+  Result := False;
+  Key := 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}_is1';
+  if RegQueryStringValue(HKCU, Key, 'InstallLocation', OtherDir) then
+  begin
+    Result := True;
+    exit;
+  end;
+  if RegQueryStringValue(HKLM, Key, 'InstallLocation', OldDir) then
+  begin
+    Result := LowerCase(AddBackslash(OldDir)) <>
+      LowerCase(AddBackslash(ExpandConstant('{app}')));
+    exit;
+  end;
+  if FileExists(ExpandConstant('{app}\app\DirectInternetMethod.exe')) then
+    Result := True;  // Unknown orphan program copy preserved; not overwritten.
+end;
+
+procedure StopCtrldServiceIfOwned();
 begin
   if CtrldServiceExists() and CtrldServiceOwned() then
-  begin
-    RunSc('stop "' + CtrldServiceName + '"', ResultCode);
-    Sleep(1200);
-  end;
+    DIMStopServiceAndWait(CtrldServiceName);
 end;
 
 procedure InstallOrUpdateCtrldService();
@@ -168,14 +279,9 @@ begin
 end;
 
 procedure StopServiceIfPresent();
-var
-  ResultCode: Integer;
 begin
   if ServiceExists() then
-  begin
-    RunSc('stop "' + ServiceName + '"', ResultCode);
-    Sleep(1200);
-  end;
+    DIMStopServiceAndWait(ServiceName);
 end;
 
 procedure InstallOrUpdateService();
@@ -218,6 +324,11 @@ var
   StatePath: String;
 begin
   StatePath := ExpandConstant('{commonappdata}\DirectDnsDpiHarness\state.json');
+  if DIMExistingAppPathConflicts() then
+  begin
+    Result := 'Existing Direct Internet Method installation is registered in a different location, or a previous unregistered program copy exists. Side-by-side installation refused.';
+    exit;
+  end;
   if FileExists(StatePath) then
   begin
     Result := 'Direct Internet Method is active. Use Stop or Recovery before installing/upgrading.';
@@ -236,24 +347,13 @@ end;
 procedure CompletePendingDirectUpdate();
 var
   PendingPath: String;
-  StatusPath: String;
-  TempPath: String;
-  Payload: String;
 begin
   PendingPath := ExpandConstant('{commonappdata}\DirectInternetMethod\pending-update.json');
-  if not FileExists(PendingPath) then
-    exit;
-
-  StatusPath := ExpandConstant('{commonappdata}\DirectInternetMethod\action-status.json');
-  TempPath := StatusPath + '.tmp';
-  Payload := '{"schema":1,"action":"update","phase":"done","exitCode":0,"message":"Updated to v{#MyAppVersion}.","updatedUtc":"installer-postinstall"}';
-  if not SaveStringToFile(TempPath, Payload, False) then
-    RaiseException('Unable to write direct-update completion status.');
-  if FileExists(StatusPath) then
-    DeleteFile(StatusPath);
-  if not RenameFile(TempPath, StatusPath) then
-    RaiseException('Unable to promote direct-update completion status.');
-  DeleteFile(PendingPath);
+  // Do not report an update as completed or delete SHA/provenance while Setup
+  // is still running. Only the installed service, after restart, may verify
+  // the exact staged installer hash and then close its one pending slot.
+  if FileExists(PendingPath) then
+    Log('Direct Internet Method updater pending verification retained until new service completes SHA-checked cleanup.');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

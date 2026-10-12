@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "revision": "R213",
+  "date": "2026-10-08",
+  "stage": "VERIFICATION",
+  "status": "SOURCE_MOCK_AND_ISOLATED_KERNEL_PASS__HOST_RUNTIME_UNPROVEN",
+  "authority": {
+    "parent": "fe501aa4e08a6a27d851f5a7db63400134e00be4",
+    "featureBranch": "feature/tailscale-split-coexist-20261008",
+    "pr": 26
+  },
+  "mutationObjective": "Fail-closed transient Start rollback: preserve a table if any foreign rule/chain, incorrect physical interface/order, or ambiguous NFT read is found; allow cleanup for legitimate complete or partial owned table",
+  "negativeFirst": {
+    "class": "FOREIGN_NFT_TABLE_DELETED_BY_START_ROLLBACK",
+    "phase": "rollback_on_exit -> cleanup_transient",
+    "trigger": "TABLE created during Start then foreign IP drop rule added before rollback",
+    "actual": "Unconditional nft delete table removed whole table containing foreign rule",
+    "environment": "Windows WSL2 root-owned temporary unshare net namespace, kernel 6.18.33.2, nftables 1.0.9",
+    "isolation": true,
+    "affectedActiveRoutes": false,
+    "localOSSettingsChanged": false
+  },
+  "guard": "Strict prefix-of-owned-Rules parser in nft_table_transient_owned, explicit tri-state nft_table_presence; two table checks before deletion, refusal diagnostic ROLLBACK_FOREIGN_NFT_PRESERVED / ROLLBACK_NFT_CHANGED_PRESERVED / ROLLBACK_NFT_PRESENCE_UNVERIFIED, cleanup leaves ambiguous data untouched",
+  "regression": {
+    "transientMock": "PASS_10_OF_10",
+    "realKernelIsolatedNetns": [
+      "PASS_empty_table_cleanup",
+      "PASS_partial_table_cleanup",
+      "PASS_complete_owned_table_cleanup",
+      "PASS_foreign_rule_preserved"
+    ],
+    "linuxSourceSuite": "PASS_EMAD_LINUX",
+    "bashSyntax": "PASS",
+    "previousNftQuery": "PASS_6_OF_6",
+    "previousNftOwnership": "PASS_12_OF_12",
+    "previousOwnedStateCleanup": "PASS_8_OF_8",
+    "previousStatelessRecovery": "PASS_6_OF_6",
+    "realLinuxHostInstalledRuntime": "UNPROVEN"
+  },
+  "kernelReceipts": {
+    "negativeFirst": "Real WSL Kernel temporary netns reported NEGATIVE_FIRST_CONFIRMED_TRANSIENT_ROLLBACK_DELETED_FOREIGN_TABLE",
+    "pass": "KERNEL_R213_ALL_CASES_PASS",
+    "namespace": "net:[4026532220]",
+    "rollbackForeignOutput": "ROLLBACK_FOREIGN_NFT_PRESERVED",
+    "outsideNamespaceAffected": false
+  },
+  "hashes": {
+    "linux/app/direct_method_helper.sh": "3F71F1055BEF6B36B46B96E6C5F63C664FE6DBDD9BFECBBE7D032FBB32E9A1E0",
+    "tests/tailscale_transient_rollback_ownership_contract.py": "C742FCBA0A5D78E64140EBFD0AD18E92C62FBAD2C2BFAA3D2286C89885C636D9"
+  },
+  "linuxArchive": {
+    "bytes": 8200436,
+    "files": 19,
+    "sha256": "58E9F55C8B65BB51C9274298CB67D4682AD3B15E4789D04D137E9FB020D5AF5C",
+    "reproducedIn": [
+      "Windows Emad",
+      "Linux Emad"
+    ],
+    "status": "UNPUBLISHED_CANDIDATE"
+  },
+  "superseded": {
+    "prior": "F916D5ACAA0BF884C67D0B552FBE973DEFD13E305C945BD1154C70DB37678975",
+    "backup": "C:\\Users\\Aa.Emad\\source\\repos\\DIM_R213_GATE\\BASELINE_FE501AA.zip",
+    "directive": "SUPERSEDED_DO_NOT_INSTALL"
+  },
+  "openCriticalGates": [
+    "exact-head GitHub CI successor pending",
+    "independent Saeid binary/source regression pending",
+    "legitimate protected Linux root install",
+    "live Start Stop Recovery alongside actual Tailscale RustDesk MagicDNS and physical internet",
+    "trusted Authenticode/Smart App Control-on Windows clean sandbox",
+    "tag public release post-download SHA verification",
+    "Gemini HTTP 403"
+  ],
+  "risk": "TOCTOU between ownership revalidation and nft delete table remains possible under concurrent privileged modification. Actual root Linux kernel and full product behavior still require maintenance-host proof; no universal internet guarantee.",
+  "exactNext": "Commit narrow security revision, run exact-head hosted CI and Saeid independent source/archive reproduction. Preserve PR26/PR24 Draft until privileged live and signing gates accepted."
+}

@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "observed": "2026-10-08",
+  "status": "MOCK_NETFILTER_CLEANUP_AND_OWNERSHIP_PASS_NO_PRIVILEGED_LIVE_TEST",
+  "feature": "Linux Tailscale split-network coexistence",
+  "parentSourceHead": "d0ce773c934e7ee56df4f596720325f409f40e6b",
+  "sourceHelpers": {
+    "linuxHelperSha256": "cdbf53f969a73b394db28a7e7f423ec886e9a48ff69f2c069e54f316127aa857",
+    "nftOwnershipContract": "tests/tailscale_nft_ownership_contract.py",
+    "cleanupContract": "tests/tailscale_cleanup_ownership_contract.py"
+  },
+  "tests": {
+    "linuxEmad": {
+      "sourceBashSyntax": "PASS",
+      "nftOwnedAndForeignCases": "6/6_PASS",
+      "cleanupOwnedAndForeignCases": "5/5_PASS"
+    },
+    "linuxSaeid": {
+      "sourceBashSyntax": "PASS",
+      "nftOwnedAndForeignCases": "6/6_PASS",
+      "cleanupOwnedAndForeignCases": "5/5_PASS"
+    },
+    "states": [
+      "coexist marked table recognized",
+      "coexist missing bypass mark rejected",
+      "coexist wrong mark rejected",
+      "wrong physical interface rejected",
+      "standalone unmarked table recognized",
+      "cleanup removes only owned table and associated run hosts/state",
+      "cleanup wrong mark leaves foreign table and state unchanged",
+      "cleanup no-table path clean"
+    ],
+    "noPrivilegedActionsOnHosts": true,
+    "mockExecutablesUsed": true,
+    "sourceCI": "PENDING_NEW_EXACT_SHA"
+  },
+  "provenance": {
+    "tailscaleFwmark": "0x80000",
+    "tailscaleFwmarkMask": "0xff0000",
+    "source": "https://github.com/tailscale/tailscale/blob/main/tsconst/linuxfw.go",
+    "policy": "Do not change Tailscale settings, device routes, DNS, firewall or RustDesk"
+  },
+  "openGates": [
+    "Actual CAP_NET_ADMIN nftables grammar accepted by the kernel (not proven)",
+    "Authorized new protected helper installation through standard OS administrator workflow",
+    "Real Tailscale discovery + encrypted TSMP and RustDesk status before/during/after Direct Method start, stop, recovery",
+    "Physical route and MagicDNS snapshot equality before/after",
+    "Current exact PR head Windows/Linux CI",
+    "Public Windows Authenticode signing and Smart App Control Sandbox acceptance; versioned release not published"
+  ],
+  "scope": "Non-disruptive host-independent rootless mock tests, not live product installation",
+  "exactNextAction": "Commit mocks and CI wiring and ensure hosted exact-SHA Windows/Linux CI pass. Keep product off on both Linux hosts until valid privileged install and safety rollback gates are available."
+}

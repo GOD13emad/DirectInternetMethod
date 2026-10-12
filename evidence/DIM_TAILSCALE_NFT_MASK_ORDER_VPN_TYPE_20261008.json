@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "date": "2026-10-08",
+  "status": "SAFETY_SOURCE_REGRESSIONS_PASS_RUNTIME_UNPROVEN",
+  "baselineHead": "4d556f46ed8004a784e86829c54dbc96b07a0ba4",
+  "branch": "feature/tailscale-split-coexist-20261008",
+  "rootCauses": [
+    {
+      "id": "TAILSCALE_NFT_MASK_WEAK",
+      "negative": "Masked value 0x00080000 with incorrect mask 0x007f0000 was falsely owned and removed",
+      "proof": "nft mock ownership & cleanup originally rejected wrong value but accepted wrong mask; negative fixtures FAIL expected",
+      "repair": "Enforce full canonical 0x00ff0000 mask and 0x00080000 value under coexist mode"
+    },
+    {
+      "id": "TAILSCALE_NFT_MARK_ORDER",
+      "negative": "Bypass mark after first NFQUEUE rule was falsely considered owned and removable",
+      "proof": "nft mock ownership & cleanup negative fixtures FAIL expected",
+      "repair": "Require exact bypass mask+value before any queued output rule"
+    },
+    {
+      "id": "VPN_RENAMED_INTERFACE_UNDETECTED",
+      "negative": "NetworkManager wireguard:private-office accepted when name did not begin wg",
+      "proof": "Bash mocked preflight and Python GUI real-format mock FAIL expected",
+      "repair": "Reject active VPN/tun/wireguard by NMCLI TYPE as well as interface name; preserve tailscale0 as sole supported tun"
+    }
+  ],
+  "testsAfter": {
+    "mockNftOwnership": "PASS_8_OF_8",
+    "mockOwnedCleanup": "PASS_7_OF_7",
+    "mockTailscalePreflight": "PASS_11_OF_11",
+    "realLinuxReadOnlyTailscaleSplit": "PASS",
+    "guiIsolatedStates": "PASS_6_OF_6",
+    "guiRenamedWireguard": "PASS",
+    "shellSyntax": "PASS",
+    "noRootNetworkMutation": true
+  },
+  "artifact": {
+    "name": "DirectInternetMethod_1.5.2_Linux_x86_64.zip",
+    "bytes": 8195241,
+    "sha256": "294F0BD037F688828130B2B26C20807503BFDD57981A9224EC5AD510DA10664B",
+    "state": "UNPUBLISHED_CANDIDATE"
+  },
+  "supersededUnpublishedSha256": "313FFD200D6ABD506499DE79F3788B39B0B8E7B530C81C13EA1594A2DCE76642",
+  "criticalOpen": [
+    "Independent Linux exact SHA reproduction",
+    "GitHub exact-head Windows/Linux source CI",
+    "Windows legitimate signing identity + policy-on Sandbox installed acceptance",
+    "Linux root service deployment and live Tailscale/RustDesk peer and DNS/route Start/Stop/Recovery baseline equality"
+  ],
+  "security": {
+    "noPolicyBypass": true,
+    "noTailscaleDisable": true,
+    "noRemoteDesktopPortOpen": true,
+    "noLiveNetworkMutationDuringQA": true
+  }
+}

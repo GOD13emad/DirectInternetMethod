@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.5.1",
-  "status": "PASS_FINAL_WINDOWS_1_5_1_PUBLISHED_INSTALLED_VERIFIED",
-  "date": "2026-10-06",
+  "version": "1.5.2",
+  "status": "CANDIDATE_V152_UNRELEASED",
+  "date": "2026-10-08",
   "previousAccepted": {
-    "version": "1.5.0",
-    "tag": "v1.5.0",
-    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
-    "status": "PASS_FINAL_WINDOWS_1_5_0_PUBLISHED_INSTALLED_VERIFIED"
+    "version": "1.5.1",
+    "tag": "v1.5.1",
+    "tagCommit": "a79dfb8216c603d6e29236233e8d250b490a96cc",
+    "status": "PUBLISHED_HISTORICAL_UNCHANGED"
   },
   "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + accepted zapret/winws/WinDivert multiprotocol engine with Targeted/All Sites scope control",
   "features": {
@@ -111,21 +111,21 @@
     "bundledPowerShell": "7.6.6"
   },
   "acceptance": {
-    "windowsContract": "PASS_INCLUDING_START_SELF_INTEGRITY_PIN_COHERENCE",
-    "serviceSelftest": "PASS_BUILD_CONTRACT",
-    "guiCompile": "PASS_0_WARNINGS_0_ERRORS",
-    "startupLayout": "PASS_DYNAMIC_1289x632_NO_OVERLAP_8_BUTTONS",
-    "targetHostlistContract": "PASS",
-    "siteCoverageLive": "PASS_WINDOWS_BALANCED_TARGETED_STABLE_STATE_REPRESENTATIVES_WITH_EDGE_CAVEAT",
-    "publication": "PASS_PUBLIC_REDOWNLOAD_VERIFIED",
-    "strategyProfiles": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
-    "allSitesScope": "PASS_ACCEPTED_RUNTIME_DRY_RUN",
-    "securityRejectedComponentGate": "PASS_BLOCKED_HASHES_NOT_SHIPPED",
-    "artifactIdentity": "EXTERNAL_ROOT_RELEASE_METADATA_AND_SHA256SUMS",
-    "windowsInstalledLive": "PASS_EXACT_INSTALLED_ACTIVE_POST_PUBLISH_LATEST_V1_5_1",
-    "startupHealth": "PASS_RETRY_QUORUM_2_OF_3_REAL_GITHUB_TRANSIENT_SURVIVED",
-    "adultCoverage": "PASS_WINDOWS_PORNHUB_REDTUBE_XVIDEOS_XNXX_XHAMSTER_USABLE_BALANCED_TARGETED",
-    "gemini": "FAIL_HTTP_403_CURL_AND_CHROME_CURRENT_EGRESS_DIRECT_ONLY_EXHAUSTED"
+    "windowsContract": "PENDING_V152_REVERIFICATION",
+    "serviceSelftest": "PENDING_V152_REVERIFICATION",
+    "guiCompile": "PENDING_V152_REVERIFICATION",
+    "startupLayout": "PENDING_V152_REVERIFICATION",
+    "targetHostlistContract": "PENDING_V152_REVERIFICATION",
+    "siteCoverageLive": "PENDING_V152_REVERIFICATION",
+    "publication": "PENDING_V152_REVERIFICATION",
+    "strategyProfiles": "PENDING_V152_REVERIFICATION",
+    "allSitesScope": "PENDING_V152_REVERIFICATION",
+    "securityRejectedComponentGate": "PENDING_V152_REVERIFICATION",
+    "artifactIdentity": "PENDING_V152_REVERIFICATION",
+    "windowsInstalledLive": "PENDING_V152_REVERIFICATION",
+    "startupHealth": "PENDING_V152_REVERIFICATION",
+    "adultCoverage": "PENDING_V152_REVERIFICATION",
+    "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED"
   },
   "validationBoundary": [
     "Direct Internet Method does not change public egress IP; remote country/account/product restrictions are outside direct DNS/DPI control.",
@@ -137,13 +137,7 @@
     "Targeted remains the default scope; All Sites is explicit opt-in.",
     "Windows installer remains not Authenticode-signed."
   ],
-  "exactNextAction": "Windows v1.5.1 is FINAL/PUBLISHED/POST-PUBLISH VERIFIED. No open Windows software gate remains; trusted Authenticode signing is external distribution hardening.",
+  "exactNextAction": "v1.5.2 source candidate; both installers and post-update lifecycle tests pending. v1.5.1 remains current installed/accepted.",
   "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
-  "publication": {
-    "tag": "v1.5.1",
-    "tagCommit": "a79dfb8216c603d6e29236233e8d250b490a96cc",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.1",
-    "publishedAt": "2026-10-06T07:52:05Z",
-    "releaseId": 404451350
-  }
+  "publication": {}
 }

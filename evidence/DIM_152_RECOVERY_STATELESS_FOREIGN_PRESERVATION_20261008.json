@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "revision": "R211",
+  "status": "SOURCE_QA_PASS_LIVE_ROOT_UNPROVEN",
+  "date": "2026-10-08",
+  "baselineHead": "20f48373cd3665d20e29c046edd0385bdd271993",
+  "previousAcceptedSource": "R210_12_OF_12_NFT_8_OF_8_CLEANUP_HOSTED_CI_PASS",
+  "failureClass": "STALE_OR_MISSING_OWNERSHIP_STATE_RECOVERY_SIDE_EFFECT",
+  "factNegativeFirst": [
+    {
+      "fixture": "foreign_table_no_state",
+      "prior": "attempted two exact-path process terminations before ownership rejection",
+      "expected": "no process termination when nft table foreign",
+      "test": "FAIL_BEFORE_REPAIR"
+    },
+    {
+      "fixture": "late_foreign_dns_no_state",
+      "prior": "stateless recovery entered DNS-link cleanup branch when unknown dummy appeared after initial safety check",
+      "expected": "fail closed without attempting deletion",
+      "test": "FAIL_BEFORE_REMOVAL"
+    }
+  ],
+  "mutation": "For recovery with missing owner state, reject presence of nftables table or DNS dummy link before any process cleanup; never delete such resources without state; only orphan exact-path cleanup allowed if no owned resources exist, and final verify must fail if late foreign resources appear.",
+  "regression": {
+    "statelessRecovery": "PASS_6_OF_6",
+    "nftTableOwnership": "PASS_12_OF_12",
+    "ownedStateCleanup": "PASS_8_OF_8",
+    "preflight": "PASS_11_OF_11_PREVIOUS_UNCHANGED",
+    "profileGUI": "PASS_6_OF_6_PREVIOUS_UNCHANGED"
+  },
+  "sourceHash": {
+    "linux/app/direct_method_helper.sh": "4FA9E069A36706DEC26F8A53276F048D51FDAADDC28A3CE025750C199D69D093",
+    "tests/tailscale_recovery_missing_state_contract.py": "21949FA0E2875E712A0A97F387FE3964A32E759AF60311BA8FE3C7E2D74F49E2"
+  },
+  "candidate": {
+    "linuxZipBytes": 8196051,
+    "linuxZipSha256": "6D517949DC044122C5E19B5F7C82608C9E798BD56741E6424EB5CD81D23155C3",
+    "reproducedIn": [
+      "Windows Emad",
+      "Emad Linux QA"
+    ],
+    "previousArchiveSha": "7BEE8DC4D8C63F4DAED82CB74A6636D7A989A472FC373E8613B5E60FE802D6F8",
+    "previousArchiveStatus": "SUPERSEDED_DO_NOT_INSTALL",
+    "publicRelease": "v1.5.1_UNCHANGED"
+  },
+  "limits": [
+    "No privileged Linux nft/NFQUEUE/Start/Stop/Recovery runtime tested",
+    "Tailscale/RustDesk session during DPI unverified",
+    "Windows Authenticode and enforced Smart App Control Sandbox unresolved",
+    "Gemini 403 unresolved",
+    "Source CI successor pending until commit published"
+  ],
+  "next": "Exact SHA CI and independent Linux Saeid clone/QA, cumulative Brain update; require legitimate admin+independent rollback and trusted Windows signer for release."
+}

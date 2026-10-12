@@ -5,12 +5,14 @@ R=Path(__file__).resolve().parents[1]
 W=R/"windows"
 def txt(rel): return (W/rel).read_text(encoding="utf-8-sig")
 start,stop,recovery,status,iss=map(txt,["app/Start-Direct.ps1","app/Stop-Direct.ps1","app/Recovery.ps1","app/Status.ps1","installer/DirectInternetMethod.iss"])
+legacy_provider_guard=txt("app/SafeLegacyProviderRollback.ps1")
 gui=txt("gui/MainWindow.xaml.cs"); xaml=txt("gui/MainWindow.xaml")
 svc=txt("service/Program.cs"); client=txt("gui/ServiceClient.cs"); updater=txt("gui/UpdateClient.cs")
 manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt"); adult_fallback=txt("bin/zapret/adult-fallback-hosts.txt"); strong_override=txt("bin/zapret/strong-override-hosts.txt")
-payload_builder=(R/"tests"/"build_windows_151_payload.ps1").read_text(encoding="utf-8-sig")
-installer_builder=(R/"tests"/"build_windows_151_installer.ps1").read_text(encoding="utf-8-sig")
+payload_builder=(R/"tests"/"build_windows_152_payload.ps1").read_text(encoding="utf-8-sig")
+installer_builder=(R/"tests"/"build_windows_152_installer.ps1").read_text(encoding="utf-8-sig")
 ci_workflow=(R/".github"/"workflows"/"ci.yml").read_text(encoding="utf-8-sig")
+signature_gate=(R/"tests"/"windows_distribution_signature_audit.ps1").read_text(encoding="utf-8-sig")
 gitattributes=(R/".gitattributes").read_text(encoding="utf-8-sig")
 install_registration_guard=(R/"tests"/"windows_install_registration_audit.ps1").read_text(encoding="utf-8-sig")
 installed_release_verifier=(R/"tests"/"windows_installed_release_audit.ps1").read_text(encoding="utf-8-sig")
@@ -69,16 +71,32 @@ check("ui_adult_check_default_off_persisted", all(x in gui for x in ("adultSiteL
 check("adult_catalog_opt_in", all(x in gui for x in ("adultCoverageEnabled","adult-enabled.txt","adult-hosts.txt","nsfw-onlydomains.txt","EnsureAdultCatalogAsync","Adult catalog is unexpectedly small","xvideos.com","xnxx.com","xhamster.com")) and all(x in start for x in ("$AdultEnabledFile","$AdultHosts","$AdultFallback","adultHostCount","ADULT_CATALOG_INVALID")) and 'adult-fallback-hosts.txt' in iss)
 check("startup_https_health_quorum", all(x in start for x in ("Curl-Probe-Retry","HTTPS_HEALTH_QUORUM_FAIL","$httpsProbePassCount -lt 2","httpsHealth=[ordered]@{required=2")) and all(x not in start for x in ("throw 'YOUTUBE_HTTP80_FAIL'","throw 'YOUTUBE_HTTPS_FAIL'","throw 'OPENAI_HTTPS_FAIL'","throw 'GITHUB_HTTPS_FAIL'")))
 check("adult_strong_override_profile", all(x in strong_override.splitlines() for x in ("xhamster.com","xhamsterlive.com","xhcdn.com","reddit.com","redditstatic.com","redditmedia.com","redd.it")) and all(x in start for x in ("$StrongOverrideHostList","strong-override-hosts.txt","--hostlist='+$StrongOverrideHostList","--dpi-desync=fake,hostfakesplit","--dpi-desync-repeats=11")) and 'strong-override-hosts.txt' in iss)
+check("ui_openai_403_cannot_be_chatgpt_login_pass",
+    'FmtOpenAiApiProbe(await oaTask)' in gui
+    and 'ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401" })' in gui
+    and 'ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401", "403" })' not in gui
+    and '"403" when p.Reached => "API HTTP 403 forbidden · login unverified"' in gui
+    and '"401" when p.Reached => "API HTTP 401 auth required · login unverified"' in gui
+    and '"200" when p.Reached => "API HTTP 200 reachable · login unverified"' in gui
+    and '"API transport unavailable · login unverified"' in gui)
+
 check("ui_live_probe_semantics", "FAIL · HTTP" in gui and 'https://gemini.google.com/' in gui and "adultTasks is not null" in gui and "full pages" in gui)
 check("ui_direct_update_service_handoff", 'ServiceClient.Send("update")' in gui and 'ServiceClient.Send("recovery")' in gui and '"handoff"' in gui and "300000" in gui and "DownloadVerifiedAsync" not in gui and "LaunchInstaller" not in gui)
 check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "digest" in updater and "SHA256SUMS.txt" in updater and "DownloadVerifiedAsync" not in updater and "Process.Start" not in updater)
 
 check("service_custom_controls", all(x in svc for x in ("CTRL_START = 128","CTRL_STOP = 129","CTRL_RECOVERY = 130","CTRL_UPDATE = 131")) and "case CTRL_UPDATE:" in svc and "_ = Task.Run(RunUpdateAsync)" in svc)
 check("service_direct_update_security", all(x in svc for x in ("LatestReleaseApi","SHA256SUMS.txt","ApiSha256","SHA256.HashDataAsync","CryptographicException","GetLatestUpdateAsync","ParseExpectedSha256")) and "expected.Equals(package.ApiSha256" in svc and "actual.Equals(expected" in svc)
-check("service_direct_update_atomic_download", '".part"' in svc and "DownloadWithSystemCurlAsync" in svc and '"-L", "--fail", "--silent", "--show-error"' in svc and '"--max-time", "210"' in svc and "File.Move(partPath, finalPath, true)" in svc)
+check("service_direct_update_atomic_download", '".part"' in svc and "DownloadWithSystemCurlAsync" in svc and '"-L", "--fail", "--silent", "--show-error"' in svc and '"--max-time", "210"' in svc and "File.Move(partPath, finalPath);" in svc and "OwnedUpdateInstallerPath" in svc and "Prior update still needs verification" in svc and "update-incomplete-preserved" in svc)
 check("service_direct_update_silent_installer", all(x in svc for x in ('"/VERYSILENT"','"/SUPPRESSMSGBOXES"','"/NORESTART"','"/NORESTARTAPPLICATIONS"','"/CLOSEAPPLICATIONS"','"/SP-"')) and "UseShellExecute = false" in svc and 'Verb = "runas"' not in svc)
 check("service_direct_update_requires_clean_off", "NetworkStatePath" in svc and "Direct Method must be OFF before update." in svc)
-check("service_direct_update_post_restart_finalize", "PendingUpdatePath" in svc and "FinalizePendingUpdate()" in svc and '"update", "done"' in svc and "targetVersion" in svc)
+check("service_direct_update_post_restart_finalize",
+    all(x in svc for x in ("FinalizePendingAfterServiceRestartAsync",
+      "_ = Task.Run(FinalizePendingAfterServiceRestartAsync);",
+      "FinalizePendingUpdate();",
+      "pending-update-finalization-deferred-no-overwrite",
+      "update-stage-file-locked-preserving-single-pending-slot",
+      "pending-update.json", '"update", "done"', "targetVersion"))
+    and "StopEvent.IsSet" in svc)
 check("service_direct_update_preserves_registered_user_install", "GetRegisteredInstallDirectory" in svc and "Registry.LocalMachine.OpenSubKey" in svc and "InstallLocation" in svc and '"/DIR=" + installDir' in svc and "DirectInternetMethod.exe" in svc and "manifest.json" in svc)
 check("service_action_gate", "SemaphoreSlim ActionGate" in svc and "WaitAsync(0)" in svc)
 check("service_action_status", "action-status.json" in svc and "WriteActionStatus" in svc and 'phase = "done"' not in svc)
@@ -91,9 +109,46 @@ check("ui_wait_timeout_exceeds_service_timeout", "int timeoutMs = 130000" in gui
 check("client_minimum_access", "SERVICE_QUERY_STATUS | SERVICE_USER_DEFINED_CONTROL" in client and "SERVICE_CHANGE_CONFIG" not in client and "SERVICE_START" not in client and "SERVICE_STOP" not in client)
 check("installer_service_acl_interactive_users_minimum", "(A;;LCCR;;;IU)" in iss and "sdset" in iss and "(A;;LCCR;;;AU)" not in iss)
 check("installer_service_protected_root", "{commonpf}\\DirectInternetMethod\\Privileged" in iss)
+check("single_registered_Windows_install_and_preserve_user_evidence",
+    'AppId={{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}' in iss
+    and "UsePreviousAppDir=yes" in iss and "UninstallLogMode=overwrite" in iss
+    and "DIMExistingAppPathConflicts()" in iss
+    and "RegQueryStringValue(HKLM, Key, 'InstallLocation', OldDir)" in iss
+    and r'Type: filesandordirs; Name: "{app}\evidence"' not in iss
+    and r'Type: filesandordirs; Name: "{app}\bin"' not in iss
+    and r'Type: filesandordirs; Name: "{commonpf}\DirectInternetMethod\Privileged"' not in iss
+    and r'Type: dirifempty; Name: "{commonpf}\DirectInternetMethod\Privileged"' in iss)
+check("owned_update_cache_never_duplicates_versioned_installers",
+    all(x in svc for x in ("OwnedUpdateInstallerPath", "DirectInternetMethod-update-stage.exe",
+       "Previous update is pending" if False else "Prior update still needs verification",
+       "File.Move(partPath, finalPath);",
+       "update-incomplete-preserved",
+       "update-stage-file-locked-preserving-single-pending-slot"))
+    and "File.Move(partPath, finalPath, true)" not in svc)
+
+check("legacy_provider_rollback_explicit_only_and_exact_SHA",
+    all(k in legacy_provider_guard for k in (
+      "PUBLISHED_STABLE_151_INSTALLER_SHA_CHANGED", "PRESERVE_CUSTOM_PROVIDER_BEFORE_LEGACY_151_REINSTALL",
+      "PASS_LEGACY_151_PROVIDER_RESTORED_SHA", "FOREIGN_POST_STAGE_PROVIDER_EDIT_PRESERVED",
+      "PENDING_SLOT_EXISTS_NO_BLIND_REPLAY", "RESTORED_PROVIDER_SHA_FAILED",
+      "LEGACY_151_BINARY_POSTINSTALL_SHA_NOT_ACCEPTED"))
+    and "Remove-Item -Recurse" not in legacy_provider_guard
+    and 'Source: "..\\app\\SafeLegacyProviderRollback.ps1"; DestDir: "{commonpf}\\DirectInternetMethod\\Privileged\\app"; Flags: ignoreversion' in iss
+    and ("privileged","app/SafeLegacyProviderRollback.ps1") in
+        {(v["scope"],v["file"]) for v in manifest["files"]})
+check("legacy_151_rollback_preserves_custom_bin_tree",
+    all(x in legacy_provider_guard for x in ["binFiles","BIN_RESTORATION_SHA_FAILED","FOREIGN_BIN_EDIT_PRESERVED","BIN_SNAPSHOT_UNKNOWN_CONTENT","BIN_STAGED_FILE_CHANGED","FOREIGN_STAGE_SYMLINK"])
+    and "Remove-Item -Recurse" not in legacy_provider_guard)
+check("inno_preserves_custom_router_gateway_provider_on_upgrade",
+    'Source: "..\\..\\router_gateway\\providers.json"; DestDir: "{app}\\app\\router_gateway"; Flags: ignoreversion onlyifdoesntexist' in iss)
 check("installer_admin_only_install", "PrivilegesRequired=admin" in iss)
 check("installer_service_recovery", 'failure "' in iss and "failureflag" in iss)
-check("installer_direct_update_completion_marker", "CompletePendingDirectUpdate" in iss and "pending-update.json" in iss and '"action":"update","phase":"done"' in iss and "DeleteFile(PendingPath)" in iss)
+check("installer_preserves_pending_update_until_service_SHA_verifies",
+    "CompletePendingDirectUpdate" in iss and "pending-update.json" in iss
+    and "new service completes SHA-checked cleanup" in iss
+    and r"PendingPath := ExpandConstant('{commonappdata}\DirectInternetMethod\pending-update.json')" in iss
+    and "DeleteFile(PendingPath)" not in iss
+    and '"action":"update","phase":"done"' not in iss)
 check("installer_ctrld_owned_demand_service", "CtrldServiceName = 'ctrld'" in iss and "InstallOrUpdateCtrldService" in iss and "start= demand" in iss and "CurrentControlSet\\Services\\" in iss)
 check("installer_ctrld_collision_fail_closed", "A different Windows service named ctrld already exists" in iss and "CtrldServiceOwned()" in iss)
 check("installer_ctrld_owned_uninstall", "StopCtrldServiceIfOwned" in iss and "delete \"" in iss and "CtrldServiceName" in iss)
@@ -103,15 +158,76 @@ check("installer_bundled_pwsh", '..\\vendor\\pwsh\\*' in iss and 'Privileged\\ru
 check("installer_uninstall_recovery_gate", "InitializeUninstall" in iss and "Recovery did not complete" in iss)
 check("windows_install_registration_guard", all(x in install_registration_guard for x in ("HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall","HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall","noSameAppIdPerUserDuplicate","registeredUninstallerPresent","installedReleaseMatches")))
 check("installed_release_verifier_delegates_registration_guard", "windows_install_registration_audit.ps1" in installed_release_verifier and "Where-Object DisplayName" not in installed_release_verifier and "pwsh.exe" in installed_release_verifier)
-check("windows_build_shared_exclusive_lock", all(x in payload_builder for x in ("windows-151-build.lock","FileShare]::None","WINDOWS_151_BUILD_LOCKED")) and all(x in installer_builder for x in ("windows-151-build.lock","FileShare]::None","WINDOWS_151_BUILD_LOCKED")))
+check("windows_build_shared_exclusive_lock", all(x in payload_builder for x in ("windows-152-build.lock","FileShare]::None","WINDOWS_152_BUILD_LOCKED")) and all(x in installer_builder for x in ("windows-152-build.lock","FileShare]::None","WINDOWS_152_BUILD_LOCKED")))
+check("windows_build_python_portability_failfast", all(x in payload_builder for x in (
+    "param([switch]$PreflightOnly)",
+    "WINDOWS_BUILD_PYTHON_MISSING:",
+    "WINDOWS_BUILD_VENDOR_PWSH_SHA_INVALID",
+    "WINDOWS_BUILD_PORTABLE_PYTHON_SHA_INVALID",
+    "4942B86A6597E5AEE0128DAA00050ED79BC21F6E709A78EB19CBFEB0C2F39AC9",
+    r"& $PythonExe '.\tests\build_windows_manifest.py'",
+    r"& $PythonExe '.\tests\windows_contract_audit.py'",
+)) and "& py " not in payload_builder and
+    payload_builder.index("WINDOWS_BUILD_PYTHON_MISSING:") < payload_builder.index("& dotnet publish"))
 check("windows_installer_output_stability_guard", all(x in installer_builder for x in ("OUTPUT_STILL_LOCKED_AFTER_ISCC_EXIT","@($Sizes | Select-Object -Unique).Count","OUTPUT_SIZE_UNSTABLE_","outputStableSamples")))
 tracked_strong=subprocess.run(["git","ls-files","--error-unmatch","windows/bin/zapret/strong-override-hosts.txt"],cwd=R,text=True,capture_output=True).returncode==0
 check("windows_strong_override_source_tracked", tracked_strong)
 check("windows_hash_pinned_text_eol_policy", all(x in gitattributes for x in ("windows/bin/zapret/hosts.txt text eol=crlf","windows/bin/zapret/adult-fallback-hosts.txt text eol=lf","windows/bin/zapret/strong-override-hosts.txt text eol=crlf")))
+check("optional_signed_diagnostic_fails_closed_but_is_not_public_gate", all(x in signature_gate for x in (
+    "Get-AuthenticodeSignature",
+    "Assert-EligibleSignerForSmartAppControl -Signature $sig",
+    "if([string]$Signature.Status -ne 'Valid')",
+    "SELF_SIGNED_SIGNER_NOT_PUBLIC_TRUSTED",
+    "SMART_APP_CONTROL_RSA_SIGNER_REQUIRED",
+    "CODE_SIGNING_EKU_REQUIRED",
+    "PUBLIC_TRUST_CHAIN_UNVERIFIED",
+    "FAIL_CLOSED","exit 42"
+)))
+tag_job_source = ci_workflow.split("  windows-release-contract:",1)[1] if ci_workflow.count("  windows-release-contract:")==1 else ""
+check("tag_release_invokes_real_unsigned_three_way_sha_and_hosted_rollback",
+    tag_job_source.count("python -B tests/unsigned_public_release_contract.py --public-tag")==1
+    and "if: startsWith(github.ref, 'refs/tags/v')" in tag_job_source
+    and "GH_TOKEN:" in tag_job_source and "GITHUB_TOKEN:" in tag_job_source
+    and "actions: read" in tag_job_source
+    and "windows_distribution_signature_audit.ps1" not in tag_job_source
+    and "windows_release_draft_asset_stage.ps1" not in tag_job_source
+    and "continue-on-error: true" not in tag_job_source
+    and "if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }" in tag_job_source)
+
+draft_stage_source=(R/"tests"/"windows_release_draft_asset_stage.ps1").read_text(encoding="utf-8-sig")
+draft_fixture_source=(R/"tests"/"windows_release_draft_asset_contract.ps1").read_text(encoding="utf-8-sig")
+windows_source_section=ci_workflow.split("  windows-source:",1)[1].split("  windows-release-contract:",1)[0]
+check("windows_ci_runs_offline_draft_staging_negative_regressions",
+    windows_source_section.count("pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_contract.ps1")==1
+    and "continue-on-error: true" not in windows_source_section)
+check("windows_source_ci_runs_unsigned_release_negative_fixtures",
+    windows_source_section.count("python tests/unsigned_public_release_contract.py --fixtures")==1)
+check("unsigned_publication_never_requires_private_signed_draft_staging",
+    "windows_release_draft_asset_stage.ps1" not in tag_job_source
+    and "windows_distribution_signature_audit.ps1" not in tag_job_source
+    and "unsigned_public_release_contract.py --fixtures" in tag_job_source
+    and "unsigned_public_release_contract.py --public-tag" in tag_job_source
+    and "continue-on-error: true" not in tag_job_source)
+check("unsigned_verifier_checks_remote_sha_and_raw_hosted_receipts",
+    all(s in (R/"tests"/"unsigned_public_release_contract.py").read_text(encoding="utf-8-sig") for s in (
+    "PUBLIC_THREE_WAY_SHA_DISAGREEMENT", "HOSTED_RAW_REPORT_SHA_MISMATCH",
+    "HOSTED_REPORT_UNRESOLVED_ERRORS", "GITHUB_RUN_NOT_SUCCESS",
+    "SIGNING_POLICY_MUST_NOT_BE_REQUIRED")))
+
+check("draft_release_stager_fails_closed_on_identity_digest_and_rerun",
+    all(s in draft_stage_source for s in (
+        "RELEASE_NOT_PRIVATE_DRAFT","RELEASE_TARGET_COMMIT_MISMATCH","SIGNED_DRAFT_INSTALLER_DIGEST_MISMATCH",
+        "SIGNED_DRAFT_INSTALLER_ASSET_ORIGIN_MISMATCH","UNSAFE_RERUN_STAGING_PATH_OCCUPIED",
+        "TAG_CHECKOUT_COMMIT_MISMATCH","SIGNED_DRAFT_INSTALLER_DOWNLOADED_SHA_MISMATCH","exit 42")))
+check("draft_release_negative_fixtures_present",
+    all(s in draft_fixture_source for s in (
+        "Deny 'published'","Deny 'tag'","Deny 'commit'","Deny 'duplicate'",
+        "Deny 'digest'","Deny 'origin'","PASS 10/10")))
+
 check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.5.1")
+check("manifest_version", manifest.get("version")=="1.5.2")
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)
@@ -147,5 +263,26 @@ expected={
 "pwsh":"BFB46AF89433268872DDB43D1CA7A3F433452EE91ED356A9786940F90118E285"}
 for name,rel in (("ctrld","bin/ctrld/ctrld.exe"),("winws","bin/zapret/winws.exe"),("windivertdll","bin/zapret/WinDivert.dll"),("windivertsys","bin/zapret/WinDivert64.sys"),("pwsh","vendor/pwsh/pwsh.exe")):
     h=hashlib.sha256((W/rel).read_bytes()).hexdigest().upper();D["hashes"][name]=h;check("runtime_"+name+"_pin",h==expected[name])
+
+thirdparty_notice_hashes={
+    "LICENSE.WinDivert.txt":"14A0CB5214D536E4FDAE6AA3F5696F981EEDA106CD026E9794BBA489EE79D628",
+    "LICENSE.Cygwin.txt":"794433752103CF4BBB4A84A1BDB8FBC150ABB1762704BB35FECC9F7F820BE984",
+    "LGPL3.Cygwin.txt":"DA7EABB7BAFDF7D3AE5E9F223AA5BDC1EECE45AC569DC21B3B037520B4464768",
+    "GPL3.Cygwin.txt":"8CEB4B9EE5ADEDDE47B31E975C1D90C73AD27B6B165A1DCD80C7C545EB65B903",
+}
+def checked_notice_mapping(filename):
+    src = r"..\bin\zapret" + "\\" + filename
+    dest = r"{commonpf}\DirectInternetMethod\Privileged\bin\zapret"
+    line = 'Source: "' + src + '"; DestDir: "' + dest + '"; Flags: ignoreversion'
+    return iss.splitlines().count(line)==1
+check("installer_four_upstream_license_notices_byte_pinned",
+    all(
+       (W/"bin"/"zapret"/filename).is_file()
+       and hashlib.sha256((W/"bin"/"zapret"/filename).read_bytes()).hexdigest().upper()==expected
+       and checked_notice_mapping(filename)
+       and "windows/bin/zapret/"+filename+" text eol=lf" in gitattributes
+       for filename,expected in thirdparty_notice_hashes.items()
+    ))
+
 print(json.dumps(D,indent=2))
 sys.exit(0 if D["status"]=="PASS" else 20)

@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "date": "2026-10-08",
+  "status": "CONFIRMED_SMART_APP_CONTROL_ENFORCEMENT_UNSIGNED_INSTALLER_DENIAL",
+  "version": "1.5.2",
+  "candidateSourceHead": "4ba1917086ca6da298dd8cb81675f0624eccade8",
+  "installer": {
+    "name": "DirectInternetMethod_1.5.2_Windows_Setup.exe",
+    "sha256": "BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85",
+    "authenticode": "NotSigned",
+    "execution": "BLOCKED"
+  },
+  "environment": {
+    "platform": "Windows Sandbox",
+    "networking": "Disabled",
+    "desktopTrustPolicy": "ENFORCED_SMART_APP_CONTROL",
+    "applicationControlChanged": false
+  },
+  "event3077": {
+    "timestampUtc": "2026-10-08T06:03:36.1122249Z",
+    "activityID": "{3a5bf6d6-50c9-0000-6b7e-5c3ac950dd01}",
+    "policyName": "VerifiedAndReputableDesktop",
+    "policyID": "27555.1000.240208",
+    "policyGUID": "{0283ac0f-fff1-49ae-ada1-8a933130cad6}",
+    "fileSha256Flat": "BE6B7C1127CC62A4CE706EEFEC778B87CAA7784A9B19D61E282741163E281D85",
+    "requestedSigningLevel": "2",
+    "validatedSigningLevel": "1",
+    "ntStatus": "0xc0e90002"
+  },
+  "correlated3089": {
+    "count": 2,
+    "totalSignatureCount": [
+      "0",
+      "0"
+    ]
+  },
+  "rootCause": {
+    "confirmed": "A Microsoft Smart App Control enforced policy rejected the exact unsigned candidate installer.",
+    "limits": "Signing with an acceptable verified publisher certificate and a clean-policy retest is still required; code signing alone is not guaranteed to satisfy every possible policy.",
+    "evidence": "Sandbox raw CodeIntegrity 3077 correlated to 3089, not inferred from outer host logs."
+  },
+  "rawPrivateEvidence": {
+    "relativePath": "SandboxProof/DIAG_20261008/DONE.json",
+    "sha256": "78ECE620E7D6895D689345D29DBF2A65A74AA1D573A870838743C8624375257D",
+    "repositoryTracked": false
+  },
+  "guidance": [
+    "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/operations/appcontrol-debugging-and-troubleshooting",
+    "https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/test-your-app-with-smart-app-control",
+    "https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/operations/inbox-appcontrol-policies"
+  ],
+  "releaseGate": "FAIL_CLOSED_UNSIGNED_NOT_PUBLISHED",
+  "openActions": [
+    "Legitimate publicly trusted publisher signing identity and SHA-256 timestamp",
+    "Trusted signature and policy-compatibility revalidation of newly signed file",
+    "Independent offline Sandbox installation, registration/service/680 hash verification",
+    "Safe off-network Windows upgrade and post-install rollback tests"
+  ],
+  "noBypass": true,
+  "hostWindowsServicePreserved": true,
+  "issue": "https://github.com/GOD13emad/DirectInternetMethod/issues/25"
+}

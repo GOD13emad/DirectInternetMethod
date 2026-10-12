@@ -1,16 +1,16 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.5.1",
-  "date": "2026-10-06",
-  "status": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED",
+  "version": "1.5.2",
+  "date": "2026-10-08",
+  "status": "CANDIDATE_PUBLIC_UNSIGNED_PREVIEW3_WITH_HOSTED_INSTALL_ROLLBACK_NOT_FINAL",
   "previousAccepted": {
-    "version": "1.5.0",
-    "tag": "v1.5.0",
-    "tagCommit": "78e5726a9235d3c63e8f5fe7b567ce710040034d",
-    "status": "PASS_FINAL_PUBLISHED_INSTALLED_VERIFIED"
+    "version": "1.5.1",
+    "tag": "v1.5.1",
+    "tagCommit": "a79dfb8216c603d6e29236233e8d250b490a96cc",
+    "status": "PUBLISHED_HISTORICAL_UNCHANGED"
   },
-  "feature": "Opt-in maintained broad adult-domain coverage, full-page usability semantics, and preserved direct-only DNS/DPI architecture.",
+  "feature": "Linux fresh-install umask 077 permission repair and version-aligned Windows/Linux updater; direct-only runtime logic unchanged.",
   "directEngine": {
     "methods": [
       "encrypted-dns-doh",
@@ -47,7 +47,29 @@
     "defaultRouteMutation": false,
     "winHttpProxy": false,
     "windowsRuntime": "ctrld + zapret/winws v72.13 + WinDivert",
-    "linuxRuntime": "ctrld + systemd-resolved + nftables/NFQUEUE + zapret/nfqws v72.13"
+    "linuxRuntime": "ctrld + systemd-resolved + nftables/NFQUEUE + zapret/nfqws v72.13",
+    "optionalPhysicalAdapterDns": {
+      "defaultEnabled": false,
+      "scope": "targeted + balanced + Tailscale split mode only",
+      "userOptInRequired": true,
+      "privacyDisclosure": "Plaintext UDP third-party DNS to 194.225.152.10",
+      "selectedZones": [
+        "youtube.com",
+        "ytimg.com",
+        "googlevideo.com",
+        "youtu.be"
+      ],
+      "localForwarder": "127.0.0.1:10535",
+      "otherDns": "original physical upstream",
+      "tailscaleDns": "not modified",
+      "acceptance": "SOURCE_QA_ONLY; NATIVE_ROOT/PERSISTENCE/CRASH/REBOOT_UNPROVEN",
+      "independentPeriodicBackstop": {
+        "timer": "systemd repeating monotonic timer every 40 seconds, AccuracySec=1s",
+        "failureMode": "if primary monitor ends unexpectedly, restore original physical DNS before engine Recovery",
+        "default": "not activated unless experimental DNS explicit opt-in is active",
+        "acceptance": "QA simulation/native user timer passed; installed privileged crash/reboot test OPEN"
+      }
+    }
   },
   "liveChecks": {
     "semantics": {
@@ -58,7 +80,7 @@
     "gemini": "FAIL_HTTP_403_ON_CURRENT_EGRESS; direct DNS/DPI methods do not change public egress region"
   },
   "routerGateway": {
-    "version": "1.5.1",
+    "version": "1.5.2",
     "dataRevision": 3,
     "profileCount": 9,
     "providerCount": 3,
@@ -66,53 +88,67 @@
   },
   "platforms": {
     "windows": {
-      "status": "PASS_EXACT_INSTALLED_LIFECYCLE_SITE_MATRIX_ROLLBACK_RESTORED_ACTIVE",
-      "artifact": "delivery/DirectInternetMethod_1.5.1_Windows_Setup.exe",
-      "bytes": 157111497,
-      "sha256": "4E1974B5A40F96B49B7B4196FFE963DCDF65B05E4F2B89DE4EC06E794B77EE9B",
-      "guiSha256": "B85460B8225060E7C8C9C54F5C39D444457071E77C0BBD7CD39BF34343F8B619",
-      "serviceSha256": "A327B01DFB7C05896DDB9F81E123E8A0362B200E52A5EB061AFDB4A7BCA367A5",
-      "manifestSha256": "2114B625154C7E50DC6BD6C2B3D6B7A86FDEC6D4C700374F40A15612C55C0810",
+      "status": "PASS_NATIVE_UNSIGNED_INNO_HOSTED_FRESH_AND_UPGRADE_TO_ROLLBACK",
+      "artifact": "delivery/DirectInternetMethod_1.5.2_Windows_Setup.exe",
+      "bytes": 157124929,
+      "sha256": "2F054752E3B1B4715D68958CA49639AEA6FE43E0E4CBC6611DDEEBABAE2C7EB5",
+      "guiSha256": "B8B2BBDBA477E6E7CAACC5C2E0E11F408309000FA0657EF95E36E212376D6C4F",
+      "serviceSha256": "314B1E3D8D83F386CB54CD0819C7571014F3A5EAC6970F9026DA5146154C85B5",
+      "manifestSha256": "44434B0B03391A7BCF9513443DED1B608703225B5900F5DBDAB7F558D011AC38",
       "manifestFiles": 680,
-      "authenticode": "NotSigned"
+      "authenticode": "NotSigned",
+      "artifactSourceCommit": "3ead24911ca583932ed8fbcb5820b8a25b20303f",
+      "metadataScope": "LAST_PUBLIC_PREVIEW_ARTIFACT_SOURCE_SHA; source-only metadata is not proof of a future tag's newly rebuilt binaries"
     },
     "linux": {
-      "status": "PASS_EXACT_INSTALLED_BALANCED_TARGETED_ADULT_MATRIX_ROLLBACK_RESTORED_ACTIVE",
-      "artifact": "delivery/DirectInternetMethod_1.5.1_Linux_x86_64.zip",
-      "bytes": 8185606,
-      "sha256": "21FE512444957008DA4D79F540ABCEAD5CC9CB18481F1FF8B620A4B90A9374B8",
-      "protectedBackendVersion": "1.5.1",
-      "packageFiles": 19
+      "status": "PASS_EXACT_SHA_THREE_HOST_SOURCE_REPRO_3EAD",
+      "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
+      "bytes": 8234805,
+      "sha256": "0218BEBD0DC8F88670374FF0E12A61D45229A03092C606678C5C00FD81DC2C9E",
+      "protectedBackendVersion": "1.5.2",
+      "packageFiles": 20,
+      "compatibleProtectedBackendVersions": [
+        "1.5.1",
+        "1.5.2"
+      ],
+      "artifactSourceCommit": "3ead24911ca583932ed8fbcb5820b8a25b20303f"
     }
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "BE9249CD5E326C2B47BC6DAC79EF62EFC9A2B4ACC9491E223A3DBE0064583DC0"
+    "sha256": "B0A89D10D8AF5E39E0CF2AA17FB96178AB44ED82D0346450FA3C94285C3B82DD"
   },
   "acceptance": {
-    "windowsPayload": "PASS_FINAL_BUILD",
-    "windowsInstaller": "PASS_FINAL_BUILD_STABLE_OUTPUT",
-    "windowsContract": "PASS_FINAL_CANDIDATE",
-    "linuxPackage": "PASS",
-    "linuxContract": "PASS",
-    "protectedCi": "RELEASE_HEAD_RUN_37427662880_FALSE_GREEN_WINDOWS_CONTRACT_CRASH_DETECTED_POST_PUBLISH; LINUX_JOB_PASS; POST_PUBLISH_SOURCE_REPRODUCIBILITY_FIX_CI_PENDING",
-    "publication": "PASS_PUBLIC_RELEASE_AND_ASSET_DIGESTS_VERIFIED",
-    "installedWindows": "PASS_EXACT_INSTALLED_ACTIVE_POST_PUBLISH_LATEST_V1_5_1",
-    "installedLinux": "PASS_EXACT_INSTALLED_ACTIVE_POST_PUBLISH_LATEST_V1_5_1",
-    "adultCoverage": "PASS_WINDOWS_AND_LINUX_NORMAL_CLIENT_PORNHUB_XVIDEOS_XNXX_XHAMSTER_REDDIT_REPRESENTATIVE_MATRIX_WITH_LINUX_EDGE_FAILOVER",
-    "gemini": "FAIL_HTTP_403_CURL_AND_REAL_CHROME_CURRENT_EGRESS_DIRECT_ONLY_EXHAUSTED",
-    "routerGatewayContract": "PASS",
-    "rejectedComponentAudit": "PASS",
-    "releaseMetadata": "PASS",
-    "fullTrackedSourceAudit": "PASS_56_PS1_16_PY_DOTNET_0_WARN_0_ERR",
-    "windowsDefender": "PASS_EXACT_INSTALLER_AND_ACCEPTED_RUNTIME",
-    "linuxCrossHostRebuild": "PASS_EXACT_SHA_21FE5124",
-    "sourceReproducibility": "LOCAL_PASS_WINDOWS_OVERRIDE_TRACKED_HASH_PINNED_EOL_DETERMINISTIC_CI_FAIL_FAST; PROTECTED_CI_PENDING"
+    "windowsPayload": "PASS_PR30_EXACT_SOURCE_TWO_WINDOWS_HOSTS",
+    "windowsInstaller": "PASS_GENUINE_INNO_AND_REAL_DISPOSABLE_INSTALLED_LIFECYCLE",
+    "windowsContract": "PASS_SOURCE_CONTRACT_V152",
+    "linuxPackage": "PASS_LOCAL_BUILT_ARCHIVE_TAILSCALE_CANDIDATE",
+    "linuxContract": "PASS_SOURCE_CONTRACT_V152",
+    "protectedCi": "PASS_PR30_SOURCE_WINDOWS_LINUX_38152706915",
+    "publication": "PUBLIC_PREVIEW3_NOT_STABLE",
+    "installedWindows": "PASS_EPHEMERAL_WINDOWS_2025_ONLY_NOT_USER_MACHINE",
+    "installedLinux": "PASS_LINUX_EMAD_AND_MMZ_TARGETED_SAFE_ROLLBACK",
+    "adultCoverage": "PENDING_V152_VERIFICATION",
+    "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED",
+    "routerGatewayContract": "PENDING_V152_VERIFICATION",
+    "rejectedComponentAudit": "PENDING_V152_VERIFICATION",
+    "releaseMetadata": "PENDING_V152_VERIFICATION",
+    "fullTrackedSourceAudit": "PENDING_V152_VERIFICATION",
+    "windowsDefender": "PENDING_V152_VERIFICATION",
+    "linuxCrossHostRebuild": "PASS_EXACT_THREE_HOST_SAME_SHA",
+    "sourceReproducibility": "PASS_2_WINDOWS_GUI_SERVICE_AND_3_LINUX",
+    "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING",
+    "windowsSandbox": "UNSIGNED_NOT_SUPPORTED_WHEN_SAC_BLOCKS; NO_SECURITY_BYPASS",
+    "windowsDistributionSigning": "NOT_SIGNED_BY_OWNER_CHOICE; NOT_A_RELEASE_GATE",
+    "installerIntegrity": "PASS_NATIVE_INNO_SHA_PLUS_HOSTED_INSTALL_UNINSTALL",
+    "windowsFreshInstall": "PASS_HOSTED_REAL_INSTALL_UNINSTALL",
+    "windowsUpgradeRollback": "PASS_HOSTED_151_TO_152_AND_151_RESTORE_ZERO_ERRORS",
+    "windowsSecurityPolicyUnchanged": true
   },
   "validationBoundary": {
     "universalAdultGuarantee": "UNPROVABLE for every remote domain/CDN edge. Maintained opt-in catalog plus bounded platform profiles are used. Exact-installed normal-client matrices pass Pornhub/XVideos/XNXX/XHamster/Reddit. On validated Linux, forced Cloudflare edge 104.16.3.81 is unusable, but normal client operation failed over to 104.16.4.81 and returned HTTP 200 in 5/5 restart cycles.",
     "gemini": "Direct-only architecture cannot change public egress geolocation. Gemini is HTTP 403 in curl and real Chrome on the validated current egress; HTTP 403 remains FAIL_HTTP and a usable Gemini page requires a separate egress-changing architecture.",
-    "authenticode": "NOT_SIGNED_EXTERNAL_TRUST_CERTIFICATE_MISSING",
+    "authenticode": "NotSigned is explicitly accepted by the owner for the one public release line; no SAC/Defender bypass is permitted.",
     "proxyVpn": "NOT_USED"
   },
   "evidence": {
@@ -127,17 +163,25 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "v1.5.1 runtime/release is FINAL/PUBLISHED/POST-PUBLISH VERIFIED on Windows and Linux. One source-governance gate remains: merge the post-publish reproducibility/CI fail-fast repair after protected CI passes on a fresh checkout; no release asset/runtime mutation is required.",
-  "publication": {
-    "tag": "v1.5.1",
-    "tagCommit": "a79dfb8216c603d6e29236233e8d250b490a96cc",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.1",
-    "releaseId": 404451350,
-    "publishedAt": "2026-10-06T07:52:05Z",
-    "exactReleaseHead": "bfabb33015d32bda596144e2c5f30d8c870841ec",
-    "exactReleaseTree": "d0bfe6a230a3eefda064d33db25764a488611b90",
-    "protectedCiRun": 37427662880,
-    "publicAssetsVerified": true,
-    "protectedCiCaveat": "Run 37427662880 reported overall success but Windows contract actually crashed because strong-override-hosts.txt was not tracked; multi-command pwsh step masked the nonzero exit. Release artifact acceptance is based on exact-installed/live/hash evidence, not this false-green Windows job."
+  "exactNextAction": "Controlled new-release unsigned verifier: source CI, rebuild binaries for exact tag commit, native hosted fresh upgrade rollback with new SHA, public release asset SHA+SUMS+download acceptance; owner must separately verify source/third-party redistribution obligations and remaining real web site usability.",
+  "publication": {},
+  "publicUnsignedDistribution": {
+    "ownerDecisionDate": "2026-10-11",
+    "onePublicLine": true,
+    "codeSigningCertificateRequired": false,
+    "disableWindowsSecurity": false,
+    "previousPublicStable": "v1.5.1",
+    "currentPublicPreview": "unsigned-1.5.2-preview.3",
+    "unsupportedPolicy": "Windows devices disallowing unsigned execution may refuse installation",
+    "noUniversalWebsiteGuarantee": true
+  },
+  "windowsHostAcceptanceEvidence": {
+    "artifactSourceCommit": "3ead24911ca583932ed8fbcb5820b8a25b20303f",
+    "installerSha256": "2F054752E3B1B4715D68958CA49639AEA6FE43E0E4CBC6611DDEEBABAE2C7EB5",
+    "freshRunId": 38167341910,
+    "freshReportSha256": "8CB53DF4A6FCD0E2C27DBB292F7093D628DA65D30FDDD3BAEF5F00DAD009FC2E",
+    "upgradeRunId": 38168392209,
+    "upgradeReportSha256": "990090D9B00FA1E84094FBDEFAD5A37990AC2A23C19349BFA7CD97963C42D234",
+    "scope": "Host reports refer ONLY to PR30 last public preview exact binaries; new git commits must rebuild and reaccept before stable tag"
   }
 }

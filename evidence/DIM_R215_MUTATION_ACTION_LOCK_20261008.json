@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "project": "Direct Internet Method",
+  "revision": "R215",
+  "date": "2026-10-08",
+  "status": "OFFLINE_SOURCE_QA_PASS__HOSTED_CI_PENDING__LIVE_RUNTIME_UNPROVEN",
+  "before": {
+    "head": "d5c536424e541fe4cac19a222faeebfce5fc942f",
+    "publicStable": "v1.5.1",
+    "brainSha": "C22AC699C962B75438BDB0BBF6AFE2F77B6A3C7D4D7A61CD321536086294D6C0"
+  },
+  "failureId": "R215-MUTATING-ACTIONS-NOT-SERIALIZED",
+  "class": "CONCURRENCY_RACE_EXPOSURE",
+  "facts": [
+    "Production helper has system-global nft table, /run hostlist and per-user state shared by mutating Start,Stop,Recovery",
+    "Previous source had no flock nor mutual exclusion for these actions",
+    "Negative-first structural contract failed because acquire_action_lock missing"
+  ],
+  "inferredRisk": "Concurrent root-managed actions could race on cleanup and shared state; a live harmful collision was not demonstrated.",
+  "mutation": "Single global nonblocking advisory flock /run/directinternetmethod-action.lock, root-only and mode0600; explicit ACTION_ALREADY_RUNNING if busy, ACTION_LOCK_UNAVAILABLE on untrusted symlink or missing flock. Require after privilege check, before any Start/Stop/Recovery side effects. OS automatically releases lock on process exit.",
+  "verification": {
+    "isolatedActionLock": "4/4 PASS",
+    "nativeFlockOverlap": "FAIL_CLOSED_PASS",
+    "lockRelease": "PASS",
+    "unsafeSymlink": "PASS",
+    "allLinuxSourceContract": "PASS",
+    "BashSyntax": "PASS",
+    "LinuxPackageRepro": [
+      "Windows Emad",
+      "Emad Linux QA"
+    ],
+    "kernelNFTRegression": "PREVIOUS_6_OF_6_UNCHANGED_SOURCE",
+    "realInstalledLinuxStartStop": "UNPROVEN"
+  },
+  "filesSha256": {
+    "linux/app/direct_method_helper.sh": "5B9E317B55A6D5FA89138086DE7932B36F984D4748D5BAD2A789E1666D0DDBD5",
+    "tests/linux_mutation_action_lock_contract.py": "33E82B212E5DA13FCE7DD796745C95E480949C6E6E01266F34861B8375490528",
+    "tests/nft_presence_fail_closed_contract.py": "866074D5C600D30DACF91EA4CEF8EE6048C4434E952DC2001D0E43B5BE2F2A7F",
+    "tests/tailscale_recovery_missing_state_contract.py": "10D778D5E051682E7918409C6C5DFCC99BC4DAE648B7C862E1C6C5B86E3AD7BA9"
+  },
+  "artifact": {
+    "name": "DirectInternetMethod_1.5.2_Linux_x86_64.zip",
+    "bytes": 8201431,
+    "files": 19,
+    "sha256": "CA1664923662F2FCBC2A73BEB021D96A33809305A6E92A073F55632CE15938C2",
+    "status": "UNPUBLISHED_SOURCE_CANDIDATE",
+    "previous": "58E9F55C8B65BB51C9274298CB67D4682AD3B15E4789D04D137E9FB020D5AF5C",
+    "previousStatus": "SUPERSEDED_DO_NOT_INSTALL",
+    "backupPath": "C:\\Users\\Aa.Emad\\source\\repos\\DIM_R215_GATE\\BASELINE_D5C5364.zip"
+  },
+  "risks": [
+    "Advisory lock serializes cooperating helper invocations, not unrelated root nft processes",
+    "Linux real root protected backend install and live Tailscale/RustDesk coexistence not proven",
+    "Windows public Authenticode and Smart App Control Sandbox blocked",
+    "Gemini HTTP403 unresolved"
+  ],
+  "next": "Commit narrow source; run exact-SHA GitHub CI and independent Linux Saeid build; refresh cumulative Brain; then OS-authorized locally recoverable live test and Windows trusted-signed Sandbox."
+}

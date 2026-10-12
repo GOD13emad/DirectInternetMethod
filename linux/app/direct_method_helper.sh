@@ -21,6 +21,10 @@ ADULT_ENABLED="$STATE_BASE/adult-enabled.txt"
 ADULT_HOSTS="$STATE_BASE/adult-hosts.txt"
 STRATEGY_FILE="$STATE_BASE/strategy.txt"
 SCOPE_FILE="$STATE_BASE/scope.txt"
+SELECTIVE_DNS_OPT_IN="$STATE_BASE/selective-dns-optin.txt"
+SELECTIVE_DNS="/usr/lib/directinternetmethod/selective_dns.py"
+SELECTIVE_DNS_ENABLED=0
+CREATED_STATE=0
 CTRLD="$BIN/ctrld"
 NFQWS="$BIN/nfqws"
 TABLE="directinternetmethod"
@@ -35,6 +39,8 @@ NFQWS_UNIT=""
 CREATED_LINK=0
 CREATED_TABLE=0
 START_COMMITTED=0
+DNS_MODE="direct-doh"
+TAILSCALE_COEXIST=0
 
 mkdir -p "$DM"
 chmod 0700 "$DM"
@@ -43,6 +49,35 @@ chown "$USER_UID:$USER_GID" "$DM" 2>/dev/null || true
 require_root(){
   [ "$(id -u)" -eq 0 ] || { echo '{"ok":false,"error":"ROOT_REQUIRED"}'; exit 77; }
 }
+
+# The nft table, state.json and /run hostlist are system-global resources.
+# Every mutating action must hold this singleton nonblocking kernel flock.
+# The lock is released by the OS when the action process exits, including failure.
+acquire_action_lock(){
+  local lock_path="/run/directinternetmethod-action.lock"
+  command -v flock >/dev/null 2>&1 || {
+    echo '{"ok":false,"error":"ACTION_LOCK_UNAVAILABLE"}' >&2
+    return 85
+  }
+  if [ -L "$lock_path" ]; then
+    echo '{"ok":false,"error":"ACTION_LOCK_UNAVAILABLE"}' >&2
+    return 85
+  fi
+  umask 077
+  exec {DIM_ACTION_LOCK_FD}>"$lock_path" || {
+    echo '{"ok":false,"error":"ACTION_LOCK_UNAVAILABLE"}' >&2
+    return 85
+  }
+  chmod 0600 "$lock_path" || {
+    echo '{"ok":false,"error":"ACTION_LOCK_UNAVAILABLE"}' >&2
+    return 85
+  }
+  if ! flock -n "$DIM_ACTION_LOCK_FD"; then
+    echo '{"ok":false,"error":"ACTION_ALREADY_RUNNING"}' >&2
+    return 86
+  fi
+}
+
 
 pid_owned(){
   local pid="${1:-}" expected="${2:-}"
@@ -76,17 +111,70 @@ dns_link_owned(){
   ip -4 -o addr show dev "$DNS_IF" 2>/dev/null | grep -q " $DNS_IP/32 " || return 1
 }
 
-nft_table_owned(){
-  local physical="${1:-}" out
-  out="$(nft list table inet "$TABLE" 2>/dev/null)" || return 1
-  grep -Fq 'chain output' <<<"$out" || return 1
-  grep -Eq 'hook output priority (mangle|[-]?[0-9]+)' <<<"$out" || return 1
-  grep -Eq 'tcp dport 80.*queue (num 200.*bypass|flags bypass to 200)' <<<"$out" || return 1
-  grep -Eq 'tcp dport 443.*queue (num 200.*bypass|flags bypass to 200)' <<<"$out" || return 1
-  grep -Eq 'udp dport 443.*queue (num 200.*bypass|flags bypass to 200)' <<<"$out" || return 1
-  if [ -n "$physical" ]; then
-    grep -Fq "oifname \"$physical\"" <<<"$out" || grep -Fq "oifname $physical" <<<"$out" || return 1
+# nft query failures are ambiguous, never equivalent to table absence.
+# Return 0: exists; 1: demonstrably absent; 2: unable to verify.
+nft_table_presence(){
+  local listing
+  if nft list table inet "$TABLE" >/dev/null 2>&1; then
+    return 0
   fi
+  listing="$(nft -j list tables 2>/dev/null)" || return 2
+  printf '%s\n' "$listing" | python3 -c '
+import json,sys
+try:
+    data=json.load(sys.stdin)
+    items=data["nftables"]
+    if not isinstance(items,list):
+        raise ValueError("no nftables array")
+    pairs=[]
+    for entry in items:
+        if not isinstance(entry,dict):
+            raise ValueError("invalid element")
+        if "table" in entry:
+            t=entry["table"]
+            if not isinstance(t,dict) or not isinstance(t.get("family"),str) or not isinstance(t.get("name"),str):
+                raise ValueError("invalid table")
+            pairs.append((t["family"],t["name"]))
+    sys.exit(0 if ("inet",sys.argv[1]) in pairs else 1)
+except (ValueError,TypeError,KeyError,IndexError):
+    sys.exit(2)
+' "$TABLE"
+}
+
+nft_table_owned(){
+  # Ownership is a strict whole-table contract, not substring recognition.
+  # If the state/physical context is missing, the table is NOT safe to delete.
+  local physical="$1" mode out
+  [ -n "$physical" ] && [ -f "$STATE" ] || return 1
+  mode="$(state_value dnsMode)"
+  case "$mode" in system-preserved|direct-doh) ;; *) return 1 ;; esac
+  out="$(nft list table inet "$TABLE" 2>/dev/null)" || return 1
+  printf '%s\n' "$out" | python3 -c '
+import re, sys
+table, iface, mode = sys.argv[1:]
+lines = [line.strip() for line in sys.stdin if line.strip()]
+coexist = mode == "system-preserved"
+expected_count = 9 if coexist else 8
+if len(lines) != expected_count:
+    sys.exit(1)
+if lines[:2] != [f"table inet {table} {{", "chain output {"]:
+    sys.exit(1)
+if not re.fullmatch(r"type filter hook output priority (?:mangle|-150); policy accept;", lines[2]):
+    sys.exit(1)
+if lines[-2:] != ["}", "}"]:
+    sys.exit(1)
+offset = 3
+if coexist:
+    if not re.fullmatch(r"meta mark & 0x0*ff0000 == 0x0*80000 return", lines[3]):
+        sys.exit(1)
+    offset = 4
+queue = r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? bypass)"
+dev = r"oifname (?:" + re.escape(iface) + r"|" + re.escape(chr(34) + iface + chr(34)) + r")"
+for index, (proto, port) in enumerate((("tcp", 80), ("tcp", 443), ("udp", 443))):
+    rule = dev + " " + proto + " dport " + str(port) + " " + queue
+    if not re.fullmatch(rule, lines[offset + index]):
+        sys.exit(1)
+' "$TABLE" "$physical" "$mode"
 }
 
 state_value(){
@@ -119,13 +207,69 @@ external_tunnel_active(){
     tun*|tap*|wg*|warp*|tailscale*|zt*) return 0 ;;
   esac
   if command -v nmcli >/dev/null 2>&1; then
+    local nmout
+    nmout="$(timeout 4 nmcli -t -f TYPE,DEVICE connection show --active 2>/dev/null)" || return 0
     while IFS=: read -r typ dev; do
+      case "$typ" in vpn|wireguard|tun|tap) return 0 ;; esac
       case "$dev" in
         tun*|tap*|wg*|warp*|tailscale*|zt*) return 0 ;;
       esac
-    done < <(nmcli -t -f TYPE,DEVICE connection show --active 2>/dev/null || true)
+    done <<<"$nmout"
   fi
+  # Also protect non-NetworkManager tun/wg devices. Read-only detection.
+  while IFS= read -r dev; do
+    dev="$(printf '%s' "$dev" | cut -d@ -f1)"
+    case "$dev" in tun*|tap*|wg*|warp*|tailscale*|zt*) return 0 ;; esac
+  done < <(ip -o link show up | awk -F': ' '{print $2}')
   return 1
+}
+
+
+# Only Tailscale peer/subnet use on tailscale0 is supported; exit node and
+# any other VPN/tun remain fail-closed. Read-only: no tailscale set/up/down.
+tailscale_split_safe(){
+  local top ts_mode ip4 ip6 dev typ seen=0
+  top="$(top_iface)"
+  case "$top" in
+    ""|tun*|tap*|wg*|warp*|tailscale*|zt*) return 1 ;;
+  esac
+  [ "$top" = "$(physical_iface)" ] || return 1
+  ip link show tailscale0 >/dev/null 2>&1 || return 1
+  command -v tailscale >/dev/null 2>&1 || return 1
+  command -v timeout >/dev/null 2>&1 || return 1
+  while IFS= read -r dev; do
+    dev="$(printf '%s' "$dev" | cut -d@ -f1)"
+    case "$dev" in
+      tailscale0) seen=1 ;;
+      tun*|tap*|wg*|warp*|tailscale*|zt*) return 1 ;;
+    esac
+  done < <(ip -o link show up | awk -F': ' '{print $2}')
+  [ "$seen" -eq 1 ] || return 1
+  if command -v nmcli >/dev/null 2>&1; then
+    local nmout
+    nmout="$(timeout 4 nmcli -t -f TYPE,DEVICE connection show --active 2>/dev/null)" || return 1
+    while IFS=: read -r typ dev; do
+      if [ "$dev" != tailscale0 ]; then
+        case "$typ" in vpn|wireguard|tun|tap) return 1 ;; esac
+        case "$dev" in
+          tun*|tap*|wg*|warp*|tailscale*|zt*) return 1 ;;
+        esac
+      fi
+    done <<<"$nmout"
+  fi
+  ts_mode="$(timeout 5 tailscale status --json 2>/dev/null |
+    python3 -c 'import json,sys
+try:
+ d=json.load(sys.stdin)
+ ok=(d.get("BackendState")=="Running" and not d.get("ExitNodeStatus"))
+ print("split" if ok else "exit-or-offline")
+except Exception: print("invalid")')" || return 1
+  [ "$ts_mode" = "split" ] || return 1
+  ip4="$(ip -4 route show table 52 2>/dev/null)" || return 1
+  ip6="$(ip -6 route show table 52 2>/dev/null)" || return 1
+  ! grep -Eq '^(default|0[.]0[.]0[.]0/0|0[.]0[.]0[.]0/1|128[.]0[.]0[.]0/1)([[:space:]]|$)' <<<"$ip4" || return 1
+  ! grep -Eq '^(default|::/0|::/1|8000::/1)([[:space:]]|$)' <<<"$ip6" || return 1
+  return 0
 }
 
 remove_dns_link(){
@@ -137,27 +281,112 @@ remove_dns_link(){
   fi
 }
 
+# During failed Start a table may have only a PREFIX of our intended rules.
+# Do not remove it if another actor added a rule/chain or the read is ambiguous.
+nft_table_transient_owned(){
+  local phy="$1" coexist="$2" output
+  [ -n "$phy" ] || return 1
+  case "$coexist" in 0|1) ;; *) return 1;; esac
+  output="$(nft list table inet "$TABLE" 2>/dev/null)" || return 1
+  printf '%s\n' "$output" | python3 -c '
+import re,sys
+table,iface,coexist=sys.argv[1:]
+lines=[line.strip() for line in sys.stdin if line.strip()]
+if not re.fullmatch(r"[a-zA-Z0-9_.-]+",iface) or len(lines)<2:
+    sys.exit(1)
+if lines[0]!=f"table inet {table} {{" or lines[-1]!="}":
+    sys.exit(1)
+inner=lines[1:-1]
+if not inner:
+    sys.exit(0)
+if len(inner)<3 or inner[0]!="chain output {" or inner[-1]!="}":
+    sys.exit(1)
+if not re.fullmatch(r"type filter hook output priority (?:mangle|-150); policy accept;",inner[1]):
+    sys.exit(1)
+dev=r"oifname (?:"+re.escape(iface)+r"|" + re.escape(chr(34)+iface+chr(34))+r")"
+queue=r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? bypass)"
+patterns=[]
+if coexist=="1":
+    patterns.append(r"meta mark & 0x0*ff0000 == 0x0*80000 return")
+for proto,port in (("tcp",80),("tcp",443),("udp",443)):
+    patterns.append(dev+r" "+proto+r" dport "+str(port)+r" "+queue)
+rules=inner[2:-1]
+if len(rules)>len(patterns):
+    sys.exit(1)
+if not all(re.fullmatch(pattern,actual) for pattern,actual in zip(patterns,rules)):
+    sys.exit(1)
+' "$TABLE" "$phy" "$coexist"
+}
+
 cleanup_transient(){
+  local nft_rc=0 can_delete=0
   set +e
+  # Restore original physical DNS FIRST, even if NFT ownership cannot
+  # subsequently be established. Never leave ordinary Internet pointing
+  # at a defunct local DNS service after a failed Start.
+  if [ -f /run/directinternetmethod-selective/session.json ]; then
+    python3 "$SELECTIVE_DNS" restore || return 88
+  fi
+  if [ "$CREATED_TABLE" -eq 1 ]; then
+    if nft_table_presence; then
+      if nft_table_transient_owned "$PHY" "$TAILSCALE_COEXIST"; then
+        can_delete=1
+      else
+        echo '{"ok":false,"error":"ROLLBACK_FOREIGN_NFT_PRESERVED"}' >&2
+        return 83
+      fi
+    else
+      nft_rc=$?
+      if [ "$nft_rc" -ne 1 ]; then
+        echo '{"ok":false,"error":"ROLLBACK_NFT_PRESENCE_UNVERIFIED"}' >&2
+        return 84
+      fi
+    fi
+  fi
   pid_owned "$NPID" "$NFQWS" && kill "$NPID" 2>/dev/null
   pid_owned "$CPID" "$CTRLD" && kill "$CPID" 2>/dev/null
-  [ "$CREATED_TABLE" -eq 1 ] && nft delete table inet "$TABLE" >/dev/null 2>&1
+  if [ "$can_delete" -eq 1 ]; then
+    if nft_table_transient_owned "$PHY" "$TAILSCALE_COEXIST"; then
+      nft delete table inet "$TABLE" >/dev/null 2>&1 || {
+        echo '{"ok":false,"error":"ROLLBACK_NFT_DELETE_FAILED"}' >&2
+        return 83
+      }
+    else
+      echo '{"ok":false,"error":"ROLLBACK_NFT_CHANGED_PRESERVED"}' >&2
+      return 83
+    fi
+  fi
   [ "$CREATED_LINK" -eq 1 ] && remove_dns_link
   rm -f "$RUN_HOSTS"
+  [ "$CREATED_STATE" -eq 1 ] && rm -f "$STATE"
   set -e
 }
 
 cleanup_state_owned(){
   [ -f "$STATE" ] || return 0
-  local cp np phy
+  local cp np phy nft_rc
   cp="$(state_value ctrldPid)"
   np="$(state_value nfqwsPid)"
   phy="$(state_value physicalInterface)"
+  # Preflight EVERY owned resource before any destructive process or netfilter action.
+  # Never terminate a running engine if an ambiguous foreign table/link is present.
+  if nft_table_presence; then
+    nft_table_owned "$phy" || { echo '{"ok":false,"error":"NFT_TABLE_OWNERSHIP_MISMATCH"}' >&2; return 81; }
+  else
+    nft_rc=$?
+    [ "$nft_rc" -eq 1 ] || { echo '{"ok":false,"error":"NFT_PRESENCE_UNVERIFIED"}' >&2; return 84; }
+  fi
+  if ip link show "$DNS_IF" >/dev/null 2>&1; then
+    dns_link_owned || { echo '{"ok":false,"error":"DNS_LINK_OWNERSHIP_MISMATCH"}' >&2; return 82; }
+  fi
   pid_owned "$np" "$NFQWS" && kill "$np" 2>/dev/null || true
   pid_owned "$cp" "$CTRLD" && kill "$cp" 2>/dev/null || true
-  if nft list table inet "$TABLE" >/dev/null 2>&1; then
+  if nft_table_presence; then
     nft_table_owned "$phy" || { echo '{"ok":false,"error":"NFT_TABLE_OWNERSHIP_MISMATCH"}' >&2; return 81; }
     nft delete table inet "$TABLE"
+  else
+    nft_rc=$?
+    [ "$nft_rc" -eq 1 ] || { echo '{"ok":false,"error":"NFT_PRESENCE_UNVERIFIED"}' >&2; return 84; }
   fi
   if ip link show "$DNS_IF" >/dev/null 2>&1; then
     dns_link_owned || { echo '{"ok":false,"error":"DNS_LINK_OWNERSHIP_MISMATCH"}' >&2; return 82; }
@@ -166,26 +395,56 @@ cleanup_state_owned(){
   rm -f "$RUN_HOSTS" "$STATE"
 }
 
+restore_selective_dns(){
+  if [ -e /run/directinternetmethod-selective/session.json ]; then
+    [ -x "$SELECTIVE_DNS" ] || { echo '{"ok":false,"error":"SELECTIVE_DNS_CONTROLLER_MISSING"}' >&2; return 88; }
+    python3 "$SELECTIVE_DNS" restore || {
+      echo '{"ok":false,"error":"SELECTIVE_DNS_RESTORE_FAILED"}' >&2
+      return 88
+    }
+  fi
+}
+
 verify_clean(){
+  local nft_rc
   [ ! -f "$STATE" ] || return 1
+  # A stale protected DNS watchdog/session cannot be considered CLEAN.
+  [ ! -e /run/directinternetmethod-selective/session.json ] || return 1
+  [ ! -e /run/directinternetmethod-selective ] || return 1
+  [ ! -e /run/directinternetmethod-selective.conf ] || return 1
   ! ip link show "$DNS_IF" >/dev/null 2>&1 || return 1
-  ! nft list table inet "$TABLE" >/dev/null 2>&1 || return 1
+  if nft_table_presence; then
+    return 1
+  else
+    nft_rc=$?
+    [ "$nft_rc" -eq 1 ] || return 1
+  fi
   return 0
 }
 
 status(){
-  local cp="" np="" ca=false na=false link=false table=false
+  local cp="" np="" ca=false na=false link=false table=false dns_ok=false mode=""
   if [ -f "$STATE" ]; then
     cp="$(state_value ctrldPid)"
     np="$(state_value nfqwsPid)"
+    mode="$(state_value dnsMode)"
     pid_owned "$cp" "$CTRLD" && ca=true || true
     pid_owned "$np" "$NFQWS" && na=true || true
   fi
   dns_link_owned && link=true || true
+  if [ "$mode" = "system-preserved" ]; then
+    # Intentional: DNS stays with systemd-resolved/Tailscale; no owned link.
+    if [ "$cp" = "0" ] && [ "$ca" = false ] &&
+       [ "$link" = false ] && [ ! -e "/sys/class/net/$DNS_IF" ]; then
+      dns_ok=true
+    fi
+  else
+    [ "$ca" = true ] && [ "$link" = true ] && dns_ok=true
+  fi
   local phy=""
   [ -f "$STATE" ] && phy="$(state_value physicalInterface)"
   nft_table_owned "$phy" && table=true || true
-  python3 - "$STATE" "$ca" "$na" "$link" "$table" <<'PY'
+  python3 - "$STATE" "$ca" "$na" "$link" "$table" "$dns_ok" <<'PY'
 import json,sys
 state={}
 try:
@@ -194,22 +453,34 @@ except Exception:
     pass
 flags=[x.lower()=="true" for x in sys.argv[2:]]
 print(json.dumps({
-    "ok":bool(state and all(flags)),
+    "ok":bool(state and flags[1] and flags[3] and flags[4]),
     "state":state,
     "ctrldAlive":flags[0],
     "nfqwsAlive":flags[1],
     "dnsLink":flags[2],
-    "nftTable":flags[3]
+    "nftTable":flags[3],
+    "dnsReady":flags[4],
+    "dnsMode":state.get("dnsMode","direct-doh")
 }))
 PY
 }
 
 rollback_on_exit(){
-  local rc=$?
+  local original_rc=$? rollback_rc=0
+  # A failed rollback must not be represented as a successful Start.
+  trap - EXIT
   if [ "$ACTION" = "start" ] && [ "$START_COMMITTED" -eq 0 ]; then
-    cleanup_transient
+    cleanup_transient || rollback_rc=$?
+    if [ "$rollback_rc" -ne 0 ]; then
+      printf '{"ok":false,"error":"START_ROLLBACK_FAILED","originalExit":%s,"rollbackExit":%s}\n' "$original_rc" "$rollback_rc" >&2
+      exit "$rollback_rc"
+    fi
+    if [ "$original_rc" -eq 0 ]; then
+      echo '{"ok":false,"error":"START_NOT_COMMITTED"}' >&2
+      exit 87
+    fi
   fi
-  exit "$rc"
+  exit "$original_rc"
 }
 
 case "$ACTION" in
@@ -219,46 +490,74 @@ case "$ACTION" in
 
   stop)
     require_root
+    acquire_action_lock
     if [ ! -f "$STATE" ]; then
+      if nft_table_presence; then
+        echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+        exit 81
+      else
+        nft_rc=$?
+        [ "$nft_rc" -eq 1 ] || { echo '{"ok":false,"error":"NFT_PRESENCE_UNVERIFIED"}'; exit 84; }
+      fi
+      if ip link show "$DNS_IF" >/dev/null 2>&1; then
+        echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+        exit 81
+      fi
+      restore_selective_dns
       echo '{"ok":true,"state":"PASS_NO_STATE","note":"No owned state; no network resources were removed."}'
       exit 0
     fi
     cleanup_state_owned
+    restore_selective_dns
     verify_clean || { echo '{"ok":false,"error":"STOP_RESIDUE"}'; exit 78; }
     echo '{"ok":true,"state":"STOPPED"}'
     ;;
 
   recovery)
     require_root
+    acquire_action_lock
     if [ -f "$STATE" ]; then
       cleanup_state_owned
     else
+      # Without the ownership state, no table/link may be safely attributed.
+      # Fail before orphan process cleanup; preserve ambiguous foreign resources.
+      if nft_table_presence; then
+        echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+        exit 81
+      else
+        nft_rc=$?
+        [ "$nft_rc" -eq 1 ] || { echo '{"ok":false,"error":"NFT_PRESENCE_UNVERIFIED"}'; exit 84; }
+      fi
+      if ip link show "$DNS_IF" >/dev/null 2>&1; then
+        echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+        exit 81
+      fi
       kill_all_owned_by_exe "$NFQWS"
       kill_all_owned_by_exe "$CTRLD"
       sleep .3
-      if nft list table inet "$TABLE" >/dev/null 2>&1; then
-        nft_table_owned "" || { echo '{"ok":false,"error":"NFT_TABLE_OWNERSHIP_MISMATCH"}'; exit 81; }
-        nft delete table inet "$TABLE"
-      fi
-      if ip link show "$DNS_IF" >/dev/null 2>&1; then
-        dns_link_owned || { echo '{"ok":false,"error":"DNS_LINK_OWNERSHIP_MISMATCH"}'; exit 79; }
-        remove_dns_link
-      fi
       rm -f "$RUN_HOSTS"
     fi
+    restore_selective_dns
     verify_clean || { echo '{"ok":false,"error":"RECOVERY_RESIDUE"}'; exit 80; }
     echo '{"ok":true,"state":"RECOVERED"}'
     ;;
 
   start)
     require_root
+    acquire_action_lock
     trap rollback_on_exit EXIT
 
     if [ -f "$STATE" ]; then
       CPID="$(state_value ctrldPid)"
       NPID="$(state_value nfqwsPid)"
-      if pid_owned "$CPID" "$CTRLD" && pid_owned "$NPID" "$NFQWS" &&
-         dns_link_owned &&
+      PREVIOUS_DNS_MODE="$(state_value dnsMode)"
+      DNS_HEALTHY=0
+      if [ "$PREVIOUS_DNS_MODE" = "system-preserved" ]; then
+        [ "$CPID" = "0" ] && ! ip link show "$DNS_IF" >/dev/null 2>&1 && DNS_HEALTHY=1
+      else
+        pid_owned "$CPID" "$CTRLD" && dns_link_owned && DNS_HEALTHY=1
+      fi
+      if [ "$DNS_HEALTHY" -eq 1 ] && pid_owned "$NPID" "$NFQWS" &&
          nft_table_owned "$(state_value physicalInterface)"; then
         START_COMMITTED=1
         trap - EXIT
@@ -268,7 +567,14 @@ case "$ACTION" in
       cleanup_state_owned
     fi
 
-    if nft list table inet "$TABLE" >/dev/null 2>&1 || ip link show "$DNS_IF" >/dev/null 2>&1; then
+    if nft_table_presence; then
+      echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
+      exit 69
+    else
+      nft_rc=$?
+      [ "$nft_rc" -eq 1 ] || { echo '{"ok":false,"error":"NFT_PRESENCE_UNVERIFIED"}'; exit 84; }
+    fi
+    if ip link show "$DNS_IF" >/dev/null 2>&1; then
       echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
       exit 69
     fi
@@ -285,8 +591,13 @@ case "$ACTION" in
     PHY="$(physical_iface)"
     [ -n "$PHY" ] || { echo '{"ok":false,"error":"PHYSICAL_DEFAULT_ROUTE_MISSING"}'; exit 71; }
     if external_tunnel_active; then
-      echo '{"ok":false,"error":"EXTERNAL_TUNNEL_ACTIVE"}'
-      exit 72
+      if tailscale_split_safe; then
+        TAILSCALE_COEXIST=1
+        DNS_MODE="system-preserved"
+      else
+        echo '{"ok":false,"error":"EXTERNAL_TUNNEL_ACTIVE_OR_EXIT_NODE"}'
+        exit 72
+      fi
     fi
 
     for candidate in "$CUSTOM_HOSTS" "$ADULT_ENABLED" "$ADULT_HOSTS"; do
@@ -360,7 +671,20 @@ PY
     fi
     HOST_ARGS=()
     [ "$SCOPE" = "targeted" ] && HOST_ARGS=(--hostlist="$RUN_HOSTS")
+    if [ "$TAILSCALE_COEXIST" -eq 1 ] && [ "$SCOPE" != "targeted" ]; then
+      echo '{"ok":false,"error":"TAILSCALE_ALL_SITES_UNSUPPORTED"}'
+      exit 74
+    fi
+    # Explicit opt-in; presence of unknown/symlink data is NOT ignored.
+    if [ "$TAILSCALE_COEXIST" -eq 1 ] && { [ -e "$SELECTIVE_DNS_OPT_IN" ] || [ -L "$SELECTIVE_DNS_OPT_IN" ]; }; then
+      [ "$STRATEGY" = "balanced" ] && [ -x "$SELECTIVE_DNS" ] || {
+        echo '{"ok":false,"error":"SELECTIVE_DNS_REQUIRES_BALANCED_AND_BACKEND"}'
+        exit 88
+      }
+      SELECTIVE_DNS_ENABLED=1
+    fi
 
+    if [ "$DNS_MODE" = "direct-doh" ]; then
     ip link add "$DNS_IF" type dummy
     CREATED_LINK=1
     ip addr add "$DNS_IP/32" dev "$DNS_IF"
@@ -412,10 +736,15 @@ EOF
     busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDNS 'ia(iay)' "$DIX" 1 2 4 192 0 2 53 >/dev/null
     busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDomains 'ia(sb)' "$DIX" 1 '.' true >/dev/null
     busctl call org.freedesktop.resolve1 /org/freedesktop/resolve1 org.freedesktop.resolve1.Manager SetLinkDefaultRoute 'ib' "$DIX" true >/dev/null
+    fi # Tailscale coexistence: preserve system DNS and MagicDNS unchanged.
 
     nft add table inet "$TABLE"
     CREATED_TABLE=1
     nft "add chain inet $TABLE output { type filter hook output priority mangle; policy accept; }"
+    if [ "$TAILSCALE_COEXIST" -eq 1 ]; then
+      # Tailscale LinuxBypassMark 0x80000/0xff0000 protects its own DERP/control traffic.
+      nft "add rule inet $TABLE output meta mark & 0xff0000 == 0x80000 return"
+    fi
     nft add rule inet "$TABLE" output oifname "$PHY" tcp dport 80 ct original packets 1-6 queue num "$QNUM" bypass
     nft add rule inet "$TABLE" output oifname "$PHY" tcp dport 443 ct original packets 1-6 queue num "$QNUM" bypass
     nft add rule inet "$TABLE" output oifname "$PHY" udp dport 443 ct original packets 1-6 queue num "$QNUM" bypass
@@ -470,14 +799,30 @@ EOF
     sleep .5
     pid_owned "$NPID" "$NFQWS" || { echo '{"ok":false,"error":"NFQWS_START_FAILED"}'; exit 76; }
 
-    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" "$ADULT_ON" "$ADULT_COUNT" <<'PY'
+    if [ "$SELECTIVE_DNS_ENABLED" -eq 1 ]; then
+      USER_HOME="$(getent passwd "$USER_UID" | cut -d: -f6)"
+      [ "$USER_HOME/.local/share/DirectInternetMethod" = "$STATE_BASE" ] || {
+        echo '{"ok":false,"error":"SELECTIVE_DNS_HOME_MISMATCH"}'
+        exit 88
+      }
+      python3 "$SELECTIVE_DNS" activate --uid "$USER_UID" --interface "$PHY" --home "$USER_HOME" || {
+        echo '{"ok":false,"error":"SELECTIVE_DNS_ACTIVATION_FAILED"}'
+        exit 88
+      }
+    fi
+
+    [ "$DNS_MODE" != "system-preserved" ] || CPID=0
+    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" "$ADULT_ON" "$ADULT_COUNT" "$DNS_MODE" "$TAILSCALE_COEXIST" "$SELECTIVE_DNS_ENABLED" <<'PY'
 import json,os,sys,time
 p=sys.argv[1]
 d={
   "schema":3,
   "status":"ACTIVE",
-  "architecture":"LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS_MULTIPROTOCOL",
-  "directMethods":["encrypted-dns-doh","http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443","custom-hostlist","adult-catalog","strategy-profile"],
+  "architecture":("TAILSCALE_SPLIT_PRESERVED_DNS_NFT_NFQWS" if sys.argv[13]=="system-preserved" else "LINUX_DUMMYLINK_SYSTEMD_RESOLVED_CTRLD_DOH_NFT_NFQWS_MULTIPROTOCOL"),
+  "directMethods":([] if sys.argv[13]=="system-preserved" else ["encrypted-dns-doh"])+["http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443","custom-hostlist","adult-catalog","strategy-profile"],
+  "dnsMode":sys.argv[13],
+  "tailscaleCoexistence":bool(int(sys.argv[14])),
+  "selectiveDns":bool(int(sys.argv[15])),
   "strategy":sys.argv[9],
   "scope":sys.argv[10],
   "adultCoverage":bool(int(sys.argv[11])),
@@ -485,8 +830,8 @@ d={
   "ctrldPid":int(sys.argv[2]),
   "nfqwsPid":int(sys.argv[3]),
   "physicalInterface":sys.argv[4],
-  "dnsInterface":"dimdns0",
-  "dnsIp":"192.0.2.53",
+  "dnsInterface":("" if sys.argv[13]=="system-preserved" else "dimdns0"),
+  "dnsIp":("" if sys.argv[13]=="system-preserved" else "192.0.2.53"),
   "ctrldUnit":sys.argv[7],
   "nfqwsUnit":sys.argv[8],
   "started":time.time()
@@ -498,6 +843,13 @@ os.chmod(p,0o600)
 os.chown(p,int(sys.argv[5]),int(sys.argv[6]))
 PY
 
+    CREATED_STATE=1
+    if [ "$SELECTIVE_DNS_ENABLED" -eq 1 ]; then
+      python3 "$SELECTIVE_DNS" commit || {
+        echo '{"ok":false,"error":"SELECTIVE_DNS_COMMIT_FAILED"}'
+        exit 88
+      }
+    fi
     START_COMMITTED=1
     trap - EXIT
     echo '{"ok":true,"state":"ACTIVE"}'

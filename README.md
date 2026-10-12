@@ -4,9 +4,9 @@
 
 Standalone direct-connect application for Windows and Linux. It does not create a VPN, HTTP/SOCKS proxy, WinHTTP proxy, or default-route tunnel.
 
-## Direct Method — v1.5.1 candidate
+## Direct Method — v1.5.2 corrective candidate
 
-v1.5.1 keeps the accepted v1.5.0 direct engine and turns the existing opt-in **Adult coverage** control into real bounded domain coverage rather than a single-site diagnostic.
+v1.5.2 retains the accepted v1.5.1 direct engine and turns the existing opt-in **Adult coverage** control into real bounded domain coverage rather than a single-site diagnostic.
 
 When Adult coverage is enabled, the app fetches and validates a maintained HaGeZi NSFW only-domains catalog at runtime and combines it with a small offline fallback. The feature remains OFF by default. Core traffic stays targeted, and the catalog is not applied unless the user enables it.
 
@@ -31,7 +31,7 @@ The validation network exhibits DNS interception when Direct Method is disabled.
 
 Router Gateway remains a separate non-privileged configuration panel for compatible routers/modems. Provider data revision 3 is maintained independently of application artifacts. Endpoint probes do not claim authenticated PPTP/L2TP tunnel success.
 
-## Windows 1.5.1
+## Windows 1.5.2
 
 - Native WPF UI and fixed-command privileged service.
 - Bundled PowerShell 7.6.6.
@@ -39,17 +39,31 @@ Router Gateway remains a separate non-privileged configuration panel for compati
 - Adult coverage catalog is opt-in and cached per user.
 - Installer is not Authenticode-signed; SHA-256 remains the artifact identity gate.
 
-## Linux 1.5.1
+## Linux 1.5.2
 
 - Dedicated temporary DNS link + ctrld + systemd-resolved.
 - nftables/NFQUEUE + zapret/nfqws v72.13.
-- Protected backend version 1.5.1.
+- Protected backend version 1.5.2.
 - Adult coverage uses the same validated catalog/fallback model as Windows.
 
 ## Release artifacts
 
-- `DirectInternetMethod_1.5.1_Windows_Setup.exe`
-- `DirectInternetMethod_1.5.1_Linux_x86_64.zip`
+- `DirectInternetMethod_1.5.2_Windows_Setup.exe`
+- `DirectInternetMethod_1.5.2_Linux_x86_64.zip`
 - `SHA256SUMS.txt`
 
 Authoritative acceptance/provenance records are stored under `evidence/`.
+
+## Tailscale split-network coexistence — v1.5.2 development candidate
+
+On Linux, Tailscale peer/subnet mode **without an Exit Node** may run alongside Direct Internet Method in `targeted` DPI-only mode. The Direct Method preserves existing DNS/MagicDNS, Tailscale routes and daemon state, and bypasses the Tailscale-reserved packet mark before passing ordinary physical-interface web traffic to NFQUEUE. It does **not** activate its own DoH listener in coexistence mode. Exit nodes, an unknown second tunnel or all-sites DPI fail closed. The original DoH + DPI configuration remains available when Tailscale is not running. See `docs/TAILSCALE_COEXISTENCE.md` for safety preconditions and outstanding real-host acceptance.
+
+This mode is **source candidate only**, not yet installed or tested end-to-end on Tailscale-active hosts; changing the protected Linux helper requires the normal authorized administrative install. The Windows v1.5.2 public release remains HOLD pending trusted signing and policy-on Sandbox installation. Neither always-on global connectivity nor usable Gemini HTTP 403 is guaranteed.
+
+## R247 experimental selected-site DNS (unpublished)
+Experimental Linux option, default OFF: plaintext UDP to a third-party
+resolver at 194.225.152.10 for YouTube-family DNS, requires explicit
+user opt-in, Targeted scope, Balanced strategy, and split Tailscale mode.
+No encrypted DoH, anonymity, universal bypass or uptime guarantees.
+Source package is NOT a published final release; native installed
+crash/reboot tests and Windows trusted RSA/SAC gates remain OPEN.

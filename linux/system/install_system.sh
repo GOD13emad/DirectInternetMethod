@@ -14,8 +14,14 @@ IFS=: read -r USER_NAME _ USER_UID USER_GID _ HOME_DIR _ <<<"$PASSWD"
 [[ "$HOME_DIR" =~ ^/[A-Za-z0-9._@/+:-]+$ ]] || { echo "unsafe home path" >&2; exit 65; }
 
 ROOT=/usr/lib/directinternetmethod
+# Do not overwrite a protected DNS monitor while it controls host DNS.
+[ ! -e /run/directinternetmethod-selective/session.json ] || {
+  echo "Stop/Recovery selective DNS before protected installation." >&2
+  exit 88
+}
 install -d -m 0755 "$ROOT" "$ROOT/runtime" "$ROOT/runtime/usr" "$ROOT/runtime/usr/bin" "$ROOT/licenses"
 install -m 0755 "$SRC/app/direct_method_helper.sh" "$ROOT/direct_method_helper.sh"
+install -m 0755 "$SRC/system/selective_dns.py" "$ROOT/selective_dns.py"
 install -m 0755 "$SRC/system/control.sh" "$ROOT/control.sh"
 install -m 0755 "$SRC/system/uninstall_system.sh" "$ROOT/uninstall_system.sh"
 install -m 0644 "$SRC/app/hosts.txt" "$ROOT/direct_hosts.txt"
@@ -77,12 +83,13 @@ chown root:root /etc/polkit-1/rules.d/49-directinternetmethod.rules
 systemctl daemon-reload
 test -x "$ROOT/control.sh"
 test -x "$ROOT/direct_method_helper.sh"
+test -x "$ROOT/selective_dns.py"
 for action in start stop recovery; do test -f "/etc/systemd/system/directinternetmethod-$action.service"; done
 test -f /etc/polkit-1/rules.d/49-directinternetmethod.rules
 test "$(cat /etc/directinternetmethod.uid)" = "$USER_UID"
 install -d -m 0755 /var/lib/directinternetmethod
 cat > /var/lib/directinternetmethod/install.json <<EOF
-{"schema":1,"version":"1.5.1","user":"$USER_NAME","uid":$USER_UID,"home":"$HOME_DIR"}
+{"schema":1,"version":"1.5.2","user":"$USER_NAME","uid":$USER_UID,"home":"$HOME_DIR"}
 EOF
 chmod 0644 /var/lib/directinternetmethod/install.json
-echo '{"ok":true,"systemBackend":"installed","version":"1.5.1"}'
+echo '{"ok":true,"systemBackend":"installed","version":"1.5.2"}'

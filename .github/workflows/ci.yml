@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   linux-source:
@@ -18,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Python syntax
-        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/app/router_gateway.py tests/linux_contract_audit.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_151_lifecycle.py
+        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/system/selective_dns.py linux/app/router_gateway.py tests/selective_dns_integration_safety_contract.py tests/selective_dns_monitor_lock_contract.py tests/selective_dns_full_lifecycle_mock.py tests/selective_dns_bindings_contract.py tests/selective_dns_backstop_contract.py tests/selective_dns_backstop_runtime_mock.py tests/linux_contract_audit.py tests/linux_user_update_transaction_contract.py tests/linux_real_extracted_archive_contract.py linux/app/user_update_transaction.py linux/app/user_uninstall_preserve.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_152_lifecycle.py tests/tailscale_coexistence_contract.py tests/tailscale_ui_state_contract.py tests/tailscale_gui_scope_guard_contract.py tests/tailscale_rustdesk_transport_audit.py tests/tailscale_nft_ownership_contract.py tests/tailscale_cleanup_ownership_contract.py tests/tailscale_recovery_missing_state_contract.py tests/nft_presence_fail_closed_contract.py tests/tailscale_transient_rollback_ownership_contract.py tests/linux_nft_kernel_namespace_contract.py tests/linux_mutation_action_lock_contract.py tests/linux_rollback_exit_integrity_contract.py
       - name: Shell syntax and LF guard
         shell: bash
         run: |
@@ -33,19 +34,90 @@ jobs:
       - name: Linux and Router Gateway contract audits
         run: |
           python3 tests/linux_contract_audit.py
+          python3 tests/linux_user_update_transaction_contract.py
+          python3 tests/tailscale_coexistence_contract.py
+          python3 tests/selective_dns_optin_contract.py
+          python3 tests/selective_dns_isolated_runtime.py
+          python3 tests/selective_dns_restore_mock_contract.py
+          python3 tests/selective_dns_gui_optin_contract.py
+          python3 tests/selective_dns_integration_safety_contract.py
+          python3 tests/selective_dns_monitor_lock_contract.py
+          python3 tests/selective_dns_full_lifecycle_mock.py
+          python3 tests/selective_dns_bindings_contract.py
+          python3 tests/selective_dns_backstop_contract.py
+          python3 tests/selective_dns_backstop_runtime_mock.py
+          python3 tests/tailscale_ui_state_contract.py
+          python3 tests/tailscale_gui_scope_guard_contract.py
+          python3 tests/tailscale_rustdesk_transport_audit.py --selftest
+          python3 tests/tailscale_nft_ownership_contract.py
+          python3 tests/tailscale_cleanup_ownership_contract.py
+          python3 tests/tailscale_recovery_missing_state_contract.py
+          python3 tests/nft_presence_fail_closed_contract.py
+          python3 tests/tailscale_transient_rollback_ownership_contract.py
+          python3 tests/linux_nft_kernel_namespace_contract.py --source-only
+          python3 tests/linux_mutation_action_lock_contract.py
+          python3 tests/linux_rollback_exit_integrity_contract.py
           python3 tests/adult_coverage_data_audit.py
           python3 tests/router_gateway_contract_audit.py
           python3 tests/release_metadata_audit.py
+          python3 tests/release_publication_negative_regression.py
+          python3 tests/unsigned_public_release_contract.py --fixtures
           python3 tests/rejected_component_audit.py
+      - name: Isolated real-kernel nftables contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Reject direct execution against the host network namespace.
+          # The contract checks an empty isolated loopback-only namespace.
+          command -v unshare
+          command -v ip
+          if ! command -v nft >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y nftables
+          fi
+          sudo -n python3 tests/linux_nft_kernel_namespace_contract.py --kernel
       - name: Build Linux archive
         run: python3 build_linux_package.py
+      - name: Validate real extracted ZIP transaction and user-data rollback
+        run: python3 -B tests/linux_real_extracted_archive_contract.py
+      - name: Verify exact Linux candidate artifact digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,pathlib,zipfile
+          recorded=json.loads(pathlib.Path("RELEASE.json").read_text(encoding="utf-8"))
+          old=recorded["platforms"]["linux"]
+          # RELEASE.json is the exact OLD public Preview3 artifact record;
+          # it must not be mistaken for this unpromoted new source candidate.
+          assert old["sha256"].upper()=="0218BEBD0DC8F88670374FF0E12A61D45229A03092C606678C5C00FD81DC2C9E"
+          assert old["artifactSourceCommit"]=="3ead24911ca583932ed8fbcb5820b8a25b20303f"
+          p=pathlib.Path(old["artifact"])
+          assert p.is_file(), "NEW_CANDIDATE_ARCHIVE_MISSING"
+          actual=hashlib.sha256(p.read_bytes()).hexdigest().upper()
+          expected="53C9FCADDBE96CEC9F63505AB20992479C422F3AB9A9E2379898F5A80BF76692"
+          assert actual==expected, f"NEW_LINUX_CANDIDATE_SHA_MISMATCH {actual} != {expected}"
+          assert p.stat().st_size==8273837, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
+          assert actual!=old["sha256"].upper(), "OLD_PUBLIC_ARTIFACT_MISLABELED_AS_NEW"
+          with zipfile.ZipFile(p) as z:
+            assert z.testzip() is None and len(z.namelist())==24
+            meta_name=next(x for x in z.namelist() if x.endswith("PACKAGE_MANIFEST.json"))
+            manifest=json.loads(z.read(meta_name))
+            assert len(manifest["files"])==22
+            prefix=meta_name[:-len("PACKAGE_MANIFEST.json")]
+            for row in manifest["files"]:
+              data=z.read(prefix+row["file"])
+              assert len(data)==row["bytes"]
+              assert hashlib.sha256(data).hexdigest().upper()==row["sha256"]
+          print("PASS EXACT NEW 22-FILE LINUX UPDATE CANDIDATE, OLD PUBLIC PREVIEW UNCHANGED", actual)
+          PY
       - name: Validate shell syntax inside built archive
         shell: bash
         run: |
           set -euo pipefail
           d="$(mktemp -d)"
           trap 'rm -rf "$d"' EXIT
-          unzip -q delivery/DirectInternetMethod_1.5.1_Linux_x86_64.zip -d "$d"
+          unzip -q delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip -d "$d"
           while IFS= read -r f; do
             if grep -q $'\r' "$f"; then
               echo "CRLF detected in packaged shell: $f" >&2
@@ -64,7 +136,7 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Python syntax
         shell: pwsh
-        run: python -m py_compile tests/windows_contract_audit.py tests/build_windows_manifest.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py
+        run: python -m py_compile tests/windows_contract_audit.py tests/windows_native_scm_stop_contract.py tests/build_windows_manifest.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py
       - name: PowerShell syntax
         shell: pwsh
         run: |
@@ -83,6 +155,24 @@ jobs:
       - name: Restore pinned PowerShell runtime
         shell: pwsh
         run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
+      - name: Fail-closed public signer and Smart App Control eligibility fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -File tests/windows_public_signer_trust_contract.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+      - name: Private draft Windows release asset metadata contracts (offline)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh.exe -NoProfile -NonInteractive -File tests/windows_release_draft_asset_contract.ps1
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+      - name: Native SCM stopped-state and bounded-stop regression
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          python tests/windows_native_scm_stop_contract.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Full Windows and Router Gateway contract audits
         shell: pwsh
         run: |
@@ -95,23 +185,43 @@ jobs:
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/rejected_component_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+          python tests/unsigned_public_release_contract.py --fixtures
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
 
   windows-release-contract:
-    name: windows-release-contract
+    name: windows-release-contract-unsigned
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: windows-latest
+    runs-on: windows-2025
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Restore pinned PowerShell runtime
-        shell: pwsh
-        run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
-      - name: Full Windows and Router Gateway contract audits
+      - name: Offline unsigned publication negative fixtures and metadata
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          python tests/windows_contract_audit.py
+          python -B tests/release_metadata_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
-          python tests/router_gateway_contract_audit.py
+          python -B tests/release_publication_negative_regression.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
-          python tests/rejected_component_audit.py
+          python -B tests/unsigned_public_release_contract.py --fixtures
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+      - name: Verify published unsigned public assets with exact hosted Windows install and rollback
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          python -B tests/unsigned_public_release_contract.py --public-tag
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+      - name: Archive independently verified public release receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: unsigned-release-gate-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIRECT_R394_PUBLIC_TAG_VERIFICATION.json
+          if-no-files-found: warn
+          retention-days: 30

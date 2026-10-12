@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "version": "7.6.6",
+  "source": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/PowerShell-7.6.6-win-x64.zip",
+  "archiveSha256": "02FE458BE20493FBDF43F61EA20610B811EE6C738AB1676C61B9CFCD1A33C860",
+  "archiveBytes": 106328873,
+  "extractedFiles": 658,
+  "pwshSha256": "BFB46AF89433268872DDB43D1CA7A3F433452EE91ED356A9786940F90118E285",
+  "pwshBytes": 301368
+}
