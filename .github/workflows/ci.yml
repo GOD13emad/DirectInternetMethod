@@ -516,6 +516,99 @@ jobs:
           & ./tests/R435_QA.ps1 -Installer $installer -BaselineInstaller $stable
           if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
 
+      - name: Derive independently validated R452/R453 normal-form receipts from genuine single lifecycle
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $src='14a3eec378eb75856f6691b7b3edc970507ee61f'
+          $expect='F94A81CC819E465D6B1000FFDB0B20A7212E39B6F6282ED8A720774148DFC78D'
+          $raw=Join-Path $env:RUNNER_TEMP 'DIM_R435_HOSTED/REPORT_R435.json'
+          $b=Join-Path $env:RUNNER_TEMP 'DIM_R435_BUILD.json'
+          if(!(Test-Path $raw) -or !(Test-Path $b)){throw 'GENUINE_RAW_GUEST_REPORT_NOT_PRESENT'}
+          $original=Get-Content -LiteralPath $raw -Raw|ConvertFrom-Json
+          $build=Get-Content -LiteralPath $b -Raw|ConvertFrom-Json
+          if($original.status -ne 'PASS_EXACT_SHA_151_TO_152_FIVE_USER_FILES_AND_PROVIDER_RESTORED' -or
+             $original.candidateCommit -ne $src -or $original.installerSha256 -ne $expect -or
+             $original.CIcommit -ne $env:GITHUB_SHA -or $original.runID -ne $env:GITHUB_RUN_ID -or
+             @($original.errors).Count -ne 0 -or !$original.watchdogDisarmed -or
+             !$original.networkRestoredExact -or !$original.userDataAfterUpgrade -or
+             !$original.userDataAfterUninstall -or !$original.userDataAfterRestore -or
+             !$original.oneUninstallerRecorded -or !$original.legacyProviderRestoreConfirmed -or
+             $build.installerUnderTestOrigin -ne 'GH_PRIVATE_STABLE_DRAFT_EXACT_DOWNLOAD' -or
+             $build.setupSHA -ne $expect -or $build.officialDraftTarget -ne $src){
+             throw 'R452_GENUINE_PRIVATE_DRAFT_LIFECYCLE_NOT_ACCEPTED'
+          }
+          $rawSha=(Get-FileHash $raw -Algorithm SHA256).Hash
+          foreach($pair in @(@('freshInstall','R452','PASS_EPHEMERAL_WINDOWS_REAL_INSTALL_AND_UNINSTALL'),
+                              @('upgradeRollback','R453','PASS_EPHEMERAL_WINDOWS_REAL_151_TO_152_UPGRADE_AND_151_RESTORE'))){
+            $kind=$pair[0];$number=$pair[1];$requiredStatus=$pair[2]
+            $out=Join-Path $env:RUNNER_TEMP ($number+'_NORMALIZED')
+            if(Test-Path $out){throw 'NORMALIZED_OUTPUT_ALREADY_EXISTS'}
+            New-Item $out -ItemType Directory -ErrorAction Stop|Out-Null
+            $dest=Join-Path $out ('REPORT_'+$number+'.json')
+            # A faithful, labeled projection of the SAME R435 genuine installed
+            # lifecycle; do not represent these as two independent VM executions.
+            $doc=($original|ConvertTo-Json -Depth 15|ConvertFrom-Json -AsHashtable)
+            $doc['status']=$requiredStatus
+            $doc['receiptKind']=$kind
+            $doc['normalizationOrigin']='R435_GENUINE_COMBINED_NATIVE_INSTALL_UPGRADE_UNINSTALL_ROLLBACK'
+            $doc['originalRawReportSha256']=$rawSha
+            $doc['originalRawReportStatus']=$original.status
+            $doc['sameVMTestRun']= $true
+            [IO.File]::WriteAllText($dest,($doc|ConvertTo-Json -Depth 16),[Text.UTF8Encoding]::new($false))
+            $sha=(Get-FileHash -LiteralPath $dest -Algorithm SHA256).Hash
+            if(!$sha -or $sha -notmatch '^[A-F0-9]{64}
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r450-official-draft-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/DIM_R435_HOSTED
+            ${{ runner.temp }}/DIM_R435_BUILD.json
+          retention-days: 30
+          if-no-files-found: warn
+){throw 'DERIVED_RECEIPT_SHA_INVALID'}
+            Write-Output ("PASS_"+$number+"_EXACT_GENUINE_LIFECYCLE_RECEIPT_SHA="+$sha)
+          }
+          # Validate both derived documents against the exact tagged-source
+          # release contract's strict field checks, before artifact upload.
+          $candidate=Join-Path $env:GITHUB_WORKSPACE 'candidate'
+          if((git -C $candidate rev-parse HEAD).Trim() -ne $src){throw 'SOURCE_DRIFT_BEFORE_SCHEMA_CHECK'}
+          $code=@'
+          import importlib.util,json,pathlib,os
+          p=pathlib.Path("candidate/tests/unsigned_public_release_contract.py")
+          spec=importlib.util.spec_from_file_location("pub",p)
+          lib=importlib.util.module_from_spec(spec);spec.loader.exec_module(lib)
+          t=pathlib.Path(os.environ["RUNNER_TEMP"])
+          product="14a3eec378eb75856f6691b7b3edc970507ee61f"
+          sha="F94A81CC819E465D6B1000FFDB0B20A7212E39B6F6282ED8A720774148DFC78D"
+          meta={"productCommit":product,"windowsSha256":sha}
+          for kind,num in [("freshInstall","R452"),("upgradeRollback","R453")]:
+           rec={"workflowCommit":os.environ["GITHUB_SHA"],"runId":int(os.environ["GITHUB_RUN_ID"])}
+           data=json.loads((t/(num+"_NORMALIZED")/("REPORT_"+num+".json")).read_text())
+           lib.validate_report(data,meta,rec,kind)
+           assert data["sameVMTestRun"] and data["originalRawReportStatus"]=="PASS_EXACT_SHA_151_TO_152_FIVE_USER_FILES_AND_PROVIDER_RESTORED"
+           print("PASS_"+num+"_STRICT_PUBLIC_RELEASE_SCHEMA_WITH_SHA_ATTESTED_ORIGINAL")
+          '@
+          $code|python -B -
+          if($LASTEXITCODE -ne 0){throw 'STRICT_RELEASE_SCHEMA_NOT_PASSED'}
+
+      - name: Upload R452 hosted fresh installation receipt for public tag gate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r452-disposable-windows-${{ github.run_id }}
+          path: ${{ runner.temp }}/R452_NORMALIZED/REPORT_R452.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload R453 hosted upgrade and rollback receipt for public tag gate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r453-disposable-windows-${{ github.run_id }}
+          path: ${{ runner.temp }}/R453_NORMALIZED/REPORT_R453.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Preserve R450 exact GitHub draft asset installed acceptance and raw receipts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
