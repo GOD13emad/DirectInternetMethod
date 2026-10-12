@@ -49,6 +49,7 @@ Source: "..\vendor\pwsh\*"; DestDir: "{commonpf}\DirectInternetMethod\Privileged
 Source: "..\app\Start-Direct.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
 Source: "..\app\Stop-Direct.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
 Source: "..\app\Recovery.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
+Source: "..\app\SafeLegacyProviderRollback.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
 Source: "..\bin\ctrld\ctrld.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
 Source: "..\bin\ctrld\ctrld.toml"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
 Source: "..\bin\ctrld\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
