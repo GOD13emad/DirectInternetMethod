@@ -93,9 +93,9 @@ jobs:
           p=pathlib.Path(old["artifact"])
           assert p.is_file(), "NEW_CANDIDATE_ARCHIVE_MISSING"
           actual=hashlib.sha256(p.read_bytes()).hexdigest().upper()
-          expected="23F83A6096EF678471B28124AC85071849A73F719D1114E2152329689198F5E4"
+          expected="43FB720BE28EA7031E99BCBECF5235F4717C8CA4D9855C8453F12ACD4C69CD33"
           assert actual==expected, f"NEW_LINUX_CANDIDATE_SHA_MISMATCH {actual} != {expected}"
-          assert p.stat().st_size==8262984, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
+          assert p.stat().st_size==8263540, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
           assert actual!=old["sha256"].upper(), "OLD_PUBLIC_ARTIFACT_MISLABELED_AS_NEW"
           with zipfile.ZipFile(p) as z:
             assert z.testzip() is None and len(z.namelist())==24
