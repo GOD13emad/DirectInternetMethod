@@ -2,7 +2,7 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.5.2",
-  "status": "CANDIDATE_V152_UNRELEASED",
+  "status": "PUBLISHED_STABLE_VERIFIED",
   "date": "2026-10-08",
   "previousAccepted": {
     "version": "1.5.1",
@@ -117,7 +117,7 @@
     "startupLayout": "PENDING_V152_REVERIFICATION",
     "targetHostlistContract": "PENDING_V152_REVERIFICATION",
     "siteCoverageLive": "PENDING_V152_REVERIFICATION",
-    "publication": "PENDING_V152_REVERIFICATION",
+    "publication": "PASS_PUBLIC_REDOWNLOAD_VERIFIED",
     "strategyProfiles": "PENDING_V152_REVERIFICATION",
     "allSitesScope": "PENDING_V152_REVERIFICATION",
     "securityRejectedComponentGate": "PENDING_V152_REVERIFICATION",
@@ -137,7 +137,12 @@
     "Targeted remains the default scope; All Sites is explicit opt-in.",
     "Windows installer remains not Authenticode-signed."
   ],
-  "exactNextAction": "v1.5.2 source candidate; both installers and post-update lifecycle tests pending. v1.5.1 remains current installed/accepted.",
+  "exactNextAction": "Live Emad Windows v1.5.1 requires owner-authorized safe stop and native update; ChatGPT accessibility is unproven on the four tested networks. Release is public; no certificate claim.",
   "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
-  "publication": {}
+  "publication": {
+    "tag": "v1.5.2",
+    "tagCommit": "14a3eec378eb75856f6691b7b3edc970507ee61f",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.2",
+    "publishedAt": "2026-10-12T20:25:24Z"
+  }
 }
