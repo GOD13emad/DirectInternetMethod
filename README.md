@@ -4,7 +4,7 @@
 
 Standalone direct-connect application for Windows and Linux. It does not create a VPN, HTTP/SOCKS proxy, WinHTTP proxy, or default-route tunnel.
 
-## Direct Method — v1.5.2 Stable (published 2026-10-12)
+## Direct Method — v1.5.2 corrective candidate
 
 v1.5.2 retains the accepted v1.5.1 direct engine and turns the existing opt-in **Adult coverage** control into real bounded domain coverage rather than a single-site diagnostic.
 
@@ -46,22 +46,19 @@ Router Gateway remains a separate non-privileged configuration panel for compati
 - Protected backend version 1.5.2.
 - Adult coverage uses the same validated catalog/fallback model as Windows.
 
-## Official public Stable artifacts (v1.5.2)
+## Release artifacts
 
-The canonical download is the [v1.5.2 GitHub Release](https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.2), published 2026-10-12. Use the `SHA256SUMS.txt` **attached to that Release** to verify downloads:
+- `DirectInternetMethod_1.5.2_Windows_Setup.exe`
+- `DirectInternetMethod_1.5.2_Linux_x86_64.zip`
+- `SHA256SUMS.txt`
 
-- Windows: `DirectInternetMethod_1.5.2_Windows_Setup.exe` — SHA-256 `F94A81CC819E465D6B1000FFDB0B20A7212E39B6F6282ED8A720774148DFC78D`.
-- Linux: `DirectInternetMethod_1.5.2_Linux_x86_64.zip` — SHA-256 `53C9FCADDBE96CEC9F63505AB20992479C422F3AB9A9E2379898F5A80BF76692`.
+Authoritative acceptance/provenance records are stored under `evidence/`.
 
-**Source-versus-release boundary:** the `SHA256SUMS.txt` at the *repository root* and the file under `delivery/` pin a historical Preview 3 build for source contract tests. They do **not** match the public Stable installer/ZIP and must not be used to verify those downloads. The Stable Release's checksums and asset digests take precedence; see [asset authority](docs/PUBLISHED_V152_ASSET_AUTHORITY.md).
-
-No code-signing certificate is required by project release policy. Windows App Control may still reject unsigned installers; never bypass or disable OS protections. See the Release description for hosted Windows/Linux installation, upgrade and rollback evidence, limitations and corresponding-source attachments.
-
-## Tailscale split-network coexistence — bounded v1.5.2 support
+## Tailscale split-network coexistence — v1.5.2 development candidate
 
 On Linux, Tailscale peer/subnet mode **without an Exit Node** may run alongside Direct Internet Method in `targeted` DPI-only mode. The Direct Method preserves existing DNS/MagicDNS, Tailscale routes and daemon state, and bypasses the Tailscale-reserved packet mark before passing ordinary physical-interface web traffic to NFQUEUE. It does **not** activate its own DoH listener in coexistence mode. Exit nodes, an unknown second tunnel or all-sites DPI fail closed. The original DoH + DPI configuration remains available when Tailscale is not running. See `docs/TAILSCALE_COEXISTENCE.md` for safety preconditions and outstanding real-host acceptance.
 
-Installed v1.5.2 was tested on Emad Linux with Tailscale/RustDesk in targeted coexistence mode while retaining prior DNS/routes; this does not establish success on every network. Updating a protected Linux helper still needs normal native OS authorization. Public Windows v1.5.2 is an **unsigned Stable release**, not a signing-HOLD candidate; policies that refuse unsigned binaries remain unsupported without a trusted certificate. Neither universal connectivity nor usable ChatGPT/Gemini where HTTP 403 persists is claimed.
+This mode is **source candidate only**, not yet installed or tested end-to-end on Tailscale-active hosts; changing the protected Linux helper requires the normal authorized administrative install. The Windows v1.5.2 public release remains HOLD pending trusted signing and policy-on Sandbox installation. Neither always-on global connectivity nor usable Gemini HTTP 403 is guaranteed.
 
 ## R247 experimental selected-site DNS (unpublished)
 Experimental Linux option, default OFF: plaintext UDP to a third-party
