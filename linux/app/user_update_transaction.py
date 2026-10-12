@@ -32,7 +32,7 @@ FILES = (
 )
 METADATA = "INSTALL.json"
 PROVIDERS = "router_gateway/providers.json"
-PROVIDER_SOURCE = "app/router_gateway/providers.json"
+PROVIDER_SOURCE = "../router_gateway/providers.json"
 # Exact public package provenance:
 # v1.5.1 Linux ZIP SHA 21FE512444957008DA4D79F540ABCEAD5CC9CB18481F1FF8B620A4B90A9374B8
 # v1.5.2 Linux ZIP SHA 0218BEBD0DC8F88670374FF0E12A61D45229A03092C606678C5C00FD81DC2C9E
@@ -134,8 +134,17 @@ def source_files(root: pathlib.Path) -> dict:
         p = root / origin
         guard(p.is_file() and not p.is_symlink(), "SOURCE_PAYLOAD_MISSING:" + origin)
         out[dest] = {"path": p, "sha": filehash(p), "mode": mode}
+    # The released ZIP and repository place router_gateway beside linux/.
+    # A fake app/router_gateway path makes source-only tests pass but real
+    # upgrades fail before staging. Restrict source to this exact layout.
+    guard(root.name == "linux" and not root.parent.is_symlink(),
+          "SOURCE_PACKAGE_LAYOUT_NOT_LINUX")
+    provider_parent = root.parent / "router_gateway"
+    guard(provider_parent.is_dir() and not provider_parent.is_symlink(),
+          "PROVIDER_PACKAGE_DIR_UNSAFE")
     provider = root / PROVIDER_SOURCE
-    guard(provider.is_file() and not provider.is_symlink(), "PROVIDER_SOURCE_MISSING")
+    guard(provider.is_file() and not provider.is_symlink() and
+          not provider.parent.is_symlink(), "PROVIDER_SOURCE_MISSING_OR_UNSAFE")
     out[PROVIDERS] = {"path": provider, "sha": filehash(provider), "mode": 0o644}
     return out
 

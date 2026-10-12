@@ -41,7 +41,8 @@ def calls(home, source, command, success=True):
     return p
 
 def source_tree(tmp, tag):
-    src = tmp / ("source-" + tag)
+    # Mirror actual public ZIP: linux/ and router_gateway/ are siblings.
+    src = tmp / ("source-" + tag) / "linux"
     for origin, rel, mode in tx.FILES:
         p = src / origin
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -310,6 +311,16 @@ print("PASS_PURE_OWNED_UNINSTALL",n)
         'p.read_bytes()==expected',
         '"managedLaunchersSha256":launchers')),
         "INSTALL_UPGRADE_MIGHT_OVERWRITE_CUSTOM_USER_LAUNCHER")
+    tests += 1
+
+    # Real-package regression: missing sibling provider source refuses stage.
+    missing_src = source_tree(tmp, "missing-provider")
+    (missing_src / tx.PROVIDER_SOURCE).unlink()
+    missing_home, missing_app, _, missing_user, _ = initial(tmp / "case-missing-provider")
+    calls(missing_home, missing_src, "--stage", False)
+    need(not (missing_home / ".local/state/DirectInternetMethod/update-pending").exists(),
+         "MISSING_REAL_PACKAGE_PROVIDER_CREATED_PENDING_TRANSACTION")
+    unchanged_data(missing_app, missing_user)
     tests += 1
 
 print("PASS_LINUX_ONE_INSTALL_DATA_PRESERVING_TRANSACTION_NEGATIVE_FIRST_FIXTURES:",tests,"/",tests)

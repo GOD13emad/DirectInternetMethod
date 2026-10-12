@@ -9,6 +9,7 @@ helper=txt("app/direct_method_helper.sh")
 build=txt("../build_linux_package.py")
 install=txt("install.sh")
 uninstall=txt("uninstall.sh")
+transaction=txt("app/user_update_transaction.py")
 sysinstall=txt("system/install_system.sh")
 control=txt("system/control.sh")
 svg=txt("app/direct-internet-method.svg")
@@ -135,6 +136,11 @@ check("package_ships_single_slot_update_and_safe_uninstaller",
       all(x in build for x in (
        '("linux/app/user_update_transaction.py","app/user_update_transaction.py")',
        '("linux/app/user_uninstall_preserve.py","app/user_uninstall_preserve.py")')))
+check("real_linux_zip_provider_is_sibling_to_linux_not_fictitious_app_dir",
+      'PROVIDER_SOURCE = "../router_gateway/providers.json"' in transaction
+      and 'provider_parent = root.parent / "router_gateway"' in transaction
+      and "PROVIDER_PACKAGE_DIR_UNSAFE" in transaction
+      and '"router_gateway/providers.json"' in build)
 check("linux_package_includes_router_core", '("linux/app/router_gateway_core.py","app/router_gateway_core.py")' in build)
 check("install_one_time_admin", 'pkexec /bin/bash "$HERE/system/install_system.sh"' in install)
 check("install_idempotent_backend_hash_gate", "backend_matches_current()" in install and 'sha256sum "$src"' in install and "keeping root-owned code unchanged" in install)
