@@ -32,17 +32,17 @@ failure("required_certificate",lambda m:m["publicUnsignedDistribution"].update(c
 failure("security_bypass",lambda m:m["publicUnsignedDistribution"].update(disableWindowsSecurity=True),"OWNER_UNSIGNED_DISTRIBUTION_POLICY_MISSING_OR_UNSAFE")
 failure("internal_external_split",lambda m:m["publicUnsignedDistribution"].update(onePublicLine=False),"OWNER_UNSIGNED_DISTRIBUTION_POLICY_MISSING_OR_UNSAFE")
 failure("historical_signer_blocker",lambda m:m.update(status="CANDIDATE_V152_HOLD_APP_CONTROL_SIGNING"),"SUPERSEDED_SIGNING_RELEASE_BLOCKER_STILL_ACTIVE")
-failure("false_published",public,"PUBLIC_STABLE_RELEASE_AUTHORITY_INCOMPLETE")
+failure("false_published",lambda m:(public(m),m["publication"].update(tagCommit="")),"PUBLIC_STABLE_RELEASE_AUTHORITY_INCOMPLETE")
 failure("wrong_hosted_fresh",lambda m:(public(m),m["acceptance"].update(windowsFreshInstall="COMPILER_ONLY")),"REAL_UNSIGNED_WINDOWS_INSTALL_AND_ROLLBACK_REQUIRED")
 failure("wrong_hosted_upgrade",lambda m:(public(m),m["acceptance"].update(windowsUpgradeRollback="PASS_BUILD_ONLY")),"REAL_UNSIGNED_WINDOWS_INSTALL_AND_ROLLBACK_REQUIRED")
 failure("faked_security_mutation",lambda m:(public(m),m["acceptance"].update(windowsSecurityPolicyUnchanged=False)),"REAL_UNSIGNED_WINDOWS_INSTALL_AND_ROLLBACK_REQUIRED")
 failure("no_host_run",lambda m:(public(m),m["windowsHostAcceptanceEvidence"].pop("upgradeRunId")),"HOSTED_RELEASE_RECEIPT_RUN_ID_MISSING")
 failure("missing_report_sha",lambda m:(public(m),m["windowsHostAcceptanceEvidence"].pop("freshReportSha256")),"HOSTED_RELEASE_RECEIPT_HASH_MISSING")
 failure("wrong_binary_receipt",lambda m:(public(m),m["windowsHostAcceptanceEvidence"].update(installerSha256="0"*64)),"HOSTED_RELEASE_INSTALLER_SHA_MISMATCH")
-failure("fake_published_timestamp",lambda m:m["publication"].update(publishedAt="2026-10-11T00:00:00Z"),"PUBLIC_STABLE_RELEASE_AUTHORITY_INCOMPLETE")
+failure("missing_published_timestamp",lambda m:m["publication"].update(publishedAt=""),"PUBLIC_STABLE_RELEASE_AUTHORITY_INCOMPLETE")
 valid=deepcopy(meta)
 public(valid)
-valid["publication"]={"tag":"v1.5.2","tagCommit":"3ead24911ca583932ed8fbcb5820b8a25b20303f",
+valid["publication"]={"tag":"v1.5.2","tagCommit":"14a3eec378eb75856f6691b7b3edc970507ee61f",
  "releaseUrl":"https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.2",
  "publishedAt":"2026-10-11T00:00:00Z"}
 check(valid)
