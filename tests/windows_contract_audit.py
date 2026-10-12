@@ -5,6 +5,7 @@ R=Path(__file__).resolve().parents[1]
 W=R/"windows"
 def txt(rel): return (W/rel).read_text(encoding="utf-8-sig")
 start,stop,recovery,status,iss=map(txt,["app/Start-Direct.ps1","app/Stop-Direct.ps1","app/Recovery.ps1","app/Status.ps1","installer/DirectInternetMethod.iss"])
+legacy_provider_guard=txt("app/SafeLegacyProviderRollback.ps1")
 gui=txt("gui/MainWindow.xaml.cs"); xaml=txt("gui/MainWindow.xaml")
 svc=txt("service/Program.cs"); client=txt("gui/ServiceClient.cs"); updater=txt("gui/UpdateClient.cs")
 manifest=json.loads(txt("manifest.json")); ctrldcfg=txt("bin/ctrld/ctrld.toml"); hostlist=txt("bin/zapret/hosts.txt"); adult_fallback=txt("bin/zapret/adult-fallback-hosts.txt"); strong_override=txt("bin/zapret/strong-override-hosts.txt")
@@ -125,6 +126,16 @@ check("owned_update_cache_never_duplicates_versioned_installers",
        "update-stage-file-locked-preserving-single-pending-slot"))
     and "File.Move(partPath, finalPath, true)" not in svc)
 
+check("legacy_provider_rollback_explicit_only_and_exact_SHA",
+    all(k in legacy_provider_guard for k in (
+      "EXPECTED_STABLE_151", "PRESERVE_CUSTOM_PROVIDER_BEFORE_LEGACY_151_REINSTALL",
+      "PASS_LEGACY_151_PROVIDER_RESTORED_SHA", "FOREIGN_POST_STAGE_PROVIDER_EDIT_PRESERVED",
+      "PENDING_SLOT_EXISTS_NO_BLIND_REPLAY", "RESTORED_PROVIDER_SHA_FAILED",
+      "LEGACY_151_BINARY_POSTINSTALL_SHA_NOT_ACCEPTED"))
+    and "Remove-Item -Recurse" not in legacy_provider_guard
+    and 'Source: "..\\app\\SafeLegacyProviderRollback.ps1"; DestDir: "{commonpf}\\DirectInternetMethod\\Privileged\\app"; Flags: ignoreversion' in iss
+    and ("privileged","app/SafeLegacyProviderRollback.ps1") in
+        {(v["scope"],v["file"]) for v in manifest["files"]})
 check("inno_preserves_custom_router_gateway_provider_on_upgrade",
     'Source: "..\\..\\router_gateway\\providers.json"; DestDir: "{app}\\app\\router_gateway"; Flags: ignoreversion onlyifdoesntexist' in iss)
 check("installer_admin_only_install", "PrivilegesRequired=admin" in iss)
