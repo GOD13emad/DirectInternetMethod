@@ -136,7 +136,7 @@ jobs:
           dotnet-version: '8.0.x'
       - name: Python syntax
         shell: pwsh
-        run: python -m py_compile tests/windows_contract_audit.py tests/windows_native_scm_stop_contract.py tests/build_windows_manifest.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py
+        run: python -m py_compile tests/windows_legacy_151_stage_finalize_contract.py tests/windows_contract_audit.py tests/windows_native_scm_stop_contract.py tests/build_windows_manifest.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py
       - name: PowerShell syntax
         shell: pwsh
         run: |
@@ -177,6 +177,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
+          python tests/windows_legacy_151_stage_finalize_contract.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/windows_contract_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/adult_coverage_data_audit.py
