@@ -94,6 +94,13 @@
     },
     {
       "scope": "privileged",
+      "file": "app/SafeLegacyProviderRollback.ps1",
+      "source": "app/SafeLegacyProviderRollback.ps1",
+      "bytes": 7735,
+      "sha256": "1CA6781FF839A26BB371783E1AE563498A04E2E603604B0C7113C49439DC376F"
+    },
+    {
+      "scope": "privileged",
       "file": "bin/ctrld/ctrld.exe",
       "source": "bin/ctrld/ctrld.exe",
       "bytes": 7602136,
