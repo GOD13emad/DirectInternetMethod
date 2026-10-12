@@ -253,8 +253,10 @@ jobs:
           test "$GITHUB_REF" = refs/heads/audit/r436-linux-protected-guest-acceptance-20261012
           test "$(git -C candidate rev-parse HEAD)" = 14a3eec378eb75856f6691b7b3edc970507ee61f
           bash -n tests/R436_protected_installed_lifecycle.sh
+          sudo -n true
           for p in /usr/lib/directinternetmethod /var/lib/directinternetmethod /etc/directinternetmethod.uid /etc/polkit-1/rules.d/49-directinternetmethod.rules /run/directinternetmethod-selective/session.json; do
-            test ! -e "$p"
+            sudo -n test ! -e "$p"
+            sudo -n test ! -L "$p"
           done
           sudo -n true
           echo PASS_R436_DISPOSABLE_UBUNTU_EXACT_SHA_PRECHECK
