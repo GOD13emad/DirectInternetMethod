@@ -2,15 +2,15 @@
   "schema": 1,
   "product": "Direct Internet Method",
   "version": "1.5.2",
-  "date": "2026-10-08",
-  "status": "CANDIDATE_PUBLIC_UNSIGNED_PREVIEW3_WITH_HOSTED_INSTALL_ROLLBACK_NOT_FINAL",
+  "date": "2026-10-12",
+  "status": "PUBLISHED_VERIFIED_STABLE_V1_5_2_HOST_DEPLOYMENT_PARTIAL",
   "previousAccepted": {
     "version": "1.5.1",
     "tag": "v1.5.1",
     "tagCommit": "a79dfb8216c603d6e29236233e8d250b490a96cc",
     "status": "PUBLISHED_HISTORICAL_UNCHANGED"
   },
-  "feature": "Linux fresh-install umask 077 permission repair and version-aligned Windows/Linux updater; direct-only runtime logic unchanged.",
+  "feature": "One native installation per host, SHA-attested in-place Windows upgrade/rollback and Linux root/user install; original user settings, custom Router Gateway provider, DNS/routes and Tailscale/RustDesk preserved on accepted test hosts.",
   "directEngine": {
     "methods": [
       "encrypted-dns-doh",
@@ -88,56 +88,56 @@
   },
   "platforms": {
     "windows": {
-      "status": "PASS_NATIVE_UNSIGNED_INNO_HOSTED_FRESH_AND_UPGRADE_TO_ROLLBACK",
+      "status": "PASS_GITHUB_PUBLIC_RELEASE_NATIVE_WINDOWS_REAL_INSTALLED_UPGRADE_AND_ROLLBACK",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Windows_Setup.exe",
-      "bytes": 157124929,
-      "sha256": "2F054752E3B1B4715D68958CA49639AEA6FE43E0E4CBC6611DDEEBABAE2C7EB5",
-      "guiSha256": "B8B2BBDBA477E6E7CAACC5C2E0E11F408309000FA0657EF95E36E212376D6C4F",
-      "serviceSha256": "314B1E3D8D83F386CB54CD0819C7571014F3A5EAC6970F9026DA5146154C85B5",
-      "manifestSha256": "44434B0B03391A7BCF9513443DED1B608703225B5900F5DBDAB7F558D011AC38",
-      "manifestFiles": 680,
+      "bytes": 157118257,
+      "sha256": "F94A81CC819E465D6B1000FFDB0B20A7212E39B6F6282ED8A720774148DFC78D",
+      "guiSha256": "808D7E13ED8B942F4C744B264C5CC2D15E646A951DA6F9248F619BC4F37E84B9",
+      "serviceSha256": "768B3002B8F812D13EEB4E36070911452EA373171E8622848F43E2580E403569",
+      "manifestSha256": "06A285C2C7C956CABFBB74867B00DB7764D143596D82FFAFA5AF12BC4E78A633",
+      "manifestFiles": 681,
       "authenticode": "NotSigned",
-      "artifactSourceCommit": "3ead24911ca583932ed8fbcb5820b8a25b20303f",
-      "metadataScope": "LAST_PUBLIC_PREVIEW_ARTIFACT_SOURCE_SHA; source-only metadata is not proof of a future tag's newly rebuilt binaries"
+      "artifactSourceCommit": "14a3eec378eb75856f6691b7b3edc970507ee61f",
+      "metadataScope": "PUBLIC_v1.5.2_TAG_SHA_PLUS_HOSTED_INSTALL_R450_REDOWNLOAD_AND_R452_R453_ACCEPTANCE"
     },
     "linux": {
-      "status": "PASS_EXACT_SHA_THREE_HOST_SOURCE_REPRO_3EAD",
+      "status": "PASS_REAL_GITHUB_PUBLIC_RELEASE_PACKAGE_NATIVE_ROOT_USER_HOSTED_R451",
       "artifact": "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip",
-      "bytes": 8234805,
-      "sha256": "0218BEBD0DC8F88670374FF0E12A61D45229A03092C606678C5C00FD81DC2C9E",
+      "bytes": 8273837,
+      "sha256": "53C9FCADDBE96CEC9F63505AB20992479C422F3AB9A9E2379898F5A80BF76692",
       "protectedBackendVersion": "1.5.2",
-      "packageFiles": 20,
+      "packageFiles": 22,
       "compatibleProtectedBackendVersions": [
         "1.5.1",
         "1.5.2"
       ],
-      "artifactSourceCommit": "3ead24911ca583932ed8fbcb5820b8a25b20303f"
+      "artifactSourceCommit": "14a3eec378eb75856f6691b7b3edc970507ee61f"
     }
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "B0A89D10D8AF5E39E0CF2AA17FB96178AB44ED82D0346450FA3C94285C3B82DD"
+    "sha256": "F5AD1390F3D62E35F4D9695A2B8602A18280EC6CC4B802688774EDA37F18B529"
   },
   "acceptance": {
-    "windowsPayload": "PASS_PR30_EXACT_SOURCE_TWO_WINDOWS_HOSTS",
-    "windowsInstaller": "PASS_GENUINE_INNO_AND_REAL_DISPOSABLE_INSTALLED_LIFECYCLE",
+    "windowsPayload": "PASS_EXACT_TAG_HOSTED_SOURCE_BUILD_38304116910",
+    "windowsInstaller": "PASS_GITHUB_RELEASE_REAL_WINDOWS_INSTALLED_LIFECYCLE_R450",
     "windowsContract": "PASS_SOURCE_CONTRACT_V152",
-    "linuxPackage": "PASS_LOCAL_BUILT_ARCHIVE_TAILSCALE_CANDIDATE",
+    "linuxPackage": "PASS_GITHUB_RELEASE_REAL_LINUX_PROTECTED_INSTALL_R451",
     "linuxContract": "PASS_SOURCE_CONTRACT_V152",
-    "protectedCi": "PASS_PR30_SOURCE_WINDOWS_LINUX_38152706915",
-    "publication": "PUBLIC_PREVIEW3_NOT_STABLE",
-    "installedWindows": "PASS_EPHEMERAL_WINDOWS_2025_ONLY_NOT_USER_MACHINE",
-    "installedLinux": "PASS_LINUX_EMAD_AND_MMZ_TARGETED_SAFE_ROLLBACK",
+    "protectedCi": "PASS_EXACT_TAG_WINDOWS_LINUX_GATES_38304116910",
+    "publication": "PASS_PUBLIC_REDOWNLOAD_VERIFIED",
+    "installedWindows": "PASS_DISPOSABLE_WINDOWS_2025_NOT_ALL_USER_HOSTS",
+    "installedLinux": "PASS_EMAD_AND_MMZ_REAL_USER_HOSTS",
     "adultCoverage": "PENDING_V152_VERIFICATION",
     "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED",
-    "routerGatewayContract": "PENDING_V152_VERIFICATION",
+    "routerGatewayContract": "PASS_HOSTED_SOURCE_AND_INSTALLED_CUSTOM_PROVIDER_PRESERVATION",
     "rejectedComponentAudit": "PENDING_V152_VERIFICATION",
-    "releaseMetadata": "PENDING_V152_VERIFICATION",
+    "releaseMetadata": "PASS_EXACT_PUBLIC_GITHUB_RELEASE_ACCEPTANCE",
     "fullTrackedSourceAudit": "PENDING_V152_VERIFICATION",
-    "windowsDefender": "PENDING_V152_VERIFICATION",
-    "linuxCrossHostRebuild": "PASS_EXACT_THREE_HOST_SAME_SHA",
-    "sourceReproducibility": "PASS_2_WINDOWS_GUI_SERVICE_AND_3_LINUX",
-    "linuxBackendByteCompatibleUpgrade": "SOURCE_GUARD_PASS_LIVE_INSTALL_PENDING",
+    "windowsDefender": "PASS_NATIVE_EMAD_SAEID_CHECKS",
+    "linuxCrossHostRebuild": "PASS_EXACT_WINDOWS_AND_LINUX_SHA_53C9",
+    "sourceReproducibility": "PASS_2_WINDOWS_AND_2_LINUX_EXACT_TAG_SOURCE",
+    "linuxBackendByteCompatibleUpgrade": "PASS_REAL_MMZ_ROOT_11_OF_11_SOURCE_MATCH",
     "windowsSandbox": "UNSIGNED_NOT_SUPPORTED_WHEN_SAC_BLOCKS; NO_SECURITY_BYPASS",
     "windowsDistributionSigning": "NOT_SIGNED_BY_OWNER_CHOICE; NOT_A_RELEASE_GATE",
     "installerIntegrity": "PASS_NATIVE_INNO_SHA_PLUS_HOSTED_INSTALL_UNINSTALL",
@@ -163,25 +163,42 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Controlled new-release unsigned verifier: source CI, rebuild binaries for exact tag commit, native hosted fresh upgrade rollback with new SHA, public release asset SHA+SUMS+download acceptance; owner must separately verify source/third-party redistribution obligations and remaining real web site usability.",
-  "publication": {},
+  "exactNextAction": "Upgrade Emad and Saeid Windows via approved native service/UAC without duplicate installation; verify user files, in-place rollback, Tailscale/route/DNS. Keep GitHub v1.5.2 Stable SHA unchanged and remediate authenticated ChatGPT 403 without claiming universal egress. Audit rights-holder licensing and upstream source compliance separately.",
+  "publication": {
+    "tag": "v1.5.2",
+    "tagCommit": "14a3eec378eb75856f6691b7b3edc970507ee61f",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.2",
+    "publishedAt": "2026-10-12T20:25:24Z",
+    "sourceTreeSha": "ae0381c0be6e64773aee56911950aa050c011b25",
+    "mainSquashCommit": "0a062314d5fb68df300f51a7b1eb0a2178a62058",
+    "tagCiRunId": 38304116910,
+    "windowsHostedReleaseRun": 38300242241,
+    "linuxHostedReleaseRun": 38300249518,
+    "releaseAssetCount": 6,
+    "postPublishVerification": "PASS_GITHUB_PUBLIC_LATEST_TAG_SHA_ASSET_DIGEST_AND_TAG_SOURCE_CI",
+    "note": "Live Windows user PCs still at 1.5.1 pending genuine service permissions; ChatGPT HTTP403 is not a site success"
+  },
   "publicUnsignedDistribution": {
     "ownerDecisionDate": "2026-10-11",
     "onePublicLine": true,
     "codeSigningCertificateRequired": false,
     "disableWindowsSecurity": false,
     "previousPublicStable": "v1.5.1",
-    "currentPublicPreview": "unsigned-1.5.2-preview.3",
+    "currentPublicPreview": "HISTORICAL_ONLY_unsigned-1.5.2-preview.4",
     "unsupportedPolicy": "Windows devices disallowing unsigned execution may refuse installation",
-    "noUniversalWebsiteGuarantee": true
+    "noUniversalWebsiteGuarantee": true,
+    "currentPublicStable": "v1.5.2"
   },
   "windowsHostAcceptanceEvidence": {
-    "artifactSourceCommit": "3ead24911ca583932ed8fbcb5820b8a25b20303f",
-    "installerSha256": "2F054752E3B1B4715D68958CA49639AEA6FE43E0E4CBC6611DDEEBABAE2C7EB5",
-    "freshRunId": 38167341910,
-    "freshReportSha256": "8CB53DF4A6FCD0E2C27DBB292F7093D628DA65D30FDDD3BAEF5F00DAD009FC2E",
-    "upgradeRunId": 38168392209,
-    "upgradeReportSha256": "990090D9B00FA1E84094FBDEFAD5A37990AC2A23C19349BFA7CD97963C42D234",
-    "scope": "Host reports refer ONLY to PR30 last public preview exact binaries; new git commits must rebuild and reaccept before stable tag"
+    "artifactSourceCommit": "14a3eec378eb75856f6691b7b3edc970507ee61f",
+    "installerSha256": "F94A81CC819E465D6B1000FFDB0B20A7212E39B6F6282ED8A720774148DFC78D",
+    "freshRunId": 38302043628,
+    "freshReportSha256": "7F21631163F528299D7AEEEE7467ABB775DA9A612796AF411B85D96564F4B656",
+    "upgradeRunId": 38302043628,
+    "upgradeReportSha256": "DE2014F02905D7ED0932984328C6EB8EC70B8ED2847221CBF1E9FA361517CA4F",
+    "scope": "R452 and R453 are two SHA-bound projections of ONE combined genuine Windows 2025 hosted installation/upgrade/rollback on the same VM, not independent VM executions.",
+    "combinedNativeHostedRunId": 38300242241,
+    "combinedNativeHostedReportSha256": "8448D818AA9F11C5F3BA48B8BB9ED15CCB5AB63818DE0B8903794DA090EEFF9B",
+    "publicTagCiRunId": 38304116910
   }
 }
