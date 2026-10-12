@@ -351,9 +351,13 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/audit/r432-windows-final-install-acceptance-20261012'
     runs-on: windows-2025
     timeout-minutes: 50
+    permissions:
+      contents: write
     steps:
       - name: Checkout one-off guarded QA runner
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Checkout exact product source under candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
