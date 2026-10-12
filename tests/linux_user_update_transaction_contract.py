@@ -324,3 +324,90 @@ print("PASS_PURE_OWNED_UNINSTALL",n)
     tests += 1
 
 print("PASS_LINUX_ONE_INSTALL_DATA_PRESERVING_TRANSACTION_NEGATIVE_FIRST_FIXTURES:",tests,"/",tests)
+
+
+# R421 regression: execute the ACTUAL metadata heredoc from install.sh against
+# a disposable HOME, replacing ONLY the root-owned backend lookup with a fixture.
+# Never install, elevate, change the host network, or touch a real user profile.
+with tempfile.TemporaryDirectory(prefix="dim-r421-f415-") as td:
+    sandbox = pathlib.Path(td)
+    fake_home = sandbox / "home"
+    fake_app = fake_home / ".local/share/DirectInternetMethod"
+    fake_app.mkdir(parents=True)
+    fake_router = fake_app / "router_gateway"
+    fake_router.mkdir()
+    custom_provider = fake_router / "providers.json"
+    custom_provider.write_bytes(b'{"customService":"KEEP_ORIGINAL"}\n')
+    user_setting = fake_app / "settings.json"
+    user_setting.write_bytes(b'{"custom":true}\n')
+    (fake_app / "direct-internet-method.svg").write_bytes(b"<svg/>")
+    pending = fake_home / ".local/state/DirectInternetMethod/update-pending"
+    pending.mkdir(parents=True)
+    (pending / "manifest.json").write_text(json.dumps({
+        "providerSha": "a" * 64,
+        "providerManaged": False,
+        "managed": {"direct_internet_method.py": {"sha": "b" * 64},
+                    "router_gateway/providers.json": {"sha": "c" * 64}},
+    }))
+    protected = sandbox / "fake-protected-backend.json"
+    protected.write_text(json.dumps({"version": "1.5.2"}))
+    old_metadata = b'{"schema":2,"version":"1.5.1"}\n'
+    metadata_path = fake_app / "INSTALL.json"
+    metadata_path.write_bytes(old_metadata)
+    launcher_before = (fake_app / "direct-internet-method.svg").read_bytes()
+    provider_before = custom_provider.read_bytes()
+    settings_before = user_setting.read_bytes()
+    marker = 'python3 - "$APP/INSTALL.json" "$USER_TRANSACTION" <<' + "'PY'\n"
+    need(install_source.count(marker) == 1, "F415_WRITER_HEREDOC_MISSING_OR_DUPLICATE")
+    inline = install_source.split(marker, 1)[1].split("\nPY\n", 1)[0] + "\n"
+    backend_lookup = 'protected=json.loads(pathlib.Path("/var/lib/directinternetmethod/install.json").read_text(encoding="utf-8"))'
+    need(inline.count(backend_lookup) == 1, "F415_BACKEND_LOOKUP_DRIFT")
+    inline = inline.replace(backend_lookup,
+                            'protected=json.loads(pathlib.Path(sys.argv[3]).read_text(encoding="utf-8"))')
+    need("transaction_helper.atomic_bytes(" in inline and ".write_text(json.dumps(" not in inline,
+         "F415_DIRECT_METADATA_TRUNCATION_REGRESSION")
+    compile(inline, "R421_INSTALL_METADATA_HEREDOC", "exec")
+    fixture_env = dict(os.environ, HOME=str(fake_home), PYTHONDONTWRITEBYTECODE="1")
+    def run_inline():
+        return subprocess.run(
+            [sys.executable, "-B", "-", str(metadata_path), str(TX), str(protected)],
+            input=inline, text=True, capture_output=True,
+            env=fixture_env, timeout=10)
+    # Fail-closed stale atomic stage never overwrites either item.
+    stage_path = fake_app / ".INSTALL.json.dim-update-stage"
+    stage_path.write_bytes(b"FOREIGN_OR_INTERRUPTED_STAGE_KEEP")
+    negative = run_inline()
+    need(negative.returncode != 0 and "STALE_ATOMIC_TEMP" in negative.stderr,
+         "F415_STALE_STAGE_WRONGLY_ACCEPTED:" + negative.stderr)
+    need(metadata_path.read_bytes() == old_metadata and
+         stage_path.read_bytes() == b"FOREIGN_OR_INTERRUPTED_STAGE_KEEP",
+         "F415_STALE_STAGE_WAS_MODIFIED")
+    stage_path.unlink()  # Only our owned disposable test file.
+    # Symlink attempt must be rejected without modifying the foreign target.
+    foreign = sandbox / "foreign-metadata.json"
+    foreign.write_bytes(b"FOREIGN_TARGET_KEEP")
+    metadata_path.unlink()
+    metadata_path.symlink_to(foreign)
+    rejected = run_inline()
+    need(rejected.returncode != 0 and "FOREIGN_MANAGED_FILE_OR_SYMLINK" in rejected.stderr,
+         "F415_SYMLINK_WAS_NOT_REJECTED:" + rejected.stderr)
+    need(foreign.read_bytes() == b"FOREIGN_TARGET_KEEP" and metadata_path.is_symlink(),
+         "F415_SYMLINK_TARGET_CHANGED")
+    metadata_path.unlink()
+    metadata_path.write_bytes(old_metadata)
+    # Positive path replaces metadata once, preserves custom data and is private.
+    accepted = run_inline()
+    need(accepted.returncode == 0, "F415_ATOMIC_METADATA_WRITE_FAILED:" + accepted.stderr)
+    doc = json.loads(metadata_path.read_text(encoding="utf-8"))
+    need(doc["version"] == "1.5.2" and doc["schema"] == 2
+         and doc["managedCodeSha256"] == {"direct_internet_method.py": "b" * 64}
+         and doc["preservedCustomProviderData"] is True,
+         "F415_METADATA_POSTCONDITION_INVALID")
+    need(metadata_path.stat().st_mode & 0o777 == 0o600,
+         "F415_METADATA_PERMISSIONS_NOT_PRIVATE")
+    need(not stage_path.exists(), "F415_ATOMIC_STAGE_LEFT_ON_SUCCESS")
+    need(custom_provider.read_bytes() == provider_before and
+         user_setting.read_bytes() == settings_before and
+         (fake_app / "direct-internet-method.svg").read_bytes() == launcher_before,
+         "F415_ATOMIC_WRITER_CHANGED_MUTABLE_USER_DATA")
+    print("PASS_F415_METADATA_ATOMIC_INSTALL_INLINE:", 3, "/", 3)
