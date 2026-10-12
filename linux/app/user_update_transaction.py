@@ -382,6 +382,130 @@ def rollback():
     print("PASS_CODE_ROLLBACK_USER_DATA_UNTOUCHED")
 
 
+
+def recover_metadata_stage(expected_sha256: str):
+    """Operator-attested cleanup of exactly one interrupted INSTALL.json stage.
+
+    This NEVER commits, installs, rewrites old metadata, deletes user settings
+    or auto-resumes a transaction. A foreign/partial/unproven stage stays put.
+    Caller must inspect the SHA separately, authorize its exact digest, then
+    explicitly run --rollback or review the transaction before further update.
+    """
+    guard(isinstance(expected_sha256, str) and len(expected_sha256) == 64 and
+          all(c in "0123456789abcdefABCDEF" for c in expected_sha256),
+          "REQUIRE_EXACT_STAGED_SHA256")
+    app, pending, data = load_pending()
+    verify_saved_backups(pending, data)
+    verify_mutable(app, data)
+    # The package code must have been completely applied; otherwise neither
+    # rollback nor metadata-stage deletion can be certified safe.
+    for rel, info in data["managed"].items():
+        dest = app / rel
+        guard(dest.is_file() and not dest.is_symlink() and
+              not dest.parent.is_symlink() and
+              dest.stat().st_uid == os.getuid() and
+              filehash(dest) == info["sha"],
+              "MANAGED_CODE_NOT_VERIFIED_FOR_STAGE_RECOVERY:" + rel)
+    metadata = app / METADATA
+    before = data["old"][METADATA]
+    guard(regular_or_missing(metadata) and not metadata.parent.is_symlink(),
+          "RECOVERY_METADATA_PATH_UNSAFE")
+    guard(metadata.exists() == before["exists"],
+          "RECOVERY_METADATA_EXISTENCE_CHANGED")
+    if before["exists"]:
+        guard(metadata.stat().st_uid == os.getuid() and
+              filehash(metadata) == before["sha"],
+              "RECOVERY_METADATA_PRESTATE_CHANGED")
+    tmp = metadata.with_name("." + metadata.name + ".dim-update-stage")
+    guard(not tmp.is_symlink() and tmp.exists(),
+          "RECOVERY_STAGED_FILE_NOT_REGULAR")
+    # No open of a symlink/device/fifo; ensure private and single-link inode.
+    first = tmp.lstat()
+    guard(stat.S_ISREG(first.st_mode) and first.st_uid == os.getuid() and
+          first.st_nlink == 1 and stat.S_IMODE(first.st_mode) == 0o600 and
+          0 < first.st_size <= 65536,
+          "RECOVERY_STAGE_OWNER_MODE_TYPE_SIZE_INVALID")
+    fd = os.open(tmp, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) |
+                 getattr(os, "O_NONBLOCK", 0))
+    try:
+        opened = os.fstat(fd)
+        guard((opened.st_dev, opened.st_ino) == (first.st_dev, first.st_ino) and
+              stat.S_ISREG(opened.st_mode),
+              "RECOVERY_STAGE_INODE_CHANGED")
+        with os.fdopen(fd, "rb") as stream:
+            fd = -1
+            raw = stream.read(65537)
+        guard(len(raw) == first.st_size and len(raw) <= 65536,
+              "RECOVERY_STAGE_READ_SIZE_CHANGED")
+    finally:
+        if fd >= 0:
+            os.close(fd)
+    observed = hashlib.sha256(raw).hexdigest()
+    guard(observed == expected_sha256.lower(),
+          "RECOVERY_STAGE_SHA256_MISMATCH")
+    try:
+        doc = json.loads(raw.decode("utf-8"))
+    except (UnicodeError, ValueError) as ex:
+        raise RuntimeError("RECOVERY_STAGE_METADATA_NOT_JSON") from ex
+    guard(isinstance(doc, dict), "RECOVERY_STAGE_NOT_OBJECT")
+    expected_keys = {
+        "schema", "product", "version", "platform", "installedUtc",
+        "networkMutationOnInstall", "normalRunRequiresAdmin",
+        "systemBackend", "protectedBackendVersion",
+        "protectedBackendByteCompatible", "onlineUpdate",
+        "managedProviderSha256", "preservedCustomProviderData",
+        "managedCodeSha256", "managedLaunchersSha256", "updateMode",
+    }
+    guard(set(doc) == expected_keys and
+          doc["schema"] == 2 and doc["product"] == "Direct Internet Method" and
+          doc["version"] == "1.5.2" and doc["platform"] == "linux-x86_64" and
+          doc["networkMutationOnInstall"] is False and
+          doc["normalRunRequiresAdmin"] is False and
+          doc["systemBackend"] == "/usr/lib/directinternetmethod" and
+          doc["protectedBackendVersion"] in ("1.5.1", "1.5.2") and
+          doc["protectedBackendByteCompatible"] is True and
+          doc["onlineUpdate"] == "GitHub latest release + SHA256SUMS verification" and
+          doc["updateMode"] == "IN_PLACE_SINGLE_INSTALL_DATA_PRESERVED",
+          "RECOVERY_METADATA_PRODUCTION_IDENTITY_MISMATCH")
+    guard(doc["managedProviderSha256"] == data["providerSha"] and
+          doc["preservedCustomProviderData"] is (not data["providerManaged"]) and
+          doc["managedCodeSha256"] ==
+          {k: v["sha"] for k, v in data["managed"].items() if k != PROVIDERS},
+          "RECOVERY_STAGE_NOT_TIED_TO_PENDING_MANIFEST")
+    stamp = doc["installedUtc"]
+    guard(isinstance(stamp, str) and len(stamp) == 20 and
+          stamp[4:5] == "-" and stamp[7:8] == "-" and
+          stamp[10:11] == "T" and stamp[13:14] == ":" and
+          stamp[16:17] == ":" and stamp.endswith("Z"),
+          "RECOVERY_STAGE_TIMESTAMP_INVALID")
+    launchers = doc["managedLaunchersSha256"]
+    known_launchers = {
+        ".local/bin/direct-internet-method",
+        ".local/bin/direct-internet-method-uninstall",
+        ".local/share/applications/io.github.god13emad.DirectInternetMethod.desktop",
+        ".local/share/icons/hicolor/scalable/apps/direct-internet-method.svg",
+    }
+    guard(isinstance(launchers, dict) and set(launchers) <= known_launchers,
+          "RECOVERY_STAGE_FOREIGN_LAUNCHER_OWNERSHIP")
+    for rel, known_sha in launchers.items():
+        owned = pathlib.Path.home() / rel
+        guard(isinstance(known_sha, str) and len(known_sha) == 64 and
+              owned.is_file() and not owned.is_symlink() and
+              owned.stat().st_uid == os.getuid() and
+              filehash(owned) == known_sha,
+              "RECOVERY_STAGE_LAUNCHER_SHA_CHANGED:" + rel)
+    final = tmp.lstat()
+    guard((first.st_dev, first.st_ino, first.st_size, first.st_mtime_ns) ==
+          (final.st_dev, final.st_ino, final.st_size, final.st_mtime_ns) and
+          not tmp.is_symlink() and filehash(tmp) == observed and
+          (not before["exists"] or filehash(metadata) == before["sha"]),
+          "RECOVERY_STAGE_CHANGED_DURING_ATTESTATION")
+    tmp.unlink()  # ONE exact own-file removal; NEVER rm -rf / wildcard.
+    fsync_dir(app)
+    print("PASS_EXACT_OWNED_STALE_METADATA_STAGE_CLEARED_PENDING_ROLLBACK_REQUIRED")
+
+
+
 def status():
     app, pending, data = load_pending()
     verify_saved_backups(pending, data)
@@ -399,6 +523,8 @@ def main():
     opts.add_argument("--commit", action="store_true")
     opts.add_argument("--rollback", action="store_true")
     opts.add_argument("--status", action="store_true")
+    opts.add_argument("--recover-metadata-stage", action="store_true")
+    p.add_argument("--expected-stage-sha256")
     a = p.parse_args()
     if a.stage or a.apply:
         guard(a.source is not None, "REQUIRE_PACKAGE_SOURCE")
@@ -410,6 +536,8 @@ def main():
         commit()
     elif a.rollback:
         rollback()
+    elif a.recover_metadata_stage:
+        recover_metadata_stage(a.expected_stage_sha256)
     else:
         status()
 
