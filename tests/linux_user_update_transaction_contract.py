@@ -411,3 +411,158 @@ with tempfile.TemporaryDirectory(prefix="dim-r421-f415-") as td:
          (fake_app / "direct-internet-method.svg").read_bytes() == launcher_before,
          "F415_ATOMIC_WRITER_CHANGED_MUTABLE_USER_DATA")
     print("PASS_F415_METADATA_ATOMIC_INSTALL_INLINE:", 3, "/", 3)
+
+
+# R423 F418: real SIGKILL during actual atomic_bytes(). Explicit one-file
+# recover requires exact operator-known stage SHA, a valid pending manifest,
+# exact managed code, unchanged old metadata and intact user configuration.
+with tempfile.TemporaryDirectory(prefix="dim-r423-real-sigkill-") as td:
+    case = pathlib.Path(td)
+    source = source_tree(case, "r423")
+    home, app, old, user, provider_before = initial(case / "installed")
+    calls(home, source, "--stage")
+    calls(home, source, "--apply")
+    pending = home / ".local/state/DirectInternetMethod/update-pending"
+    manifest = json.loads((pending / "manifest.json").read_text(encoding="utf-8"))
+    doc = {
+        "schema": 2,
+        "product": "Direct Internet Method",
+        "version": "1.5.2",
+        "platform": "linux-x86_64",
+        "installedUtc": "2026-10-12T00:00:00Z",
+        "networkMutationOnInstall": False,
+        "normalRunRequiresAdmin": False,
+        "systemBackend": "/usr/lib/directinternetmethod",
+        "protectedBackendVersion": "1.5.2",
+        "protectedBackendByteCompatible": True,
+        "onlineUpdate": "GitHub latest release + SHA256SUMS verification",
+        "managedProviderSha256": manifest["providerSha"],
+        "preservedCustomProviderData": not manifest["providerManaged"],
+        "managedCodeSha256": {k: v["sha"] for k, v in manifest["managed"].items()
+                              if k != tx.PROVIDERS},
+        "managedLaunchersSha256": {},
+        "updateMode": "IN_PLACE_SINGLE_INSTALL_DATA_PRESERVED",
+    }
+    intended = (json.dumps(doc, indent=2) + "\n").encode("utf-8")
+    payload = case / "intended.json"
+    payload.write_bytes(intended)
+    install_record = app / tx.METADATA
+    stage_path = app / ".INSTALL.json.dim-update-stage"
+    env = dict(os.environ, HOME=str(home), PYTHONDONTWRITEBYTECODE="1")
+    child = r'''
+import importlib.util, os, pathlib, signal, sys
+spec = importlib.util.spec_from_file_location("dim_crash_helper", sys.argv[1])
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+def crash_before_replace(source, destination):
+    os.kill(os.getpid(), signal.SIGKILL)
+m.os.replace = crash_before_replace
+m.atomic_bytes(pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3]).read_bytes(), 0o600)
+'''
+    killed = subprocess.run([sys.executable, "-B", "-c", child, str(TX),
+                              str(install_record), str(payload)],
+                             env=env, text=True, capture_output=True, timeout=10)
+    need(killed.returncode == -9, "F418_DID_NOT_REAL_SIGKILL:" + str(killed.returncode))
+    need(stage_path.is_file() and stage_path.read_bytes() == intended,
+         "F418_SIGKILL_STAGE_MISSING_OR_CHANGED")
+    need(install_record.read_bytes() == old[tx.METADATA],
+         "F418_SIGKILL_DAMAGED_ORIGINAL_METADATA")
+    digest_stage = digest(intended)
+    def recover(sha, positive=False):
+        result = subprocess.run([sys.executable, "-B", str(TX),
+                                 "--recover-metadata-stage", "--expected-stage-sha256", sha],
+                                env=env, text=True, capture_output=True, timeout=10)
+        if positive:
+            need(result.returncode == 0 and "PASS_EXACT_OWNED" in result.stdout,
+                 "F418_VALID_STAGE_NOT_RECOVERED:" + result.stderr)
+        else:
+            need(result.returncode != 0 and "FAIL_CLOSED" in result.stderr,
+                 "F418_UNTRUSTED_STAGE_FALSE_ACCEPTED")
+        return result
+    cases = 0
+    recover("0" * 64)
+    need(stage_path.read_bytes() == intended, "F418_WRONG_DIGEST_REMOVED_STAGE")
+    cases += 1
+    stage_path.chmod(0o644)
+    recover(digest_stage)
+    need(stage_path.is_file(), "F418_NONPRIVATE_STAGE_REMOVED")
+    stage_path.chmod(0o600)
+    cases += 1
+    stage_path.write_bytes(b'{"partial":')
+    recover(digest_stage)
+    need(stage_path.read_bytes() == b'{"partial":', "F418_PARTIAL_STAGE_REMOVED")
+    stage_path.write_bytes(intended)
+    stage_path.chmod(0o600)
+    cases += 1
+    foreign = case / "foreign-not-ours"
+    foreign.write_bytes(b"FOREIGN_CONTENT_MUST_SURVIVE")
+    stage_path.unlink()
+    stage_path.symlink_to(foreign)
+    recover(digest_stage)
+    need(foreign.read_bytes() == b"FOREIGN_CONTENT_MUST_SURVIVE" and
+         stage_path.is_symlink(), "F418_SYMLINK_FOLLOWED_OR_DELETED")
+    stage_path.unlink()
+    stage_path.write_bytes(intended)
+    stage_path.chmod(0o600)
+    cases += 1
+    original = install_record.read_bytes()
+    install_record.write_bytes(b"FOREIGN_CONCURRENT_METADATA")
+    recover(digest_stage)
+    need(stage_path.is_file() and install_record.read_bytes() ==
+         b"FOREIGN_CONCURRENT_METADATA", "F418_CONCURRENT_METADATA_LOST")
+    install_record.write_bytes(original)
+    cases += 1
+    managed = app / "direct_internet_method.py"
+    managed_bytes = managed.read_bytes()
+    managed.write_bytes(b"OTHER_ACTOR_CODE")
+    recover(digest_stage)
+    need(managed.read_bytes() == b"OTHER_ACTOR_CODE" and stage_path.is_file(),
+         "F418_FOREIGN_MANAGED_CODE_UNSAFE_RECOVERY")
+    managed.write_bytes(managed_bytes)
+    cases += 1
+    settings = app / "settings.json"
+    original_settings = settings.read_bytes()
+    settings.write_bytes(b"USER_UPDATED_SETTINGS")
+    recover(digest_stage)
+    need(settings.read_bytes() == b"USER_UPDATED_SETTINGS" and stage_path.is_file(),
+         "F418_USER_EDIT_NOT_PRESERVED")
+    settings.write_bytes(original_settings)
+    cases += 1
+    compromised = dict(doc)
+    compromised["managedCodeSha256"] = {"direct_internet_method.py": "0"*64}
+    stage_path.write_bytes((json.dumps(compromised) + "\n").encode())
+    stage_path.chmod(0o600)
+    recover(digest(stage_path.read_bytes()))
+    need(stage_path.is_file(), "F418_FOREIGN_DOCUMENT_WITH_DIGEST_WRONGLY_REMOVED")
+    stage_path.write_bytes(intended)
+    stage_path.chmod(0o600)
+    cases += 1
+    recover(digest_stage, positive=True)
+    need(not stage_path.exists() and pending.is_dir(),
+         "F418_ONLY_OWNED_STAGE_SHOULD_BE_REMOVED_PENDING_MUST_REMAIN")
+    need(install_record.read_bytes() == old[tx.METADATA],
+         "F418_RECOVERY_OVERWROTE_OLD_METADATA")
+    need((app / tx.PROVIDERS).read_bytes() == provider_before,
+         "F418_RECOVERY_CHANGED_CUSTOM_PROVIDER")
+    unchanged_data(app, user)
+    cases += 1
+    # Explicit rollback after safe stage attestation restores EVERY old program
+    # file, original INSTALL.json and all personal settings without duplicate
+    # directories or app/backend/network mutations.
+    calls(home, source, "--rollback")
+    for name, previous in old.items():
+        need((app / name).read_bytes() == previous,
+             "F418_ROLLBACK_OLD_BYTES_DRIFT:" + name)
+    unchanged_data(app, user)
+    need((app / tx.PROVIDERS).read_bytes() == provider_before and
+         not pending.exists(), "F418_ROLLBACK_USER_DATA_OR_SLOT_FAILED")
+    cases += 1
+    # With no pending transaction, an arbitrary new staged file can never
+    # trigger cleanup (even with its SHA supplied by the caller).
+    stage_path.write_bytes(intended)
+    stage_path.chmod(0o600)
+    recover(digest_stage)
+    need(stage_path.read_bytes() == intended, "F418_NO_PENDING_STAGE_REMOVED")
+    cases += 1
+    print("PASS_F418_SIGKILL_ATTESTED_STAGE_RECOVERY_NEGATIVE_FIRST:",
+          cases, "/", cases, "REAL_SIGKILL_CODE", killed.returncode)
