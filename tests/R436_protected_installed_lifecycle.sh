@@ -107,6 +107,8 @@ for unit in start stop recovery; do
   [[ -f "/etc/systemd/system/directinternetmethod-$unit.service" ]] ||
     fail "SERVICE_UNIT_MISSING:$unit"
 done
+log "R436_CHECK_POLKIT_RULE_AND_SYSTEMD_GUEST_PRESENCE"
+(sudo -n ls -la /etc/polkit-1/rules.d; sudo -n stat /etc/polkit-1/rules.d/49-directinternetmethod.rules; sudo -n sh -c 'test -e /etc/polkit-1/rules.d/49-directinternetmethod.rules && echo ROOT_RULE_PRESENT') >> "$report" 2>&1 || log "R436_HOSTED_POLKIT_DIAGNOSTIC_UNAVAILABLE"
 [[ -f /etc/polkit-1/rules.d/49-directinternetmethod.rules ]] ||
    fail ROOT_POLKIT_RULE_MISSING
 log "PASS_R436_PROTECTED_BACKEND_EXACT_SOURCE_BYTES"
