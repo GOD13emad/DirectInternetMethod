@@ -1,10 +1,10 @@
-# v1.5.2 — corrective candidate (NOT PUBLISHED)
+# v1.5.2 — Stable (published 2026-10-12)
 
 - Fix Linux fresh install under umask 077. Explicitly set root-owned nonsecret parent directories to mode 0755 so user-level backend verification can traverse them; files stay root-owned.
 - Add negative/positive regression and keep Windows/Linux release and updater versions aligned.
 - No new DNS/DPI features; preserve opt-in Adult coverage, original direct-only design, rollback and historical v1.5.1.
 - Gemini real-browser HTTP 403 remains FAIL and cannot be marked usable by transport-only tests.
-- Publication only after exact SHA asset verification, CI and installed host acceptance.
+- Published from source 14a3eec378eb75856f6691b7b3edc970507ee61f; exact public release asset hashes and hosted installation/rollback acceptance verified. Some websites remain inaccessible on particular networks; public release does not guarantee authenticated site access.
 
 ---
 
