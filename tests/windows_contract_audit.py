@@ -137,7 +137,7 @@ check("legacy_provider_rollback_explicit_only_and_exact_SHA",
     and ("privileged","app/SafeLegacyProviderRollback.ps1") in
         {(v["scope"],v["file"]) for v in manifest["files"]})
 check("legacy_151_rollback_preserves_custom_bin_tree",
-    all(x in legacy_provider_guard for x in ["binFiles","BIN_RESTORATION_SHA_FAILED","FOREIGN_BIN_EDIT_PRESERVED","BIN_SNAPSHOT_UNKNOWN_CONTENT","BIN_STAGED_FILE_CHANGED","STAGE_REPARSE_REFUSED"])
+    all(x in legacy_provider_guard for x in ["binFiles","BIN_RESTORATION_SHA_FAILED","FOREIGN_BIN_EDIT_PRESERVED","BIN_SNAPSHOT_UNKNOWN_CONTENT","BIN_STAGED_FILE_CHANGED","FOREIGN_STAGE_SYMLINK"])
     and "Remove-Item -Recurse" not in legacy_provider_guard)
 check("inno_preserves_custom_router_gateway_provider_on_upgrade",
     'Source: "..\\..\\router_gateway\\providers.json"; DestDir: "{app}\\app\\router_gateway"; Flags: ignoreversion onlyifdoesntexist' in iss)
