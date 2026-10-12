@@ -96,8 +96,8 @@
       "scope": "privileged",
       "file": "app/SafeLegacyProviderRollback.ps1",
       "source": "app/SafeLegacyProviderRollback.ps1",
-      "bytes": 7735,
-      "sha256": "1CA6781FF839A26BB371783E1AE563498A04E2E603604B0C7113C49439DC376F"
+      "bytes": 13397,
+      "sha256": "522D78CB2A40A917B4E86DD7F98F4D3B076FD8A551B97C4B0C211FDFC7D9B322"
     },
     {
       "scope": "privileged",
