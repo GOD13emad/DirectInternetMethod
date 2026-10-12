@@ -19,7 +19,7 @@ for path in /usr/lib/directinternetmethod /var/lib/directinternetmethod \
     /etc/systemd/system/directinternetmethod-stop.service \
     /etc/systemd/system/directinternetmethod-recovery.service \
     /run/directinternetmethod-selective/session.json; do
-  [[ ! -e "$path" && ! -L "$path" ]] || fail "HOSTED_BASELINE_NOT_CLEAN:$path"
+  sudo -n test ! -e "$path" && sudo -n test ! -L "$path" || fail "HOSTED_BASELINE_NOT_CLEAN:$path"
 done
 sudo -n true || fail GUEST_NATIVE_SUDO_NOT_GRANTED
 out="$RUNNER_TEMP/DIM_R436_HOSTED"
@@ -109,7 +109,7 @@ for unit in start stop recovery; do
 done
 log "R436_CHECK_POLKIT_RULE_AND_SYSTEMD_GUEST_PRESENCE"
 (sudo -n ls -la /etc/polkit-1/rules.d; sudo -n stat /etc/polkit-1/rules.d/49-directinternetmethod.rules; sudo -n sh -c 'test -e /etc/polkit-1/rules.d/49-directinternetmethod.rules && echo ROOT_RULE_PRESENT') >> "$report" 2>&1 || log "R436_HOSTED_POLKIT_DIAGNOSTIC_UNAVAILABLE"
-[[ -f /etc/polkit-1/rules.d/49-directinternetmethod.rules ]] ||
+sudo -n test -f /etc/polkit-1/rules.d/49-directinternetmethod.rules ||
    fail ROOT_POLKIT_RULE_MISSING
 log "PASS_R436_PROTECTED_BACKEND_EXACT_SOURCE_BYTES"
 home="$extract/disposable-home"
@@ -135,10 +135,10 @@ HOME="$home" python3 -B "$app/user_uninstall_preserve.py" --verify >> "$report"
 log "PASS_R436_TRUE_ROOT_AND_USER_INSTALL_CUSTOM_DATA_PRESERVED"
 sudo -n /bin/bash "$package/system/uninstall_system.sh" >> "$report" 2>&1
 root_removed=1
-[[ ! -e /usr/lib/directinternetmethod &&
-   ! -e /var/lib/directinternetmethod/install.json &&
-   ! -e /etc/directinternetmethod.uid &&
-   ! -e /etc/polkit-1/rules.d/49-directinternetmethod.rules ]] ||
+sudo -n test ! -e /usr/lib/directinternetmethod &&
+sudo -n test ! -e /var/lib/directinternetmethod/install.json &&
+sudo -n test ! -e /etc/directinternetmethod.uid &&
+sudo -n test ! -e /etc/polkit-1/rules.d/49-directinternetmethod.rules ||
    fail PROTECTED_BACKEND_CLEANUP_INCOMPLETE
 HOME="$home" python3 -B "$app/user_uninstall_preserve.py" --remove-after-backend >> "$report"
 [[ ! -e "$app/INSTALL.json" && ! -e "$app/direct_internet_method.py" ]] ||
