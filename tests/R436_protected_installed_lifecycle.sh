@@ -52,10 +52,15 @@ cleanup() {
   trap - EXIT
   if [[ "$root_attempted" == "1" && "$root_removed" == "0" ]]; then
     installed=/usr/lib/directinternetmethod/uninstall_system.sh
-    if [[ -f "$installed" && "$(sha256sum "$installed" | cut -d' ' -f1)" ==
-          "$(sha256sum "$package/system/uninstall_system.sh" | cut -d' ' -f1)" ]]; then
+    if [[ -f "$installed" ]]; then
+      installed_sha="$(sha256sum "$installed" | cut -d' ' -f1)"
+      source_sha="$(sha256sum "$package/system/uninstall_system.sh" | cut -d' ' -f1)"
+      if [[ "$installed_sha" == "$source_sha" ]]; then
       sudo -n /bin/bash "$installed" >> "$report" 2>&1 ||
         log "ROOT_BACKEND_GUEST_CLEANUP_DEGRADED"
+      else
+        log "ROOT_BACKEND_SHA_UNCERTAIN_NOT_DELETED"
+      fi
     else
       log "ROOT_BACKEND_UNCERTAIN_NOT_DELETED"
     fi
