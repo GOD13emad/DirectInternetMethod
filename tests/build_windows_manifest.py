@@ -14,6 +14,7 @@ FILES=[
 ("privileged","app/Start-Direct.ps1","app/Start-Direct.ps1"),
 ("privileged","app/Stop-Direct.ps1","app/Stop-Direct.ps1"),
 ("privileged","app/Recovery.ps1","app/Recovery.ps1"),
+("privileged","app/SafeLegacyProviderRollback.ps1","app/SafeLegacyProviderRollback.ps1"),
 ("privileged","bin/ctrld/ctrld.exe","bin/ctrld/ctrld.exe"),
 ("privileged","bin/ctrld/ctrld.toml","bin/ctrld/ctrld.toml"),
 ("privileged","bin/ctrld/LICENSE.txt","bin/ctrld/LICENSE.txt"),
