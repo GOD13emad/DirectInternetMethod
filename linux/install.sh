@@ -162,8 +162,8 @@ fi
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$DESKTOP" >/dev/null 2>&1 || true
 command -v gtk4-update-icon-cache >/dev/null 2>&1 && gtk4-update-icon-cache -f "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
 
-python3 - "$APP/INSTALL.json" <<'PY'
-import json,pathlib,sys,time,hashlib
+python3 - "$APP/INSTALL.json" "$USER_TRANSACTION" <<'PY'
+import json,pathlib,sys,time,hashlib,importlib.util
 home=pathlib.Path.home()
 # Only exact program-generated launchers are owned by the uninstaller.
 # A user-modified launcher/shortcut is preserved and never claimed as owned.
@@ -200,7 +200,7 @@ for name, expected in expected_launchers.items():
 transaction=json.loads((pathlib.Path.home()/".local/state/DirectInternetMethod/update-pending/manifest.json").read_text(encoding="utf8"))
 protected=json.loads(pathlib.Path("/var/lib/directinternetmethod/install.json").read_text(encoding="utf-8"))
 assert protected.get("version") in ("1.5.1","1.5.2")
-pathlib.Path(sys.argv[1]).write_text(json.dumps({
+metadata=json.dumps({
   "schema":2,
   "product":"Direct Internet Method",
   "version":"1.5.2",
@@ -217,7 +217,16 @@ pathlib.Path(sys.argv[1]).write_text(json.dumps({
   "managedCodeSha256":{k:v["sha"] for k,v in transaction["managed"].items() if k!="router_gateway/providers.json"},
   "managedLaunchersSha256":launchers,
   "updateMode":"IN_PLACE_SINGLE_INSTALL_DATA_PRESERVED"
-},indent=2)+"\n")
+},indent=2)+"\n"
+# Reuse the already-tested, fail-closed transaction writer instead of
+# truncating INSTALL.json in place. A killed process preserves the old bytes;
+# any orphaned stage is deliberately retained for ownership-checked recovery.
+spec=importlib.util.spec_from_file_location("dim_user_update_transaction",sys.argv[2])
+if spec is None or spec.loader is None:
+    raise RuntimeError("TRANSACTION_HELPER_NOT_IMPORTABLE")
+transaction_helper=importlib.util.module_from_spec(spec)
+spec.loader.exec_module(transaction_helper)
+transaction_helper.atomic_bytes(pathlib.Path(sys.argv[1]),metadata.encode("utf-8"),0o600)
 PY
 
 # Commit only after managed code and mutable data hashes are reverified.
