@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Python syntax
-        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/system/selective_dns.py linux/app/router_gateway.py tests/selective_dns_integration_safety_contract.py tests/selective_dns_monitor_lock_contract.py tests/selective_dns_full_lifecycle_mock.py tests/selective_dns_bindings_contract.py tests/selective_dns_backstop_contract.py tests/selective_dns_backstop_runtime_mock.py tests/linux_contract_audit.py tests/linux_user_update_transaction_contract.py linux/app/user_update_transaction.py linux/app/user_uninstall_preserve.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_152_lifecycle.py tests/tailscale_coexistence_contract.py tests/tailscale_ui_state_contract.py tests/tailscale_gui_scope_guard_contract.py tests/tailscale_rustdesk_transport_audit.py tests/tailscale_nft_ownership_contract.py tests/tailscale_cleanup_ownership_contract.py tests/tailscale_recovery_missing_state_contract.py tests/nft_presence_fail_closed_contract.py tests/tailscale_transient_rollback_ownership_contract.py tests/linux_nft_kernel_namespace_contract.py tests/linux_mutation_action_lock_contract.py tests/linux_rollback_exit_integrity_contract.py
+        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/system/selective_dns.py linux/app/router_gateway.py tests/selective_dns_integration_safety_contract.py tests/selective_dns_monitor_lock_contract.py tests/selective_dns_full_lifecycle_mock.py tests/selective_dns_bindings_contract.py tests/selective_dns_backstop_contract.py tests/selective_dns_backstop_runtime_mock.py tests/linux_contract_audit.py tests/linux_user_update_transaction_contract.py tests/linux_real_extracted_archive_contract.py linux/app/user_update_transaction.py linux/app/user_uninstall_preserve.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_152_lifecycle.py tests/tailscale_coexistence_contract.py tests/tailscale_ui_state_contract.py tests/tailscale_gui_scope_guard_contract.py tests/tailscale_rustdesk_transport_audit.py tests/tailscale_nft_ownership_contract.py tests/tailscale_cleanup_ownership_contract.py tests/tailscale_recovery_missing_state_contract.py tests/nft_presence_fail_closed_contract.py tests/tailscale_transient_rollback_ownership_contract.py tests/linux_nft_kernel_namespace_contract.py tests/linux_mutation_action_lock_contract.py tests/linux_rollback_exit_integrity_contract.py
       - name: Shell syntax and LF guard
         shell: bash
         run: |
@@ -78,6 +78,8 @@ jobs:
           sudo -n python3 tests/linux_nft_kernel_namespace_contract.py --kernel
       - name: Build Linux archive
         run: python3 build_linux_package.py
+      - name: Validate real extracted ZIP transaction and user-data rollback
+        run: python3 -B tests/linux_real_extracted_archive_contract.py
       - name: Verify exact Linux candidate artifact digest
         shell: bash
         run: |
@@ -93,9 +95,9 @@ jobs:
           p=pathlib.Path(old["artifact"])
           assert p.is_file(), "NEW_CANDIDATE_ARCHIVE_MISSING"
           actual=hashlib.sha256(p.read_bytes()).hexdigest().upper()
-          expected="11AC4C957E346FAB7425E8180667ACD88173B01028C3A1B7F49CF10124C0E785"
+          expected="53C9FCADDBE96CEC9F63505AB20992479C422F3AB9A9E2379898F5A80BF76692"
           assert actual==expected, f"NEW_LINUX_CANDIDATE_SHA_MISMATCH {actual} != {expected}"
-          assert p.stat().st_size==8270691, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
+          assert p.stat().st_size==8273837, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
           assert actual!=old["sha256"].upper(), "OLD_PUBLIC_ARTIFACT_MISLABELED_AS_NEW"
           with zipfile.ZipFile(p) as z:
             assert z.testzip() is None and len(z.namelist())==24
