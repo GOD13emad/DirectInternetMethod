@@ -128,23 +128,78 @@ def context():
 
 
 def source_files(root: pathlib.Path) -> dict:
-    guard(root.is_dir() and not root.is_symlink(), "SOURCE_PACKAGE_INVALID")
+    """Accept BOTH the Git repository linux/ source and real extracted Linux ZIP.
+
+    Verify every archive member against the package's own independent manifest
+    before staging anything; never resolve unowned symlinks from an archive.
+    """
+    guard(root.is_absolute() and root.is_dir() and not root.is_symlink() and
+          not root.parent.is_symlink(), "SOURCE_PACKAGE_INVALID")
+    archive_layout = root.name == "DirectInternetMethod_1.5.2_Linux_x86_64"
+    source_layout = root.name == "linux"
+    guard(archive_layout or source_layout, "SOURCE_PACKAGE_LAYOUT_NOT_LINUX_OR_EXTRACTED_ZIP")
+    if archive_layout:
+        manifest_path = root / "PACKAGE_MANIFEST.json"
+        sums_path = root / "SHA256SUMS.txt"
+        guard(manifest_path.is_file() and not manifest_path.is_symlink() and
+              sums_path.is_file() and not sums_path.is_symlink(),
+              "EXTRACTED_PACKAGE_MANIFEST_MISSING_OR_SYMLINK")
+        try:
+            package_doc = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (ValueError, UnicodeError) as ex:
+            raise RuntimeError("EXTRACTED_PACKAGE_MANIFEST_INVALID_JSON") from ex
+        guard(isinstance(package_doc, dict) and package_doc.get("schema") == 1 and
+              package_doc.get("product") == "Direct Internet Method" and
+              package_doc.get("version") == "1.5.2" and
+              package_doc.get("platform") == "linux-x86_64" and
+              isinstance(package_doc.get("files"), list) and
+              len(package_doc["files"]) == 22, "EXTRACTED_PACKAGE_IDENTITY_WRONG")
+        seen = set()
+        digest_lines = []
+        for item in package_doc["files"]:
+            guard(isinstance(item, dict) and
+                  set(item) == {"file", "bytes", "sha256"} and
+                  isinstance(item["file"], str) and
+                  isinstance(item["bytes"], int) and item["bytes"] >= 0 and
+                  isinstance(item["sha256"], str) and len(item["sha256"]) == 64 and
+                  all(c in "0123456789ABCDEF" for c in item["sha256"]),
+                  "EXTRACTED_MANIFEST_ROW_INVALID")
+            path = pathlib.PurePosixPath(item["file"])
+            guard(not path.is_absolute() and
+                  all(part not in ("", ".", "..") for part in path.parts) and
+                  path.as_posix() == item["file"] and
+                  item["file"] not in seen,
+                  "EXTRACTED_MANIFEST_UNSAFE_PATH_OR_DUPLICATE")
+            seen.add(item["file"])
+            full = root.joinpath(*path.parts)
+            guard(full.is_file() and not full.is_symlink() and
+                  all(not part.is_symlink() for part in
+                      [root.joinpath(*path.parts[:i]) for i in range(1, len(path.parts))]),
+                  "EXTRACTED_PACKAGE_SYMLINK_OR_MISSING_MEMBER")
+            guard(full.stat().st_size == item["bytes"] and
+                  filehash(full).upper() == item["sha256"],
+                  "EXTRACTED_PACKAGE_FILE_DIGEST_CHANGED:" + item["file"])
+            digest_lines.append(item["sha256"] + "  " + item["file"] + "\n")
+        needed = {origin for origin, _, _ in FILES}
+        needed.add("app/router_gateway/providers.json")
+        guard(needed <= seen, "EXTRACTED_PACKAGE_REQUIRED_FILES_MISSING")
+        guard(sums_path.read_text(encoding="utf-8") == "".join(digest_lines),
+              "EXTRACTED_PACKAGE_SHA256SUMS_MISMATCH")
+        provider = root / "app/router_gateway/providers.json"
+    else:
+        provider_parent = root.parent / "router_gateway"
+        guard(provider_parent.is_dir() and not provider_parent.is_symlink(),
+              "PROVIDER_PACKAGE_DIR_UNSAFE")
+        provider = provider_parent / "providers.json"
     out = {}
     for origin, dest, mode in FILES:
         p = root / origin
-        guard(p.is_file() and not p.is_symlink(), "SOURCE_PAYLOAD_MISSING:" + origin)
+        guard(p.is_file() and not p.is_symlink() and
+              not p.parent.is_symlink(), "SOURCE_PAYLOAD_MISSING_OR_SYMLINK:" + origin)
         out[dest] = {"path": p, "sha": filehash(p), "mode": mode}
-    # The released ZIP and repository place router_gateway beside linux/.
-    # A fake app/router_gateway path makes source-only tests pass but real
-    # upgrades fail before staging. Restrict source to this exact layout.
-    guard(root.name == "linux" and not root.parent.is_symlink(),
-          "SOURCE_PACKAGE_LAYOUT_NOT_LINUX")
-    provider_parent = root.parent / "router_gateway"
-    guard(provider_parent.is_dir() and not provider_parent.is_symlink(),
-          "PROVIDER_PACKAGE_DIR_UNSAFE")
-    provider = root / PROVIDER_SOURCE
     guard(provider.is_file() and not provider.is_symlink() and
-          not provider.parent.is_symlink(), "PROVIDER_SOURCE_MISSING_OR_UNSAFE")
+          not provider.parent.is_symlink(),
+          "PROVIDER_SOURCE_MISSING_OR_UNSAFE")
     out[PROVIDERS] = {"path": provider, "sha": filehash(provider), "mode": 0o644}
     return out
 
