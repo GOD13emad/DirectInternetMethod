@@ -36,6 +36,7 @@ $backup=Join-Path $slot 'provider.bin'
 $record=Join-Path $slot 'manifest.json'
 $gui=Join-Path $app 'app\DirectInternetMethod.exe'
 $service=Join-Path $env:ProgramFiles 'DirectInternetMethod\Privileged\app\DirectInternetMethod.Service.exe'
+$binRoot=Join-Path $app 'bin'
 function GuardPath([string]$path) {
   $cur=[IO.Path]::GetFullPath($path)
   for($i=0;$i -lt 40;$i++){
@@ -66,21 +67,56 @@ if($Action -eq 'Stage') {
   try {$oldJson=[Text.Encoding]::UTF8.GetString($bytes) | ConvertFrom-Json -AsHashtable}
   catch {throw 'LEGACY_PROVIDER_FAIL_CLOSED:PROVIDER_JSON_NOT_VALID'}
   Need ($oldJson -is [System.Collections.IDictionary]) 'PROVIDER_NOT_JSON_OBJECT'
+
+  # v1.5.1 InstallDelete recursively clears {app}\bin. Save exact user bytes.
+  $binInventory=@()
+  if(Test-Path -LiteralPath $binRoot){
+    GuardPath $binRoot
+    Need ((Get-Item -LiteralPath $binRoot -Force) -is [IO.DirectoryInfo]) 'BIN_ROOT_NOT_DIRECTORY'
+    $nodes=@(Get-ChildItem -LiteralPath $binRoot -Recurse -Force)
+    Need ($nodes.Count -le 1536) 'BIN_NODE_COUNT_EXCEEDED'
+    [long]$total=0
+    foreach($node in $nodes){
+      GuardPath $node.FullName
+      Need (-not [bool]($node.Attributes -band [IO.FileAttributes]::ReparsePoint)) 'BIN_SYMLINK_REFUSED'
+      if($node -is [IO.DirectoryInfo]){continue}
+      Need ($node -is [IO.FileInfo] -and
+            $node.FullName.StartsWith($binRoot+'\', [StringComparison]::OrdinalIgnoreCase)) 'BIN_NODE_NOT_REGULAR_OR_OUTSIDE'
+      $rel=$node.FullName.Substring($binRoot.Length+1)
+      Need ($rel.Length -gt 0 -and $rel.Length -le 250 -and
+            (-not [IO.Path]::IsPathRooted($rel)) -and
+            ($rel -notmatch '(^|[\\/])\.\.([\\/]|$)|[:<>|*?"]')) 'BIN_RELATIVE_PATH_UNSAFE'
+      $total += [long]$node.Length
+      Need ($total -le 268435456 -and $node.Length -le 67108864 -and
+            $binInventory.Count -lt 1024) 'BIN_FILE_SIZE_OR_COUNT_EXCEEDED'
+      $binInventory+=@{relative=$rel;sha256=(Sha $node.FullName);bytes=[long]$node.Length}
+    }
+  }
   [void][IO.Directory]::CreateDirectory($state)
   [void][IO.Directory]::CreateDirectory($slot)
   # A partial stage is preserved as evidence; never removed on error.
   $fs=[IO.FileStream]::new($backup,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
   try {$fs.Write($bytes,0,$bytes.Length);$fs.Flush($true)} finally {$fs.Dispose()}
   Need ((Sha $backup) -eq $oldSha) 'STAGED_PROVIDER_SHA_CHANGED'
+  foreach($item in $binInventory){
+    $old=Join-Path $binRoot $item.relative
+    $dest=Join-Path (Join-Path $slot 'bin') $item.relative
+    GuardPath $old; GuardPath $dest
+    Need ((FileIsPlain $old) -and (Sha $old) -eq $item.sha256) 'BIN_CHANGED_DURING_STAGE'
+    [void][IO.Directory]::CreateDirectory((Split-Path $dest -Parent))
+    Need (-not(Test-Path -LiteralPath $dest)) 'BIN_STAGE_COLLISION'
+    [IO.File]::Copy($old,$dest,$false)
+    Need ((Sha $dest) -eq $item.sha256) 'BIN_COPY_SHA_CHANGED'
+  }
   $m=[ordered]@{
     schema=1;product='Direct Internet Method';operation='PRESERVE_CUSTOM_PROVIDER_BEFORE_LEGACY_151_REINSTALL'
     providerPath=$provider;providerSha256=$oldSha;providerBytes=$bytes.Length
     installerSha256=$ExpectedSetupSha;expectedLegacyProviderSha256=$LegacyDefaultProviderSha
     expectedLegacyGuiSha256=$LegacyGuiSha;expectedLegacyServiceSha256=$LegacyServiceSha
-    stagedUtc=(Get-Date).ToUniversalTime().ToString('o')
+    stagedUtc=(Get-Date).ToUniversalTime().ToString('o');binFiles=@($binInventory)
   }
-  [IO.File]::WriteAllText($record,($m|ConvertTo-Json -Depth 5),[Text.UTF8Encoding]::new($false))
-  Need ((@(Get-ChildItem -LiteralPath $slot -File -Force).Count -eq 2) -and (Sha $backup) -eq $oldSha) 'STAGE_HAS_UNKNOWN_CONTENT_OR_SHA'
+  [IO.File]::WriteAllText($record,($m|ConvertTo-Json -Depth 12),[Text.UTF8Encoding]::new($false))
+  Need ((@(Get-ChildItem -LiteralPath $slot -File -Recurse -Force).Count -eq (2+$binInventory.Count)) -and (Sha $backup) -eq $oldSha) 'STAGE_HAS_UNKNOWN_CONTENT_OR_SHA'
   Write-Output ('PASS_EXACT_PROVIDER_STAGED_PENDING_LEGACY_ROLLBACK_SHA='+$oldSha)
   return
 }
@@ -89,7 +125,7 @@ if($Action -eq 'Stage') {
 Need (Test-Path -LiteralPath $slot -PathType Container) 'RECOVERY_SLOT_MISSING'
 GuardPath $backup;GuardPath $record;GuardPath $gui;GuardPath $service
 Need (FileIsPlain $backup -and (FileIsPlain $record)) 'STAGE_FILES_NOT_PLAIN'
-Need (@(Get-ChildItem -LiteralPath $slot -Force).Count -eq 2) 'FOREIGN_FILE_IN_STAGE_REFUSE_CLEANUP'
+
 $m=Get-Content -LiteralPath $record -Raw -Encoding UTF8|ConvertFrom-Json -AsHashtable
 Need ($m.schema -eq 1 -and $m.operation -eq 'PRESERVE_CUSTOM_PROVIDER_BEFORE_LEGACY_151_REINSTALL' -and
       $m.providerPath -ceq $provider -and $m.installerSha256 -eq $ExpectedSetupSha -and
@@ -102,6 +138,49 @@ Need ($m.providerSha256 -match '^[A-F0-9]{64}$' -and
       (Sha $backup) -eq $m.providerSha256) 'STAGE_BACKUP_SHA_CHANGED'
 Need ((FileIsPlain $gui) -and (FileIsPlain $service) -and
       (Sha $gui) -eq $LegacyGuiSha -and (Sha $service) -eq $LegacyServiceSha) 'LEGACY_151_BINARY_POSTINSTALL_SHA_NOT_ACCEPTED'
+
+Need ($m.ContainsKey('binFiles')) 'BIN_MANIFEST_MISSING'
+$binRows=@($m.binFiles)
+Need ($binRows.Count -le 1024) 'BIN_MANIFEST_COUNT_INVALID'
+$known=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+[void]$known.Add('provider.bin')
+[void]$known.Add('manifest.json')
+$restoreBin=@()
+[long]$total=0
+foreach($entry in $binRows){
+  Need ($entry -is [Collections.IDictionary]) 'BIN_ROW_TYPE_INVALID'
+  $rel=[string]$entry.relative
+  Need ($rel.Length -gt 0 -and $rel.Length -le 250 -and
+        (-not [IO.Path]::IsPathRooted($rel)) -and
+        ($rel -notmatch '(^|[\\/])\.\.([\\/]|$)|[:<>|*?"]') -and
+        ([string]$entry.sha256 -match '^[0-9a-fA-F]{64}$')) 'BIN_MANIFEST_UNSAFE'
+  [long]$n=$entry.bytes
+  $total += $n
+  Need ($n -ge 0 -and $n -le 67108864 -and $total -le 268435456) 'BIN_MANIFEST_BYTES_UNSAFE'
+  $relative='bin\'+$rel
+  Need ($known.Add($relative)) 'BIN_DUPLICATE_PATH'
+  $src=Join-Path $slot $relative
+  GuardPath $src
+  Need ((FileIsPlain $src) -and
+        (Get-Item -LiteralPath $src).Length -eq $n -and
+        (Sha $src) -eq $entry.sha256) 'BIN_STAGED_FILE_CHANGED'
+  $target=Join-Path $binRoot $rel
+  GuardPath $target
+  if(Test-Path -LiteralPath $target){
+    Need ((FileIsPlain $target) -and
+          (Sha $target) -eq $entry.sha256) 'FOREIGN_BIN_EDIT_PRESERVED'
+  }
+  $restoreBin+=@{src=$src;dest=$target;sha=$entry.sha256}
+}
+foreach($node in @(Get-ChildItem -LiteralPath $slot -Recurse -Force)){
+  GuardPath $node.FullName
+  Need (-not [bool]($node.Attributes -band [IO.FileAttributes]::ReparsePoint)) 'FOREIGN_STAGE_SYMLINK'
+  if($node -is [IO.DirectoryInfo]){continue}
+  Need ($node -is [IO.FileInfo]) 'FOREIGN_STAGE_FILE_TYPE'
+  $relative=$node.FullName.Substring($slot.Length+1)
+  Need ($known.Contains($relative)) 'UNKNOWN_STAGE_FILE_PRESERVED'
+}
+
 GuardPath $provider
 $present=Test-Path -LiteralPath $provider -PathType Leaf
 Need ($present -or -not (Test-Path -LiteralPath $provider)) 'TARGET_FOREIGN_TYPE'
@@ -118,9 +197,45 @@ if($current -ne $m.providerSha256) {
   [IO.File]::Move($tmp,$provider,$true)
 }
 Need ((Sha $provider) -eq $m.providerSha256) 'RESTORED_PROVIDER_SHA_FAILED'
-# Acknowledge ONLY this exact two-file stage. Never recurse/delete unknown data.
+
+# Restore only the SHA-attested user files deleted by historical InstallDelete.
+foreach($file in $restoreBin){
+  if(Test-Path -LiteralPath $file.dest -PathType Leaf){
+    Need ((Sha $file.dest) -eq $file.sha) 'BIN_CONCURRENT_EDIT_PRESERVED'
+    continue
+  }
+  $parent=Split-Path $file.dest -Parent
+  GuardPath $parent
+  [void][IO.Directory]::CreateDirectory($parent)
+  $tmp=Join-Path $parent ('.'+[IO.Path]::GetFileName($file.dest)+'.dim-restore-stage')
+  Need (-not (Test-Path -LiteralPath $tmp)) 'BIN_STAGED_RESTORE_COLLISION'
+  $data=[IO.File]::ReadAllBytes($file.src)
+  $stream=[IO.FileStream]::new($tmp,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+  try{$stream.Write($data,0,$data.Length);$stream.Flush($true)}finally{$stream.Dispose()}
+  Need ((Sha $tmp) -eq $file.sha) 'BIN_RESTORE_TEMP_SHA_FAILED'
+  [IO.File]::Move($tmp,$file.dest,$false)
+  Need ((Sha $file.dest) -eq $file.sha) 'BIN_RESTORATION_SHA_FAILED'
+}
+foreach($file in $restoreBin){
+  Need ((FileIsPlain $file.dest) -and (Sha $file.dest) -eq $file.sha) 'BIN_RESTORE_POST_SHA_FAILED'
+}
+# Cleanup only snapshot-attested items, never arbitrary bin/user files.
+foreach($file in $restoreBin){Remove-Item -LiteralPath $file.src -Force -ErrorAction Stop}
+$snapshotRoot=Join-Path $slot 'bin'
+if(Test-Path -LiteralPath $snapshotRoot -PathType Container){
+  foreach($folder in @(Get-ChildItem -LiteralPath $snapshotRoot -Directory -Recurse -Force |
+                      Sort-Object { $_.FullName.Length } -Descending)){
+    Need (@(Get-ChildItem -LiteralPath $folder.FullName -Force).Count -eq 0) 'BIN_SNAPSHOT_FOLDER_NOT_EMPTY'
+    Remove-Item -LiteralPath $folder.FullName -ErrorAction Stop
+  }
+  Need (@(Get-ChildItem -LiteralPath $snapshotRoot -Force).Count -eq 0) 'BIN_SNAPSHOT_UNKNOWN_CONTENT'
+  Remove-Item -LiteralPath $snapshotRoot -ErrorAction Stop
+}
+
+# Acknowledge the provider snapshot after exact user bin restoration.
 Remove-Item -LiteralPath $backup -Force -ErrorAction Stop
 Remove-Item -LiteralPath $record -Force -ErrorAction Stop
 Need (@(Get-ChildItem -LiteralPath $slot -Force).Count -eq 0) 'UNKNOWN_STAGE_CONTENT_PRESERVED'
 Remove-Item -LiteralPath $slot -ErrorAction Stop
 Write-Output ('PASS_LEGACY_151_PROVIDER_RESTORED_SHA='+$m.providerSha256)
+Write-Output ('PASS_LEGACY_151_USER_BIN_RESTORED_COUNT='+$restoreBin.Count)
