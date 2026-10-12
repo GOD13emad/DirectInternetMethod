@@ -432,13 +432,32 @@ internal static class Program
                 // Keep one pending record until the verified file can be removed.
                 var stage = doc.RootElement.GetProperty("installer").GetString() ?? "";
                 var expectedSha = doc.RootElement.GetProperty("sha256").GetString() ?? "";
+                // v1.5.1's official privileged updater used a versioned EXE name,
+                // while v1.5.2 uses one fixed owned update-stage.exe slot.  Accept
+                // ONLY these two exact, non-symlink paths.  A legacy name must
+                // match the pending target version AND the original release tag.
+                // Never accept an arbitrary path in the pending JSON, even when
+                // that file happens to have the same checksum.
+                var versionText = target.ToString(3);
+                var oldOfficialName = "DirectInternetMethod_" + versionText + "_Windows_Setup.exe";
+                var oldOfficialPath = Path.Combine(UpdatesDir, oldOfficialName);
+                var tag = doc.RootElement.GetProperty("tag").GetString() ?? "";
+                var canonicalStage = Path.GetFullPath(stage);
+                var fixedOwnedStage = canonicalStage.Equals(Path.GetFullPath(OwnedUpdateInstallerPath),
+                    StringComparison.OrdinalIgnoreCase);
+                var pinnedLegacyStage = target >= new Version(1, 5, 2)
+                    && tag.Equals("v" + versionText, StringComparison.OrdinalIgnoreCase)
+                    && canonicalStage.Equals(Path.GetFullPath(oldOfficialPath),
+                        StringComparison.OrdinalIgnoreCase);
                 if (!Path.IsPathFullyQualified(stage) ||
-                    !Path.GetFullPath(stage).Equals(Path.GetFullPath(OwnedUpdateInstallerPath),
-                        StringComparison.OrdinalIgnoreCase) ||
+                    (!fixedOwnedStage && !pinnedLegacyStage) ||
                     expectedSha.Length != 64 || !expectedSha.All(Uri.IsHexDigit))
                     throw new CryptographicException("Foreign staging path or invalid pending checksum.");
                 if (File.Exists(stage))
                 {
+                    if ((File.GetAttributes(stage) & FileAttributes.ReparsePoint) != 0 ||
+                        (File.GetAttributes(UpdatesDir) & FileAttributes.ReparsePoint) != 0)
+                        throw new CryptographicException("Owned updater staging path is a reparse point.");
                     string observed;
                     using (var input = File.OpenRead(stage))
                         observed = Convert.ToHexString(SHA256.HashData(input));
