@@ -3,7 +3,7 @@
   "product": "Direct Internet Method",
   "version": "1.5.2",
   "date": "2026-10-08",
-  "status": "CANDIDATE_PUBLIC_UNSIGNED_PREVIEW3_WITH_HOSTED_INSTALL_ROLLBACK_NOT_FINAL",
+  "status": "PUBLISHED_STABLE_VERIFIED",
   "previousAccepted": {
     "version": "1.5.1",
     "tag": "v1.5.1",
@@ -125,7 +125,7 @@
     "linuxPackage": "PASS_LOCAL_BUILT_ARCHIVE_TAILSCALE_CANDIDATE",
     "linuxContract": "PASS_SOURCE_CONTRACT_V152",
     "protectedCi": "PASS_PR30_SOURCE_WINDOWS_LINUX_38152706915",
-    "publication": "PUBLIC_PREVIEW3_NOT_STABLE",
+    "publication": "PASS_PUBLIC_V152_EXACT_SHA_HOSTED_LIFECYCLES",
     "installedWindows": "PASS_EPHEMERAL_WINDOWS_2025_ONLY_NOT_USER_MACHINE",
     "installedLinux": "PASS_LINUX_EMAD_AND_MMZ_TARGETED_SAFE_ROLLBACK",
     "adultCoverage": "PENDING_V152_VERIFICATION",
@@ -163,8 +163,13 @@
     "linuxXhamsterStrategy": "evidence/LINUX_151_XHAMSTER_NFQWS_STRATEGY_20261006.json",
     "postPublishFinal": "evidence/DIM_151_POST_PUBLISH_FINAL_20261006.json"
   },
-  "exactNextAction": "Controlled new-release unsigned verifier: source CI, rebuild binaries for exact tag commit, native hosted fresh upgrade rollback with new SHA, public release asset SHA+SUMS+download acceptance; owner must separately verify source/third-party redistribution obligations and remaining real web site usability.",
-  "publication": {},
+  "exactNextAction": "Live Emad Windows v1.5.1 requires owner-authorized safe stop and native update; ChatGPT accessibility is unproven on the four tested networks. Release is public; no certificate claim.",
+  "publication": {
+    "tag": "v1.5.2",
+    "tagCommit": "14a3eec378eb75856f6691b7b3edc970507ee61f",
+    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.2",
+    "publishedAt": "2026-10-12T20:25:24Z"
+  },
   "publicUnsignedDistribution": {
     "ownerDecisionDate": "2026-10-11",
     "onePublicLine": true,
