@@ -241,3 +241,159 @@ jobs:
           path: ${{ runner.temp }}/DIRECT_R394_PUBLIC_TAG_VERIFICATION.json
           if-no-files-found: warn
           retention-days: 30
+
+  windows-r468-native-152-to-153:
+    name: windows-r468-genuine-stable-152-to-versioned-153-upgrade-rollback
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/qa/r468-native-152-153-inplace-20261013'
+    runs-on: windows-2025
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout guarded QA code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Checkout exact 1.5.3 candidate product source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: eb6a7bf9a7c6a04cef5a85100e805d0575ef9c9a
+          path: candidate
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Guard exact source/runner and negative preflight
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          if($env:GITHUB_REPOSITORY -ne 'GOD13emad/DirectInternetMethod' -or $env:GITHUB_EVENT_NAME -ne 'workflow_dispatch' -or $env:GITHUB_REF -ne 'refs/heads/qa/r468-native-152-153-inplace-20261013'){throw 'R468_WRONG_GITHUB_AUTHORITY'}
+          if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:RUNNER_OS -ne 'Windows' -or $env:RUNNER_ARCH -ne 'X64'){throw 'R468_NOT_DISPOSABLE_WINDOWS_VM'}
+          if((git rev-parse HEAD).Trim() -ne $env:GITHUB_SHA -or (git -C candidate rev-parse HEAD).Trim() -ne 'eb6a7bf9a7c6a04cef5a85100e805d0575ef9c9a'){throw 'R468_SOURCE_DRIFT'}
+          $qa='tests/R468_NATIVE_152_TO_153_QA.ps1'
+          $t=$null;$e=$null
+          [Management.Automation.Language.Parser]::ParseFile($qa,[ref]$t,[ref]$e)|Out-Null
+          if(@($e).Count){throw 'R468_QA_PARSE_FAILED'}
+          $s=Get-Content $qa -Raw
+          foreach($a in @('PASS_EXACT_SHA_152_TO_153_FIVE_USER_FILES_AND_PROVIDER_RESTORED','restored152OriginalHashes','updaterPendingCleared','networkRestoredExact','userDataAfterRestore','oneUninstallerRecorded')){
+            if(!$s.Contains($a)){throw ('R468_CRITICAL_GUARD_MISSING_'+$a)}
+          }
+          & $qa -StaticOnly
+          if(!$?){throw 'R468_QA_STATIC_PREFLIGHT_FAILED'}
+          Write-Output 'PASS_R468_GITHUB_VM_ONLY_PRESTATE_NO_NETWORK_MUTATION'
+      - name: Verify current Windows source contracts and updater security guards
+        working-directory: candidate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          python -B tests/windows_legacy_151_stage_finalize_contract.py
+          if($LASTEXITCODE -ne 0){throw 'LEGACY_SHA_OWNER_GUARD_REGRESSION'}
+          python -B tests/windows_native_scm_stop_contract.py
+          if($LASTEXITCODE -ne 0){throw 'SCM_STOP_CONTRACT_REGRESSION'}
+      - name: Restore SHA pinned PowerShell 7.6.6 in disposable candidate
+        working-directory: candidate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & ./tests/prepare_powershell_runtime.ps1
+          if($LASTEXITCODE -ne 0){throw 'R468_PWSH_VENDOR_SHA_MISMATCH'}
+      - name: Build exact SHA native Windows v1.5.3 GUI service manifest
+        working-directory: candidate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & ./tests/build_windows_153_payload.ps1 -PreflightOnly
+          if($LASTEXITCODE -ne 0){throw 'R468_PAYLOAD_PREFLIGHT'}
+          & ./tests/build_windows_153_payload.ps1
+          if($LASTEXITCODE -ne 0){throw 'R468_NATIVE_SOURCE_PAYLOAD_BUILD'}
+      - name: Build owned Inno 1.5.3 test installer and pin actual bytes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:GITHUB_WORKSPACE 'candidate'
+          $compiler=Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'
+          if(!(Test-Path $compiler)){
+            $cmd=Get-Command iscc.exe -ErrorAction SilentlyContinue
+            if($cmd){$compiler=$cmd.Source}
+          }
+          if(!(Test-Path $compiler)){
+            choco install innosetup -y --no-progress --limit-output
+            if($LASTEXITCODE -ne 0){throw 'R468_INSTALL_COMPILER_ON_DISPOSABLE_VM_FAILED'}
+            $compiler='C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          }
+          if(!(Test-Path $compiler)){throw 'R468_NATIVE_INNO_COMPILER_MISSING'}
+          $out=Join-Path $env:RUNNER_TEMP 'DIM_R468_CANDIDATE'
+          if(Test-Path $out){throw 'R468_CANDIDATE_ALREADY_EXISTS'}
+          New-Item $out -ItemType Directory -ErrorAction Stop|Out-Null
+          & $compiler '/Qp' ('/O'+$out) '/FDirectInternetMethod_1.5.3_Windows_Setup' (Join-Path $root 'windows\installer\DirectInternetMethod.iss')
+          if($LASTEXITCODE -ne 0){throw 'R468_INNO_COMPILER_EXIT'}
+          $installer=Join-Path $out 'DirectInternetMethod_1.5.3_Windows_Setup.exe'
+          if(!(Test-Path $installer) -or (Get-Item $installer).Length -lt 100000000){throw 'R468_INSTALLER_NOT_COMPLETE'}
+          if((Get-AuthenticodeSignature $installer).Status.ToString() -ne 'NotSigned'){throw 'R468_UNEXPECTED_INSTALLER_SIGNING'}
+          $want=Get-Content (Join-Path $root 'RELEASE.json') -Raw|ConvertFrom-Json
+          if($want.version -ne '1.5.3' -or $want.status -ne 'CANDIDATE_V153_UNPUBLISHED_UNPROVEN'){throw 'R468_WRONG_BUILD_VERSION_OR_PUBLICATION_STATUS'}
+          $gui=(Get-FileHash (Join-Path $root 'windows\app\DirectInternetMethod.exe') -Algorithm SHA256).Hash
+          $svc=(Get-FileHash (Join-Path $root 'windows\app\DirectInternetMethod.Service.exe') -Algorithm SHA256).Hash
+          $manifest=(Get-FileHash (Join-Path $root 'windows\manifest.json') -Algorithm SHA256).Hash
+          if($gui -ne '2C03D574D0912B6F8D218E249756E4342ADFEE4776CDAD17143C96F21EABC12B' -or
+             $svc -ne '4AB8E10DEFEB39E9369691F822E6CC5D74D65D20C20D6087263637B603C8969F' -or
+             $manifest -ne 'F63C5DF53E7A7553C9413850F8A1020F78B05ED52F158CC7EB9B76D5B4D0E513'){
+            throw 'R468_CROSS_HOST_NATIVE_PAYLOAD_SHA_MISMATCH_FAIL_CLOSED'
+          }
+          $m=[ordered]@{
+            schema=1;status='PASS_NATIVE_SOURCE_COMPILE_INNO_QA'
+            source='eb6a7bf9a7c6a04cef5a85100e805d0575ef9c9a'
+            setupSHA=(Get-FileHash $installer -Algorithm SHA256).Hash
+            setupBytes=(Get-Item $installer).Length
+            guiSHA=$gui;serviceSHA=$svc;manifestSHA=$manifest
+            origin='R468_EPHEMERAL_BUILD_ONLY_NOT_PUBLIC_RELEASE';securityPolicyChanged=$false
+          }
+          $receipt=Join-Path $env:RUNNER_TEMP 'DIM_R468_BUILD.json'
+          if(Test-Path $receipt){throw 'R468_RECEIPT_EXISTS_NO_RERUN'}
+          [IO.File]::WriteAllText($receipt,($m|ConvertTo-Json -Depth 6),[Text.UTF8Encoding]::new($false))
+          Write-Output ('R468_NATIVE_SOURCE_INSTALLER_SHA='+$m.setupSHA)
+      - name: Download and hash exact public Stable v1.5.2 setup
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          $dir=Join-Path $env:RUNNER_TEMP 'DIM_R468_BASELINE'
+          if(Test-Path $dir){throw 'R468_BASELINE_COLLISION'}
+          New-Item $dir -ItemType Directory -ErrorAction Stop|Out-Null
+          & gh release download v1.5.2 --repo GOD13emad/DirectInternetMethod --pattern 'DirectInternetMethod_1.5.2_Windows_Setup.exe' --dir $dir
+          if($LASTEXITCODE -ne 0){throw 'R468_PUBLIC_BASELINE_FETCH'}
+          $f=Join-Path $dir 'DirectInternetMethod_1.5.2_Windows_Setup.exe'
+          if((Get-Item $f).Length -ne 157118257 -or (Get-FileHash $f -Algorithm SHA256).Hash -ne 'F94A81CC819E465D6B1000FFDB0B20A7212E39B6F6282ED8A720774148DFC78D'){
+            throw 'R468_PUBLIC_V152_SETUP_SHA_DRIFT'
+          }
+      - name: Genuine 152 to 153 in-place installed lifecycle and exact 152 rollback
+        shell: pwsh
+        timeout-minutes: 31
+        run: |
+          $ErrorActionPreference='Stop'
+          $current=Join-Path $env:RUNNER_TEMP 'DIM_R468_CANDIDATE\DirectInternetMethod_1.5.3_Windows_Setup.exe'
+          $prior=Join-Path $env:RUNNER_TEMP 'DIM_R468_BASELINE\DirectInternetMethod_1.5.2_Windows_Setup.exe'
+          & ./tests/R468_NATIVE_152_TO_153_QA.ps1 -Installer $current -BaselineInstaller $prior
+          if($LASTEXITCODE -ne 0){throw ('R468_EXACT_NATIVE_QA_FAILED_'+$LASTEXITCODE)}
+          $raw=Join-Path $env:RUNNER_TEMP 'DIM_R468_HOSTED\REPORT_R468.json'
+          if(!(Test-Path $raw)){throw 'R468_RAW_VM_RECEIPT_MISSING'}
+          $j=Get-Content $raw -Raw|ConvertFrom-Json
+          if([string]$j.status -ne 'PASS_EXACT_SHA_152_TO_153_FIVE_USER_FILES_AND_PROVIDER_RESTORED' -or @($j.errors).Count -ne 0 -or
+             !$j.updaterPendingCleared -or !$j.oneUninstallerRecorded -or !$j.networkRestoredExact -or
+             !$j.userDataAfterUpgrade -or !$j.userDataAfterUninstall -or !$j.userDataAfterRestore -or
+             !$j.customProviderAfterUpgrade -or !$j.customProviderAfterUninstall -or !$j.customProviderAfterRestore -or
+             !$j.restored152OriginalHashes -or !$j.watchdogDisarmed -or !$j.removedInstalledFiles){
+            throw 'R468_MISSING_REAL_INSTALLATION_ROLLBACK_ACCEPTANCE'
+          }
+          Write-Output ('R468_REAL_NATIVE_LIFECYCLE_PASS RAW_REPORT_SHA256='+(Get-FileHash $raw -Algorithm SHA256).Hash)
+      - name: Preserve real hosted immutable receipts for exact SHA audit
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r468-native-152-153-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/DIM_R468_HOSTED
+            ${{ runner.temp }}/DIM_R468_BUILD.json
+          if-no-files-found: warn
+          retention-days: 30
