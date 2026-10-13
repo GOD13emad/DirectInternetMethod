@@ -29,7 +29,7 @@ RECEIPTS={
   "reportSha256":"182295EC19BA872F5A9B35D72641A862F9EDF254361214049C8937CDDFB293F8"},
  "linuxFreshRootUser":{"runId":38388513538,"workflowCommit":"bdd7e89b83e94c2d044c53da61becfcfbfe12111",
   "artifactName":"dim-r469-protected-guest-38388513538","reportPath":"REPORT_R469.log",
-  "reportSha256":"R469_RAW_SHA_PLACEHOLDER"},
+  "reportSha256":"59ACF3DA53D549D1F898257C6E5B7AC094C5BBB9A0AAAD6185A427ED7793752F"},
  "linuxInPlaceUpgrade":{"runId":38390031680,"workflowCommit":"99d6137fadd60483b5c8b4c8ccfb384a40fe0ece",
   "artifactName":"dim-r471-protected-guest-38390031680","reportPath":"REPORT_R471.log",
   "reportSha256":"39282E4F2ECBBB563B5309AB668846FB464954B0419284EE8C6D403065857DCE"}
@@ -134,8 +134,8 @@ def verify_hosted_report(key,blob):
  else:
   text=blob.decode("utf-8",errors="strict")
   if key=="linuxFreshRootUser":
-   markers=("PASS_R469_DISPOSABLE_UBUNTU_EXACT_SHA_PRECHECK",
-           "PASS_R469_LINUX_PROTECTED_ROOT_METADATA_UID",
+   markers=("PASS_R469_REAL_EXTRACTED_ZIP_6_OF_6",
+           '{"ok":true,"systemBackend":"installed","version":"1.5.3"}',
            "PASS_R469_PROTECTED_BACKEND_EXACT_SOURCE_BYTES",
            "PASS_R469_TRUE_ROOT_AND_USER_INSTALL_CUSTOM_DATA_PRESERVED",
            "PASS_R469_REAL_HOSTED_ROOT_USER_NATIVE_INSTALL_UNINSTALL_NO_DUPLICATES",
