@@ -262,3 +262,118 @@ jobs:
             ${{ runner.temp }}/DIRECT_R472_V153_PUBLIC_TAG_VERIFICATION.json
           if-no-files-found: warn
           retention-days: 30
+  linux-protected-installed-qa-r489:
+    name: linux-r489-true-protected-backend-and-user-install-uninstall
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/qa/r489-v154-exact-draft-20261013'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout isolated QA runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Checkout exact candidate source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: daf1a939c97f38d4ecec1f8144dd754a2d392c99
+          path: candidate
+          persist-credentials: false
+      - name: Refuse any non-ephemeral guest or preinstalled backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$GITHUB_REPOSITORY" = GOD13emad/DirectInternetMethod
+          test "$GITHUB_REF" = refs/heads/qa/r489-v154-exact-draft-20261013
+          test "$(git -C candidate rev-parse HEAD)" = daf1a939c97f38d4ecec1f8144dd754a2d392c99
+          bash -n tests/R489_LINUX_UPGRADE.sh
+          sudo -n true
+          for p in /usr/lib/directinternetmethod /var/lib/directinternetmethod /etc/directinternetmethod.uid /etc/polkit-1/rules.d/49-directinternetmethod.rules /run/directinternetmethod-selective/session.json; do
+            sudo -n test ! -e "$p"
+            sudo -n test ! -L "$p"
+          done
+          sudo -n true
+          echo PASS_R489_DISPOSABLE_UBUNTU_EXACT_SHA_PRECHECK
+      - name: Install distro Python GTK4 Adwaita PolicyKit only on disposable guest
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n apt-get update -qq
+          sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 pkexec nftables desktop-file-utils xdg-user-dirs
+          export PATH="/usr/bin:/bin:$PATH"
+          python3 - <<'PY'
+          import gi
+          gi.require_version("Gtk","4.0")
+          gi.require_version("Adw","1")
+          print("PASS_R489_GUEST_GTK4_ADWAITA_DEPENDENCIES")
+          PY
+      - name: Exact candidate Linux archive and extracted ZIP test
+        shell: bash
+        working-directory: candidate
+        run: |
+          set -euo pipefail
+          export PATH="/usr/bin:/bin:$PATH"
+          python3 -B build_linux_package.py
+          printf '%s  %s\n' "4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7" "delivery/DirectInternetMethod_1.5.4_Linux_x86_64.zip" | sha256sum -c -
+          test "$(stat -c%s delivery/DirectInternetMethod_1.5.4_Linux_x86_64.zip)" = 8270220
+          python3 -B tests/linux_real_extracted_archive_contract.py
+      - name: Verify exact public 1.5.3 and PRIVATE DRAFT 1.5.4 source archives
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$GITHUB_REF" = refs/heads/qa/r489-v154-exact-draft-20261013
+          test "$(git -C candidate rev-parse HEAD)" = daf1a939c97f38d4ecec1f8144dd754a2d392c99
+          gh api repos/GOD13emad/DirectInternetMethod/releases?per_page=100 | python3 -B -c '
+          import json,sys
+          a=json.load(sys.stdin)
+          rs=[r for r in a if r.get("tag_name")=="v1.5.4"]
+          assert len(rs)==1 and rs[0]["draft"] is True
+          assert rs[0]["target_commitish"]=="daf1a939c97f38d4ecec1f8144dd754a2d392c99"
+          expected={"DirectInternetMethod_1.5.4_Linux_x86_64.zip":"sha256:4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7","DirectInternetMethod_1.5.4_Windows_Setup.exe":"sha256:ffb9a2ae19c2e89338ee12ee8da133f5a16dbf4dcf961678c33d77d0c3843133","SHA256SUMS.txt":"sha256:68e70329e8b9dac6b738ce9b90d99a0010030980cd9c17cde45a5199a60692d8"}
+          assets=rs[0]["assets"]
+          assert rs[0]['id']==412071526 and len(assets)==5, 'PRIVATE_RELEASE_ASSET_SET_DRIFT'
+          assert all(sum(i["name"]==n and i["digest"]==v and i["state"]=="uploaded" for i in assets)==1 for n,v in expected.items())
+          print("PASS_R489_DRAFT_METADATA_SHA_ATTESTED")
+          '
+          d="$RUNNER_TEMP/DIM_R489_ASSETS"
+          test ! -e "$d"
+          mkdir -m 0700 "$d"
+          gh release download v1.5.3 --repo GOD13emad/DirectInternetMethod --pattern 'DirectInternetMethod_1.5.3_Linux_x86_64.zip' --dir "$d"
+          gh release download v1.5.4 --repo GOD13emad/DirectInternetMethod --pattern 'DirectInternetMethod_1.5.4_Linux_x86_64.zip' --dir "$d"
+          printf '680343f86abec2d7b69ce807f4ec5b344789b2d6335c51c068bc49f4650dfc05  %s\n' "$d/DirectInternetMethod_1.5.3_Linux_x86_64.zip" | sha256sum -c -
+          printf '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7  %s\n' "$d/DirectInternetMethod_1.5.4_Linux_x86_64.zip" | sha256sum -c -
+          cmp -- "$d/DirectInternetMethod_1.5.4_Linux_x86_64.zip" "$GITHUB_WORKSPACE/candidate/delivery/DirectInternetMethod_1.5.4_Linux_x86_64.zip"
+          echo PASS_R489_EXACT_PRIVATE_GH_LINUX_ARCHIVE_BYTES_AND_PUBLIC_BASELINE
+      - name: Genuine installed Linux v1.5.3 to v1.5.4 root-compatible upgrade and rollback on guest
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/usr/bin:/bin:$PATH"
+          bash tests/R489_LINUX_UPGRADE.sh
+      - name: Require exact raw v1.5.3 to v1.5.4 upgrade and owned-root cleanup proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          f="$RUNNER_TEMP/DIM_R489_HOSTED/REPORT_R489.log"
+          test -f "$f" && test ! -L "$f"
+          grep -Fq 'R489_PUBLIC_V153_ROOT_USER_ACTUAL_INSTALL_PASS' "$f"
+          grep -Fq 'R489_REAL_INSTALLED_V154_STAGED_ROLLBACK_PASS' "$f"
+          grep -Fq 'Protected backend already matches current package; keeping root-owned code unchanged.' "$f"
+          grep -Fq 'Updated Direct Internet Method 1.5.4 in place; user data preserved.' "$f"
+          grep -Fq 'R489_GENUINE_V153_TO_V154_INPLACE_ROOT_UNCHANGED_DATA_PRESERVED' "$f"
+          grep -Fq 'R489_ROOT_USER_NATIVE_UNINSTALL_PRESERVES_DATA' "$f"
+          grep -Fq 'RESULT_CODE=0' "$f"
+          sha256sum "$f"
+          echo 'R489_REAL_NATIVE_EXACT_DRAFT_ARCHIVE_USER_ROOT_DATA_NETWORK_PASS'
+      - name: Always preserve raw protected installation receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r489-protected-guest-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIM_R489_HOSTED
+          if-no-files-found: warn
+          retention-days: 30
