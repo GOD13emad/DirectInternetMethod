@@ -1,10 +1,14 @@
-# v1.5.4 — .NET 10 maintenance CANDIDATE (not published)
+# v1.5.4 — published Stable (13 October 2026)
 
-New versioned Windows GUI/Service .NET 10 LTS and versioned Linux package; official v1.5.3 assets remain unchanged. Exact native upgraded installer and rollback acceptance REQUIRED before publication.
+Official release: https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.4
+.NET 10 LTS Windows WPF GUI and Service, versioned Linux package, one active installation identity.
+Windows SHA256 FFB9A2AE19C2E89338EE12EE8DA133F5A16DBF4DCF961678C33D77D0C3843133; Linux SHA256 4784FCD44ED3D1B40103BCA140B2C0066784F794D07C3AE1F525334766A553C7; six attached public files include SHA256SUMS.txt and ACCEPTANCE_V154.json.
+Tag/main SHA 51009372e3c2d069d7016b97773f35ee5e1e0631, protected GitHub Actions Tag CI 38466646243 PASS; four hosted native Windows/Linux upgrade/install/rollback tests PASS.
+Prior public v1.5.3 assets remain unmodified. Unsigned Windows publisher policy does not waive OS security. External account, region or DNS/TLS filtering limits still apply.
 
 ---
 
-# v1.5.3 — published Stable (13 October 2026)
+# v1.5.3 — previous published Stable (historical, 13 October 2026)
 
 Official release: https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.3
 
