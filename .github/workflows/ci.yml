@@ -262,3 +262,117 @@ jobs:
             ${{ runner.temp }}/DIRECT_R472_V153_PUBLIC_TAG_VERIFICATION.json
           if-no-files-found: warn
           retention-days: 30
+  linux-protected-installed-qa-r491:
+    name: linux-r491-true-protected-backend-and-user-install-uninstall
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/qa/r491-v154-fresh-root-20261013'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout isolated QA runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Checkout exact candidate source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: daf1a939c97f38d4ecec1f8144dd754a2d392c99
+          path: candidate
+          persist-credentials: false
+      - name: Refuse any non-ephemeral guest or preinstalled backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$GITHUB_REPOSITORY" = GOD13emad/DirectInternetMethod
+          test "$GITHUB_REF" = refs/heads/qa/r491-v154-fresh-root-20261013
+          test "$(git -C candidate rev-parse HEAD)" = daf1a939c97f38d4ecec1f8144dd754a2d392c99
+          bash -n tests/R491_LINUX_FRESH_ROOT.sh
+          sudo -n true
+          for p in /usr/lib/directinternetmethod /var/lib/directinternetmethod /etc/directinternetmethod.uid /etc/polkit-1/rules.d/49-directinternetmethod.rules /run/directinternetmethod-selective/session.json; do
+            sudo -n test ! -e "$p"
+            sudo -n test ! -L "$p"
+          done
+          sudo -n true
+          echo PASS_R491_DISPOSABLE_UBUNTU_EXACT_SHA_PRECHECK
+      - name: Install distro Python GTK4 Adwaita PolicyKit only on disposable guest
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n apt-get update -qq
+          sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 pkexec nftables desktop-file-utils xdg-user-dirs
+          export PATH="/usr/bin:/bin:$PATH"
+          python3 - <<'PY'
+          import gi
+          gi.require_version("Gtk","4.0")
+          gi.require_version("Adw","1")
+          print("PASS_R491_GUEST_GTK4_ADWAITA_DEPENDENCIES")
+          PY
+      - name: Exact candidate Linux archive and extracted ZIP test
+        shell: bash
+        working-directory: candidate
+        run: |
+          set -euo pipefail
+          export PATH="/usr/bin:/bin:$PATH"
+          python3 -B build_linux_package.py
+          printf '%s  %s\n' "4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7" "delivery/DirectInternetMethod_1.5.4_Linux_x86_64.zip" | sha256sum -c -
+          test "$(stat -c%s delivery/DirectInternetMethod_1.5.4_Linux_x86_64.zip)" = 8270220
+          python3 -B tests/linux_real_extracted_archive_contract.py
+      - name: Download and independently compare exact private v1.5.4 Linux release ZIP
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: candidate
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/qa/r491-v154-fresh-root-20261013
+          test "$(git rev-parse HEAD)" = daf1a939c97f38d4ecec1f8144dd754a2d392c99
+          meta="$(gh api repos/GOD13emad/DirectInternetMethod/releases/412071526)"
+          printf '%s' "$meta" | python3 -B -c '
+          import json,sys
+          r=json.load(sys.stdin)
+          assert r["id"]==412071526 and r["draft"] is True
+          assert r["tag_name"]=="v1.5.4" and r["target_commitish"]=="daf1a939c97f38d4ecec1f8144dd754a2d392c99"
+          assets=[a for a in r["assets"] if a["name"]=="DirectInternetMethod_1.5.4_Linux_x86_64.zip"]
+          assert len(assets)==1 and assets[0]["state"]=="uploaded" and assets[0]["digest"]=="sha256:4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7"
+          '
+          dir="$RUNNER_TEMP/R491_EXACT_RELEASE_ZIP"
+          test ! -e "$dir"
+          mkdir -m 0700 "$dir"
+          gh release download v1.5.4 --repo GOD13emad/DirectInternetMethod --pattern 'DirectInternetMethod_1.5.4_Linux_x86_64.zip' --dir "$dir"
+          archive="$dir/DirectInternetMethod_1.5.4_Linux_x86_64.zip"
+          test "$(stat -c%s "$archive")" = 8270220
+          printf '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7  %s\n' "$archive" | sha256sum -c -
+          cmp "$archive" delivery/DirectInternetMethod_1.5.4_Linux_x86_64.zip
+          echo PASS_R491_EXACT_PRIVATE_DRAFT_ZIP_AND_SOURCE_MATCH
+      - name: Genuine root-owned protected backend and user install/uninstall on guest
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/usr/bin:/bin:$PATH"
+          bash tests/R491_LINUX_FRESH_ROOT.sh
+      - name: Verify actual root-owned lifecycle raw receipt before acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          f="$RUNNER_TEMP/DIM_R491_HOSTED/REPORT_R491.log"
+          test -f "$f" && test ! -L "$f"
+          for marker in \
+            PASS_R491_REAL_EXTRACTED_ZIP_6_OF_6 \
+            PASS_R491_PROTECTED_BACKEND_EXACT_SOURCE_BYTES \
+            PASS_R491_TRUE_ROOT_AND_USER_INSTALL_CUSTOM_DATA_PRESERVED \
+            PASS_R491_REAL_HOSTED_ROOT_USER_NATIVE_INSTALL_UNINSTALL_NO_DUPLICATES \
+            R491_GUEST_SYSTEM_BACKEND_REMOVED \
+            RESULT_CODE=0; do
+            grep -Fq "$marker" "$f"
+          done
+          sha256sum "$f"
+          echo PASS_R491_EXACT_PRIVATE_ZIP_NATIVE_ROOT_USER_UNINSTALL_GUEST
+      - name: Always preserve raw protected installation receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r491-protected-guest-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIM_R491_HOSTED
+          if-no-files-found: warn
+          retention-days: 30
