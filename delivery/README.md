@@ -1,3 +1,7 @@
+# v1.5.3 BUILD CANDIDATE (UNRELEASED)
+
+Artifacts built from this branch are QA-only until separately versioned and SHA-attested hosted Windows/Linux installed acceptance. Current public Stable remains v1.5.2; official public checksums belong to that Release, never to local candidates.
+
 # Delivery authority: Direct Internet Method
 
 Current application release: `v1.5.2` — public Stable, published 2026-10-12.

@@ -88,17 +88,17 @@ jobs:
           import hashlib,json,pathlib,zipfile
           recorded=json.loads(pathlib.Path("RELEASE.json").read_text(encoding="utf-8"))
           old=recorded["platforms"]["linux"]
-          # RELEASE.json is the exact OLD public Preview3 artifact record;
-          # it must not be mistaken for this unpromoted new source candidate.
-          assert old["sha256"].upper()=="0218BEBD0DC8F88670374FF0E12A61D45229A03092C606678C5C00FD81DC2C9E"
-          assert old["artifactSourceCommit"]=="3ead24911ca583932ed8fbcb5820b8a25b20303f"
+          # RELEASE.json pins the R467 unpublished new candidate artifact;
+          # a local build alone is NOT a public installed acceptance or permission to publish.
+          assert old["sha256"].upper()=="886EABB07925607ED2D12D6082F63096EC744E48EF6DA20428A444AEF05353A3"
+          assert recorded["version"]=="1.5.3" and recorded["status"]=="CANDIDATE_V153_UNPUBLISHED_UNPROVEN"
           p=pathlib.Path(old["artifact"])
           assert p.is_file(), "NEW_CANDIDATE_ARCHIVE_MISSING"
           actual=hashlib.sha256(p.read_bytes()).hexdigest().upper()
-          expected="53C9FCADDBE96CEC9F63505AB20992479C422F3AB9A9E2379898F5A80BF76692"
+          expected="886EABB07925607ED2D12D6082F63096EC744E48EF6DA20428A444AEF05353A3"
           assert actual==expected, f"NEW_LINUX_CANDIDATE_SHA_MISMATCH {actual} != {expected}"
-          assert p.stat().st_size==8273837, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
-          assert actual!=old["sha256"].upper(), "OLD_PUBLIC_ARTIFACT_MISLABELED_AS_NEW"
+          assert p.stat().st_size==8274074, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
+          assert actual==old["sha256"].upper(), "R467_CANDIDATE_SOURCE_DIGEST_MISMATCH"
           with zipfile.ZipFile(p) as z:
             assert z.testzip() is None and len(z.namelist())==24
             meta_name=next(x for x in z.namelist() if x.endswith("PACKAGE_MANIFEST.json"))
@@ -109,7 +109,7 @@ jobs:
               data=z.read(prefix+row["file"])
               assert len(data)==row["bytes"]
               assert hashlib.sha256(data).hexdigest().upper()==row["sha256"]
-          print("PASS EXACT NEW 22-FILE LINUX UPDATE CANDIDATE, OLD PUBLIC PREVIEW UNCHANGED", actual)
+          print("PASS R467 VERSIONED NEW LINUX CANDIDATE, V152 PUBLIC HISTORICAL UNCHANGED", actual)
           PY
       - name: Validate shell syntax inside built archive
         shell: bash

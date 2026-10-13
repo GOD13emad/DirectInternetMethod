@@ -135,7 +135,7 @@ def source_files(root: pathlib.Path) -> dict:
     """
     guard(root.is_absolute() and root.is_dir() and not root.is_symlink() and
           not root.parent.is_symlink(), "SOURCE_PACKAGE_INVALID")
-    archive_layout = root.name == "DirectInternetMethod_1.5.2_Linux_x86_64"
+    archive_layout = root.name == "DirectInternetMethod_1.5.3_Linux_x86_64"
     source_layout = root.name == "linux"
     guard(archive_layout or source_layout, "SOURCE_PACKAGE_LAYOUT_NOT_LINUX_OR_EXTRACTED_ZIP")
     if archive_layout:
@@ -150,7 +150,7 @@ def source_files(root: pathlib.Path) -> dict:
             raise RuntimeError("EXTRACTED_PACKAGE_MANIFEST_INVALID_JSON") from ex
         guard(isinstance(package_doc, dict) and package_doc.get("schema") == 1 and
               package_doc.get("product") == "Direct Internet Method" and
-              package_doc.get("version") == "1.5.2" and
+              package_doc.get("version") == "1.5.3" and
               package_doc.get("platform") == "linux-x86_64" and
               isinstance(package_doc.get("files"), list) and
               len(package_doc["files"]) == 22, "EXTRACTED_PACKAGE_IDENTITY_WRONG")
@@ -275,7 +275,7 @@ def stage(src: pathlib.Path):
     try:
         (pending / "old").mkdir(mode=0o700)
         manifest = {
-            "schema": 1, "version": "1.5.2",
+            "schema": 1, "version": "1.5.3",
             "managed": {
                 rel: {"sha": row["sha"], "mode": row["mode"]}
                 for rel, row in payload.items()

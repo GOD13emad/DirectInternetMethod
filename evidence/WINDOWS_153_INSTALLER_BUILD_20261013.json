@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "version": "1.5.3",
+  "path": "delivery/DirectInternetMethod_1.5.3_Windows_Setup.exe",
+  "bytes": 157138440,
+  "sha256": "B517EA79C8949E960897CE814591F7C1518FDEA45E4419A891B64469E879B6FF",
+  "authenticode": "NotSigned",
+  "guiSha256": "2C03D574D0912B6F8D218E249756E4342ADFEE4776CDAD17143C96F21EABC12B",
+  "serviceSha256": "4AB8E10DEFEB39E9369691F822E6CC5D74D65D20C20D6087263637B603C8969F",
+  "manifestSha256": "F63C5DF53E7A7553C9413850F8A1020F78B05ED52F158CC7EB9B76D5B4D0E513",
+  "buildLock": "exclusive-shared-windows-152",
+  "outputExclusiveOpen": "PASS",
+  "outputExclusiveWaitMs": 250,
+  "outputStableSamples": [
+    157138440,
+    157138440,
+    157138440
+  ],
+  "built": "2026-10-13T13:57:17.0896443+03:30"
+}

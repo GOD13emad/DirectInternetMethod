@@ -1,3 +1,13 @@
+# v1.5.3 — UNPUBLISHED VERSIONED CANDIDATE
+
+- Includes PR45 source-only legacy v1.5.1 updater-stage cleanup, now rebuilt as a versioned candidate.
+- Preserve one Windows AppId, user settings/custom Router Gateway provider and no duplicate installed version; all require genuine new-asset Windows/Linux installed QA.
+- Linux may keep a byte-identical protected 1.5.2 backend, fresh install uses 1.5.3. Native backup/rollback still mandatory for any privileged change.
+- Public v1.5.2 assets are immutable; the publisher does not require code signing or weakening Windows security settings.
+- No publication before exact SHA and upgrade/rollback acceptance.
+
+---
+
 # v1.5.2 — Stable (published 2026-10-12)
 
 - Fix Linux fresh install under umask 077. Explicitly set root-owned nonsecret parent directories to mode 0755 so user-level backend verification can traverse them; files stay root-owned.

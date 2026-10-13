@@ -91,7 +91,7 @@ def metadata(home, source):
     app = home / ".local/share/DirectInternetMethod"
     manifest = json.loads((home / ".local/state/DirectInternetMethod/update-pending/manifest.json").read_text())
     new = {
-        "schema": 2, "version": "1.5.2",
+        "schema": 2, "version": "1.5.3",
         "managedProviderSha256": manifest["providerSha"],
         "managedCodeSha256": {k:v["sha"] for k,v in manifest["managed"].items()
                               if k != tx.PROVIDERS},

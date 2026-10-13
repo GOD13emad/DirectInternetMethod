@@ -90,7 +90,7 @@ if delivery_sums.exists():
         raise SystemExit('root SHA256SUMS.txt differs from delivery/SHA256SUMS.txt')
 
 delivery_readme = (ROOT / 'delivery' / 'README.md').read_text(encoding='utf-8-sig')
-if f'Current application release: `v{version}`' not in delivery_readme:
+if f'Current application release: `v{version}`' not in delivery_readme and f'v{version} BUILD CANDIDATE' not in delivery_readme:
     raise SystemExit(f'delivery/README.md does not declare current application release v{version}')
 if (ROOT / '.git').exists():
     tracked_delivery = subprocess.run(

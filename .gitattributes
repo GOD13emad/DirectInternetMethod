@@ -24,4 +24,4 @@ windows/bin/zapret/LICENSE.Cygwin.txt text eol=lf whitespace=-blank-at-eol,-blan
 windows/bin/zapret/LGPL3.Cygwin.txt text eol=lf
 windows/bin/zapret/GPL3.Cygwin.txt text eol=lf
 # The tracked Inno .iss uses original mixed EOL. Preserve exact bytes on Windows checkout.
-windows/installer/DirectInternetMethod.iss -text
+windows/installer/DirectInternetMethod.iss -text whitespace=cr-at-eol
