@@ -418,7 +418,7 @@ with tempfile.TemporaryDirectory(prefix="dim-r421-f415-") as td:
     accepted = run_inline()
     need(accepted.returncode == 0, "F415_ATOMIC_METADATA_WRITE_FAILED:" + accepted.stderr)
     doc = json.loads(metadata_path.read_text(encoding="utf-8"))
-    need(doc["version"] == "1.5.2" and doc["schema"] == 2
+    need(doc["version"] == "1.5.3" and doc["schema"] == 2
          and doc["managedCodeSha256"] == {"direct_internet_method.py": "b" * 64}
          and doc["preservedCustomProviderData"] is True,
          "F415_METADATA_POSTCONDITION_INVALID")
@@ -446,7 +446,7 @@ with tempfile.TemporaryDirectory(prefix="dim-r423-real-sigkill-") as td:
     doc = {
         "schema": 2,
         "product": "Direct Internet Method",
-        "version": "1.5.2",
+        "version": "1.5.3",
         "platform": "linux-x86_64",
         "installedUtc": "2026-10-12T00:00:00Z",
         "networkMutationOnInstall": False,
