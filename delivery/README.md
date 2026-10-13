@@ -1,6 +1,14 @@
-# v1.5.4 BUILD CANDIDATE (NOT YET PUBLIC)
-Future Windows and Linux packages: DirectInternetMethod_1.5.4_Windows_Setup.exe and DirectInternetMethod_1.5.4_Linux_x86_64.zip. Official public Stable remains v1.5.3 until publication.
+# Current application release: `v1.5.4` — official public Stable
 
+GitHub official assets: https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.4 .
+Windows `DirectInternetMethod_1.5.4_Windows_Setup.exe` SHA256 FFB9A2AE19C2E89338EE12EE8DA133F5A16DBF4DCF961678C33D77D0C3843133.
+Linux `DirectInternetMethod_1.5.4_Linux_x86_64.zip` SHA256 4784FCD44ED3D1B40103BCA140B2C0066784F794D07C3AE1F525334766A553C7.
+SHA256SUMS.txt SHA256 68E70329E8B9DAC6B738CE9B90D99A0010030980CD9C17CDE45A5199A60692D8.
+The remaining source/builder notes below are HISTORICAL and their old Candidate/UNRELEASED descriptions do NOT override this current published version.
+
+---
+
+## Historical build records — superseded publication status
 # v1.5.3 BUILD CANDIDATE (UNRELEASED)
 
 Artifacts built from this branch are QA-only until separately versioned and SHA-attested hosted Windows/Linux installed acceptance. Current public Stable remains v1.5.2; official public checksums belong to that Release, never to local candidates.
