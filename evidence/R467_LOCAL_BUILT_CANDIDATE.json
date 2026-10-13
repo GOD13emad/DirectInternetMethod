@@ -1,0 +1,35 @@
+{
+  "status": "BUILT_SHA_ATTESTED_LOCAL_HOSTED_GATES_OPEN",
+  "revision": "R467",
+  "date": "2026-10-13T10:29:51.644832+00:00",
+  "sourceBase": "7831663f765b85aa81a92e6a8b14de5d2c8f8abc",
+  "version": "1.5.3",
+  "sha256Sums": "98B9AB15EA2894396CC8336BC0871C40388799E8EB211C6BA92437E28DB29331",
+  "artifacts": {
+    "delivery/DirectInternetMethod_1.5.3_Windows_Setup.exe": {
+      "sha256": "B517EA79C8949E960897CE814591F7C1518FDEA45E4419A891B64469E879B6FF",
+      "bytes": 157138440
+    },
+    "delivery/DirectInternetMethod_1.5.3_Linux_x86_64.zip": {
+      "sha256": "680343F86ABEC2D7B69CE807F4EC5B344789B2D6335C51C068BC49F4650DFC05",
+      "bytes": 8274083
+    },
+    "windows/app/DirectInternetMethod.exe": {
+      "sha256": "2C03D574D0912B6F8D218E249756E4342ADFEE4776CDAD17143C96F21EABC12B",
+      "bytes": 161832008
+    },
+    "windows/app/DirectInternetMethod.Service.exe": {
+      "sha256": "4AB8E10DEFEB39E9369691F822E6CC5D74D65D20C20D6087263637B603C8969F",
+      "bytes": 67592909
+    },
+    "windows/manifest.json": {
+      "sha256": "F63C5DF53E7A7553C9413850F8A1020F78B05ED52F158CC7EB9B76D5B4D0E513",
+      "bytes": 198827
+    }
+  },
+  "releasePublished": false,
+  "publicPreviousVersion": "v1.5.2",
+  "hostedNativeInstalled": "UNPROVEN",
+  "networkMutation": false,
+  "versionedTransactionHotfix": "PENDING_CURRENT_VERSION_GUARD_1_5_3_FIXED_BY_R467_TX_REVISION"
+}

@@ -227,7 +227,7 @@ check("draft_release_negative_fixtures_present",
 check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.5.2")
+check("manifest_version", manifest.get("version")=="1.5.3")
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)

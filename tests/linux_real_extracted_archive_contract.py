@@ -19,9 +19,9 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 ARCHIVE = (
     pathlib.Path(sys.argv[1]).resolve()
     if len(sys.argv) == 2
-    else ROOT / "delivery/DirectInternetMethod_1.5.2_Linux_x86_64.zip"
+    else ROOT / "delivery/DirectInternetMethod_1.5.3_Linux_x86_64.zip"
 )
-PACKAGE = "DirectInternetMethod_1.5.2_Linux_x86_64"
+PACKAGE = "DirectInternetMethod_1.5.3_Linux_x86_64"
 
 
 def need(ok, reason):
@@ -61,7 +61,7 @@ def metadata(app, home):
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     data = {
         "schema": 2,
-        "version": "1.5.2",
+        "version": "1.5.3",
         "managedProviderSha256": manifest["providerSha"],
         "managedCodeSha256": {
             key: val["sha"] for key, val in manifest["managed"].items()

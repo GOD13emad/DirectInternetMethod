@@ -91,7 +91,7 @@ def metadata(home, source):
     app = home / ".local/share/DirectInternetMethod"
     manifest = json.loads((home / ".local/state/DirectInternetMethod/update-pending/manifest.json").read_text())
     new = {
-        "schema": 2, "version": "1.5.2",
+        "schema": 2, "version": "1.5.3",
         "managedProviderSha256": manifest["providerSha"],
         "managedCodeSha256": {k:v["sha"] for k,v in manifest["managed"].items()
                               if k != tx.PROVIDERS},
@@ -147,6 +147,25 @@ with tempfile.TemporaryDirectory(prefix="dim-r401-sourceonly-") as temp:
     calls(home3, src, "--rollback")
     need((app3 / "direct_internet_method.py").read_bytes() == old3["direct_internet_method.py"], "REENTRY_CHANGED_BASELINE")
     unchanged_data(app3, user3)
+    tests += 1
+    # R467 negative regression: an interrupted transaction with a stale
+    # version must fail before ANY managed code or personal settings mutation.
+    calls(home3, src, "--stage")
+    pending_manifest = home3 / ".local/state/DirectInternetMethod/update-pending/manifest.json"
+    pending_original = pending_manifest.read_bytes()
+    corrupted = json.loads(pending_original)
+    need(corrupted["version"] == "1.5.3", "STAGE_NOT_VERSIONED_153")
+    corrupted["version"] = "1.5.2"
+    pending_manifest.write_text(json.dumps(corrupted), encoding="utf8")
+    refused = calls(home3, src, "--apply", False)
+    need("PENDING_TRANSACTION_VERSION_WRONG" in refused.stderr,
+         "STALE_PENDING_VERSION_WAS_NOT_REJECTED")
+    need((app3 / "direct_internet_method.py").read_bytes() == old3["direct_internet_method.py"],
+         "STALE_PENDING_APPLIED_MANAGED_CODE")
+    unchanged_data(app3, user3)
+    pending_manifest.write_bytes(pending_original)
+    calls(home3, src, "--rollback")
+    need(not pending_manifest.exists(), "STALE_PENDING_ROLLBACK_LEFT_SLOT")
     tests += 1
     # Negative: concurrent changes to managed code refuse overwrite.
     calls(home3, src, "--stage")
@@ -399,7 +418,7 @@ with tempfile.TemporaryDirectory(prefix="dim-r421-f415-") as td:
     accepted = run_inline()
     need(accepted.returncode == 0, "F415_ATOMIC_METADATA_WRITE_FAILED:" + accepted.stderr)
     doc = json.loads(metadata_path.read_text(encoding="utf-8"))
-    need(doc["version"] == "1.5.2" and doc["schema"] == 2
+    need(doc["version"] == "1.5.3" and doc["schema"] == 2
          and doc["managedCodeSha256"] == {"direct_internet_method.py": "b" * 64}
          and doc["preservedCustomProviderData"] is True,
          "F415_METADATA_POSTCONDITION_INVALID")
@@ -427,7 +446,7 @@ with tempfile.TemporaryDirectory(prefix="dim-r423-real-sigkill-") as td:
     doc = {
         "schema": 2,
         "product": "Direct Internet Method",
-        "version": "1.5.2",
+        "version": "1.5.3",
         "platform": "linux-x86_64",
         "installedUtc": "2026-10-12T00:00:00Z",
         "networkMutationOnInstall": False,

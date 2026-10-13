@@ -11,8 +11,9 @@ import json,runpy
 ROOT=Path(__file__).resolve().parents[1]
 audit=runpy.run_path(str(ROOT/"tests/release_metadata_audit.py"))
 check=audit["assert_unsigned_publication_acceptance"]
-meta=json.loads((ROOT/"RELEASE.json").read_text(encoding="utf-8-sig"))
+meta=json.loads((ROOT/"tests/fixtures/RELEASE_152_SOURCE_AUTHORITY.json").read_text(encoding="utf-8-sig"))
 assert meta["version"]=="1.5.2"
+assert meta["status"]=="PUBLISHED_STABLE_VERIFIED"
 assert meta["publicUnsignedDistribution"]["codeSigningCertificateRequired"] is False
 assert meta["publicUnsignedDistribution"]["onePublicLine"] is True
 assert "SIGNING" not in meta["status"]

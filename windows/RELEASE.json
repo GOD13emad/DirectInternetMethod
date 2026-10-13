@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.5.2",
-  "status": "PUBLISHED_STABLE_VERIFIED",
-  "date": "2026-10-08",
+  "version": "1.5.3",
+  "status": "CANDIDATE_V153_UNPUBLISHED",
+  "date": "2026-10-13",
   "previousAccepted": {
-    "version": "1.5.1",
-    "tag": "v1.5.1",
-    "tagCommit": "a79dfb8216c603d6e29236233e8d250b490a96cc",
+    "version": "1.5.2",
+    "tag": "v1.5.2",
+    "tagCommit": "14a3eec378eb75856f6691b7b3edc970507ee61f",
     "status": "PUBLISHED_HISTORICAL_UNCHANGED"
   },
   "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + accepted zapret/winws/WinDivert multiprotocol engine with Targeted/All Sites scope control",
@@ -111,20 +111,20 @@
     "bundledPowerShell": "7.6.6"
   },
   "acceptance": {
-    "windowsContract": "PENDING_V152_REVERIFICATION",
-    "serviceSelftest": "PENDING_V152_REVERIFICATION",
-    "guiCompile": "PENDING_V152_REVERIFICATION",
-    "startupLayout": "PENDING_V152_REVERIFICATION",
-    "targetHostlistContract": "PENDING_V152_REVERIFICATION",
-    "siteCoverageLive": "PENDING_V152_REVERIFICATION",
-    "publication": "PASS_PUBLIC_REDOWNLOAD_VERIFIED",
-    "strategyProfiles": "PENDING_V152_REVERIFICATION",
-    "allSitesScope": "PENDING_V152_REVERIFICATION",
-    "securityRejectedComponentGate": "PENDING_V152_REVERIFICATION",
-    "artifactIdentity": "PENDING_V152_REVERIFICATION",
-    "windowsInstalledLive": "PENDING_V152_REVERIFICATION",
-    "startupHealth": "PENDING_V152_REVERIFICATION",
-    "adultCoverage": "PENDING_V152_REVERIFICATION",
+    "windowsContract": "PENDING_V153_REVERIFICATION",
+    "serviceSelftest": "PENDING_V153_REVERIFICATION",
+    "guiCompile": "PENDING_V153_REVERIFICATION",
+    "startupLayout": "PENDING_V153_REVERIFICATION",
+    "targetHostlistContract": "PENDING_V153_REVERIFICATION",
+    "siteCoverageLive": "PENDING_V153_REVERIFICATION",
+    "publication": "NOT_PUBLISHED",
+    "strategyProfiles": "PENDING_V153_REVERIFICATION",
+    "allSitesScope": "PENDING_V153_REVERIFICATION",
+    "securityRejectedComponentGate": "PENDING_V153_REVERIFICATION",
+    "artifactIdentity": "PENDING_V153_REVERIFICATION",
+    "windowsInstalledLive": "PENDING_V153_REVERIFICATION",
+    "startupHealth": "PENDING_V153_REVERIFICATION",
+    "adultCoverage": "PENDING_V153_REVERIFICATION",
     "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED"
   },
   "validationBoundary": [
@@ -137,12 +137,12 @@
     "Targeted remains the default scope; All Sites is explicit opt-in.",
     "Windows installer remains not Authenticode-signed."
   ],
-  "exactNextAction": "Live Emad Windows v1.5.1 requires owner-authorized safe stop and native update; ChatGPT accessibility is unproven on the four tested networks. Release is public; no certificate claim.",
+  "exactNextAction": "1.5.3 is QA-only pending exact host acceptance; public Stable remains 1.5.2.",
   "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
   "publication": {
-    "tag": "v1.5.2",
-    "tagCommit": "14a3eec378eb75856f6691b7b3edc970507ee61f",
-    "releaseUrl": "https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.2",
-    "publishedAt": "2026-10-12T20:25:24Z"
+    "tag": "v1.5.3",
+    "tagCommit": null,
+    "releaseUrl": null,
+    "publishedAt": null
   }
 }
