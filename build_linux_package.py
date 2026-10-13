@@ -2,10 +2,10 @@
 from __future__ import annotations
 import hashlib,json,pathlib,zipfile,tempfile,os
 R=pathlib.Path(__file__).resolve().parent
-OUT=R/"delivery"/"DirectInternetMethod_1.5.3_Linux_x86_64.zip"
-ROOT="DirectInternetMethod_1.5.3_Linux_x86_64"
+OUT=R/"delivery"/"DirectInternetMethod_1.5.4_Linux_x86_64.zip"
+ROOT="DirectInternetMethod_1.5.4_Linux_x86_64"
 FILES=[
- ("docs/README_PACKAGE_153.md","README.md"),
+ ("docs/README_PACKAGE_154.md","README.md"),
  ("linux/install.sh","install.sh"),
  ("linux/uninstall.sh","uninstall.sh"),
  ("linux/system/install_system.sh","system/install_system.sh"),
@@ -36,15 +36,15 @@ def payload_bytes(src:str,dst:str)->bytes:
   data=data.replace(b"\r\n",b"\n").replace(b"\r",b"\n")
  return data
 # Frozen originally shipped documentation; root README may describe current publication.
-if sha_bytes(payload_bytes("docs/README_PACKAGE_153.md","README.md"))!="DA81AB48E9E8BAC6EB70F75B64D0DF207993823B01926ED083A20EA3AB975415":
- raise SystemExit("V153_FROZEN_PACKAGE_README_SHA_CHANGED")
+if sha_bytes(payload_bytes("docs/README_PACKAGE_154.md","README.md"))!="4E17DB910024D0D5841857928C45AD0EC2C5D65D30B3311FBE1864F1885AC84F":
+ raise SystemExit("V154_PACKAGE_README_SHA_CHANGED")
 rows=[]
 for src,dst in FILES:
  p=R/src
  if not p.is_file(): raise SystemExit("MISSING:"+src)
  data=payload_bytes(src,dst)
  rows.append({"file":dst,"bytes":len(data),"sha256":sha_bytes(data)})
-manifest={"schema":1,"product":"Direct Internet Method","version":"1.5.3","platform":"linux-x86_64","files":rows}
+manifest={"schema":1,"product":"Direct Internet Method","version":"1.5.4","platform":"linux-x86_64","files":rows}
 OUT.parent.mkdir(parents=True,exist_ok=True)
 fd,tmp_name=tempfile.mkstemp(prefix="dim-build-",suffix=".zip",dir=OUT.parent)
 os.close(fd)

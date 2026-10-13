@@ -90,14 +90,14 @@ jobs:
           old=recorded["platforms"]["linux"]
           # RELEASE.json pins the R467 unpublished new candidate artifact;
           # a local build alone is NOT a public installed acceptance or permission to publish.
-          assert old["sha256"].upper()=="680343F86ABEC2D7B69CE807F4EC5B344789B2D6335C51C068BC49F4650DFC05"
-          assert recorded["version"]=="1.5.3" and recorded["status"]=="CANDIDATE_V153_UNPUBLISHED_UNPROVEN"
+          assert old["sha256"].upper()=="4784FCD44ED3D1B40103BCA140B2C0066784F794D07C3AE1F525334766A553C7"
+          assert recorded["version"]=="1.5.4" and recorded["status"]=="CANDIDATE_V154_UNPUBLISHED_UNPROVEN"
           p=pathlib.Path(old["artifact"])
           assert p.is_file(), "NEW_CANDIDATE_ARCHIVE_MISSING"
           actual=hashlib.sha256(p.read_bytes()).hexdigest().upper()
-          expected="680343F86ABEC2D7B69CE807F4EC5B344789B2D6335C51C068BC49F4650DFC05"
+          expected="4784FCD44ED3D1B40103BCA140B2C0066784F794D07C3AE1F525334766A553C7"
           assert actual==expected, f"NEW_LINUX_CANDIDATE_SHA_MISMATCH {actual} != {expected}"
-          assert p.stat().st_size==8274083, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
+          assert p.stat().st_size==8270220, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
           assert actual==old["sha256"].upper(), "R467_CANDIDATE_SOURCE_DIGEST_MISMATCH"
           with zipfile.ZipFile(p) as z:
             assert z.testzip() is None and len(z.namelist())==24
@@ -109,7 +109,7 @@ jobs:
               data=z.read(prefix+row["file"])
               assert len(data)==row["bytes"]
               assert hashlib.sha256(data).hexdigest().upper()==row["sha256"]
-          print("PASS R467 VERSIONED NEW LINUX CANDIDATE, V152 PUBLIC HISTORICAL UNCHANGED", actual)
+          print("PASS R486 VERSIONED DOTNET10 LINUX CANDIDATE, V152 PUBLIC HISTORICAL UNCHANGED", actual)
           PY
       - name: Validate shell syntax inside built archive
         shell: bash
@@ -117,7 +117,7 @@ jobs:
           set -euo pipefail
           d="$(mktemp -d)"
           trap 'rm -rf "$d"' EXIT
-          unzip -q delivery/DirectInternetMethod_1.5.3_Linux_x86_64.zip -d "$d"
+          unzip -q delivery/DirectInternetMethod_1.5.4_Linux_x86_64.zip -d "$d"
           while IFS= read -r f; do
             if grep -q $'\r' "$f"; then
               echo "CRLF detected in packaged shell: $f" >&2

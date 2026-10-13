@@ -22,7 +22,7 @@ from gi.repository import Gtk, Adw, GLib, Gdk
 from router_gateway import RouterGatewayWindow
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
-VERSION="1.5.3"
+VERSION="1.5.4"
 GLib.set_prgname("DirectInternetMethod")
 GLib.set_application_name("Direct Internet Method")
 try:
@@ -138,7 +138,7 @@ def sync_adult_catalog(force=False):
     last_error=None
     for source_url in ADULT_CATALOG_URLS:
         try:
-            req=urllib.request.Request(source_url,headers={"User-Agent":"DirectInternetMethod/1.5.3"})
+            req=urllib.request.Request(source_url,headers={"User-Agent":"DirectInternetMethod/1.5.4"})
             with urllib.request.urlopen(req,timeout=20) as resp:
                 raw=resp.read(4*1024*1024+1)
             if len(raw)<100000 or len(raw)>4*1024*1024:
@@ -292,7 +292,7 @@ def _coexistence_backend_ready():
                 not helper.is_file() or not meta.is_file()):
             return False
         installed=json.loads(meta.read_text(encoding="utf-8"))
-        return (installed.get("version") in ("1.5.2","1.5.3") and
+        return (installed.get("version") in ("1.5.2","1.5.3","1.5.4") and
                 installed.get("uid")==os.getuid() and
                 hashlib.sha256(helper.read_bytes()).hexdigest()==COEXIST_HELPER_SHA256)
     except Exception:

@@ -1,14 +1,13 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.5.3",
-  "status": "CANDIDATE_V153_UNPUBLISHED",
+  "version": "1.5.4",
+  "status": "CANDIDATE_V154_UNPUBLISHED",
   "date": "2026-10-13",
   "previousAccepted": {
-    "version": "1.5.2",
-    "tag": "v1.5.2",
-    "tagCommit": "14a3eec378eb75856f6691b7b3edc970507ee61f",
-    "status": "PUBLISHED_HISTORICAL_UNCHANGED"
+    "version": "1.5.3",
+    "tag": "v1.5.3",
+    "tagCommit": "581a063836a20ca3c0adb941bfc77146e33d693a"
   },
   "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + accepted zapret/winws/WinDivert multiprotocol engine with Targeted/All Sites scope control",
   "features": {
@@ -111,20 +110,20 @@
     "bundledPowerShell": "7.6.6"
   },
   "acceptance": {
-    "windowsContract": "PENDING_V153_REVERIFICATION",
-    "serviceSelftest": "PENDING_V153_REVERIFICATION",
-    "guiCompile": "PENDING_V153_REVERIFICATION",
-    "startupLayout": "PENDING_V153_REVERIFICATION",
-    "targetHostlistContract": "PENDING_V153_REVERIFICATION",
-    "siteCoverageLive": "PENDING_V153_REVERIFICATION",
+    "windowsContract": "PENDING_V154_REVERIFICATION",
+    "serviceSelftest": "PENDING_V154_REVERIFICATION",
+    "guiCompile": "PENDING_V154_REVERIFICATION",
+    "startupLayout": "PENDING_V154_REVERIFICATION",
+    "targetHostlistContract": "PENDING_V154_REVERIFICATION",
+    "siteCoverageLive": "PENDING_V154_REVERIFICATION",
     "publication": "NOT_PUBLISHED",
-    "strategyProfiles": "PENDING_V153_REVERIFICATION",
-    "allSitesScope": "PENDING_V153_REVERIFICATION",
-    "securityRejectedComponentGate": "PENDING_V153_REVERIFICATION",
-    "artifactIdentity": "PENDING_V153_REVERIFICATION",
-    "windowsInstalledLive": "PENDING_V153_REVERIFICATION",
-    "startupHealth": "PENDING_V153_REVERIFICATION",
-    "adultCoverage": "PENDING_V153_REVERIFICATION",
+    "strategyProfiles": "PENDING_V154_REVERIFICATION",
+    "allSitesScope": "PENDING_V154_REVERIFICATION",
+    "securityRejectedComponentGate": "PENDING_V154_REVERIFICATION",
+    "artifactIdentity": "PENDING_V154_REVERIFICATION",
+    "windowsInstalledLive": "PENDING_V154_REVERIFICATION",
+    "startupHealth": "PENDING_V154_REVERIFICATION",
+    "adultCoverage": "PENDING_V154_REVERIFICATION",
     "gemini": "FAIL_HTTP_403_PREVIOUS_EGRESS_UNCHANGED"
   },
   "validationBoundary": [
@@ -137,10 +136,10 @@
     "Targeted remains the default scope; All Sites is explicit opt-in.",
     "Windows installer remains not Authenticode-signed."
   ],
-  "exactNextAction": "1.5.3 is QA-only pending exact host acceptance; public Stable remains 1.5.2.",
+  "exactNextAction": "Source-only v1.5.4 pending exact SHA native Windows/Linux acceptance; official v1.5.3 unaffected.",
   "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
   "publication": {
-    "tag": "v1.5.3",
+    "tag": "v1.5.4",
     "tagCommit": null,
     "releaseUrl": null,
     "publishedAt": null

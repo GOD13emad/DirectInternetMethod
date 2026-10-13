@@ -21,7 +21,7 @@ def check(name,cond):
     D["checks"][name]=bool(cond)
     if not cond:D["status"]="FAIL"
 
-check("version_153_backend_compatible", 'VERSION="1.5.3"' in ui and '"version":"1.5.3"' in install and '"version":"1.5.3"' in sysinstall and 'd.get("version") in ("1.5.1","1.5.2","1.5.3")' in install)
+check("version_154_backend_compatible", 'VERSION="1.5.4"' in ui and '"version":"1.5.4"' in install and '"version":"1.5.4"' in sysinstall and 'd.get("version") in ("1.5.1","1.5.2","1.5.3","1.5.4")' in install)
 check("no_default_route_mutation", not re.search(r'ip\s+route\s+(add|del|replace).*default|nmcli\s+.*ipv4\.gateway',helper,re.I))
 check("no_unconditional_physical_dns_mutation", "nmcli connection modify" not in helper and
       "resolvectl dns enp" not in helper and "resolvectl dns eth" not in helper and
@@ -150,7 +150,7 @@ check("installed_root_backend_mismatch_triggers_explicit_rollback_and_no_root_ov
       and "rollback_failed_install 22" in install
       and "rollback_failed_install 24" in install
       and "if [ -e /var/lib/directinternetmethod/install.json ]" in install)
-check("linux_hash_compatible_prior_backend_no_repeat_admin", 'd.get("version") in ("1.5.1","1.5.2","1.5.3")' in install and 'sha256sum "$src"' in install and 'if backend_matches_current; then' in install and 'keeping root-owned code unchanged' in install)
+check("linux_hash_compatible_prior_backend_no_repeat_admin", 'd.get("version") in ("1.5.1","1.5.2","1.5.3","1.5.4")' in install and 'sha256sum "$src"' in install and 'if backend_matches_current; then' in install and 'keeping root-owned code unchanged' in install)
 check("linux_install_reports_backend_version_authoritatively", 'protectedBackendVersion' in install and 'protectedBackendByteCompatible' in install and '/var/lib/directinternetmethod/install.json' in install)
 check("linux_lifecycle_acceptance_old_backend_sha_gated", "COMPATIBLE_OLD_BACKEND_HASH_MISMATCH" in (R/"tests"/"linux_installed_152_lifecycle.py").read_text(encoding="utf-8") and "compatibleBackendHashChecks" in (R/"tests"/"linux_installed_152_lifecycle.py").read_text(encoding="utf-8"))
 check("linux_fresh_install_parent_permissions", 'install -d -m 0755 "$ROOT" "$ROOT/runtime" "$ROOT/runtime/usr" "$ROOT/runtime/usr/bin" "$ROOT/licenses"' in sysinstall and 'install -d -m 0755 /var/lib/directinternetmethod' in sysinstall and 'mkdir -p /var/lib/directinternetmethod' not in sysinstall)
