@@ -1,16 +1,21 @@
 # Direct Internet Method
 
-## Next maintenance candidate: v1.5.4 (.NET 10, NOT YET PUBLIC)
+## Current public release: v1.5.4 Stable (.NET 10 LTS)
 
-The accepted public Stable remains v1.5.3 until a NEW versioned release has actual exact-SHA native acceptance.
-Candidate files: `DirectInternetMethod_1.5.4_Windows_Setup.exe` and `DirectInternetMethod_1.5.4_Linux_x86_64.zip`.
-This is a source/QA candidate, NOT a replacement for immutable public v1.5.3.
-No code-signing certificate is required by the publisher; OS security must not be disabled.
+Published 13 October 2026, official release: https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.4 .
+
+Windows: `DirectInternetMethod_1.5.4_Windows_Setup.exe`, SHA256 FFB9A2AE19C2E89338EE12EE8DA133F5A16DBF4DCF961678C33D77D0C3843133.
+Linux: `DirectInternetMethod_1.5.4_Linux_x86_64.zip`, SHA256 4784FCD44ED3D1B40103BCA140B2C0066784F794D07C3AE1F525334766A553C7.
+Published SHA256SUMS.txt SHA 68E70329E8B9DAC6B738CE9B90D99A0010030980CD9C17CDE45A5199A60692D8, with exact ACCEPTANCE_V154.json and third-party corresponding sources.
+
+This is a public Stable, NOT a private draft. Windows WPF and Service use .NET 10 LTS. Publisher signing is not mandatory; users must not disable OS protections.
+Active remote Tailscale/Direct Method host upgrades remain gated by safe managed OFF and verified rollback. Regional HTTP403 cannot universally be fixed by direct DNS/DPI.
+The source-level RELEASE.json historical candidate label is build-time provenance and is NOT current publication authority.
+See docs/PUBLISHED_V154_ASSET_AUTHORITY.md and the official Release for exact checksums and native accepted tests.
 
 ---
 
-
-## Current public release: v1.5.3 Stable
+## Previous public release: v1.5.3 Stable (historical)
 
 **v1.5.3 was published on 13 October 2026.** It is a public stable release, not an unpublished draft.
 
