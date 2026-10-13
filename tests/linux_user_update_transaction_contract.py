@@ -91,7 +91,7 @@ def metadata(home, source):
     app = home / ".local/share/DirectInternetMethod"
     manifest = json.loads((home / ".local/state/DirectInternetMethod/update-pending/manifest.json").read_text())
     new = {
-        "schema": 2, "version": "1.5.3",
+        "schema": 2, "version": "1.5.4",
         "managedProviderSha256": manifest["providerSha"],
         "managedCodeSha256": {k:v["sha"] for k,v in manifest["managed"].items()
                               if k != tx.PROVIDERS},
@@ -154,7 +154,7 @@ with tempfile.TemporaryDirectory(prefix="dim-r401-sourceonly-") as temp:
     pending_manifest = home3 / ".local/state/DirectInternetMethod/update-pending/manifest.json"
     pending_original = pending_manifest.read_bytes()
     corrupted = json.loads(pending_original)
-    need(corrupted["version"] == "1.5.3", "STAGE_NOT_VERSIONED_153")
+    need(corrupted["version"] == "1.5.4", "STAGE_NOT_VERSIONED_154")
     corrupted["version"] = "1.5.2"
     pending_manifest.write_text(json.dumps(corrupted), encoding="utf8")
     refused = calls(home3, src, "--apply", False)
@@ -418,7 +418,7 @@ with tempfile.TemporaryDirectory(prefix="dim-r421-f415-") as td:
     accepted = run_inline()
     need(accepted.returncode == 0, "F415_ATOMIC_METADATA_WRITE_FAILED:" + accepted.stderr)
     doc = json.loads(metadata_path.read_text(encoding="utf-8"))
-    need(doc["version"] == "1.5.3" and doc["schema"] == 2
+    need(doc["version"] == "1.5.4" and doc["schema"] == 2
          and doc["managedCodeSha256"] == {"direct_internet_method.py": "b" * 64}
          and doc["preservedCustomProviderData"] is True,
          "F415_METADATA_POSTCONDITION_INVALID")
@@ -446,7 +446,7 @@ with tempfile.TemporaryDirectory(prefix="dim-r423-real-sigkill-") as td:
     doc = {
         "schema": 2,
         "product": "Direct Internet Method",
-        "version": "1.5.3",
+        "version": "1.5.4",
         "platform": "linux-x86_64",
         "installedUtc": "2026-10-12T00:00:00Z",
         "networkMutationOnInstall": False,

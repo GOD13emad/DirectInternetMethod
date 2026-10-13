@@ -1,5 +1,15 @@
 # Direct Internet Method
 
+## Next maintenance candidate: v1.5.4 (.NET 10, NOT YET PUBLIC)
+
+The accepted public Stable remains v1.5.3 until a NEW versioned release has actual exact-SHA native acceptance.
+Candidate files: `DirectInternetMethod_1.5.4_Windows_Setup.exe` and `DirectInternetMethod_1.5.4_Linux_x86_64.zip`.
+This is a source/QA candidate, NOT a replacement for immutable public v1.5.3.
+No code-signing certificate is required by the publisher; OS security must not be disabled.
+
+---
+
+
 ## Current public release: v1.5.3 Stable
 
 **v1.5.3 was published on 13 October 2026.** It is a public stable release, not an unpublished draft.

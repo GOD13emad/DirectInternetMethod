@@ -1,3 +1,9 @@
+# v1.5.4 — .NET 10 maintenance CANDIDATE (not published)
+
+New versioned Windows GUI/Service .NET 10 LTS and versioned Linux package; official v1.5.3 assets remain unchanged. Exact native upgraded installer and rollback acceptance REQUIRED before publication.
+
+---
+
 # v1.5.3 — published Stable (13 October 2026)
 
 Official release: https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.3

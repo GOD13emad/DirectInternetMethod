@@ -1,3 +1,6 @@
+# v1.5.4 BUILD CANDIDATE (NOT YET PUBLIC)
+Future Windows and Linux packages: DirectInternetMethod_1.5.4_Windows_Setup.exe and DirectInternetMethod_1.5.4_Linux_x86_64.zip. Official public Stable remains v1.5.3 until publication.
+
 # v1.5.3 BUILD CANDIDATE (UNRELEASED)
 
 Artifacts built from this branch are QA-only until separately versioned and SHA-attested hosted Windows/Linux installed acceptance. Current public Stable remains v1.5.2; official public checksums belong to that Release, never to local candidates.

@@ -17,7 +17,7 @@ def inspect(raw,project):
     version=tree.find(".//Version")
     output=tree.find(".//OutputType")
     assert target is not None and target.text==TARGET,(project,"TargetFramework")
-    assert version is not None and version.text=="1.5.3",(project,"product_version_guard")
+    assert version is not None and version.text=="1.5.4",(project,"product_version_guard")
     assert output is not None and output.text=="WinExe",(project,"runtime_subsystem")
     if "/gui/" in project:
         wpf=tree.find(".//UseWPF")
@@ -35,7 +35,7 @@ def negative_first():
             try:inspect(data.replace(b"net10.0-windows",wrong),project)
             except AssertionError:pass
             else:raise AssertionError(("FAIL_OPEN_VERSION_DRIFT",project,wrong))
-        try:inspect(data.replace(b"<Version>1.5.3</Version>",b"<Version>1.5.2</Version>"),project)
+        try:inspect(data.replace(b"<Version>1.5.4</Version>",b"<Version>1.5.3</Version>"),project)
         except AssertionError:pass
         else:raise AssertionError(("FAIL_OPEN_PRODUCT_VERSION_DRIFT",project))
 
