@@ -224,6 +224,8 @@ jobs:
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python -B tests/unsigned_public_release_contract.py --fixtures
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+          python -B tests/unsigned_public_release_contract_153.py --fixtures
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Verify published unsigned public assets with exact hosted Windows install and rollback
         shell: pwsh
         env:
@@ -231,13 +233,19 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference='Stop'
-          python -B tests/unsigned_public_release_contract.py --public-tag
+          if($env:GITHUB_REF -eq 'refs/tags/v1.5.3'){
+            python -B tests/unsigned_public_release_contract_153.py --public-tag
+          } else {
+            python -B tests/unsigned_public_release_contract.py --public-tag
+          }
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
       - name: Archive independently verified public release receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: unsigned-release-gate-${{ github.run_id }}
-          path: ${{ runner.temp }}/DIRECT_R394_PUBLIC_TAG_VERIFICATION.json
+          path: |
+            ${{ runner.temp }}/DIRECT_R394_PUBLIC_TAG_VERIFICATION.json
+            ${{ runner.temp }}/DIRECT_R472_V153_PUBLIC_TAG_VERIFICATION.json
           if-no-files-found: warn
           retention-days: 30
