@@ -335,7 +335,7 @@ jobs:
           assert rs[0]["target_commitish"]=="daf1a939c97f38d4ecec1f8144dd754a2d392c99"
           expected={"DirectInternetMethod_1.5.4_Linux_x86_64.zip":"sha256:4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7","DirectInternetMethod_1.5.4_Windows_Setup.exe":"sha256:ffb9a2ae19c2e89338ee12ee8da133f5a16dbf4dcf961678c33d77d0c3843133","SHA256SUMS.txt":"sha256:68e70329e8b9dac6b738ce9b90d99a0010030980cd9c17cde45a5199a60692d8"}
           assets=rs[0]["assets"]
-          assert rs[0]['id']==412071526 and len(assets)==5, 'PRIVATE_RELEASE_ASSET_SET_DRIFT'
+          assert rs[0]["id"]==412071526 and len(assets)==5, "PRIVATE_RELEASE_ASSET_SET_DRIFT"
           assert all(sum(i["name"]==n and i["digest"]==v and i["state"]=="uploaded" for i in assets)==1 for n,v in expected.items())
           print("PASS_R489_DRAFT_METADATA_SHA_ATTESTED")
           '
