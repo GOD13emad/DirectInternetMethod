@@ -131,6 +131,20 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Fail closed on dirty Windows checkout (tracked sources)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $head=(git rev-parse HEAD).Trim()
+          if ($head -ne "${{ github.sha }}") { throw "WINDOWS_CHECKOUT_SHA_DRIFT" }
+          $dirty=@(git status --porcelain=v1 --untracked-files=no)
+          if ($dirty.Count -ne 0) {
+            $dirty | ForEach-Object { Write-Error "UNEXPECTED_TRACKED_CHECKOUT_MUTATION: $_" }
+            throw "WINDOWS_CHECKOUT_DIRTY_FAIL_CLOSED"
+          }
+          $eol=(git ls-files --eol -- windows/installer/DirectInternetMethod.iss)
+          if ($eol -notmatch 'attr/-text') { throw "INNO_MIXED_EOL_BYTE_PRESERVATION_MISSING" }
+          Write-Output "PASS_R465_WINDOWS_SOURCE_CHECKOUT_CLEAN_AND_PINNED"
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: '8.0.x'
