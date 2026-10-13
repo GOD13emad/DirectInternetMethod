@@ -1,3 +1,11 @@
+# Current Stable v1.5.4 — historical Tailscale experiments below
+
+The official published release is https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.4 .
+All earlier candidate hashes and signature-HOLD statements below are historical; they do NOT govern current public downloads.
+Emad Linux nfqws and Tailscale are currently active; never change global DNS, routes or protected backend without safe managed OFF, independent remote route and rollback.
+
+---
+
 # Tailscale split-network coexistence (Linux candidate)
 
 **Status:** Source/contract candidate only until exact-SHA CI, privileged backend
