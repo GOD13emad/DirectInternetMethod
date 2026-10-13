@@ -241,3 +241,74 @@ jobs:
           path: ${{ runner.temp }}/DIRECT_R394_PUBLIC_TAG_VERIFICATION.json
           if-no-files-found: warn
           retention-days: 30
+  linux-protected-installed-qa-r469:
+    name: linux-r469-true-protected-backend-and-user-install-uninstall
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/qa/r469-linux-root-native-20261013'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout isolated QA runner
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Checkout exact candidate source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: eb6a7bf9a7c6a04cef5a85100e805d0575ef9c9a
+          path: candidate
+          persist-credentials: false
+      - name: Refuse any non-ephemeral guest or preinstalled backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$GITHUB_REPOSITORY" = GOD13emad/DirectInternetMethod
+          test "$GITHUB_REF" = refs/heads/qa/r469-linux-root-native-20261013
+          test "$(git -C candidate rev-parse HEAD)" = eb6a7bf9a7c6a04cef5a85100e805d0575ef9c9a
+          bash -n tests/R469_LINUX_ROOT.sh
+          sudo -n true
+          for p in /usr/lib/directinternetmethod /var/lib/directinternetmethod /etc/directinternetmethod.uid /etc/polkit-1/rules.d/49-directinternetmethod.rules /run/directinternetmethod-selective/session.json; do
+            sudo -n test ! -e "$p"
+            sudo -n test ! -L "$p"
+          done
+          sudo -n true
+          echo PASS_R469_DISPOSABLE_UBUNTU_EXACT_SHA_PRECHECK
+      - name: Install distro Python GTK4 Adwaita PolicyKit only on disposable guest
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n apt-get update -qq
+          sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 pkexec nftables desktop-file-utils xdg-user-dirs
+          export PATH="/usr/bin:/bin:$PATH"
+          python3 - <<'PY'
+          import gi
+          gi.require_version("Gtk","4.0")
+          gi.require_version("Adw","1")
+          print("PASS_R469_GUEST_GTK4_ADWAITA_DEPENDENCIES")
+          PY
+      - name: Exact candidate Linux archive and extracted ZIP test
+        shell: bash
+        working-directory: candidate
+        run: |
+          set -euo pipefail
+          export PATH="/usr/bin:/bin:$PATH"
+          python3 -B build_linux_package.py
+          printf '%s  %s\n' "680343f86abec2d7b69ce807f4ec5b344789b2d6335c51c068bc49f4650dfc05" "delivery/DirectInternetMethod_1.5.3_Linux_x86_64.zip" | sha256sum -c -
+          test "$(stat -c%s delivery/DirectInternetMethod_1.5.3_Linux_x86_64.zip)" = 8274083
+          python3 -B tests/linux_real_extracted_archive_contract.py
+      - name: Genuine root-owned protected backend and user install/uninstall on guest
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/usr/bin:/bin:$PATH"
+          bash tests/R469_LINUX_ROOT.sh
+      - name: Always preserve raw protected installation receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dim-r469-protected-guest-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIM_R469_HOSTED
+          if-no-files-found: warn
+          retention-days: 30
+
