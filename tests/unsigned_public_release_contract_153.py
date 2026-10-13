@@ -111,7 +111,31 @@ def fixture():
  try:sums_gate(original+("0"*64+"  "+WIN+"\n").encode())
  except RuntimeError as ex:must("SUMS_DUPLICATE" in str(ex),"NEGATIVE_SUMS_GATE_WRONG")
  else:raise RuntimeError("DUPLICATE_SUMS_FALSE_ACCEPTANCE")
- print("PASS_R472_V153_10_NEGATIVE_AND_POSITIVE_FIXTURES")
+ # Previous R471 console-only marker is NOT in REPORT_R471.log. Use the two
+ # stronger version/root compatibility statements actually retained in raw.
+ linux_proof="\n".join((
+  "R471_PUBLIC_V152_ROOT_USER_ACTUAL_INSTALL_PASS",
+  "R471_REAL_INSTALLED_V153_STAGED_ROLLBACK_PASS",
+  "Protected backend already matches current package; keeping root-owned code unchanged.",
+  "Updated Direct Internet Method 1.5.3 in place; user data preserved.",
+  "R471_GENUINE_V152_TO_V153_INPLACE_ROOT_UNCHANGED_DATA_PRESERVED",
+  "R471_ROOT_USER_NATIVE_UNINSTALL_PRESERVES_DATA",
+  "RESULT_CODE=0"
+ ))
+ verify_hosted_report("linuxInPlaceUpgrade",linux_proof.encode("utf-8"))
+ for dropped in (
+   "Protected backend already matches current package; keeping root-owned code unchanged.",
+   "Updated Direct Internet Method 1.5.3 in place; user data preserved.",
+   "R471_GENUINE_V152_TO_V153_INPLACE_ROOT_UNCHANGED_DATA_PRESERVED",
+   "RESULT_CODE=0"
+ ):
+  corrupt=linux_proof.replace(dropped,"")
+  try:verify_hosted_report("linuxInPlaceUpgrade",corrupt.encode("utf-8"))
+  except RuntimeError as exc:
+   must("HOSTED_LINUX_MISSING_GATE" in str(exc),"R474_WRONG_NEGATIVE_GATE_"+dropped[:20])
+  else:raise RuntimeError("R474_RAW_MISSING_MARKER_FALSE_PASS:"+dropped)
+ print("PASS_R474_V153_NEGATIVE_PUBLIC_AND_RAW_LINUX_HOSTED_MARKERS")
+
 def verify_hosted_report(key,blob):
  if key=="windowsUpgradeRollback":
   r=json.loads(blob.decode("utf-8-sig"))
@@ -143,7 +167,8 @@ def verify_hosted_report(key,blob):
   else:
    markers=("R471_PUBLIC_V152_ROOT_USER_ACTUAL_INSTALL_PASS",
            "R471_REAL_INSTALLED_V153_STAGED_ROLLBACK_PASS",
-           "PASS_R471_USER_PROGRAM_153_ROOT_BACKEND_152",
+           "Protected backend already matches current package; keeping root-owned code unchanged.",
+           "Updated Direct Internet Method 1.5.3 in place; user data preserved.",
            "R471_GENUINE_V152_TO_V153_INPLACE_ROOT_UNCHANGED_DATA_PRESERVED",
            "R471_ROOT_USER_NATIVE_UNINSTALL_PRESERVES_DATA","RESULT_CODE=0")
   for marker in markers:must(marker in text,"HOSTED_LINUX_MISSING_GATE:"+key+":"+marker)
