@@ -154,6 +154,12 @@ jobs:
           $ErrorActionPreference='Stop'
           python -B tests/dotnet10_target_contract.py
           if($LASTEXITCODE -ne 0){throw 'R482_NET10_FRAMEWORK_CONTRACT_FAILED'}
+      - name: Verify published v1.5.4 documentation is current
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          python -B tests/current_public_docs_contract_154.py
+          if($LASTEXITCODE -ne 0){throw 'R497_PUBLIC_DOCS_REGRESSION'}
       - name: Python syntax
         shell: pwsh
         run: python -m py_compile tests/windows_legacy_151_stage_finalize_contract.py tests/windows_contract_audit.py tests/windows_native_scm_stop_contract.py tests/build_windows_manifest.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py
