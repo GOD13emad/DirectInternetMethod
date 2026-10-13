@@ -8,8 +8,8 @@
 
 | Platform | One installation package | SHA-256 |
 |---|---|---|
-| Windows x64 | DirectInternetMethod_1.5.3_Windows_Setup.exe | B517EA79C8949E960897CE814591F7C1518FDEA45E4419A891B64469E879B6FF |
-| Linux x86_64 | DirectInternetMethod_1.5.3_Linux_x86_64.zip | 680343F86ABEC2D7B69CE807F4EC5B344789B2D6335C51C068BC49F4650DFC05 |
+| Windows x64 | `DirectInternetMethod_1.5.3_Windows_Setup.exe` | B517EA79C8949E960897CE814591F7C1518FDEA45E4419A891B64469E879B6FF |
+| Linux x86_64 | `DirectInternetMethod_1.5.3_Linux_x86_64.zip` | 680343F86ABEC2D7B69CE807F4EC5B344789B2D6335C51C068BC49F4650DFC05 |
 
 The Release-attached `SHA256SUMS.txt` and `ACCEPTANCE_V153.json` are the authority for the published packages. Do not substitute a locally rebuilt or QA-only installer for an official release asset.
 
