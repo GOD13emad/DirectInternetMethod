@@ -174,12 +174,23 @@ def public_tag():
  must(proof_asset.get("state")=="uploaded" and
       re.fullmatch(r"sha256:[a-f0-9]{64}",proof_asset.get("digest","")) is not None,
       "PUBLIC_PROOF_NO_SHA")
- # Published source tree can add only these source-only test+CI improvements to the
- # exact payload source independently accepted on Windows/Linux native guest.
- cmp=gh_api("repos/"+REPO+"/compare/"+PRODUCT_SHA+"..."+tag_sha)
- must(cmp.get("status") in ("ahead","diverged") and
-      set(f["filename"] for f in cmp.get("files",[]))==ALLOWED_SOURCE_ONLY,
-      "TAG_HAS_UNTESTED_PRODUCT_SOURCE_MUTATIONS")
+ # Compare actual source blob trees, not a merge-base diff: the verified product
+ # commit and squash-merged public source have different ancestry, but identical
+ # product files. Reject any real changed SHA or mode outside this exact allowlist.
+ def source_tree(commit_sha):
+  git_commit=gh_api("repos/"+REPO+"/git/commits/"+commit_sha)
+  tree_sha=git_commit.get("tree",{}).get("sha","")
+  must(SHA.fullmatch(tree_sha) is not None,"SOURCE_TREE_SHA_MISSING")
+  tree=gh_api("repos/"+REPO+"/git/trees/"+tree_sha+"?recursive=1")
+  must(tree.get("truncated") is False and isinstance(tree.get("tree"),list),
+       "SOURCE_TREE_INCOMPLETE")
+  return {entry["path"]:(entry["sha"],entry["mode"])
+          for entry in tree["tree"] if entry.get("type")=="blob"}
+ previous=source_tree(PRODUCT_SHA)
+ current=source_tree(tag_sha)
+ changed={p for p in set(previous)|set(current) if previous.get(p)!=current.get(p)}
+ must(changed==ALLOWED_SOURCE_ONLY,
+      "TAG_HAS_UNTESTED_PRODUCT_SOURCE_MUTATIONS:"+",".join(sorted(changed)))
  ci=gh_api("repos/"+REPO+"/actions/runs/38385602156")
  must(ci.get("head_sha")==PRODUCT_SHA and ci.get("conclusion")=="success","SOURCE_CI_NOT_APPROVED")
  with tempfile.TemporaryDirectory(prefix="dim-v153-public-verification-") as folder:
