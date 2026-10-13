@@ -1,3 +1,17 @@
+# v1.5.3 — published Stable (13 October 2026)
+
+Official release: https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.3
+
+The exact Windows/Linux assets and their native installation, update and rollback evidence are published with `SHA256SUMS.txt` and `ACCEPTANCE_V153.json`. The public tag is `581a063836a20ca3c0adb941bfc77146e33d693a`.
+
+Source-only .NET 10 maintenance was accepted in PR #55; it has not silently replaced the public v1.5.3 installer. Active customer-host deployment and new-version maintenance are separate from the accepted v1.5.3 publication milestone.
+
+## Historical build notes — superseded publication labels
+
+The original entries below are retained for provenance. Their earlier CANDIDATE/UNPUBLISHED labels describe the build stage and are not the current public release state.
+
+---
+
 # v1.5.3 — UNPUBLISHED VERSIONED CANDIDATE
 
 - Includes PR45 source-only legacy v1.5.1 updater-stage cleanup, now rebuilt as a versioned candidate.
