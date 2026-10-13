@@ -204,6 +204,13 @@ jobs:
           python tests/unsigned_public_release_contract.py --fixtures
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
 
+      - name: Verify raw Linux proof negative fixtures for v1.5.3 tag
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          python -B tests/unsigned_public_release_contract_153.py --fixtures
+          if($LASTEXITCODE -ne 0){throw 'R474_PUBLIC_VERIFIER_NEGATIVE_FIXTURES_FAILED'}
+
   windows-release-contract:
     name: windows-release-contract-unsigned
     if: startsWith(github.ref, 'refs/tags/v')
