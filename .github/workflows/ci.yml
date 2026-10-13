@@ -90,14 +90,14 @@ jobs:
           old=recorded["platforms"]["linux"]
           # RELEASE.json pins the R467 unpublished new candidate artifact;
           # a local build alone is NOT a public installed acceptance or permission to publish.
-          assert old["sha256"].upper()=="886EABB07925607ED2D12D6082F63096EC744E48EF6DA20428A444AEF05353A3"
+          assert old["sha256"].upper()=="680343F86ABEC2D7B69CE807F4EC5B344789B2D6335C51C068BC49F4650DFC05"
           assert recorded["version"]=="1.5.3" and recorded["status"]=="CANDIDATE_V153_UNPUBLISHED_UNPROVEN"
           p=pathlib.Path(old["artifact"])
           assert p.is_file(), "NEW_CANDIDATE_ARCHIVE_MISSING"
           actual=hashlib.sha256(p.read_bytes()).hexdigest().upper()
-          expected="886EABB07925607ED2D12D6082F63096EC744E48EF6DA20428A444AEF05353A3"
+          expected="680343F86ABEC2D7B69CE807F4EC5B344789B2D6335C51C068BC49F4650DFC05"
           assert actual==expected, f"NEW_LINUX_CANDIDATE_SHA_MISMATCH {actual} != {expected}"
-          assert p.stat().st_size==8274074, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
+          assert p.stat().st_size==8274083, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
           assert actual==old["sha256"].upper(), "R467_CANDIDATE_SOURCE_DIGEST_MISMATCH"
           with zipfile.ZipFile(p) as z:
             assert z.testzip() is None and len(z.namelist())==24

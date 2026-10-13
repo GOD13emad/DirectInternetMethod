@@ -148,6 +148,25 @@ with tempfile.TemporaryDirectory(prefix="dim-r401-sourceonly-") as temp:
     need((app3 / "direct_internet_method.py").read_bytes() == old3["direct_internet_method.py"], "REENTRY_CHANGED_BASELINE")
     unchanged_data(app3, user3)
     tests += 1
+    # R467 negative regression: an interrupted transaction with a stale
+    # version must fail before ANY managed code or personal settings mutation.
+    calls(home3, src, "--stage")
+    pending_manifest = home3 / ".local/state/DirectInternetMethod/update-pending/manifest.json"
+    pending_original = pending_manifest.read_bytes()
+    corrupted = json.loads(pending_original)
+    need(corrupted["version"] == "1.5.3", "STAGE_NOT_VERSIONED_153")
+    corrupted["version"] = "1.5.2"
+    pending_manifest.write_text(json.dumps(corrupted), encoding="utf8")
+    refused = calls(home3, src, "--apply", False)
+    need("PENDING_TRANSACTION_VERSION_WRONG" in refused.stderr,
+         "STALE_PENDING_VERSION_WAS_NOT_REJECTED")
+    need((app3 / "direct_internet_method.py").read_bytes() == old3["direct_internet_method.py"],
+         "STALE_PENDING_APPLIED_MANAGED_CODE")
+    unchanged_data(app3, user3)
+    pending_manifest.write_bytes(pending_original)
+    calls(home3, src, "--rollback")
+    need(not pending_manifest.exists(), "STALE_PENDING_ROLLBACK_LEFT_SLOT")
+    tests += 1
     # Negative: concurrent changes to managed code refuse overwrite.
     calls(home3, src, "--stage")
     changed = app3 / "direct_internet_method.py"

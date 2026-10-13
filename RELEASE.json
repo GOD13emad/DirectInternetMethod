@@ -103,8 +103,8 @@
     "linux": {
       "status": "PASS_LOCAL_NATIVE_BUILD_ONLY_HOSTED_QA_PENDING",
       "artifact": "delivery/DirectInternetMethod_1.5.3_Linux_x86_64.zip",
-      "bytes": 8274074,
-      "sha256": "886EABB07925607ED2D12D6082F63096EC744E48EF6DA20428A444AEF05353A3",
+      "bytes": 8274083,
+      "sha256": "680343F86ABEC2D7B69CE807F4EC5B344789B2D6335C51C068BC49F4650DFC05",
       "protectedBackendVersion": "1.5.3",
       "packageFiles": 22,
       "compatibleProtectedBackendVersions": [
@@ -113,12 +113,12 @@
         "1.5.3"
       ],
       "artifactSourceCommit": "7831663f765b85aa81a92e6a8b14de5d2c8f8abc+R467_CANDIDATE_PATCH_UNMERGED",
-      "metadataScope": "R467_LOCAL_EXACT_SHA_CANDIDATE_NOT_PUBLIC"
+      "metadataScope": "R467_CURRENT_SOURCE_POST_TRANSACTION_FIX_UNPUBLISHED"
     }
   },
   "checksums": {
     "artifact": "SHA256SUMS.txt",
-    "sha256": "8C1D5CB9A33A95676EA5E65279C97E3E996A564C558B4BA27B3F75F4C7C42B3C"
+    "sha256": "98B9AB15EA2894396CC8336BC0871C40388799E8EB211C6BA92437E28DB29331"
   },
   "acceptance": {
     "windowsPayload": "PASS_NATIVE_LOCAL_BUILD_ONLY",
