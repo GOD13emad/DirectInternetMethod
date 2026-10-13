@@ -5,7 +5,7 @@ R=pathlib.Path(__file__).resolve().parent
 OUT=R/"delivery"/"DirectInternetMethod_1.5.3_Linux_x86_64.zip"
 ROOT="DirectInternetMethod_1.5.3_Linux_x86_64"
 FILES=[
- ("README.md","README.md"),
+ ("docs/README_PACKAGE_153.md","README.md"),
  ("linux/install.sh","install.sh"),
  ("linux/uninstall.sh","uninstall.sh"),
  ("linux/system/install_system.sh","system/install_system.sh"),
@@ -35,6 +35,9 @@ def payload_bytes(src:str,dst:str)->bytes:
  if pathlib.PurePosixPath(dst).suffix.lower() in {".sh",".py",".md",".txt",".svg",".json"}:
   data=data.replace(b"\r\n",b"\n").replace(b"\r",b"\n")
  return data
+# Frozen originally shipped documentation; root README may describe current publication.
+if sha_bytes(payload_bytes("docs/README_PACKAGE_153.md","README.md"))!="DA81AB48E9E8BAC6EB70F75B64D0DF207993823B01926ED083A20EA3AB975415":
+ raise SystemExit("V153_FROZEN_PACKAGE_README_SHA_CHANGED")
 rows=[]
 for src,dst in FILES:
  p=R/src

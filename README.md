@@ -1,68 +1,52 @@
 # Direct Internet Method
 
-**زن زندگی آزادی**
+## Current public release: v1.5.3 Stable
 
-Standalone direct-connect application for Windows and Linux. It does not create a VPN, HTTP/SOCKS proxy, WinHTTP proxy, or default-route tunnel.
+**v1.5.3 was published on 13 October 2026.** It is a public stable release, not an unpublished draft.
 
-## Direct Method — v1.5.3 maintenance candidate (NOT PUBLISHED)
+[Download the official Windows or Linux installer](https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.3)
 
-v1.5.3 candidate retains the published v1.5.2 direct engine and turns the existing opt-in **Adult coverage** control into real bounded domain coverage rather than a single-site diagnostic.
+| Platform | One installation package | SHA-256 |
+|---|---|---|
+| Windows x64 | DirectInternetMethod_1.5.3_Windows_Setup.exe | B517EA79C8949E960897CE814591F7C1518FDEA45E4419A891B64469E879B6FF |
+| Linux x86_64 | DirectInternetMethod_1.5.3_Linux_x86_64.zip | 680343F86ABEC2D7B69CE807F4EC5B344789B2D6335C51C068BC49F4650DFC05 |
 
-When Adult coverage is enabled, the app fetches and validates a maintained HaGeZi NSFW only-domains catalog at runtime and combines it with a small offline fallback. The feature remains OFF by default. Core traffic stays targeted, and the catalog is not applied unless the user enables it.
+The Release-attached `SHA256SUMS.txt` and `ACCEPTANCE_V153.json` are the authority for the published packages. Do not substitute a locally rebuilt or QA-only installer for an official release asset.
 
-Representative controlled testing on the validation Linux network proved that adding the missing host scope changed **XVideos** and **XNXX** from TLS failure to HTTP 200. A separate representative Cloudflare-backed site remains unproven for a usable full page: several accepted-runtime strategies reached HTTP 520 on one edge while another edge still failed TLS. HTTP 4xx/5xx is therefore reported as failure, not success. Broad catalog coverage maximizes targeting but does not truthfully guarantee every remote origin/CDN edge.
+### What this application does
 
-Gemini currently returns HTTP 403 on the validated public egress. Direct DNS/DPI manipulation can solve DNS spoofing and DPI interference but does not change the public egress region; 403 is not counted as PASS.
+Direct Internet Method provides targeted direct DNS/DPI methods on Windows and Linux. It is **not** a VPN, HTTP/SOCKS proxy or default-route tunnel. It includes a Windows WPF interface with a privileged service, a Linux desktop interface with a protected systemd/PolicyKit backend, connection diagnostics, custom host scopes, optional additional domain coverage, and a Router Gateway profile catalog.
 
-The engine uses:
+Site availability depends on the network. HTTP 401 from an unauthenticated API demonstrates transport reachability, not a logged-in account. HTTP 403, login restrictions and regional egress policy are not reported as usable access. Router Gateway TCP probes do not establish a completed PPTP/L2TP/IPsec authenticated connection.
 
-- leak-closed direct-IP DoH through ctrld;
-- host-scoped HTTP/80 splitting;
-- host-scoped TLS/SNI TCP/443 desynchronization;
-- host-scoped QUIC UDP/443 desynchronization;
-- user-managed Custom Sites;
-- Balanced / Compatibility / Strong strategy profiles;
-- opt-in All Sites scope;
-- opt-in maintained Adult coverage.
+### Install and update
 
-The validation network exhibits DNS interception when Direct Method is disabled. Direct Method's encrypted DNS resolves affected domains to their real public addresses before DPI handling.
+**Windows:** Run the single official Setup executable. Privileged installation uses the normal Windows UAC prompt. The installer retains the application identity and directory for in-place updates; it must not accumulate parallel installations. Stop the active Direct Method session through its own controls before upgrading. Do not forcibly stop unrelated services or disable Windows security protections.
 
-## Router Gateway
+**Linux:** Extract the official ZIP and run `./install.sh` from the extracted directory. Fresh protected-backend setup uses normal system authorization. A compatible byte-identical protected backend may be retained while user code updates. The installer refuses an active Direct Method session; use the managed Stop/Recovery action first and preserve a safe network recovery path.
 
-Router Gateway remains a separate non-privileged configuration panel for compatible routers/modems. Provider data revision 3 is maintained independently of application artifacts. Endpoint probes do not claim authenticated PPTP/L2TP tunnel success.
+Settings, user-managed files and custom Router Gateway provider data are protected by the tested update/rollback paths. Back up configuration before making changes on a live machine.
 
-## Windows 1.5.3 candidate
+### Accepted release evidence
 
-- Native WPF UI and fixed-command privileged service.
-- Bundled PowerShell 7.6.6.
-- ctrld + zapret/winws v72.13 + WinDivert.
-- Adult coverage catalog is opt-in and cached per user.
-- Installer is not Authenticode-signed; SHA-256 remains the artifact identity gate.
+- Exact published Windows installer: hosted Windows native install, in-place update and rollback [run 38389324841](https://github.com/GOD13emad/DirectInternetMethod/actions/runs/38389324841).
+- Direct Windows v1.5.1 to official v1.5.3 update and rollback: [run 38406271349](https://github.com/GOD13emad/DirectInternetMethod/actions/runs/38406271349).
+- Linux protected root/user fresh lifecycle: [run 38388513538](https://github.com/GOD13emad/DirectInternetMethod/actions/runs/38388513538).
+- Linux real v1.5.2 to v1.5.3 in-place update: [run 38390031680](https://github.com/GOD13emad/DirectInternetMethod/actions/runs/38390031680).
+- Public release/tag verification: [run 38396348743](https://github.com/GOD13emad/DirectInternetMethod/actions/runs/38396348743).
 
-## Linux 1.5.3 candidate
+These are bounded acceptance results, not a guarantee that every ISP, destination, user account or live host has been validated. Active-host maintenance remains a separate deployment task.
 
-- Dedicated temporary DNS link + ctrld + systemd-resolved.
-- nftables/NFQUEUE + zapret/nfqws v72.13.
-- Protected backend version 1.5.3 on fresh installs; existing byte-compatible v1.5.2 root backend may remain untouched.
-- Adult coverage uses the same validated catalog/fallback model as Windows.
+### Source development is not a replacement release
 
-## Release artifacts
+The `main` branch contains the .NET 10 maintenance change accepted in PR #55. It was tested with a genuine Windows installation, a visible WPF window, a running service, preserved user data and rollback in [run 38428921577](https://github.com/GOD13emad/DirectInternetMethod/actions/runs/38428921577). **The published v1.5.3 Windows installer has not been replaced by this .NET 10 build.** A future versioned distribution requires its own exact-asset acceptance.
 
-- `DirectInternetMethod_1.5.3_Windows_Setup.exe`
-- `DirectInternetMethod_1.5.3_Linux_x86_64.zip`
-- `SHA256SUMS.txt`
+The existing v1.5.3 archive contains build-time documentation and metadata. Their historical candidate labels do not override this public Release record. `docs/README_PACKAGE_153.md` preserves the exact originally shipped README solely so that the accepted Linux ZIP can be reproduced without changing any released byte. New releases must intentionally version their package documentation.
 
-Authoritative acceptance/provenance records are stored under `evidence/`.
+`PROJECT_BRAIN.md` below its authority notice is a historical project log, not the current release manifest. Current operational state is recorded in the cumulative versioned private Project Brain and the Release acceptance evidence.
 
-## Tailscale split-network coexistence — bounded, network-dependent
+### Tailscale and security limits
 
-On Linux, Tailscale peer/subnet mode **without an Exit Node** may run alongside Direct Internet Method in `targeted` DPI-only mode. The Direct Method preserves existing DNS/MagicDNS, Tailscale routes and daemon state, and bypasses the Tailscale-reserved packet mark before passing ordinary physical-interface web traffic to NFQUEUE. It does **not** activate its own DoH listener in coexistence mode. Exit nodes, an unknown second tunnel or all-sites DPI fail closed. The original DoH + DPI configuration remains available when Tailscale is not running. See `docs/TAILSCALE_COEXISTENCE.md` for safety preconditions and outstanding real-host acceptance.
+Tailscale/MagicDNS coexistence is network-specific. Preserving system DNS may also preserve a network's incorrect DNS answers; a running DPI process alone does not prove correct name resolution. Do not change all system DNS settings or weaken TLS certificate checks merely to make a connectivity indicator green.
 
-The public v1.5.2 protected Linux helper was tested with split Tailscale/RustDesk while preserving DNS and routes on Emad Linux. The new v1.5.3 candidate requires new exact-asset acceptance and is NOT YET PUBLIC. The unsigned public Windows v1.5.2 may be rejected by Smart App Control; do not disable OS protections. Neither universal worldwide access nor authenticated ChatGPT/Gemini access where HTTP 403 persists is guaranteed.
-
-## R247 experimental selected-site DNS (unpublished)
-Experimental Linux option, default OFF: plaintext UDP to a third-party
-resolver at 194.225.152.10 for YouTube-family DNS, requires explicit
-user opt-in, Targeted scope, Balanced strategy, and split Tailscale mode.
-No encrypted DoH, anonymity, universal bypass or uptime guarantees.
-Experimental selected-site DNS remains disabled by default; native installed crash/reboot and DNS-restore verification remain OPEN. Signing is not a release gate.
+Windows code signing is not a publication requirement chosen by the publisher. Systems enforcing unsigned-app restrictions may reject the installer; do not disable operating-system protections. Third-party license notices and the attached corresponding-source archives remain applicable. No new first-party source license is implied by this status clarification.

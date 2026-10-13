@@ -1,3 +1,11 @@
+# Current-authority notice — historical project log follows
+
+Current public release: **v1.5.3 Stable**, published 13 October 2026. Official tag `581a063836a20ca3c0adb941bfc77146e33d693a`; see the GitHub Release, attached checksums and acceptance record.
+
+This file preserves historical project records. Older FINAL, CANDIDATE or signing-HOLD entries below do not override the latest versioned cumulative Project Brain, public Release or explicit current decisions. Source maintenance on `main` is distinct from published binaries. Original log bytes are retained after this notice.
+
+---
+
 # PROJECT BRAIN — Direct Internet Method
 
 Status: FINAL_V1_5_0_GLOBAL_ACCESS_PUBLISHED_INSTALLED_VERIFIED
