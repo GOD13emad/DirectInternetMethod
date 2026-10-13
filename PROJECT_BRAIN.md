@@ -1,8 +1,8 @@
 # Current-authority notice — historical project log follows
 
-Current public release: **v1.5.3 Stable**, published 13 October 2026. Official tag `581a063836a20ca3c0adb941bfc77146e33d693a`; see the GitHub Release, attached checksums and acceptance record.
-
-This file preserves historical project records. Older FINAL, CANDIDATE or signing-HOLD entries below do not override the latest versioned cumulative Project Brain, public Release or explicit current decisions. Source maintenance on `main` is distinct from published binaries. Original log bytes are retained after this notice.
+Current public release: **v1.5.4 Stable**, published 13 October 2026. Official tag 51009372e3c2d069d7016b97773f35ee5e1e0631 and six accepted public assets at https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.4 .
+Newest cumulative operational Brain at this revision: BRAIN_R496.zip. Hosted Native Windows/Linux and Saeid/MMZ actual 1.5.4 installations are PASS. Emad Windows/Linux active original network installs remain OPEN, so whole-project FINAL is UNPROVEN.
+This file intentionally retains original historical records. Earlier Candidate/Final/signing-HOLD claims below are superseded for current publication and MUST NOT be run as deployment authority.
 
 ---
 
