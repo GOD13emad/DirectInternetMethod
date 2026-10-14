@@ -65,15 +65,39 @@ class Tests(unittest.TestCase):
         self.assertNotIn('doc.get("version") == "1.5.4"',got.decode())
         self.assertEqual(digest((R/"linux/app/user_uninstall_preserve.py").read_bytes()),declared["sha256"])
     def test_original_unreleased_candidate_preserved_and_only_uninstaller_delta(self):
+        # CI does not commit an 8.3 MB obsolete candidate ZIP. Its original
+        # manifest and changed single source member are pinned byte-for-byte
+        # as compact historical fixtures (all 26 original file SHA entries).
+        fixtures=R/"tests/fixtures/r519_original"
+        old_manifest=fixtures/"PACKAGE_MANIFEST.json"
+        old_source=fixtures/"user_uninstall_preserve.py"
+        self.assertEqual(digest(old_manifest.read_bytes()),
+                         "EA43CD77EAA2979AC970A8B47145881C767519E3D024BF907167A2FE3FD6C05E")
+        self.assertEqual(digest(old_source.read_bytes()),
+                         "9A4A4C37E3F63F1602E15454100150D209E3CD099DE80504B560F31D42D3C0EF")
+        prev=json.loads(old_manifest.read_text())
+        self.assertEqual((prev["schema"],prev["version"],prev["platform"]),(1,VERSION,"linux-x86_64"))
+        before={row["file"]:row for row in prev["files"]}
+        after={row["file"]:row for row in self.rows}
+        self.assertEqual(set(before),set(after))
+        self.assertEqual(len(before),26)
+        changed={name for name in before if before[name]!=after[name]}
+        self.assertEqual(changed,{"app/user_uninstall_preserve.py"})
+        previous=before["app/user_uninstall_preserve.py"]
+        self.assertEqual((previous["bytes"],previous["sha256"]),
+                         (len(old_source.read_bytes()),digest(old_source.read_bytes())))
+        self.assertNotEqual(previous["sha256"],after["app/user_uninstall_preserve.py"]["sha256"])
+        # If the old full binary happens to be available locally, verify the
+        # exact historical archive as additional provenance, not a CI prerequisite.
         old=R/"evidence/R519_ORIGINAL_RC1_SUPERSEDED.zip"
-        self.assertTrue(old.is_file())
-        self.assertEqual(digest(old.read_bytes()),"47776640A1BB8B5D4490244565DDD47A6A817A999347566917CC73E21F41EC24")
-        with zipfile.ZipFile(old) as before:
-            self.assertEqual(set(before.namelist()),set(self.n))
-            changed={n for n in self.n if before.read(n)!=self.info.read(n)}
-            expected={self.prefix+"app/user_uninstall_preserve.py",
-                      self.prefix+"PACKAGE_MANIFEST.json",self.prefix+"SHA256SUMS.txt"}
-            self.assertEqual(changed,expected)
+        if old.exists():
+            self.assertEqual(digest(old.read_bytes()),
+                             "47776640A1BB8B5D4490244565DDD47A6A817A999347566917CC73E21F41EC24")
+            with zipfile.ZipFile(old) as z:
+                self.assertEqual(set(z.namelist()),set(self.n))
+                self.assertEqual(z.read(self.prefix+"PACKAGE_MANIFEST.json"),old_manifest.read_bytes())
+                self.assertEqual(z.read(self.prefix+"app/user_uninstall_preserve.py"),old_source.read_bytes())
+                self.assertEqual(z.testzip(),None)
     def test_original_published_metadata_untouched(self):
         data=json.loads((R/"RELEASE.json").read_text())
         self.assertEqual(data["version"],"1.5.4")
