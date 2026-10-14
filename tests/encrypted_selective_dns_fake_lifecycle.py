@@ -71,10 +71,16 @@ class FakeWorld:
         def simulated_owner_stat(path,*args,**kwargs):
             result=real_stat(path,*args,**kwargs)
             if str(path) in (str(self.state_dir),str(self.config),str(self.state)):
-                # Only the test-private directory and owned config/state appear as root-owned.
-                # This is a mock, never a real permission or chown mutation.
+                # Root-owned test-private files only: virtual uid=0, no chown.
                 values=list(result)
                 values[4]=0
+                return os.stat_result(values)
+            if str(path)==str(self.native):
+                # The native user State must belong to the simulated uid=1000,
+                # independently of the real GitHub Actions runner's uid.
+                # No host ownership or permissions are changed.
+                values=list(result)
+                values[4]=1000
                 return os.stat_result(values)
             return result
         st.enter_context(patch.object(pathlib.Path,"stat",simulated_owner_stat))
