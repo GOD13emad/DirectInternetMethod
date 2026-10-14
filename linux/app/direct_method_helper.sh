@@ -24,6 +24,9 @@ SCOPE_FILE="$STATE_BASE/scope.txt"
 SELECTIVE_DNS_OPT_IN="$STATE_BASE/selective-dns-optin.txt"
 SELECTIVE_DNS="/usr/lib/directinternetmethod/selective_dns.py"
 SELECTIVE_DNS_ENABLED=0
+ENCRYPTED_DNS_OPT_IN="$STATE_BASE/encrypted-dns-optin.txt"
+ENCRYPTED_DNS="/usr/lib/directinternetmethod/encrypted_selective_dns.py"
+ENCRYPTED_DNS_ENABLED=0
 CREATED_STATE=0
 CTRLD="$BIN/ctrld"
 NFQWS="$BIN/nfqws"
@@ -324,9 +327,7 @@ cleanup_transient(){
   # Restore original physical DNS FIRST, even if NFT ownership cannot
   # subsequently be established. Never leave ordinary Internet pointing
   # at a defunct local DNS service after a failed Start.
-  if [ -f /run/directinternetmethod-selective/session.json ]; then
-    python3 "$SELECTIVE_DNS" restore || return 88
-  fi
+  restore_selective_dns || return 88
   if [ "$CREATED_TABLE" -eq 1 ]; then
     if nft_table_presence; then
       if nft_table_transient_owned "$PHY" "$TAILSCALE_COEXIST"; then
@@ -364,6 +365,7 @@ cleanup_transient(){
 
 cleanup_state_owned(){
   [ -f "$STATE" ] || return 0
+  restore_selective_dns || return 88
   local cp np phy nft_rc
   cp="$(state_value ctrldPid)"
   np="$(state_value nfqwsPid)"
@@ -395,7 +397,31 @@ cleanup_state_owned(){
   rm -f "$RUN_HOSTS" "$STATE"
 }
 
+encrypted_dns_ready(){
+  [ -x "$ENCRYPTED_DNS" ] && [ -f /run/directinternetmethod-encrypted/session.json ] || return 1
+  local payload
+  payload="$(python3 "$ENCRYPTED_DNS" status 2>/dev/null)" || return 1
+  printf '%s\n' "$payload" | python3 -c 'import json,sys
+try:
+ d=json.load(sys.stdin)
+ sys.exit(0 if d.get("ok") is True and d.get("state")=="ACTIVE" and
+              all(d.get(k)=="active" for k in ("monitor","ctrld","backstop")) else 1)
+except Exception:sys.exit(1)'
+}
 restore_selective_dns(){
+  if [ -f /run/directinternetmethod-encrypted/session.json ]; then
+    [ -x "$ENCRYPTED_DNS" ] || { echo '{"ok":false,"error":"ENCRYPTED_CONTROLLER_MISSING"}' >&2; return 88; }
+    python3 "$ENCRYPTED_DNS" restore || {
+      echo '{"ok":false,"error":"ENCRYPTED_DNS_RESTORE_FAILED"}' >&2
+      return 88
+    }
+  fi
+  if [ -e /run/directinternetmethod-encrypted ] ||
+     [ -e /run/directinternetmethod-encrypted-ctrld.toml ] ||
+     ip link show dimesd0 >/dev/null 2>&1; then
+    echo '{"ok":false,"error":"ENCRYPTED_DNS_UNOWNED_RESIDUE"}' >&2
+    return 88
+  fi
   if [ -e /run/directinternetmethod-selective/session.json ]; then
     [ -x "$SELECTIVE_DNS" ] || { echo '{"ok":false,"error":"SELECTIVE_DNS_CONTROLLER_MISSING"}' >&2; return 88; }
     python3 "$SELECTIVE_DNS" restore || {
@@ -412,6 +438,10 @@ verify_clean(){
   [ ! -e /run/directinternetmethod-selective/session.json ] || return 1
   [ ! -e /run/directinternetmethod-selective ] || return 1
   [ ! -e /run/directinternetmethod-selective.conf ] || return 1
+  [ ! -e /run/directinternetmethod-encrypted/session.json ] || return 1
+  [ ! -e /run/directinternetmethod-encrypted ] || return 1
+  [ ! -e /run/directinternetmethod-encrypted-ctrld.toml ] || return 1
+  ! ip link show dimesd0 >/dev/null 2>&1 || return 1
   ! ip link show "$DNS_IF" >/dev/null 2>&1 || return 1
   if nft_table_presence; then
     return 1
@@ -440,6 +470,9 @@ status(){
     fi
   else
     [ "$ca" = true ] && [ "$link" = true ] && dns_ok=true
+  fi
+  if [ -f "$STATE" ] && [ "$(state_value selectiveDnsEncrypted)" = "True" ]; then
+    encrypted_dns_ready || dns_ok=false
   fi
   local phy=""
   [ -f "$STATE" ] && phy="$(state_value physicalInterface)"
@@ -532,6 +565,7 @@ case "$ACTION" in
         echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
         exit 81
       fi
+      restore_selective_dns
       kill_all_owned_by_exe "$NFQWS"
       kill_all_owned_by_exe "$CTRLD"
       sleep .3
@@ -554,6 +588,9 @@ case "$ACTION" in
       DNS_HEALTHY=0
       if [ "$PREVIOUS_DNS_MODE" = "system-preserved" ]; then
         [ "$CPID" = "0" ] && ! ip link show "$DNS_IF" >/dev/null 2>&1 && DNS_HEALTHY=1
+        if [ "$(state_value selectiveDnsEncrypted)" = "True" ]; then
+          encrypted_dns_ready || DNS_HEALTHY=0
+        fi
       else
         pid_owned "$CPID" "$CTRLD" && dns_link_owned && DNS_HEALTHY=1
       fi
@@ -578,6 +615,7 @@ case "$ACTION" in
       echo '{"ok":false,"error":"FOREIGN_OR_STALE_RESOURCE_WITHOUT_STATE"}'
       exit 69
     fi
+    restore_selective_dns || exit 88
 
     [ -x "$CTRLD" ] && [ -x "$NFQWS" ] && [ -s "$HOSTS" ] ||
       { echo '{"ok":false,"error":"RUNTIME_NOT_PROVISIONED"}'; exit 70; }
@@ -682,6 +720,15 @@ PY
         exit 88
       }
       SELECTIVE_DNS_ENABLED=1
+    fi
+
+    if [ -e "$ENCRYPTED_DNS_OPT_IN" ] || [ -L "$ENCRYPTED_DNS_OPT_IN" ]; then
+      [ "$TAILSCALE_COEXIST" -eq 1 ] && [ "$STRATEGY" = "balanced" ] &&
+      [ "$SCOPE" = "targeted" ] && [ -x "$ENCRYPTED_DNS" ] ||
+        { echo '{"ok":false,"error":"ENCRYPTED_DNS_REQUIRES_TARGETED_BALANCED_TAILSCALE_AND_BACKEND"}'; exit 88; }
+      [ ! -e "$SELECTIVE_DNS_OPT_IN" ] && [ ! -L "$SELECTIVE_DNS_OPT_IN" ] ||
+        { echo '{"ok":false,"error":"ENCRYPTED_AND_UNENCRYPTED_OPTIN_CONFLICT"}'; exit 88; }
+      ENCRYPTED_DNS_ENABLED=1
     fi
 
     if [ "$DNS_MODE" = "direct-doh" ]; then
@@ -811,8 +858,16 @@ EOF
       }
     fi
 
+    if [ "$ENCRYPTED_DNS_ENABLED" -eq 1 ]; then
+      USER_HOME="$(getent passwd "$USER_UID" | cut -d: -f6)"
+      [ "$USER_HOME/.local/share/DirectInternetMethod" = "$STATE_BASE" ] ||
+        { echo '{"ok":false,"error":"ENCRYPTED_DNS_HOME_MISMATCH"}'; exit 88; }
+      python3 "$ENCRYPTED_DNS" activate --uid "$USER_UID" --interface "$PHY" --home "$USER_HOME" ||
+        { echo '{"ok":false,"error":"ENCRYPTED_DNS_ACTIVATION_FAILED"}'; exit 88; }
+    fi
+
     [ "$DNS_MODE" != "system-preserved" ] || CPID=0
-    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" "$ADULT_ON" "$ADULT_COUNT" "$DNS_MODE" "$TAILSCALE_COEXIST" "$SELECTIVE_DNS_ENABLED" <<'PY'
+    python3 - "$STATE" "$CPID" "$NPID" "$PHY" "$USER_UID" "$USER_GID" "$CTRLD_UNIT" "$NFQWS_UNIT" "$STRATEGY" "$SCOPE" "$ADULT_ON" "$ADULT_COUNT" "$DNS_MODE" "$TAILSCALE_COEXIST" "$SELECTIVE_DNS_ENABLED" "$ENCRYPTED_DNS_ENABLED" <<'PY'
 import json,os,sys,time
 p=sys.argv[1]
 d={
@@ -823,6 +878,7 @@ d={
   "dnsMode":sys.argv[13],
   "tailscaleCoexistence":bool(int(sys.argv[14])),
   "selectiveDns":bool(int(sys.argv[15])),
+  "selectiveDnsEncrypted":bool(int(sys.argv[16])),
   "strategy":sys.argv[9],
   "scope":sys.argv[10],
   "adultCoverage":bool(int(sys.argv[11])),
@@ -844,6 +900,10 @@ os.chown(p,int(sys.argv[5]),int(sys.argv[6]))
 PY
 
     CREATED_STATE=1
+    if [ "$ENCRYPTED_DNS_ENABLED" -eq 1 ]; then
+      python3 "$ENCRYPTED_DNS" commit ||
+        { echo '{"ok":false,"error":"ENCRYPTED_DNS_COMMIT_FAILED"}'; exit 88; }
+    fi
     if [ "$SELECTIVE_DNS_ENABLED" -eq 1 ]; then
       python3 "$SELECTIVE_DNS" commit || {
         echo '{"ok":false,"error":"SELECTIVE_DNS_COMMIT_FAILED"}'

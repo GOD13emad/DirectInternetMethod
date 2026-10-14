@@ -22,7 +22,7 @@ from gi.repository import Gtk, Adw, GLib, Gdk
 from router_gateway import RouterGatewayWindow
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
-VERSION="1.5.4"
+VERSION="1.5.5-rc1"
 GLib.set_prgname("DirectInternetMethod")
 GLib.set_application_name("Direct Internet Method")
 try:
@@ -46,7 +46,9 @@ STRATEGY_FILE=APP_HOME/"strategy.txt"
 SCOPE_FILE=APP_HOME/"scope.txt"
 SELECTIVE_DNS_OPT_IN=APP_HOME/"selective-dns-optin.txt"
 SELECTIVE_DNS_TOKEN="I_ACCEPT_UNENCRYPTED_SELECTIVE_DNS_V1"
-COEXIST_HELPER_SHA256="e52fcaeb9c60d9e43d4a5b75462455ad8c5ee4d82fee679a0cc4a3520d8abea5"
+ENCRYPTED_DNS_OPT_IN=APP_HOME/"encrypted-dns-optin.txt"
+ENCRYPTED_DNS_TOKEN="I_ACCEPT_ENCRYPTED_SELECTIVE_DNS_V1"
+COEXIST_HELPER_SHA256="b6641270d1ed8687a2fb1331016f212533bfd4e490331213ff24684d2999a397"
 LATEST_API="https://api.github.com/repos/GOD13emad/DirectInternetMethod/releases/latest"
 
 def selective_dns_optin_state():
@@ -80,6 +82,47 @@ def selective_dns_optin_save(enabled):
         if SELECTIVE_DNS_OPT_IN.stat().st_uid!=os.getuid():
             raise ValueError("Foreign experimental DNS settings cannot be deleted")
         SELECTIVE_DNS_OPT_IN.unlink()
+
+
+def encrypted_dns_optin_state():
+    """Distinct explicit consent; NEVER convert old unencrypted consent."""
+    try:
+        if ENCRYPTED_DNS_OPT_IN.is_symlink():
+            return "INVALID"
+        if not ENCRYPTED_DNS_OPT_IN.exists():
+            return "OFF"
+        st=ENCRYPTED_DNS_OPT_IN.stat()
+        if not ENCRYPTED_DNS_OPT_IN.is_file() or st.st_uid!=os.getuid() or st.st_mode & 0o077:
+            return "INVALID"
+        if selective_dns_optin_state()!="OFF":
+            return "INVALID"
+        return ("ON" if ENCRYPTED_DNS_OPT_IN.read_text(encoding="utf-8").strip()==
+                ENCRYPTED_DNS_TOKEN else "INVALID")
+    except Exception:
+        return "INVALID"
+
+
+def encrypted_dns_optin_save(enabled):
+    if ENCRYPTED_DNS_OPT_IN.is_symlink():
+        raise ValueError("Encrypted DNS consent symlink is unsafe")
+    if enabled:
+        if selective_dns_optin_state()!="OFF":
+            raise ValueError("Unencrypted DNS consent must first be disabled")
+        ENCRYPTED_DNS_OPT_IN.parent.mkdir(parents=True,exist_ok=True)
+        fd,temp=tempfile.mkstemp(prefix=".dim-encrypted-consent-",dir=str(ENCRYPTED_DNS_OPT_IN.parent))
+        try:
+            with os.fdopen(fd,"w",encoding="utf-8") as f:
+                f.write(ENCRYPTED_DNS_TOKEN+"\n")
+                f.flush();os.fsync(f.fileno())
+            os.chmod(temp,0o600)
+            os.replace(temp,ENCRYPTED_DNS_OPT_IN)
+        finally:
+            if os.path.lexists(temp):os.unlink(temp)
+    elif ENCRYPTED_DNS_OPT_IN.exists():
+        st=ENCRYPTED_DNS_OPT_IN.stat()
+        if st.st_uid!=os.getuid() or not ENCRYPTED_DNS_OPT_IN.is_file():
+            raise ValueError("Foreign encrypted DNS consent cannot be deleted")
+        ENCRYPTED_DNS_OPT_IN.unlink()
 
 
 def ui_test_log(message):
@@ -138,7 +181,7 @@ def sync_adult_catalog(force=False):
     last_error=None
     for source_url in ADULT_CATALOG_URLS:
         try:
-            req=urllib.request.Request(source_url,headers={"User-Agent":"DirectInternetMethod/1.5.4"})
+            req=urllib.request.Request(source_url,headers={"User-Agent":"DirectInternetMethod/1.5.5-rc1"})
             with urllib.request.urlopen(req,timeout=20) as resp:
                 raw=resp.read(4*1024*1024+1)
             if len(raw)<100000 or len(raw)>4*1024*1024:
@@ -292,7 +335,7 @@ def _coexistence_backend_ready():
                 not helper.is_file() or not meta.is_file()):
             return False
         installed=json.loads(meta.read_text(encoding="utf-8"))
-        return (installed.get("version") in ("1.5.2","1.5.3","1.5.4") and
+        return (installed.get("version") == "1.5.5-rc1" and
                 installed.get("uid")==os.getuid() and
                 hashlib.sha256(helper.read_bytes()).hexdigest()==COEXIST_HELPER_SHA256)
     except Exception:
@@ -427,11 +470,13 @@ def verify_live():
     return {"ok":ok,"physicalInterface":physical,"dnsMode":s.get("dnsMode","direct-doh"),"directMethods":methods,"youtubeHttp80":h,"youtube":y,"openai":o,"github":g,"gemini":m}
 
 def _version_tuple(text):
-    s=text.strip().lstrip("vV")
-    try:
-        return tuple(int(x) for x in s.split(".")[:3])
-    except Exception:
-        return (0,0,0)
+    """Stable must sort newer than prerelease with same three-digit version."""
+    s=str(text).strip().lstrip("vV")
+    hit=re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:-(rc)(\d+))?",s)
+    if not hit:
+        return (0,0,0,-1,0)
+    x,y,z,kind,number=hit.groups()
+    return (int(x),int(y),int(z), 0 if kind else 1, int(number or 0))
 
 def check_update_sync():
     req=urllib.request.Request(LATEST_API,headers={"User-Agent":f"DirectInternetMethod/{VERSION}","Accept":"application/vnd.github+json"})
@@ -744,6 +789,11 @@ class Window(Adw.ApplicationWindow):
         selective_toggle=Gtk.CheckButton(label="Opt in: experimental selected-sites DNS (unencrypted third-party UDP)")
         selective_toggle.set_active(selective_dns_optin_state()=="ON")
         outer.append(selective_toggle)
+        encrypted_toggle=Gtk.CheckButton(label="Opt in: encrypted targeted DNS (DoH to Control D; experimental)")
+        encrypted_toggle.set_active(encrypted_dns_optin_state()=="ON")
+        outer.append(encrypted_toggle)
+        enc_warn=Gtk.Label(label="Separate encrypted-DNS opt-in. Requires Targeted + Balanced and Tailscale split mode, without Seman or another VPN. Routes only supported domains over DoH. Does not guarantee all sites or remove service-side restrictions. The old unencrypted DNS consent does NOT authorize this mode.",xalign=0,wrap=True)
+        enc_warn.add_css_class("dim-label");outer.append(enc_warn)
         warn=Gtk.Label(label="Privacy warning: experimental DNS sends selected site names to 194.225.152.10 over UNENCRYPTED UDP; this is not DoH. Only Targeted + Balanced with Tailscale split mode is supported. Disabled by default. Route, Google DNS and MagicDNS must stay protected.",xalign=0,wrap=True)
         warn.add_css_class("dim-label");outer.append(warn)
         hint=Gtk.Label(label="Targeted mode affects only built-in and Custom Sites. All Sites mode can help unknown blocked domains, but may reduce compatibility or speed on some sites. Neither mode creates a VPN, proxy, or default-route tunnel.",xalign=0,wrap=True)
@@ -756,6 +806,15 @@ class Window(Adw.ApplicationWindow):
             try:
                 value=("balanced","compatibility","strong")[int(combo.get_selected())]
                 enable_dns=bool(selective_toggle.get_active())
+                enable_encrypted=bool(encrypted_toggle.get_active())
+                if enable_dns and enable_encrypted:
+                    raise ValueError("Choose exactly one DNS option. The two consent modes cannot coexist.")
+                if encrypted_dns_optin_state()=="INVALID":
+                    raise ValueError("Existing encrypted DNS consent is invalid or unsafe; inspect it before saving.")
+                if selective_dns_optin_state()=="INVALID":
+                    raise ValueError("Existing unencrypted DNS consent is invalid; inspect it before saving.")
+                if enable_encrypted and (value!="balanced" or scope_toggle.get_active()):
+                    raise ValueError("Encrypted DNS requires Targeted + Balanced and Tailscale split mode.")
                 if enable_dns and (value!="balanced" or scope_toggle.get_active()):
                     raise ValueError("Experimental unencrypted split DNS requires Balanced and Targeted. Select those options first.")
                 STRATEGY_FILE.parent.mkdir(parents=True,exist_ok=True)
@@ -768,8 +827,12 @@ class Window(Adw.ApplicationWindow):
                 st=SCOPE_FILE.with_suffix(".tmp")
                 st.write_text(scope_value+"\n",encoding="utf-8")
                 os.replace(st,SCOPE_FILE)
+                # Explicitly revoke old permission before granting new one.
+                # Never interpret the unencrypted consent token as encrypted approval.
                 selective_dns_optin_save(enable_dns)
-                privacy=(" experimental UNENCRYPTED selected DNS is opted in" if enable_dns else " experimental DNS off")
+                encrypted_dns_optin_save(enable_encrypted)
+                privacy=(" encrypted selected DNS opt-in" if enable_encrypted else
+                         " UNENCRYPTED selected DNS opt-in" if enable_dns else " experimental DNS off")
                 self.result.set_text(f"Strategy saved: {value}; scope: {scope_value};{privacy}. Stop/Start to apply.")
                 w.close();self.refresh()
             except Exception as e:

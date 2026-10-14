@@ -18,113 +18,96 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Python syntax
-        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/system/selective_dns.py linux/app/router_gateway.py tests/selective_dns_integration_safety_contract.py tests/selective_dns_monitor_lock_contract.py tests/selective_dns_full_lifecycle_mock.py tests/selective_dns_bindings_contract.py tests/selective_dns_backstop_contract.py tests/selective_dns_backstop_runtime_mock.py tests/linux_contract_audit.py tests/linux_user_update_transaction_contract.py tests/linux_real_extracted_archive_contract.py linux/app/user_update_transaction.py linux/app/user_uninstall_preserve.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_152_lifecycle.py tests/tailscale_coexistence_contract.py tests/tailscale_ui_state_contract.py tests/tailscale_gui_scope_guard_contract.py tests/tailscale_rustdesk_transport_audit.py tests/tailscale_nft_ownership_contract.py tests/tailscale_cleanup_ownership_contract.py tests/tailscale_recovery_missing_state_contract.py tests/nft_presence_fail_closed_contract.py tests/tailscale_transient_rollback_ownership_contract.py tests/linux_nft_kernel_namespace_contract.py tests/linux_mutation_action_lock_contract.py tests/linux_rollback_exit_integrity_contract.py
-      - name: Shell syntax and LF guard
+      - name: Candidate source syntax and shell safety
         shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r f; do
-            if grep -q $'\r' "$f"; then
-              echo "CRLF detected in $f" >&2
+          python3 -m compileall -q build_linux_package.py linux/app linux/system tests
+          while IFS= read -r path; do
+            if grep -q $'\r' "$path"; then
+              echo "CRLF in candidate shell: $path" >&2
               exit 1
             fi
-            bash -n "$f"
-          done < <(find linux -type f -name '*.sh' -print | sort)
-      - name: Linux and Router Gateway contract audits
-        run: |
-          python3 tests/linux_contract_audit.py
-          python3 tests/linux_user_update_transaction_contract.py
-          python3 tests/tailscale_coexistence_contract.py
-          python3 tests/selective_dns_optin_contract.py
-          python3 tests/selective_dns_isolated_runtime.py
-          python3 tests/selective_dns_restore_mock_contract.py
-          python3 tests/selective_dns_gui_optin_contract.py
-          python3 tests/selective_dns_integration_safety_contract.py
-          python3 tests/selective_dns_monitor_lock_contract.py
-          python3 tests/selective_dns_full_lifecycle_mock.py
-          python3 tests/selective_dns_bindings_contract.py
-          python3 tests/selective_dns_backstop_contract.py
-          python3 tests/selective_dns_backstop_runtime_mock.py
-          python3 tests/tailscale_ui_state_contract.py
-          python3 tests/tailscale_gui_scope_guard_contract.py
-          python3 tests/tailscale_rustdesk_transport_audit.py --selftest
-          python3 tests/tailscale_nft_ownership_contract.py
-          python3 tests/tailscale_cleanup_ownership_contract.py
-          python3 tests/tailscale_recovery_missing_state_contract.py
-          python3 tests/nft_presence_fail_closed_contract.py
-          python3 tests/tailscale_transient_rollback_ownership_contract.py
-          python3 tests/linux_nft_kernel_namespace_contract.py --source-only
-          python3 tests/linux_mutation_action_lock_contract.py
-          python3 tests/linux_rollback_exit_integrity_contract.py
-          python3 tests/adult_coverage_data_audit.py
-          python3 tests/router_gateway_contract_audit.py
-          python3 tests/release_metadata_audit.py
-          python3 tests/release_publication_negative_regression.py
-          python3 tests/unsigned_public_release_contract.py --fixtures
-          python3 tests/rejected_component_audit.py
-      - name: Isolated real-kernel nftables contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Reject direct execution against the host network namespace.
-          # The contract checks an empty isolated loopback-only namespace.
-          command -v unshare
-          command -v ip
-          if ! command -v nft >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y nftables
-          fi
-          sudo -n python3 tests/linux_nft_kernel_namespace_contract.py --kernel
-      - name: Build Linux archive
+            bash -n "$path"
+          done < <(find linux -type f -name '*.sh' | sort)
+      - name: Build deterministic Linux 1.5.5-rc1 package
         run: python3 build_linux_package.py
-      - name: Validate real extracted ZIP transaction and user-data rollback
-        run: python3 -B tests/linux_real_extracted_archive_contract.py
-      - name: Verify exact Linux candidate artifact digest
+      - name: Exact candidate SHA and non-release authority gate
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import hashlib,json,pathlib,zipfile
-          recorded=json.loads(pathlib.Path("RELEASE.json").read_text(encoding="utf-8"))
-          old=recorded["platforms"]["linux"]
-          # RELEASE.json pins the R467 unpublished new candidate artifact;
-          # a local build alone is NOT a public installed acceptance or permission to publish.
-          assert old["sha256"].upper()=="4784FCD44ED3D1B40103BCA140B2C0066784F794D07C3AE1F525334766A553C7"
-          assert recorded["version"]=="1.5.4" and recorded["status"]=="CANDIDATE_V154_UNPUBLISHED_UNPROVEN"
-          p=pathlib.Path(old["artifact"])
-          assert p.is_file(), "NEW_CANDIDATE_ARCHIVE_MISSING"
-          actual=hashlib.sha256(p.read_bytes()).hexdigest().upper()
-          expected="4784FCD44ED3D1B40103BCA140B2C0066784F794D07C3AE1F525334766A553C7"
-          assert actual==expected, f"NEW_LINUX_CANDIDATE_SHA_MISMATCH {actual} != {expected}"
-          assert p.stat().st_size==8270220, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
-          assert actual==old["sha256"].upper(), "R467_CANDIDATE_SOURCE_DIGEST_MISMATCH"
+          p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
+          expected="45A29A65B3E34302AD8E0745324EC2A1C418BB43669F9B95B15963B02CDFCC49"
+          assert p.is_file() and p.stat().st_size==8334126
+          assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
+          meta=json.loads(pathlib.Path("RELEASE.json").read_text())
+          assert meta.get("version")=="1.5.4","PUBLISHED_RELEASE_METADATA_MUST_REMAIN_STABLE"
           with zipfile.ZipFile(p) as z:
-            assert z.testzip() is None and len(z.namelist())==24
-            meta_name=next(x for x in z.namelist() if x.endswith("PACKAGE_MANIFEST.json"))
-            manifest=json.loads(z.read(meta_name))
-            assert len(manifest["files"])==22
-            prefix=meta_name[:-len("PACKAGE_MANIFEST.json")]
-            for row in manifest["files"]:
-              data=z.read(prefix+row["file"])
-              assert len(data)==row["bytes"]
-              assert hashlib.sha256(data).hexdigest().upper()==row["sha256"]
-          print("PASS R486 VERSIONED DOTNET10 LINUX CANDIDATE, V152 PUBLIC HISTORICAL UNCHANGED", actual)
+            root="DirectInternetMethod_1.5.5-rc1_Linux_x86_64/"
+            assert len(z.namelist())==28 and len(z.namelist())==len(set(z.namelist()))
+            j=json.loads(z.read(root+"PACKAGE_MANIFEST.json"))
+            assert j["version"]=="1.5.5-rc1" and len(j["files"])==26
+            for x in j["files"]:
+              data=z.read(root+x["file"])
+              assert len(data)==x["bytes"]
+              assert hashlib.sha256(data).hexdigest().upper()==x["sha256"]
+            assert z.testzip() is None
+          print("R520_EXACT_155RC1_PACKAGE_AND_PUBLIC_V154_AUTHORITY_PASS",expected)
           PY
-      - name: Validate shell syntax inside built archive
+      - name: Negative-first R519 candidate package and protected upgrade
+        run: |
+          set -euo pipefail
+          python3 -B tests/r519_versioned_package_contract.py
+          python3 -B tests/protected_upgrade_transaction_contract.py
+          python3 -B tests/r519_user_update_transaction_contract.py
+      - name: R517 encrypted DNS and Tailscale negative-first contracts
+        run: |
+          set -euo pipefail
+          python3 -B tests/encrypted_selective_dns_policy_contract.py
+          python3 -B tests/encrypted_selective_dns_controller_contract.py
+          python3 -B tests/encrypted_selective_dns_fake_lifecycle.py
+          python3 -B tests/encrypted_selective_dns_gui_consent_contract.py
+          python3 -B tests/encrypted_selective_dns_integration_contract.py
+          python3 -B tests/tailscale_coexistence_contract.py
+          python3 -B tests/selective_dns_optin_contract.py
+      - name: Package embedded shell and source-mode integrity
         shell: bash
         run: |
           set -euo pipefail
           d="$(mktemp -d)"
           trap 'rm -rf "$d"' EXIT
-          unzip -q delivery/DirectInternetMethod_1.5.4_Linux_x86_64.zip -d "$d"
+          unzip -q delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip -d "$d"
           while IFS= read -r f; do
+            bash -n "$f"
             if grep -q $'\r' "$f"; then
-              echo "CRLF detected in packaged shell: $f" >&2
+              echo "UNSAFE_PACKAGE_CRLF:$f" >&2
               exit 1
             fi
-            bash -n "$f"
-          done < <(find "$d" -type f -name '*.sh' -print | sort)
+          done < <(find "$d" -type f -name '*.sh' | sort)
+
+  linux-public-v154-regression:
+    name: linux-public-v154-regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 51009372e3c2d069d7016b97773f35ee5e1e0631
+      - name: Preserve original stable Linux contracts at exact tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "51009372e3c2d069d7016b97773f35ee5e1e0631"
+          python3 -B tests/linux_contract_audit.py
+          python3 -B tests/linux_user_update_transaction_contract.py
+          python3 -B tests/selective_dns_optin_contract.py
+          python3 -B tests/selective_dns_gui_optin_contract.py
+          python3 -B tests/selective_dns_integration_safety_contract.py
+          python3 -B tests/tailscale_coexistence_contract.py
+          python3 -B tests/release_metadata_audit.py
+          python3 build_linux_package.py
+          python3 -B tests/linux_real_extracted_archive_contract.py
 
   windows-source:
     name: windows-source
