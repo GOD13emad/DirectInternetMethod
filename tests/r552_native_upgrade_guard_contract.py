@@ -33,7 +33,7 @@ class Cases(unittest.TestCase):
             target.chmod(0o600)
         g.write_new=synthetic_receipt
         g.SERVICE=p/"unit.service";g.TIMER=p/"unit.timer"
-        self.fake={"user":"runner","home":str(self.home),"uid":1000}
+        self.fake={"user":"runner","home":str(self.home),"uid":os.getuid()}
         g.verify_guard_files=lambda:self.fake
         self.events=[]
         g.verify_installed_after_restore=lambda j:self.events.append("validate_restored")
@@ -109,7 +109,7 @@ class Cases(unittest.TestCase):
              "protectedBackendVersion":g.VERSION}))
         meta.chmod(0o600)
         rootmeta=self.home/"root-meta.json"
-        rootmeta.write_text(json.dumps({"version":g.VERSION,"uid":1000}))
+        rootmeta.write_text(json.dumps({"version":g.VERSION,"uid":os.getuid()}))
         class CommittedRoot:
             native=True
             meta=rootmeta
@@ -117,7 +117,7 @@ class Cases(unittest.TestCase):
             def status(self):self.calls.append("status");return {"status":"COMMITTED"}
             def manifest(self):
                 return {"phase":"COMMITTED","fromVersion":g.BASELINE,
-                    "toVersion":g.VERSION,"uid":1000,"home":str(self_home),
+                    "toVersion":g.VERSION,"uid":os.getuid(),"home":str(self_home),
                     "files":{"helper":{"new":"EXPECTED"}},"newMetadataSHA":"ROOT_META_SHA"}
             def _validate_slot(self,m):self.calls.append("validate")
             def _target_states(self,m):self.calls.append("target_states");return {"helper":"EXPECTED"},"ROOT_META_SHA"
