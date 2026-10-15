@@ -52,7 +52,11 @@ def negative_first():
 def main():
     negative_first()
     ci=CI.read_text("utf-8")
-    assert ci.count("dotnet-version: '10.0.x'")==1
+    expected_dotnet_jobs = 2 if CURRENT=="1.5.5-rc1" else 1
+    assert ci.count("dotnet-version: '10.0.x'")==expected_dotnet_jobs,"SDK_10_JOB_PIN_COUNT"
+    if CURRENT=="1.5.5-rc1":
+        assert ci.count("  windows-private-r535-native:")==1
+        assert "runs-on: windows-2025" in ci and "tests/r535_windows_native_rollback.ps1" in ci
     assert "dotnet-version: '8.0.x'" not in ci
     assert ci.count("python -B tests/dotnet10_target_contract.py")==1
     assert ci.count("dotnet build windows/gui/DirectInternetMethod.csproj")==1
