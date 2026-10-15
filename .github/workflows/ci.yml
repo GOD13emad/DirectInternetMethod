@@ -85,6 +85,7 @@ jobs:
           python3 -B tests/r538_active_encrypted_status_contract.py
           python3 -B tests/r541_route_interface_drift_contract.py
           python3 -B tests/r545_periodic_gui_status_contract.py
+          python3 -B tests/r552_native_upgrade_guard_contract.py
           python3 -B tests/tailscale_ui_state_contract.py
           python3 -B tests/tailscale_gui_scope_guard_contract.py
           python3 -B tests/encrypted_selective_dns_integration_contract.py
