@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import datetime
 import os
 from pathlib import Path
 import pwd
@@ -158,18 +159,21 @@ def guard_files(source:Path,uid:int,user:str,home:Path,um:Path,rm:Path):
               "oldUserMetaSha":sha_file(um),"oldResolverSha":sha_file(dns),
               "oldResolverLink":os.readlink(dns) if dns.is_symlink() else None,
               "createdUtc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
-              "timerSeconds":480,"networkMutationByWatchdog":False}
+              "timerSeconds":480,"deadlineUnix":int(time.time())+480,
+              "networkMutationByWatchdog":False}
     write_new(BASELINE_FILE,canonical(baseline),0o600)
     return baseline
 
-def unit_templates():
+def unit_templates(deadline_unix:int):
+    need(type(deadline_unix) is int and deadline_unix>0,"INVALID_CALENDAR_DEADLINE")
+    deadline=datetime.datetime.fromtimestamp(deadline_unix,datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     service=("[Unit]\nDescription=Direct Internet Method guarded root+user upgrade rollback\n"
              "After=local-fs.target\n"
              "[Service]\nType=oneshot\nUser=root\nGroup=root\n"
              "ExecStart=/usr/bin/python3 -B "+str(WORKER)+" rollback\n"
              "TimeoutStartSec=120\nNoNewPrivileges=false\nUMask=0077\n")
     timer=("[Unit]\nDescription=Direct Internet Method guarded upgrade timeout\n"
-           "[Timer]\nOnActiveSec=480s\nAccuracySec=1s\n"
+           "[Timer]\nOnActiveSec=480s\nOnCalendar="+deadline+"\nPersistent=true\nAccuracySec=1s\n"
            "Unit="+UNIT+".service\n"
            "[Install]\nWantedBy=timers.target\n")
     return service.encode(),timer.encode()
@@ -204,7 +208,7 @@ def arm(source:Path,expected_uid:int):
     need(uid==expected_uid,"USER_IDENTITY_CHANGED")
     staged_user_manifest(home,uid,um)
     baseline=guard_files(source,uid,user,home,um,rm)
-    s,t=unit_templates()
+    s,t=unit_templates(baseline["deadlineUnix"])
     write_new(SERVICE,s,0o644)
     write_new(TIMER,t,0o644)
     for cmd in ([ "/usr/bin/systemctl","daemon-reload"],
@@ -227,6 +231,12 @@ def verify_guard_files():
          and sha_file(ROOT_TX)==PIN_ROOT and sha_file(USER_TX)==PIN_USER,
          "GUARD_SOURCE_SHA")
     for p in (SERVICE,TIMER):regular(p,0,0o644)
+    need(j.get("timerSeconds")==480 and
+         type(j.get("deadlineUnix")) is int and
+         j["deadlineUnix"]>0,"BASELINE_DEADLINE")
+    service,timer=unit_templates(j["deadlineUnix"])
+    need(SERVICE.read_bytes()==service and TIMER.read_bytes()==timer,
+         "ROOT_OWNED_TIMER_BYTES_CHANGED")
     return j
 
 def verify_timer():

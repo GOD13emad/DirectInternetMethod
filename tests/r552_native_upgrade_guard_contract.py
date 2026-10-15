@@ -2,7 +2,7 @@
 """R552 source-extracted regression: worker/timer logic, ZERO installed actions."""
 import hashlib,importlib.util,json,os,pathlib,tempfile,types,unittest
 SRC=pathlib.Path(__file__).resolve().parents[1]/"linux/system/upgrade_guard.py"
-SOURCE_SHA="8651A4E32E8E4FCD832AD79BCD885F73B1DE6242B575EACE2C131C3B63749F43"
+SOURCE_SHA="81A07EBB3E08CC5D4C9BF92EDFD2042F7464532F11851047C9F0867983B0D444"
 assert hashlib.sha256(SRC.read_bytes()).hexdigest().upper()==SOURCE_SHA
 spec=importlib.util.spec_from_file_location("r552_candidate",SRC)
 g=importlib.util.module_from_spec(spec)
@@ -42,12 +42,26 @@ class Cases(unittest.TestCase):
         g.os.geteuid=lambda:0
         self.addCleanup(lambda:setattr(g.os,"geteuid",self.old_geteuid))
     def test_01_independent_timer_survives_reboot(self):
-        s,t=g.unit_templates()
+        deadline=1900000000
+        s,t=g.unit_templates(deadline)
         self.assertIn(b"OnActiveSec=480s",t)
+        self.assertIn(b"OnCalendar=2030-03-17 17:46:40 UTC",t)
+        self.assertIn(b"Persistent=true",t)
         self.assertIn(b"WantedBy=timers.target",t)
         self.assertNotIn(b"OnBootSec=",t)
         self.assertIn(b"User=root",s)
         self.assertIn(b"rollback",s)
+    def test_13_calendar_deadline_fixed_across_timer_restart(self):
+        _,original=g.unit_templates(1900000000)
+        _,same=g.unit_templates(1900000000)
+        _,later=g.unit_templates(1900000060)
+        self.assertEqual(original,same)
+        self.assertNotEqual(original,later)
+        self.assertIn(b"Persistent=true",original)
+        self.assertNotIn(b"OnBootSec=",original)
+    def test_14_invalid_calendar_deadline_rejected(self):
+        for bad in ("1900000000",None,-1,0,True):
+            with self.assertRaises(RuntimeError):g.unit_templates(bad)
     def test_02_no_pending_does_not_change_system(self):
         tx=FakeTx("NO_PENDING_UPGRADE");g.imported_root=lambda:tx
         self.assertEqual(g.rollback_worker(),0)

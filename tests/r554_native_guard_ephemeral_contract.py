@@ -28,9 +28,9 @@ R529=R/"tests/r529_ephemeral_root_user_transaction.py"
 R526=R/"tests/r526_installer_metadata_contract.py"
 ROOT=R/"linux/system/protected_upgrade_transaction.py"
 GUARD=R/"linux/system/upgrade_guard.py"
-PIN_PACKAGE="E30367FF492984FACE32DCD9AC34C09AC5CBA7E18432CB5F1B4D939E91415805"
+PIN_PACKAGE="CA249D9792C69320E934C53888EFB577729AB4A616A8951EF1736ED7161445DE"
 PIN_ROOT="EB107164CCEDE891C8BF41C06FF422F1B53B59D2D2DDF0B3DD23EBFE5DE9601B"
-PIN_GUARD="8651A4E32E8E4FCD832AD79BCD885F73B1DE6242B575EACE2C131C3B63749F43"
+PIN_GUARD="81A07EBB3E08CC5D4C9BF92EDFD2042F7464532F11851047C9F0867983B0D444"
 PIN_USER="EAC84CB951F520F0E6A05D1452EF355A1CC89D7C68DEB73F91BA14C8E1C4BD66"
 NAME="directinternetmethod-upgrade-rollback"
 SEEN=Path("/var/lib/directinternetmethod/upgrade-guard/rollback-result.json")
@@ -136,6 +136,27 @@ def run():
     present=guard.verify_timer()
     need(present["uid"]==user.pw_uid and present["workerSha"]==sha(guard.WORKER),
          "SYSTEMD_TIMER_GUARD")
+    # R559: the calendar deadline is immutable across timer restart. On
+    # reboot the original calendar event and Persistent=true restore the
+    # missed rollback, rather than restarting OnActiveSec from zero.
+    deadline=present.get("deadlineUnix")
+    need(type(deadline) is int and deadline>0,"PERSISTENT_DEADLINE_IN_BASELINE")
+    timestamp=guard.datetime.datetime.fromtimestamp(
+        deadline,guard.datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    timer_body=guard.TIMER.read_text("utf8")
+    need("OnCalendar="+timestamp+"\n" in timer_body and
+         "Persistent=true\n" in timer_body and
+         "OnActiveSec=480s\n" in timer_body,"PERSISTENT_WATCHDOG_TIMER_CONTENT")
+    command(["/usr/bin/systemd-analyze","calendar",timestamp],10)
+    next_cal_before=command(["/usr/bin/systemctl","show",NAME+".timer",
+                             "-p","NextElapseUSecRealtime","--value"])
+    need(next_cal_before and next_cal_before not in ("n/a","0"),
+         "CALENDAR_DEADLINE_NOT_SCHEDULED")
+    command(["/usr/bin/systemctl","restart",NAME+".timer"],12)
+    next_cal_after=command(["/usr/bin/systemctl","show",NAME+".timer",
+                            "-p","NextElapseUSecRealtime","--value"])
+    need(next_cal_after==next_cal_before,"RESTART_MOVED_ORIGINAL_DEADLINE")
+    guard.verify_timer()
     need(root_tx.status()["status"]=="APPLIED","ROOT_PENDING")
     r529.as_runner(user,tx_user,"--apply","--source",extracted)
     manifest=json.loads((pending/"manifest.json").read_text())
@@ -195,6 +216,7 @@ def run():
       "guardArmedBeforeRootMutation":True,
       "systemdServiceStartedInSeparateProcess":True,
       "timerNativeLoadedAndEnabledBeforeMutation":True,
+      "calendarDeadlinePreservedAcrossTimerRestart":True,
       "productionShellUpgradeWrapperExecuted":native_wrapper,
       "rootAndUserByteExactRestoration":True,
       "mutatedProductionHost":False,"modifiedRouteDnsOrTailscale":False,
