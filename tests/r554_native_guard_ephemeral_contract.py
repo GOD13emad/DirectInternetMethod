@@ -115,16 +115,27 @@ def run():
     need((pending/"manifest.json").is_file(),"USER_STAGE")
     r529.unchanged_records(original_user)
     r529.unchanged_records(private)
-    # The exact installed native watchdog must be armed while Root is OLD.
-    armed=guard.arm(extracted,user.pw_uid)
-    need(armed["status"]=="ARMED_INDEPENDENT_ROOT_USER_WATCHDOG","WATCHDOG_ARM")
+    # Two separate disposable-VM paths: original direct product transaction
+    # and the ACTUAL production upgrade_system.sh wrapper and auto-arm.
+    # Both must install the same root-owned timer and restore exact baselines.
+    native_wrapper=os.environ.get("DIM_R555_EXACT_WRAPPER")=="true"
+    need(root_tx.status()["status"]=="NO_PENDING_UPGRADE","ROOT_MUTATED_BEFORE_ARM")
+    if native_wrapper:
+        wrapper=extracted/"system/upgrade_system.sh"
+        need(wrapper.is_file() and not wrapper.is_symlink(),"EXACT_WRAPPER")
+        out=command(["/bin/bash",str(wrapper),str(extracted),str(user.pw_uid)],80)
+        need("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED" in out
+             and "ROOT_R519_APPLIED_UNCOMMITTED" in out,
+             "PRODUCTION_WRAPPER_GUARD_ACCEPTANCE")
+    else:
+        armed=guard.arm(extracted,user.pw_uid)
+        need(armed["status"]=="ARMED_INDEPENDENT_ROOT_USER_WATCHDOG","WATCHDOG_ARM")
+        need(root_tx.status()["status"]=="NO_PENDING_UPGRADE","ROOT_MUTATED_BEFORE_ARM")
+        need(root_tx.stage(extracted)["status"]=="STAGED","ROOT_STAGE")
+        need(root_tx.apply()["status"]=="APPLIED","ROOT_APPLY")
     present=guard.verify_timer()
     need(present["uid"]==user.pw_uid and present["workerSha"]==sha(guard.WORKER),
          "SYSTEMD_TIMER_GUARD")
-    need(root_tx.status()["status"]=="NO_PENDING_UPGRADE","ROOT_MUTATED_BEFORE_ARM")
-    # The true production Root transaction now changes protected code.
-    need(root_tx.stage(extracted)["status"]=="STAGED","ROOT_STAGE")
-    need(root_tx.apply()["status"]=="APPLIED","ROOT_APPLY")
     need(root_tx.status()["status"]=="APPLIED","ROOT_PENDING")
     r529.as_runner(user,tx_user,"--apply","--source",extracted)
     manifest=json.loads((pending/"manifest.json").read_text())
@@ -184,6 +195,7 @@ def run():
       "guardArmedBeforeRootMutation":True,
       "systemdServiceStartedInSeparateProcess":True,
       "timerNativeLoadedAndEnabledBeforeMutation":True,
+      "productionShellUpgradeWrapperExecuted":native_wrapper,
       "rootAndUserByteExactRestoration":True,
       "mutatedProductionHost":False,"modifiedRouteDnsOrTailscale":False,
       "publishedStablePreserved":"v1.5.4",
