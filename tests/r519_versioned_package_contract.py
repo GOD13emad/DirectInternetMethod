@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":26,"sha256":"66B623D41DD7DC6C5BE141143E863D970EE2230C5D61F1D47142A16AD53DA296"}
+EXPECTED={"version":VERSION,"files":26,"sha256":"0C5BA7F8DA540412E8417152D0E6FF75F1FFE4ADAB06EE0A1FE72223A94A4839"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -82,12 +82,18 @@ class Tests(unittest.TestCase):
         self.assertEqual(set(before),set(after))
         self.assertEqual(len(before),26)
         changed={name for name in before if before[name]!=after[name]}
-        self.assertEqual(changed,{"app/user_uninstall_preserve.py","app/direct_internet_method.py"})
+        self.assertEqual(changed,{"app/user_uninstall_preserve.py","app/direct_internet_method.py",
+                                 "app/direct_method_helper.sh","system/protected_upgrade_transaction.py",
+                                 "system/upgrade_system.sh"})
         self.assertEqual(after["app/direct_internet_method.py"]["sha256"],
-                         "652E1D332BF4A3F1F6659E991CFDFFDC3CD85B32B4632FEB255A3533188FF4FB")
+                         "83A50CB575F6398A75904A5E422ADF0A416447BFC0C2899C00BF2FC57B31C875")
         self.assertIn("encrypted=encrypted_dns_optin_state()",
                       self.info.read(self.prefix+"app/direct_internet_method.py").decode())
         self.assertIn('s.get("selectiveDnsEncrypted")',
+                      self.info.read(self.prefix+"app/direct_internet_method.py").decode())
+        self.assertIn('PHYSICAL_INTERFACE_ROUTE_DRIFT',
+                      self.info.read(self.prefix+"app/direct_method_helper.sh").decode())
+        self.assertIn('PHYSICAL_INTERFACE_ROUTE_DRIFT',
                       self.info.read(self.prefix+"app/direct_internet_method.py").decode())
         previous=before["app/user_uninstall_preserve.py"]
         self.assertEqual((previous["bytes"],previous["sha256"]),

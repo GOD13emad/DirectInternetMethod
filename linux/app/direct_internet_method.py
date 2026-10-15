@@ -48,7 +48,7 @@ SELECTIVE_DNS_OPT_IN=APP_HOME/"selective-dns-optin.txt"
 SELECTIVE_DNS_TOKEN="I_ACCEPT_UNENCRYPTED_SELECTIVE_DNS_V1"
 ENCRYPTED_DNS_OPT_IN=APP_HOME/"encrypted-dns-optin.txt"
 ENCRYPTED_DNS_TOKEN="I_ACCEPT_ENCRYPTED_SELECTIVE_DNS_V1"
-COEXIST_HELPER_SHA256="b6641270d1ed8687a2fb1331016f212533bfd4e490331213ff24684d2999a397"
+COEXIST_HELPER_SHA256="99279af19445b4b793d903ee0e114930869039ce0ac1fb6ff4b412ba79665466"
 LATEST_API="https://api.github.com/repos/GOD13emad/DirectInternetMethod/releases/latest"
 
 def selective_dns_optin_state():
@@ -434,6 +434,18 @@ def load_state():
               _systemd_unit_matches(s.get("ctrldUnit"),s.get("ctrldPid"),f"directinternetmethod-ctrld-{uid}.service"))
     nfqws_ok=_systemd_unit_matches(s.get("nfqwsUnit"),s.get("nfqwsPid"),f"directinternetmethod-nfqws-{uid}.service")
     if ctrld_ok and nfqws_ok:
+        # NFQUEUE nft output rules are bound to the physical interface
+        # recorded at Start. A changed/default route silently bypasses all
+        # filtering even while the nfqws PID and systemd unit remain ACTIVE.
+        # Read current routing only; never switch a user's network here.
+        recorded_iface=str(s.get("physicalInterface") or "")
+        current_iface=_top_default_iface()
+        if not recorded_iface or not current_iface or current_iface!=recorded_iface:
+            return {"mode":"STALE",
+                    "detail":f"Network path changed: owned NFQUEUE rules use {recorded_iface or 'missing'}, "
+                             f"but the current default route uses {current_iface or 'missing'}. "
+                             "Stop or Recovery, then Start after the route stabilizes; "
+                             "Tailscale and DNS were not altered."}
         if preserved:
             # Authoritative ACTIVE state is written by the protected helper,
             # not inferred from (possibly since-revoked) user preference files.
@@ -474,6 +486,10 @@ def verify_live():
         return {"ok":False,"error":"STATE_UNREADABLE_AFTER_START"}
     if not physical:
         return {"ok":False,"error":"PHYSICAL_INTERFACE_MISSING"}
+    current_iface=_top_default_iface()
+    if not current_iface or current_iface!=physical:
+        return {"ok":False,"error":"PHYSICAL_INTERFACE_ROUTE_DRIFT",
+                "recordedInterface":physical,"currentInterface":current_iface}
     if s.get("selectiveDns") and s.get("selectiveDnsEncrypted"):
         return {"ok":False,"error":"CONFLICTING_SELECTIVE_DNS_STATE"}
     if _external_tunnel_active():

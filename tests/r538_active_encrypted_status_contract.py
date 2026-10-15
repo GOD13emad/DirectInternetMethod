@@ -48,6 +48,7 @@ class ActiveEncryptedDoH(unittest.TestCase):
             "subprocess":types.SimpleNamespace(run=self.fake_run),
             "_external_tunnel_active":lambda:self.external_tunnel,
             "_tailscale_split_safe":lambda:self.tailscale_safe,
+            "_top_default_iface":lambda:self.data["physicalInterface"],
             "_systemd_unit_matches":lambda *a:self.backend_unit_active,
         }
         exec(compile(ast.Module(body=METHODS,type_ignores=[]),str(APP),"exec"),self.env)

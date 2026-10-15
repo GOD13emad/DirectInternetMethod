@@ -35,6 +35,7 @@ env={"json":json,"STATE":state,"SCOPE_FILE":scope,"pathlib":SimpleNamespace(Path
      "os":SimpleNamespace(getuid=lambda:1000),
      "_external_tunnel_active":lambda:False,
      "_tailscale_split_safe":lambda:True,
+     "_top_default_iface":lambda:"enp1s0",
      "_coexistence_backend_ready":lambda:True,
      "selective_dns_optin_state":lambda:"OFF",
      "encrypted_dns_optin_state":lambda:"OFF",

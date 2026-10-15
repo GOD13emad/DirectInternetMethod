@@ -582,6 +582,21 @@ case "$ACTION" in
     trap rollback_on_exit EXIT
 
     if [ -f "$STATE" ]; then
+      # Do not claim ALREADY_ACTIVE when networking changed under a live
+      # owned nfqueue session. The nft OUTPUT rules match *only* the PHY
+      # saved at Start; a changed physical default route bypasses the engine.
+      # This is read-only, leaves the existing owner's resources in place,
+      # and requires an explicit Stop/Recovery and new Start to rebind.
+      PREVIOUS_PHY="$(state_value physicalInterface)"
+      CURRENT_PHY="$(physical_iface)"
+      if [ -z "$PREVIOUS_PHY" ] || [ -z "$CURRENT_PHY" ] ||
+         [ "$PREVIOUS_PHY" != "$CURRENT_PHY" ] ||
+         [ "$(top_iface)" != "$CURRENT_PHY" ]; then
+        START_COMMITTED=1
+        trap - EXIT
+        echo '{"ok":false,"error":"PHYSICAL_INTERFACE_ROUTE_DRIFT","action":"STOP_THEN_START_AFTER_ROUTE_STABILIZES"}'
+        exit 79
+      fi
       CPID="$(state_value ctrldPid)"
       NPID="$(state_value nfqwsPid)"
       PREVIOUS_DNS_MODE="$(state_value dnsMode)"
