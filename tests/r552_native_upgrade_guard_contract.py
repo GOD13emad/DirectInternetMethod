@@ -2,7 +2,7 @@
 """R552 source-extracted regression: worker/timer logic, ZERO installed actions."""
 import hashlib,importlib.util,json,os,pathlib,tempfile,types,unittest
 SRC=pathlib.Path(__file__).resolve().parents[1]/"linux/system/upgrade_guard.py"
-SOURCE_SHA="81A07EBB3E08CC5D4C9BF92EDFD2042F7464532F11851047C9F0867983B0D444"
+SOURCE_SHA="3B4900DB3251A81BF5776EE19D63A4CCDC032585DEFCC22DDFE06331B44BADD3"
 assert hashlib.sha256(SRC.read_bytes()).hexdigest().upper()==SOURCE_SHA
 spec=importlib.util.spec_from_file_location("r552_candidate",SRC)
 g=importlib.util.module_from_spec(spec)
@@ -101,12 +101,39 @@ class Cases(unittest.TestCase):
         self.assertEqual(g.rollback_worker(),90)
         self.assertEqual(tx.calls,["status"])
         self.assertIn("USER_ROLLBACK",json.loads(self.result.read_text())["failure"])
+    def _accepted_root_fixture(self):
+        app=self.home/g.USER_REL
+        app.mkdir(parents=True,exist_ok=True)
+        meta=app/"INSTALL.json"
+        meta.write_text(json.dumps({"schema":2,"version":g.VERSION,
+             "protectedBackendVersion":g.VERSION}))
+        meta.chmod(0o600)
+        rootmeta=self.home/"root-meta.json"
+        rootmeta.write_text(json.dumps({"version":g.VERSION,"uid":1000}))
+        class CommittedRoot:
+            native=True
+            meta=rootmeta
+            calls=[]
+            def status(self):self.calls.append("status");return {"status":"COMMITTED"}
+            def manifest(self):
+                return {"phase":"COMMITTED","fromVersion":g.BASELINE,
+                    "toVersion":g.VERSION,"uid":1000,"home":str(self_home),
+                    "files":{"helper":{"new":"EXPECTED"}},"newMetadataSHA":"ROOT_META_SHA"}
+            def _validate_slot(self,m):self.calls.append("validate")
+            def _target_states(self,m):self.calls.append("target_states");return {"helper":"EXPECTED"},"ROOT_META_SHA"
+            def rollback(self):raise AssertionError("ACCEPTED_ROOT_MUST_NEVER_ROLLBACK")
+        self_home=self.home
+        tx=CommittedRoot()
+        g.imported_root=lambda:tx
+        return tx,meta
+
     def test_07_committed_does_not_rollback(self):
-        tx=FakeTx("COMMITTED");g.imported_root=lambda:tx
+        tx,_=self._accepted_root_fixture()
         self.assertEqual(g.rollback_worker(),0)
         self.assertEqual(json.loads(self.result.read_text())["status"],
                          "NO_ROLLBACK_ALREADY_COMMITTED")
-        self.assertEqual(tx.calls,["status"])
+        self.assertNotIn("user_command",self.events)
+        self.assertEqual(tx.calls,["status","validate","target_states"])
     def test_08_idempotent_second_run_denied_by_owned_receipt(self):
         tx=FakeTx("NO_PENDING_UPGRADE");g.imported_root=lambda:tx
         self.assertEqual(g.rollback_worker(),0)
@@ -114,6 +141,60 @@ class Cases(unittest.TestCase):
         self.assertEqual(json.loads(self.result.read_text())["status"],
                          "NO_CHANGE_NO_PENDING")
         # Note second call currently computes but does not overwrite receipt.
+    def test_15_interrupted_accepted_root_finishes_exact_user_only(self):
+        tx,_=self._accepted_root_fixture()
+        pending=self.home/g.PENDING_REL
+        pending.mkdir(parents=True)
+        calls=[]
+        def confirm(args,timeout=15):
+            calls.append(tuple(args))
+            self.assertEqual(args[-1],"--commit")
+            self.assertEqual(timeout,45)
+            pending.rmdir()
+            return types.SimpleNamespace(returncode=0,stdout="USER_COMMIT",stderr="")
+        g.command=confirm
+        self.assertEqual(g.rollback_worker(),0)
+        out=json.loads(self.result.read_text())
+        self.assertEqual(out["status"],"PASS_RESUMED_ACCEPTED_ROOT_USER_COMMIT")
+        self.assertEqual(out["userForwardCommit"],"PASS")
+        self.assertTrue(out["finalizationAttempted"])
+        self.assertFalse(pending.exists())
+        self.assertEqual(len(calls),1)
+        self.assertEqual(tx.calls,["status","validate","target_states"])
+    def test_16_rejected_user_commit_never_rolls_back_accepted_root(self):
+        tx,_=self._accepted_root_fixture()
+        pending=self.home/g.PENDING_REL;pending.mkdir(parents=True)
+        g.command=lambda args,timeout=15:types.SimpleNamespace(
+            returncode=84,stdout="",stderr="synthetic tampered config")
+        self.assertEqual(g.rollback_worker(),90)
+        doc=json.loads(self.result.read_text())
+        self.assertEqual(doc["status"],"DEGRADED_UNRESOLVED")
+        self.assertIn("USER_FORWARD_COMMIT",doc["failure"])
+        self.assertTrue(pending.exists())
+        self.assertEqual(tx.calls,["status","validate","target_states"])
+    def test_17_root_binary_drift_blocks_forward_commit(self):
+        tx,_=self._accepted_root_fixture()
+        pending=self.home/g.PENDING_REL;pending.mkdir(parents=True)
+        tx._target_states=lambda m:({"helper":"FOREIGN"},"ROOT_META_SHA")
+        g.command=lambda args,timeout=15: (_ for _ in ()).throw(
+            AssertionError("USER_COMMIT_MUST_NOT_RUN"))
+        self.assertEqual(g.rollback_worker(),90)
+        doc=json.loads(self.result.read_text())
+        self.assertIn("ACCEPTED_ROOT_BINARY_OR_METADATA_DRIFT",doc["failure"])
+        self.assertTrue(pending.exists())
+    def test_18_active_engine_allows_only_accepted_backup_cleanup(self):
+        tx,_=self._accepted_root_fixture()
+        pending=self.home/g.PENDING_REL;pending.mkdir(parents=True)
+        state=self.home/g.USER_REL/"directmethod/state.json"
+        state.parent.mkdir(parents=True);state.write_text("{}")
+        g.command=lambda args,timeout=15:(
+            pending.rmdir() or types.SimpleNamespace(returncode=0,stdout="",stderr=""))
+        self.assertEqual(g.rollback_worker(),0)
+        self.assertTrue(state.is_file())
+        self.assertNotIn("user_command",self.events)
+        self.assertEqual(json.loads(self.result.read_text())["status"],
+                         "PASS_RESUMED_ACCEPTED_ROOT_USER_COMMIT")
+
     def test_09_sources_are_not_host_install_commands(self):
         src=SRC.read_text()
         self.assertNotIn("sudo -S",src)

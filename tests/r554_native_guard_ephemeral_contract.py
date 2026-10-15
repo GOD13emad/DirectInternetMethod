@@ -28,9 +28,9 @@ R529=R/"tests/r529_ephemeral_root_user_transaction.py"
 R526=R/"tests/r526_installer_metadata_contract.py"
 ROOT=R/"linux/system/protected_upgrade_transaction.py"
 GUARD=R/"linux/system/upgrade_guard.py"
-PIN_PACKAGE="CA249D9792C69320E934C53888EFB577729AB4A616A8951EF1736ED7161445DE"
+PIN_PACKAGE="B2960E957D2314F43DA719AAFE097E48FDD3CAA647A02844333818DC50A37471"
 PIN_ROOT="EB107164CCEDE891C8BF41C06FF422F1B53B59D2D2DDF0B3DD23EBFE5DE9601B"
-PIN_GUARD="81A07EBB3E08CC5D4C9BF92EDFD2042F7464532F11851047C9F0867983B0D444"
+PIN_GUARD="3B4900DB3251A81BF5776EE19D63A4CCDC032585DEFCC22DDFE06331B44BADD3"
 PIN_USER="EAC84CB951F520F0E6A05D1452EF355A1CC89D7C68DEB73F91BA14C8E1C4BD66"
 NAME="directinternetmethod-upgrade-rollback"
 SEEN=Path("/var/lib/directinternetmethod/upgrade-guard/rollback-result.json")
@@ -177,31 +177,80 @@ def run():
     need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.5-rc1",
          "UPGRADED_ROOT_VERSION")
     need(root_tx.status()["status"]=="APPLIED","ROOT_STILL_PENDING")
+    # R562 tests interruption AFTER a deliberately simulated protected Root
+    # acceptance and BEFORE User commit. NOT real owner/live acceptance:
+    # a marked synthetic fixture exercises the fail-closed crash window only.
+    synthetic_promotion=os.environ.get("DIM_R562_SYNTHETIC_PROMOTION")=="true"
+    if synthetic_promotion:
+        m=root_tx.manifest()
+        fixture={
+            "revision":"R519","status":"PASS_NATIVE_ROOT_UPGRADE",
+            "syntheticAcceptanceFixture":True,
+            "sourceRootSHA":rootmod.sha(rootmod.canonical(m["files"])),
+            "protectedMetadataSHA":m["newMetadataSHA"],
+            "nativeStartStopRecovery":True,
+            "tailscalePreserved":True,
+            "physicalDNSPreserved":True
+        }
+        acceptance=Path(temp)/"DIM_R562_TEST_ONLY_ACCEPTANCE.json"
+        need(not acceptance.exists() and not acceptance.is_symlink(),
+             "FOREIGN_TEST_ACCEPTANCE_EXISTS")
+        acceptance.write_text(json.dumps(fixture,sort_keys=True,indent=2)+"\n")
+        need(root_tx.commit(acceptance)["status"]=="COMMITTED",
+             "SYNTHETIC_ROOT_FINALIZATION")
+        need(root_tx.status()["status"]=="COMMITTED" and pending.is_dir(),
+             "ROOT_COMMITTED_USER_STILL_PENDING_WINDOW")
     # Actual independent root-owned systemd Service, rather than calling
     # guard.rollback_worker in-process. R532 separately proves timed firing.
     start=time.monotonic()
     command(["/usr/bin/systemctl","start",NAME+".service"],100)
     need(SEEN.is_file() and not SEEN.is_symlink(),"SYSTEMD_RECEIPT_MISSING")
     receipt=json.loads(SEEN.read_text())
-    need(receipt.get("status")=="PASS_AUTONOMOUS_TWO_SIDED_RESTORATION"
-         and receipt.get("uid")==0 and receipt.get("userRollback")=="PASS"
-         and receipt.get("rootRollback")=="PASS"
-         and receipt.get("recoveryAttempted") is True,
-         "ROOT_OWNED_SERVICE_NOT_ACCEPTED")
-    need(root_tx.status()["status"]=="ROLLED_BACK","ROOT_PHASE_NOT_ROLLED_BACK")
-    need(not pending.exists(),"USER_PENDING_REMAINS")
-    need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.4",
-         "USER_VERSION_NOT_RESTORED")
-    need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.2",
-         "ROOT_VERSION_NOT_RESTORED")
-    need(sha(app/"INSTALL.json")==before_user
-         and sha("/var/lib/directinternetmethod/install.json")==before_root,
-         "ORIGINAL_METADATA_SHA_DRIFT")
-    for target,want in original_user.items():
-        need(sha(target).lower()==want,"USER_FILE_RESTORATION_"+Path(target).name)
+    if synthetic_promotion:
+        need(receipt.get("status")=="PASS_RESUMED_ACCEPTED_ROOT_USER_COMMIT"
+             and receipt.get("uid")==0
+             and receipt.get("userForwardCommit")=="PASS"
+             and receipt.get("finalizationAttempted") is True,
+             "ACCEPTED_ROOT_USER_COMMIT_NOT_RECONCILED")
+        need(root_tx.status()["status"]=="COMMITTED","ACCEPTED_ROOT_PHASE_LOST")
+        need(not pending.exists(),"USER_BACKUP_NOT_RELEASED")
+        need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.5-rc1",
+             "COMMITTED_USER_VERSION")
+        need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.5-rc1",
+             "COMMITTED_ROOT_VERSION")
+        installed_manifest=json.loads((app/"INSTALL.json").read_text())
+        for rel,row in manifest["managed"].items():
+            dest=app/rel
+            need(dest.is_file() and sha(dest).lower()==row["sha"],
+                 "COMMITTED_USER_CODE_DRIFT_"+rel)
+        for _,relative,target,oldsha,newsha,mode in rootmod.FILES:
+            dest=Path("/")/target
+            need(dest.is_file() and sha(dest)==newsha
+                 and stat.S_IMODE(dest.stat().st_mode)==mode,
+                 "COMMITTED_ROOT_CODE_DRIFT_"+dest.name)
+        for rel,want in rootmod.STATIC_ROOT.items():
+            need(sha(Path("/")/rel)==want,"STATIC_ROOT_CHANGED_"+Path(rel).name)
+        need(root_tx.pending.is_dir(),"ROOT_AUDIT_SLOT_STILL_RETAINED")
+    else:
+        need(receipt.get("status")=="PASS_AUTONOMOUS_TWO_SIDED_RESTORATION"
+             and receipt.get("uid")==0 and receipt.get("userRollback")=="PASS"
+             and receipt.get("rootRollback")=="PASS"
+             and receipt.get("recoveryAttempted") is True,
+             "ROOT_OWNED_SERVICE_NOT_ACCEPTED")
+        need(root_tx.status()["status"]=="ROLLED_BACK","ROOT_PHASE_NOT_ROLLED_BACK")
+        need(not pending.exists(),"USER_PENDING_REMAINS")
+        need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.4",
+             "USER_VERSION_NOT_RESTORED")
+        need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.2",
+             "ROOT_VERSION_NOT_RESTORED")
+        need(sha(app/"INSTALL.json")==before_user
+             and sha("/var/lib/directinternetmethod/install.json")==before_root,
+             "ORIGINAL_METADATA_SHA_DRIFT")
+        for target,want in original_user.items():
+            need(sha(target).lower()==want,"USER_FILE_RESTORATION_"+Path(target).name)
+        for target,want in protected.items():
+            need(sha(target).lower()==want,"PROTECTED_FILE_RESTORATION_"+Path(target).name)
     r529.unchanged_records(private)
-    for target,want in protected.items():
-        need(sha(target).lower()==want,"PROTECTED_FILE_RESTORATION_"+Path(target).name)
     for p,want in baseline_network.items():
         need(sha(p)==want,"NETWORK_FILE_MUTATED")
     need(before_link==(os.readlink("/etc/resolv.conf")
@@ -210,7 +259,9 @@ def run():
     need(not (app/"directmethod/state.json").exists(),"ACTIVE_ENGINE_UNEXPECTED")
     command(["/usr/bin/systemctl","disable","--now",NAME+".timer"])
     print(json.dumps({
-      "revision":"R554","status":"PASS_EPHEMERAL_ACTUAL_SYSTEMD_OWNED_GUARD_ROOT_USER_ROLLBACK",
+      "syntheticRootAcceptanceOnly":synthetic_promotion,
+      "acceptedRootUserInterruptedResume":synthetic_promotion,
+      "revision":"R554","status":("PASS_EPHEMERAL_SYNTHETIC_ROOT_ACCEPTANCE_USER_FINALIZATION" if synthetic_promotion else "PASS_EPHEMERAL_ACTUAL_SYSTEMD_OWNED_GUARD_ROOT_USER_ROLLBACK"),
       "host":"ephemeral-github-ubuntu",
       "nativeProtectedRoot":True,"rootAuthorizedInDisposableVM":True,
       "guardArmedBeforeRootMutation":True,
@@ -218,7 +269,7 @@ def run():
       "timerNativeLoadedAndEnabledBeforeMutation":True,
       "calendarDeadlinePreservedAcrossTimerRestart":True,
       "productionShellUpgradeWrapperExecuted":native_wrapper,
-      "rootAndUserByteExactRestoration":True,
+      "rootAndUserByteExactRestoration":not synthetic_promotion,
       "mutatedProductionHost":False,"modifiedRouteDnsOrTailscale":False,
       "publishedStablePreserved":"v1.5.4",
       "rootFileCount":len(protected),

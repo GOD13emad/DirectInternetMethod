@@ -23,7 +23,7 @@ import zipfile
 
 BASE=Path(__file__).resolve().parents[1]
 STABLE_SHA="4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7"
-CANDIDATE_SHA="ca249d9792c69320e934c53888efb577729ab4a616a8951ef1736ed7161445de"
+CANDIDATE_SHA="b2960e957d2314f43da719aafe097e48fdd3caa647a02844333818dc50a37471"
 STABLE_ARCHIVE="DirectInternetMethod_1.5.4_Linux_x86_64.zip"
 CANDIDATE_ARCHIVE="DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip"
 STABLE_PREFIX="DirectInternetMethod_1.5.4_Linux_x86_64/"

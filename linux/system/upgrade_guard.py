@@ -267,6 +267,46 @@ def verify_installed_after_restore(j):
          "DNS_CHANGED_EXTERNALLY")
     need(not (home/PENDING_REL).exists(),"USER_SLOT_REMAINS")
 
+def finish_accepted_pair(j,tx,home:Path,pending:Path):
+    """Resume only a ROOT-ACCEPTED pair; never invent acceptance or rollback it.
+
+    Root's COMMITTED manifest is a privileged durable decision. The original
+    user slot stays intact until the exact copied user transaction validates
+    all managed bytes, mutable settings and new INSTALL.json and commits.
+    An ambiguous/foreign state fails closed and retains its recovery evidence.
+    """
+    m=tx.manifest()
+    need(m.get("phase")=="COMMITTED" and m.get("toVersion")==VERSION and
+         m.get("fromVersion")==BASELINE and m.get("uid")==j["uid"] and
+         m.get("home")==str(home),"ROOT_ACCEPTANCE_MANIFEST")
+    tx._validate_slot(m)
+    states,meta=tx._target_states(m)
+    need(set(states)==set(m["files"]) and
+         all(states[k]==m["files"][k]["new"] for k in states) and
+         meta==m["newMetadataSHA"],"ACCEPTED_ROOT_BINARY_OR_METADATA_DRIFT")
+    rootmeta=json.loads(tx.meta.read_text("utf8"))
+    need(rootmeta.get("version")==VERSION and rootmeta.get("uid")==j["uid"],
+         "ACCEPTED_ROOT_INSTALL_IDENTITY")
+    usermeta=home/USER_REL/"INSTALL.json"
+    regular(usermeta,j["uid"],0o600)
+    installed=json.loads(usermeta.read_text("utf8"))
+    need(installed.get("schema")==2 and installed.get("version")==VERSION and
+         installed.get("protectedBackendVersion")==VERSION,
+         "ACCEPTED_USER_INSTALL_IDENTITY")
+    was_pending=pending.exists() or pending.is_symlink()
+    if was_pending:
+        need(pending.is_dir() and not pending.is_symlink() and
+             pending.stat().st_uid==j["uid"],"ACCEPTED_USER_SLOT_FOREIGN")
+        job=command(["/usr/sbin/runuser","-u",j["user"],"--",
+                     "/usr/bin/env","HOME="+j["home"],
+                     "PYTHONDONTWRITEBYTECODE=1","/usr/bin/python3","-B",
+                     str(USER_TX),"--commit"],timeout=45)
+        need(job.returncode==0,"USER_FORWARD_COMMIT_"+job.stderr[-180:].replace(" ","_"))
+    need(not pending.exists() and not pending.is_symlink(),
+         "ACCEPTED_USER_PENDING_REMAINS")
+    # No network actions; no root backups are destroyed by this worker.
+    return was_pending
+
 def rollback_worker():
     need(os.geteuid()==0 and Path(__file__).resolve()==WORKER,"OWNED_WORKER_ROOT_REQUIRED")
     start=time.monotonic()
@@ -284,33 +324,45 @@ def rollback_worker():
         tx=imported_root()
         need(tx.native,"REAL_ROOT_TRANSACTION")
         phase=tx.status()["status"]
-        # Never replace installed code underneath a live owned network engine.
-        # Such an ambiguous state requires local authorized Recovery first.
-        need(not (home/USER_REL/"directmethod/state.json").exists(),
-             "LIVE_ENGINE_REQUIRES_LOCAL_RECOVERY")
         report["rootPhaseBefore"]=phase
         if phase=="COMMITTED":
-            need(not pending.exists(),"COMMITTED_USER_PENDING")
-            report["status"]="NO_ROLLBACK_ALREADY_COMMITTED"
-        elif phase=="NO_PENDING_UPGRADE" and not pending.exists():
-            report["status"]="NO_CHANGE_NO_PENDING"
+            # Root acceptance is already durable and cannot be rolled back.
+            # If its user partner was interrupted during finalization, resume
+            # exact user-only commit after validating both installed sides.
+            # An active engine may continue because this deletes ONLY the
+            # owned user code backup, not the active network or program files.
+            report["finalizationAttempted"]=pending.exists()
+            finished=finish_accepted_pair(j,tx,home,pending)
+            if finished:
+                report["userForwardCommit"]="PASS"
+                report["status"]="PASS_RESUMED_ACCEPTED_ROOT_USER_COMMIT"
+            else:
+                report["status"]="NO_ROLLBACK_ALREADY_COMMITTED"
         else:
-            need(phase in ("STAGED","APPLIED","DEGRADED","NO_PENDING_UPGRADE"),"UNKNOWN_ROOT_PHASE")
-            report["recoveryAttempted"]=True
-            if pending.exists():
-                need(pending.is_dir() and not pending.is_symlink(),"UNSAFE_USER_SLOT")
-                p=command(["/usr/sbin/runuser","-u",j["user"],"--",
-                           "/usr/bin/env","HOME="+j["home"],
-                           "PYTHONDONTWRITEBYTECODE=1","/usr/bin/python3","-B",
-                           str(USER_TX),"--rollback"],timeout=45)
-                need(p.returncode==0,"USER_ROLLBACK_"+p.stderr[-180:].replace(" ","_"))
-                report["userRollback"]="PASS"
-            if phase in ("STAGED","APPLIED","DEGRADED"):
-                returned=tx.rollback()
-                need(returned.get("status")=="ROLLED_BACK","ROOT_ROLLBACK")
-                report["rootRollback"]="PASS"
-            verify_installed_after_restore(j)
-            report["status"]="PASS_AUTONOMOUS_TWO_SIDED_RESTORATION"
+            # Before Root acceptance, replacing installed code under a live
+            # engine is unsafe; require authorized local Recovery.
+            need(not (home/USER_REL/"directmethod/state.json").exists(),
+                 "LIVE_ENGINE_REQUIRES_LOCAL_RECOVERY")
+            if phase=="NO_PENDING_UPGRADE" and not pending.exists():
+                report["status"]="NO_CHANGE_NO_PENDING"
+            else:
+                need(phase in ("STAGED","APPLIED","DEGRADED","NO_PENDING_UPGRADE"),
+                     "UNKNOWN_ROOT_PHASE")
+                report["recoveryAttempted"]=True
+                if pending.exists():
+                    need(pending.is_dir() and not pending.is_symlink(),"UNSAFE_USER_SLOT")
+                    p=command(["/usr/sbin/runuser","-u",j["user"],"--",
+                               "/usr/bin/env","HOME="+j["home"],
+                               "PYTHONDONTWRITEBYTECODE=1","/usr/bin/python3","-B",
+                               str(USER_TX),"--rollback"],timeout=45)
+                    need(p.returncode==0,"USER_ROLLBACK_"+p.stderr[-180:].replace(" ","_"))
+                    report["userRollback"]="PASS"
+                if phase in ("STAGED","APPLIED","DEGRADED"):
+                    returned=tx.rollback()
+                    need(returned.get("status")=="ROLLED_BACK","ROOT_ROLLBACK")
+                    report["rootRollback"]="PASS"
+                verify_installed_after_restore(j)
+                report["status"]="PASS_AUTONOMOUS_TWO_SIDED_RESTORATION"
     except Exception as ex:
         report["failure"]=type(ex).__name__+":"+str(ex)[:320]
     report["durationSeconds"]=round(time.monotonic()-start,3)
@@ -318,6 +370,7 @@ def rollback_worker():
         write_new(RESULT,canonical(report),0o600)
     print(json.dumps(report,sort_keys=True))
     return 0 if report["status"] in (
+        "PASS_RESUMED_ACCEPTED_ROOT_USER_COMMIT",
         "NO_ROLLBACK_ALREADY_COMMITTED","NO_CHANGE_NO_PENDING",
         "PASS_AUTONOMOUS_TWO_SIDED_RESTORATION") else 90
 
