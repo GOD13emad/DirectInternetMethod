@@ -9,6 +9,8 @@ user settings may be changed by these tests.
 import ast
 import json
 import os
+import shlex
+import subprocess
 from pathlib import Path
 import tempfile
 import types
@@ -118,6 +120,60 @@ class RouteDrift(unittest.TestCase):
         shell=HELPER.read_text(encoding="utf-8")
         start=shell.split("\n  start)\n",1)[1]
         self.assertLess(start.index('PHYSICAL_INTERFACE_ROUTE_DRIFT'),start.index('cleanup_state_owned'))
+
+
+    def _real_shell_route_preflight(self, previous, current, top):
+        """Run the exact installed Start preflight under unprivileged Bash stubs.
+
+        This stops before CPID/readiness/cleanup, so no root, service, route,
+        DNS, Tailscale, nft or network action is possible. Only the protected
+        drift guard from the real helper is executed, not a rewritten model.
+        """
+        shell=HELPER.read_text(encoding="utf-8")
+        start=shell.split("\n  start)\n",1)[1].split("\n      CPID=",1)[0]
+        self.assertIn("PHYSICAL_INTERFACE_ROUTE_DRIFT",start)
+        script=(
+            "set -euo pipefail\n"
+            f"STATE={shlex.quote(str(self.state))}\n"
+            f"REQ_PREVIOUS={shlex.quote(previous)}\n"
+            f"REQ_CURRENT={shlex.quote(current)}\n"
+            f"REQ_TOP={shlex.quote(top)}\n"
+            "require_root() { :; }\n"
+            "acquire_action_lock() { :; }\n"
+            "rollback_on_exit() { printf 'ROLLBACK_CALLED\\n'; }\n"
+            "state_value() { [[ \"$1\" == physicalInterface ]] && "
+            "printf '%s\\n' \"$REQ_PREVIOUS\"; }\n"
+            "physical_iface() { printf '%s\\n' \"$REQ_CURRENT\"; }\n"
+            "top_iface() { printf '%s\\n' \"$REQ_TOP\"; }\n"
+            "cleanup_state_owned() { printf 'CLEANUP_CALLED\\n'; }\n"
+            "ACTION=start\nSTART_COMMITTED=0\n"
+            +start+
+            "\n    fi\n"
+            "trap - EXIT\nprintf 'PRECHECK_MATCHED\\n'\n"
+        )
+        return subprocess.run(["bash","-c",script],text=True,capture_output=True,
+                              timeout=5,check=False)
+
+    def test_10_executable_start_drift_refuses_without_cleanup(self):
+        for name,old,new,top in (
+            ("wifi_to_ethernet","wlp2s0","enp1s0","enp1s0"),
+            ("default_route_lost","wlp2s0","",""),
+            ("top_route_conflict","wlp2s0","wlp2s0","tailscale0"),
+            ("recorded_interface_missing","","enp1s0","enp1s0"),
+        ):
+            with self.subTest(name=name):
+                p=self._real_shell_route_preflight(old,new,top)
+                self.assertEqual(p.returncode,79,p.stdout+p.stderr)
+                self.assertIn('"error":"PHYSICAL_INTERFACE_ROUTE_DRIFT"',p.stdout)
+                self.assertNotIn("CLEANUP_CALLED",p.stdout)
+                self.assertNotIn("ROLLBACK_CALLED",p.stdout)
+                self.assertNotIn("PRECHECK_MATCHED",p.stdout)
+
+    def test_11_executable_start_matching_route_uses_safe_path(self):
+        p=self._real_shell_route_preflight("wlp2s0","wlp2s0","wlp2s0")
+        self.assertEqual(p.returncode,0,p.stdout+p.stderr)
+        self.assertIn("PRECHECK_MATCHED",p.stdout)
+        self.assertNotIn("CLEANUP_CALLED",p.stdout)
 
 class PathNamespace:
     Path=Path
