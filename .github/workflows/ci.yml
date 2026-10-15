@@ -194,6 +194,35 @@ jobs:
           set -euo pipefail
           sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py verify
 
+  linux-rc1-native-guard-ephemeral:
+    name: linux-rc1-native-guard-ephemeral
+    needs: linux-independent-root-watchdog-ephemeral
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: R554 byte-pinned exact 27-file Linux candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' 'e30367ff492984face32dcd9ac34c09ac5cba7e18432cb5f1b4d939e91415805' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+      - name: R554 download exact public v1.5.4 baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R554 native root-owned systemd guard then exact two-sided rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Disposable hosted GitHub Ubuntu VM only, no human host mutations.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
+
   linux-public-v154-regression:
     name: linux-public-v154-regression
     runs-on: ubuntu-latest

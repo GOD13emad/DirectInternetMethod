@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""R554 exact product upgrade-guard native disposable systemd lifecycle proof.
+
+Never execute outside an *empty* GitHub-hosted ephemeral Ubuntu VM. Uses
+official SHA-pinned v1.5.4 baseline and exact 27-file 1.5.5 RC archive.
+Stages real unprivileged user data, arms actual root-owned systemd timer BEFORE
+any protected modification; invokes the protected root stage/apply, applies User
+code, verifies exact installer inline metadata, triggers the separately owned
+systemd SERVICE (not a fake Python callback) and checks two-sided byte-exact
+restoration. Native monotonic timer expiration is independently proven by R532.
+No network/DNS/Tailscale/GUI Start/Stop action; not production acceptance.
+"""
+from __future__ import annotations
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import pwd
+import stat
+import subprocess
+import sys
+import time
+
+R=Path(__file__).resolve().parents[1]
+R528=R/"tests/r528_ephemeral_native_root_cli_contract.py"
+R529=R/"tests/r529_ephemeral_root_user_transaction.py"
+R526=R/"tests/r526_installer_metadata_contract.py"
+ROOT=R/"linux/system/protected_upgrade_transaction.py"
+GUARD=R/"linux/system/upgrade_guard.py"
+PIN_PACKAGE="E30367FF492984FACE32DCD9AC34C09AC5CBA7E18432CB5F1B4D939E91415805"
+PIN_ROOT="EB107164CCEDE891C8BF41C06FF422F1B53B59D2D2DDF0B3DD23EBFE5DE9601B"
+PIN_GUARD="8651A4E32E8E4FCD832AD79BCD885F73B1DE6242B575EACE2C131C3B63749F43"
+PIN_USER="EAC84CB951F520F0E6A05D1452EF355A1CC89D7C68DEB73F91BA14C8E1C4BD66"
+NAME="directinternetmethod-upgrade-rollback"
+SEEN=Path("/var/lib/directinternetmethod/upgrade-guard/rollback-result.json")
+
+def need(ok,why):
+    if not ok:raise RuntimeError("R554_NATIVE_GUARD_FAIL_CLOSED_"+why)
+
+def sha(path):
+    h=hashlib.sha256()
+    with Path(path).open("rb") as f:
+        for piece in iter(lambda:f.read(1048576),b""):h.update(piece)
+    return h.hexdigest().upper()
+
+def module(path,modname):
+    spec=importlib.util.spec_from_file_location(modname,path)
+    need(spec is not None and spec.loader is not None,"IMPORT_"+modname)
+    obj=importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(obj)
+    return obj
+
+def command(args,seconds=25):
+    proc=subprocess.run(args,capture_output=True,text=True,check=False,timeout=seconds)
+    need(proc.returncode==0,"COMMAND_"+str(proc.returncode)+"_"+proc.stderr[-200:].replace(" ","_"))
+    return proc.stdout.strip()
+
+def preflight_vm():
+    need(os.geteuid()==0 and sys.platform.startswith("linux"),"NATIVE_ROOT")
+    need(os.environ.get("GITHUB_ACTIONS")=="true" and os.environ.get("CI")=="true"
+         and os.environ.get("RUNNER_ENVIRONMENT")=="github-hosted"
+         and os.environ.get("GITHUB_REPOSITORY")=="GOD13emad/DirectInternetMethod"
+         and Path(os.environ.get("GITHUB_WORKSPACE","")).resolve()==R.resolve(),
+         "GITHUB_EPHEMERAL_ONLY")
+    need(Path("/proc/1/comm").read_text().strip()=="systemd","SYSTEMD_PID1")
+    runner=pwd.getpwnam("runner")
+    need(runner.pw_dir=="/home/runner" and runner.pw_uid>0,"RUNNER_IDENTITY")
+    for path in ("/usr/lib/directinternetmethod",
+                 "/var/lib/directinternetmethod",
+                 "/etc/directinternetmethod.uid",
+                 "/etc/systemd/system/"+NAME+".service",
+                 "/etc/systemd/system/"+NAME+".timer",
+                 "/home/runner/.local/share/DirectInternetMethod",
+                 "/home/runner/.local/state/DirectInternetMethod",
+                 "/run/directinternetmethod-encrypted"):
+        p=Path(path)
+        need(not p.exists() and not p.is_symlink(),"FOREIGN_PREEXISTING_"+p.name)
+    need(sha(ROOT)==PIN_ROOT and sha(GUARD)==PIN_GUARD,"SOURCE_SHA_DRIFT")
+    need(sha(R/"linux/app/user_update_transaction.py")==PIN_USER,"USER_SOURCE_SHA_DRIFT")
+    return runner
+
+def run():
+    runner=preflight_vm()
+    r528=module(R528,"r554_r528")
+    r529=module(R529,"r554_r529")
+    r526=module(R526,"r554_r526")
+    rootmod=r528.module()
+    guard=module(GUARD,"r554_real_guard")
+    stable,package,temp,user=r528.prerequisites()
+    need(user.pw_uid==runner.pw_uid,"USER_CHANGED")
+    need(sha(package)==PIN_PACKAGE,"PINNED_CANDIDATE")
+    r529.require_clean_home(user)
+    extracted=r528.stage_exact_candidate(package,temp)
+    r529.make_source_runner_owned(extracted,user)
+    # Installed user and root bytes come only from the public v1.5.4 ZIP.
+    app,original_user,private=r529.prepare_user_from_official(stable,user)
+    protected=r528.seed_real_protected_root(stable,user,rootmod)
+    baseline_network={
+        p:sha(p) for p in ("/etc/resolv.conf","/etc/hosts")
+    }
+    before_link=(os.readlink("/etc/resolv.conf")
+                 if Path("/etc/resolv.conf").is_symlink() else None)
+    before_user=sha(app/"INSTALL.json")
+    before_root=sha("/var/lib/directinternetmethod/install.json")
+    tx_user=extracted/"app/user_update_transaction.py"
+    need(sha(tx_user)==PIN_USER,"EXTRACTED_USER_SHA")
+    need(sha(extracted/"system/upgrade_guard.py")==PIN_GUARD,"EXTRACTED_GUARD_SHA")
+    need(sha(extracted/"system/protected_upgrade_transaction.py")==PIN_ROOT,"EXTRACTED_ROOT_SHA")
+    root_tx=rootmod.RootTransaction()
+    need(root_tx.native and root_tx.status()["status"]=="NO_PENDING_UPGRADE","ROOT_PRESTATE")
+    # Unprivileged stage creates only the bounded user rollback snapshot.
+    r529.as_runner(user,tx_user,"--stage","--source",extracted)
+    pending=Path("/home/runner/.local/state/DirectInternetMethod/update-pending")
+    need((pending/"manifest.json").is_file(),"USER_STAGE")
+    r529.unchanged_records(original_user)
+    r529.unchanged_records(private)
+    # The exact installed native watchdog must be armed while Root is OLD.
+    armed=guard.arm(extracted,user.pw_uid)
+    need(armed["status"]=="ARMED_INDEPENDENT_ROOT_USER_WATCHDOG","WATCHDOG_ARM")
+    present=guard.verify_timer()
+    need(present["uid"]==user.pw_uid and present["workerSha"]==sha(guard.WORKER),
+         "SYSTEMD_TIMER_GUARD")
+    need(root_tx.status()["status"]=="NO_PENDING_UPGRADE","ROOT_MUTATED_BEFORE_ARM")
+    # The true production Root transaction now changes protected code.
+    need(root_tx.stage(extracted)["status"]=="STAGED","ROOT_STAGE")
+    need(root_tx.apply()["status"]=="APPLIED","ROOT_APPLY")
+    need(root_tx.status()["status"]=="APPLIED","ROOT_PENDING")
+    r529.as_runner(user,tx_user,"--apply","--source",extracted)
+    manifest=json.loads((pending/"manifest.json").read_text())
+    for rel,row in manifest["managed"].items():
+        need(r529.hash_file(app/rel)==row["sha"],"USER_APPLY_SHA_"+rel)
+    r529.unchanged_records(private)
+    # Run the exact, unchanged production installer INSTALL.json fragment.
+    install=(extracted/"install.sh").read_text(encoding="utf8")
+    need(install.count(r526.BEGIN)==1,"INSTALL_METADATA_ANCHOR")
+    part=install.split(r526.BEGIN,1)[1]
+    need(part.count(r526.END)==1,"INSTALL_END")
+    inline=part.split(r526.END,1)[0]
+    need("transaction_helper.atomic_bytes(" in inline
+         and len(inline.splitlines())==64,"INSTALL_INLINE_IDENTITY")
+    r529.as_runner_inline(user,inline,app/"INSTALL.json",tx_user)
+    need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.5-rc1",
+         "UPGRADED_USER_VERSION")
+    need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.5-rc1",
+         "UPGRADED_ROOT_VERSION")
+    need(root_tx.status()["status"]=="APPLIED","ROOT_STILL_PENDING")
+    # Actual independent root-owned systemd Service, rather than calling
+    # guard.rollback_worker in-process. R532 separately proves timed firing.
+    start=time.monotonic()
+    command(["/usr/bin/systemctl","start",NAME+".service"],100)
+    need(SEEN.is_file() and not SEEN.is_symlink(),"SYSTEMD_RECEIPT_MISSING")
+    receipt=json.loads(SEEN.read_text())
+    need(receipt.get("status")=="PASS_AUTONOMOUS_TWO_SIDED_RESTORATION"
+         and receipt.get("uid")==0 and receipt.get("userRollback")=="PASS"
+         and receipt.get("rootRollback")=="PASS"
+         and receipt.get("recoveryAttempted") is True,
+         "ROOT_OWNED_SERVICE_NOT_ACCEPTED")
+    need(root_tx.status()["status"]=="ROLLED_BACK","ROOT_PHASE_NOT_ROLLED_BACK")
+    need(not pending.exists(),"USER_PENDING_REMAINS")
+    need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.4",
+         "USER_VERSION_NOT_RESTORED")
+    need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.2",
+         "ROOT_VERSION_NOT_RESTORED")
+    need(sha(app/"INSTALL.json")==before_user
+         and sha("/var/lib/directinternetmethod/install.json")==before_root,
+         "ORIGINAL_METADATA_SHA_DRIFT")
+    for target,want in original_user.items():
+        need(sha(target).lower()==want,"USER_FILE_RESTORATION_"+Path(target).name)
+    r529.unchanged_records(private)
+    for target,want in protected.items():
+        need(sha(target).lower()==want,"PROTECTED_FILE_RESTORATION_"+Path(target).name)
+    for p,want in baseline_network.items():
+        need(sha(p)==want,"NETWORK_FILE_MUTATED")
+    need(before_link==(os.readlink("/etc/resolv.conf")
+         if Path("/etc/resolv.conf").is_symlink() else None),"RESOLVER_SYMLINK_MUTATED")
+    # No reboot, no network/Tailscale manipulation, and no second install.
+    need(not (app/"directmethod/state.json").exists(),"ACTIVE_ENGINE_UNEXPECTED")
+    command(["/usr/bin/systemctl","disable","--now",NAME+".timer"])
+    print(json.dumps({
+      "revision":"R554","status":"PASS_EPHEMERAL_ACTUAL_SYSTEMD_OWNED_GUARD_ROOT_USER_ROLLBACK",
+      "host":"ephemeral-github-ubuntu",
+      "nativeProtectedRoot":True,"rootAuthorizedInDisposableVM":True,
+      "guardArmedBeforeRootMutation":True,
+      "systemdServiceStartedInSeparateProcess":True,
+      "timerNativeLoadedAndEnabledBeforeMutation":True,
+      "rootAndUserByteExactRestoration":True,
+      "mutatedProductionHost":False,"modifiedRouteDnsOrTailscale":False,
+      "publishedStablePreserved":"v1.5.4",
+      "rootFileCount":len(protected),
+      "userFileCount":len(original_user),
+      "privateUserFileCount":len(private),
+      "serviceDurationSeconds":round(time.monotonic()-start,3),
+      "watchdogReceiptSHA256":sha(SEEN)},sort_keys=True))
+if __name__=="__main__":
+    try:run()
+    except BaseException as e:
+        print(json.dumps({"revision":"R554","status":"FAIL_CLOSED",
+                          "reason":str(e)[:500]}),file=sys.stderr)
+        sys.exit(94)
