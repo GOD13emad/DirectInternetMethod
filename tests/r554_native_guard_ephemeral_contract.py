@@ -181,6 +181,9 @@ def run():
     # acceptance and BEFORE User commit. NOT real owner/live acceptance:
     # a marked synthetic fixture exercises the fail-closed crash window only.
     synthetic_promotion=os.environ.get("DIM_R562_SYNTHETIC_PROMOTION")=="true"
+    synthetic_reject=os.environ.get("DIM_R565_SYNTHETIC_MUTABLE_DRIFT")=="true"
+    need(not synthetic_reject or synthetic_promotion,
+         "MUTABLE_NEGATIVE_REQUIRES_DISPOSABLE_ROOT_ACCEPTANCE_FIXTURE")
     if synthetic_promotion:
         m=root_tx.manifest()
         fixture={
@@ -200,13 +203,64 @@ def run():
              "SYNTHETIC_ROOT_FINALIZATION")
         need(root_tx.status()["status"]=="COMMITTED" and pending.is_dir(),
              "ROOT_COMMITTED_USER_STILL_PENDING_WINDOW")
+    if synthetic_reject:
+        # The *only* deliberate user-data mutation happens on this disposable
+        # GitHub runner AFTER synthetically accepting Root and BEFORE user commit.
+        mutable=app/"settings.json"
+        old_mutable=mutable.read_bytes()
+        need(sha(mutable).lower()==private[str(mutable)],
+             "MUTABLE_TEST_PRESTATE_NOT_BASELINED")
+        mutable.write_bytes(old_mutable+b"R565_TEST_ONLY_MUTABLE_DRIFT\n")
+        need(sha(mutable).lower()!=private[str(mutable)],
+             "MUTABLE_DRIFT_FIXTURE_INEFFECTIVE")
     # Actual independent root-owned systemd Service, rather than calling
     # guard.rollback_worker in-process. R532 separately proves timed firing.
     start=time.monotonic()
-    command(["/usr/bin/systemctl","start",NAME+".service"],100)
+    if synthetic_reject:
+        # A failure is expected here. Real systemd must propagate the owned
+        # worker's nonzero exit rather than silently report successful commit.
+        attempt=subprocess.run(
+            ["/usr/bin/systemctl","start",NAME+".service"],
+            capture_output=True,text=True,check=False,timeout=100)
+        need(attempt.returncode!=0,"UNSAFE_USER_COMMIT_FALSE_SUCCESS")
+    else:
+        command(["/usr/bin/systemctl","start",NAME+".service"],100)
     need(SEEN.is_file() and not SEEN.is_symlink(),"SYSTEMD_RECEIPT_MISSING")
     receipt=json.loads(SEEN.read_text())
-    if synthetic_promotion:
+    if synthetic_reject:
+        need(receipt.get("status")=="DEGRADED_UNRESOLVED"
+             and receipt.get("uid")==0
+             and receipt.get("finalizationAttempted") is True
+             and receipt.get("recoveryAttempted") is False,
+             "FAILED_USER_FORWARD_COMMIT_WAS_NOT_RECORDED")
+        need("USER_FORWARD_COMMIT" in str(receipt.get("failure", ""))
+             and "MUTABLE_USER_DATA_CHANGED_CONCURRENTLY" in str(receipt.get("failure", "")),
+             "MUTABLE_DATA_DRIFT_WAS_NOT_REJECTED")
+        need(root_tx.status()["status"]=="COMMITTED"
+             and root_tx.pending.is_dir() and pending.is_dir(),
+             "ACCEPTED_ROOT_OR_USER_BACKUP_WAS_REVERTED")
+        need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.5-rc1"
+             and json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.5-rc1",
+             "COMMITTED_VERSION_CHANGED_ON_FAILED_FINALIZATION")
+        for rel,row in manifest["managed"].items():
+            dest=app/rel
+            need(dest.is_file() and sha(dest).lower()==row["sha"],
+                 "USER_CODE_MUTATED_ON_REJECTED_COMMIT_"+rel)
+        for _,relative,target,oldsha,newsha,mode in rootmod.FILES:
+            dest=Path("/")/target
+            need(dest.is_file() and sha(dest)==newsha
+                 and stat.S_IMODE(dest.stat().st_mode)==mode,
+                 "PROTECTED_ROOT_MUTATED_ON_REJECTED_COMMIT_"+dest.name)
+        for rel,want in rootmod.STATIC_ROOT.items():
+            need(sha(Path("/")/rel)==want,
+                 "STATIC_ROOT_MUTATED_ON_REJECTED_USER_COMMIT_"+Path(rel).name)
+        for file,want in private.items():
+            now=sha(file).lower()
+            if file==str(app/"settings.json"):
+                need(now!=want,"FIXTURE_MUTABLE_DRIFT_WAS_LOST")
+            else:
+                need(now==want,"UNRELATED_USER_MUTABLE_DRIFT_"+Path(file).name)
+    elif synthetic_promotion:
         need(receipt.get("status")=="PASS_RESUMED_ACCEPTED_ROOT_USER_COMMIT"
              and receipt.get("uid")==0
              and receipt.get("userForwardCommit")=="PASS"
@@ -250,7 +304,8 @@ def run():
             need(sha(target).lower()==want,"USER_FILE_RESTORATION_"+Path(target).name)
         for target,want in protected.items():
             need(sha(target).lower()==want,"PROTECTED_FILE_RESTORATION_"+Path(target).name)
-    r529.unchanged_records(private)
+    if not synthetic_reject:
+        r529.unchanged_records(private)
     for p,want in baseline_network.items():
         need(sha(p)==want,"NETWORK_FILE_MUTATED")
     need(before_link==(os.readlink("/etc/resolv.conf")
@@ -260,8 +315,14 @@ def run():
     command(["/usr/bin/systemctl","disable","--now",NAME+".timer"])
     print(json.dumps({
       "syntheticRootAcceptanceOnly":synthetic_promotion,
-      "acceptedRootUserInterruptedResume":synthetic_promotion,
-      "revision":"R554","status":("PASS_EPHEMERAL_SYNTHETIC_ROOT_ACCEPTANCE_USER_FINALIZATION" if synthetic_promotion else "PASS_EPHEMERAL_ACTUAL_SYSTEMD_OWNED_GUARD_ROOT_USER_ROLLBACK"),
+      "acceptedRootUserInterruptedResume":synthetic_promotion and not synthetic_reject,
+      "expectedFailClosedSyntheticMutableDrift":synthetic_reject,
+      "revision":"R554","status":(
+          "PASS_EPHEMERAL_SYNTHETIC_MUTABLE_DRIFT_FAIL_CLOSED_AFTER_ACCEPTED_ROOT"
+          if synthetic_reject else
+          "PASS_EPHEMERAL_SYNTHETIC_ROOT_ACCEPTANCE_USER_FINALIZATION"
+          if synthetic_promotion else
+          "PASS_EPHEMERAL_ACTUAL_SYSTEMD_OWNED_GUARD_ROOT_USER_ROLLBACK"),
       "host":"ephemeral-github-ubuntu",
       "nativeProtectedRoot":True,"rootAuthorizedInDisposableVM":True,
       "guardArmedBeforeRootMutation":True,
