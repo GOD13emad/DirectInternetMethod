@@ -128,16 +128,38 @@ if ('v' + version) not in readme and (' ' + version) not in readme:
     raise SystemExit(f'README does not mention current version {version}')
 
 win_manifest = json.loads((ROOT / 'windows' / 'manifest.json').read_text(encoding='utf-8-sig'))
-if str(win_manifest.get('version')) != version:
-    raise SystemExit(f"windows/manifest.json version {win_manifest.get('version')} != {version}")
+win_release = json.loads((ROOT / 'windows' / 'RELEASE.json').read_text(encoding='utf-8-sig'))
+win_version = str(win_release.get('version'))
+# R535: an UNPUBLISHED, Windows-only private RC1 candidate is developed against
+# the publicly accepted v1.5.4 cross-platform base. It cannot silently
+# replace root/public release authority or satisfy public publication.
+# The exception is branch- and metadata-exact; all original public sha/source
+# checks above still run. Every other drift remains a hard failure.
+branch = subprocess.run(['git','branch','--show-current'],cwd=ROOT,
+                        capture_output=True,text=True,check=True).stdout.strip()
+ref = __import__('os').environ.get('GITHUB_REF','')
+private_win_rc1 = (
+    version == '1.5.4' and win_version == '1.5.5-rc1'
+    and win_release.get('status') == 'PRIVATE_WINDOWS_RC1_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN'
+    and win_release.get('previousAccepted',{}).get('version') == '1.5.4'
+    and win_release.get('previousAccepted',{}).get('tag') == 'v1.5.4'
+    and win_release.get('publication',{}).get('publishedAt') is None
+    and (branch == 'feature/r535-windows-155rc1'
+         or ref in ('refs/heads/feature/r535-windows-155rc1',
+                    'refs/heads/feature/r520-linux-155rc1-ci'))
+)
+if win_version != version and not private_win_rc1:
+    raise SystemExit('WINDOWS_PRIVATE_RC1_IDENTITY_NOT_AUTHORIZED')
+if str(win_manifest.get('version')) != win_version:
+    raise SystemExit('WINDOWS_MANIFEST_NOT_MATCHING_PLATFORM_VERSION')
 
 linux_ui = (ROOT / 'linux' / 'app' / 'direct_internet_method.py').read_text(encoding='utf-8-sig')
-if ('VERSION="' + version + '"') not in linux_ui and ('VERSION = "' + version + '"') not in linux_ui:
-    raise SystemExit('Linux UI version is inconsistent with RELEASE.json')
-
-win_release = json.loads((ROOT / 'windows' / 'RELEASE.json').read_text(encoding='utf-8-sig'))
-if str(win_release.get('version')) != version:
-    raise SystemExit(f"windows/RELEASE.json version {win_release.get('version')} != {version}")
+# The Linux 1.5.5-rc1 source was already present on this private draft branch.
+# Its published metadata remains anchored to v1.5.4 until native acceptance.
+# Require exact RC1 UI bytes for private candidate and exact stable otherwise.
+linux_source_expected = '1.5.5-rc1' if private_win_rc1 else version
+if ('VERSION="' + linux_source_expected + '"') not in linux_ui and ('VERSION = "' + linux_source_expected + '"') not in linux_ui:
+    raise SystemExit('Linux UI version is inconsistent with authorized source state')
 
 assert_unsigned_publication_acceptance(release)
 root_status = str(release.get('status',''))

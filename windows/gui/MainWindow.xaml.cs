@@ -132,7 +132,7 @@ public partial class MainWindow : Window
         }
 
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("DirectInternetMethod/1.5.4");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("DirectInternetMethod/1.5.5-rc1");
         Exception? lastError = null;
         foreach (var sourceUrl in AdultCatalogUrls)
         {

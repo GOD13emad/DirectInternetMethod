@@ -227,7 +227,17 @@ check("draft_release_negative_fixtures_present",
 check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.5.4")
+release_meta=json.loads(txt("RELEASE.json"))
+allowed_status={
+  "1.5.4":("CANDIDATE_V154_UNPUBLISHED","1.5.3"),
+  "1.5.5-rc1":("PRIVATE_WINDOWS_RC1_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN","1.5.4"),
+}
+current=release_meta.get("version")
+check("manifest_version", current in allowed_status
+      and manifest.get("version")==current
+      and release_meta.get("status")==allowed_status[current][0]
+      and release_meta.get("previousAccepted",{}).get("version")==allowed_status[current][1])
+
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)
