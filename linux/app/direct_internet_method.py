@@ -395,6 +395,24 @@ def load_state():
             if not _coexistence_backend_ready():
                 return {"mode":"BACKEND_UPDATE_REQUIRED",
                         "detail":"Tailscale split mode is safe, but the installed privileged backend is older or unverified. Start is disabled until the verified backend is installed with rollback; Tailscale and DNS are unchanged."}
+            # Render the SAME explicit encrypted-DNS consent semantics that the
+            # protected controller requires. Never advertise "DNS off" when
+            # DoH is opted in, nor enable Start with an invalid/conflicting
+            # token that would fail after privileged network actions begin.
+            encrypted=encrypted_dns_optin_state()
+            if encrypted=="INVALID":
+                return {"mode":"CONFIG_REQUIRED",
+                        "detail":"Encrypted DNS consent is invalid, unsafe or conflicts with unencrypted DNS consent. Open Strategy to resolve it before Start; DNS and MagicDNS remain unchanged."}
+            if encrypted=="ON":
+                try:
+                    method=STRATEGY_FILE.read_text(encoding="utf-8").strip().lower()
+                except Exception:
+                    method="invalid"
+                if method!="balanced":
+                    return {"mode":"CONFIG_REQUIRED",
+                            "detail":"Encrypted targeted DNS requires an explicit Balanced strategy and Targeted scope. Reopen Strategy and Save before Start; no network settings changed."}
+                return {"mode":"OFF",
+                        "detail":"Tailscale split network active. Encrypted targeted DNS (Control D DoH) is explicitly OPTED IN for selected sites. Start uses Balanced DPI with guarded per-link DoH; physical DNS and MagicDNS stay protected. HTTPS reachability is not guaranteed."}
             opt=selective_dns_optin_state()
             if opt=="INVALID":
                 return {"mode":"CONFIG_REQUIRED","detail":"Experimental split-DNS preference is unsafe or unrecognized. Reopen Strategy and explicitly set it."}
@@ -407,7 +425,7 @@ def load_state():
                     return {"mode":"CONFIG_REQUIRED",
                             "detail":"Experimental split DNS requires Targeted + Balanced. Plain, unencrypted third-party UDP DNS is used only for selected sites; disable it or select Balanced in Strategy."}
                 return {"mode":"OFF","detail":"Tailscale split network active. Experimental selective DNS is OPTED IN: third-party UDP upstream is UNENCRYPTED; MagicDNS stays separate. Start runs Balanced DPI and crash-guarded local DNS."}
-            return {"mode":"OFF","detail":"Tailscale split network active. Start uses physical-interface DPI; system DNS/MagicDNS remain unchanged. Experimental selective DNS is OFF."}
+            return {"mode":"OFF","detail":"Tailscale split network active. Start uses physical-interface DPI; system DNS/MagicDNS remain unchanged. Optional encrypted and unencrypted selective DNS are both OFF."}
         return {"mode":"OFF","detail":"No active Direct Internet Method state."}
     uid=os.getuid()
     preserved=s.get("dnsMode")=="system-preserved" and bool(s.get("tailscaleCoexistence"))

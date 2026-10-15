@@ -37,6 +37,7 @@ env={"json":json,"STATE":state,"SCOPE_FILE":scope,"pathlib":SimpleNamespace(Path
      "_tailscale_split_safe":lambda:True,
      "_coexistence_backend_ready":lambda:True,
      "selective_dns_optin_state":lambda:"OFF",
+     "encrypted_dns_optin_state":lambda:"OFF",
      "_systemd_unit_matches":lambda *args:False}
 exec(code,env)
 def mode():return env["load_state"]()
@@ -102,16 +103,16 @@ exec(helpercode,h_env)
 check=h_env["_coexistence_backend_ready"]
 assert check() is False
 FakePath.entries[good]="safe-backend"
-FakePath.entries[meta]='{"version":"1.5.2","uid":1000}'
+FakePath.entries[meta]='{"version":"1.5.5-rc1","uid":1000}'
 assert check() is True, "pinned helper and metadata must be recognized"
 FakePath.entries[good]="different-backend"
 assert check() is False, "foreign helper must be refused"
 FakePath.entries[good]="safe-backend"
 FakePath.entries[meta]='{"version":"1.5.1","uid":1000}'
 assert check() is False, "old metadata must be refused"
-FakePath.entries[meta]='{"version":"1.5.2","uid":1001}'
+FakePath.entries[meta]='{"version":"1.5.5-rc1","uid":1001}'
 assert check() is False, "different user metadata must be refused"
-FakePath.entries[meta]='{"version":"1.5.2","uid":1000}'
+FakePath.entries[meta]='{"version":"1.5.5-rc1","uid":1000}'
 FakePath.symlinks.add(good)
 assert check() is False, "helper symlink must be refused"
 FakePath.symlinks.clear()
