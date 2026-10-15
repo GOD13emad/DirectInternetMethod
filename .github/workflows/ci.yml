@@ -62,6 +62,11 @@ jobs:
           python3 -B tests/r519_versioned_package_contract.py
           python3 -B tests/protected_upgrade_transaction_contract.py
           python3 -B tests/r519_user_update_transaction_contract.py
+      - name: R526 Linux installer metadata activation (hermetic fake Root)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B tests/r526_installer_metadata_contract.py
       - name: R517 encrypted DNS and Tailscale negative-first contracts
         run: |
           set -euo pipefail
