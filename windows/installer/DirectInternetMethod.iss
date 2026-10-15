@@ -37,35 +37,35 @@ RestartApplications=no
 Name: "{commonappdata}\DirectInternetMethod\UserConfig"; Permissions: users-modify
 
 [Files]
-Source: "..\app\DirectInternetMethod.exe"; DestDir: "{app}\app"; Flags: ignoreversion
-Source: "..\app\DirectInternetMethod.ico"; DestDir: "{app}\app"; Flags: ignoreversion
-Source: "..\app\Status.ps1"; DestDir: "{app}\app"; Flags: ignoreversion
-Source: "..\..\router_gateway\providers.json"; DestDir: "{app}\app\router_gateway"; Flags: ignoreversion onlyifdoesntexist
-Source: "..\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "..\manifest.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\RELEASE.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\app\DirectInternetMethod.exe"; DestDir: "{app}\app"; Flags: ignoreversion notimestamp
+Source: "..\app\DirectInternetMethod.ico"; DestDir: "{app}\app"; Flags: ignoreversion notimestamp
+Source: "..\app\Status.ps1"; DestDir: "{app}\app"; Flags: ignoreversion notimestamp
+Source: "..\..\router_gateway\providers.json"; DestDir: "{app}\app\router_gateway"; Flags: ignoreversion onlyifdoesntexist notimestamp
+Source: "..\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs createallsubdirs notimestamp
+Source: "..\manifest.json"; DestDir: "{app}"; Flags: ignoreversion notimestamp
+Source: "..\RELEASE.json"; DestDir: "{app}"; Flags: ignoreversion notimestamp
 
-Source: "..\app\DirectInternetMethod.Service.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
-Source: "..\vendor\pwsh\*"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\runtime\pwsh"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "..\app\Start-Direct.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
-Source: "..\app\Stop-Direct.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
-Source: "..\app\Recovery.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
-Source: "..\app\SafeLegacyProviderRollback.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion
-Source: "..\bin\ctrld\ctrld.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
-Source: "..\bin\ctrld\ctrld.toml"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
-Source: "..\bin\ctrld\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion
-Source: "..\bin\zapret\winws.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\WinDivert.dll"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\WinDivert64.sys"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\cygwin1.dll"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\LICENSE.Cygwin.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\LGPL3.Cygwin.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\GPL3.Cygwin.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\adult-fallback-hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\strong-override-hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
-Source: "..\bin\zapret\LICENSE.WinDivert.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion
+Source: "..\app\DirectInternetMethod.Service.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion notimestamp
+Source: "..\vendor\pwsh\*"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\runtime\pwsh"; Flags: ignoreversion recursesubdirs createallsubdirs notimestamp
+Source: "..\app\Start-Direct.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion notimestamp
+Source: "..\app\Stop-Direct.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion notimestamp
+Source: "..\app\Recovery.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion notimestamp
+Source: "..\app\SafeLegacyProviderRollback.ps1"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\app"; Flags: ignoreversion notimestamp
+Source: "..\bin\ctrld\ctrld.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion notimestamp
+Source: "..\bin\ctrld\ctrld.toml"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion notimestamp
+Source: "..\bin\ctrld\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\ctrld"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\winws.exe"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\WinDivert.dll"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\WinDivert64.sys"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\cygwin1.dll"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\LICENSE.Cygwin.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\LGPL3.Cygwin.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\GPL3.Cygwin.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\adult-fallback-hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\strong-override-hosts.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\LICENSE.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
+Source: "..\bin\zapret\LICENSE.WinDivert.txt"; DestDir: "{commonpf}\DirectInternetMethod\Privileged\bin\zapret"; Flags: ignoreversion notimestamp
 
 [InstallDelete]
 Type: files; Name: "{app}\app\ControlPanel.cmd"

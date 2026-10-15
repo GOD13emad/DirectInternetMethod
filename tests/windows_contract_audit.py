@@ -283,8 +283,33 @@ thirdparty_notice_hashes={
 def checked_notice_mapping(filename):
     src = r"..\bin\zapret" + "\\" + filename
     dest = r"{commonpf}\DirectInternetMethod\Privileged\bin\zapret"
-    line = 'Source: "' + src + '"; DestDir: "' + dest + '"; Flags: ignoreversion'
+    line = 'Source: "' + src + '"; DestDir: "' + dest + '"; Flags: ignoreversion notimestamp'
     return iss.splitlines().count(line)==1
+def r549_inno_source_timestamp_contract(source):
+    try:
+        rows_section=source.split("[Files]\n",1)[1].split("[InstallDelete]",1)[0]
+    except IndexError:
+        return False
+    rows=[row.strip() for row in rows_section.splitlines()
+          if row.strip().startswith("Source: ")]
+    if len(rows)!=28 or len(set(rows))!=28:
+        return False
+    for row in rows:
+        if "Flags:" not in row:
+            return False
+        flags=row.split("Flags:",1)[1].strip().split()
+        if flags.count("notimestamp")!=1 or "touch" in flags or "comparetimestamp" in flags:
+            return False
+    return True
+
+# Negative-first source-time fixture: exactly 28 embedded records without
+# stored input timestamps. No change to owned uninstall/upgrade file scope.
+check("r549_inno_no_source_timestamps",
+      r549_inno_source_timestamp_contract(iss)
+      and not r549_inno_source_timestamp_contract(iss.replace(" notimestamp","",1))
+      and not r549_inno_source_timestamp_contract(
+          iss.replace(" notimestamp"," notimestamp touch",1)))
+
 check("installer_four_upstream_license_notices_byte_pinned",
     all(
        (W/"bin"/"zapret"/filename).is_file()
