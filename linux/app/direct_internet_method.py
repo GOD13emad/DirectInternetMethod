@@ -435,7 +435,17 @@ def load_state():
     nfqws_ok=_systemd_unit_matches(s.get("nfqwsUnit"),s.get("nfqwsPid"),f"directinternetmethod-nfqws-{uid}.service")
     if ctrld_ok and nfqws_ok:
         if preserved:
-            if s.get("selectiveDns"):
+            # Authoritative ACTIVE state is written by the protected helper,
+            # not inferred from (possibly since-revoked) user preference files.
+            if s.get("selectiveDnsEncrypted") and s.get("selectiveDns"):
+                return {"mode":"CONFLICT",
+                        "detail":"Both mutually exclusive selective DNS modes are marked active. Stop and use Recovery before any new Start; physical DNS and MagicDNS must be preserved."}
+            if s.get("selectiveDnsEncrypted"):
+                detail=(f"Tailscale coexistence: {s.get('physicalInterface','?')}  "
+                        "Encrypted targeted DoH ACTIVE for selected sites (Control D HTTPS upstream); "
+                        "physical DNS and MagicDNS preserved; Balanced DPI running. "
+                        "HTTPS target reachability requires real probe verification.")
+            elif s.get("selectiveDns"):
                 detail=f"Tailscale coexistence: {s.get('physicalInterface','?')}  Local experimental selective DNS ACTIVE; third-party upstream UDP is UNENCRYPTED, MagicDNS remains separate; Balanced DPI running"
             else:
                 detail=f"Tailscale coexistence: {s.get('physicalInterface','?')}  DNS/MagicDNS preserved  Methods: HTTP + TLS/SNI + QUIC (DPI only)"
@@ -464,6 +474,8 @@ def verify_live():
         return {"ok":False,"error":"STATE_UNREADABLE_AFTER_START"}
     if not physical:
         return {"ok":False,"error":"PHYSICAL_INTERFACE_MISSING"}
+    if s.get("selectiveDns") and s.get("selectiveDnsEncrypted"):
+        return {"ok":False,"error":"CONFLICTING_SELECTIVE_DNS_STATE"}
     if _external_tunnel_active():
         return {"ok":False,"error":"EXTERNAL_TUNNEL_APPEARED_AFTER_START"}
     def curl(url):
@@ -474,7 +486,10 @@ def verify_live():
         return {"exit":p.returncode,"meta":p.stdout.strip(),"error":p.stderr.strip()}
     d=subprocess.run(["getent","ahostsv4","www.youtube.com"],text=True,capture_output=True)
     h=curl("http://www.youtube.com/")
-    y=curl("https://www.youtube.com/" if s.get("selectiveDns") else "https://www.youtube.com/generate_204")
+    # Both selective modes must test a real YouTube page, not a
+    # Google-style /generate_204 URL that can falsely fail valid HTTPS.
+    selected_dns=bool(s.get("selectiveDns") or s.get("selectiveDnsEncrypted"))
+    y=curl("https://www.youtube.com/" if selected_dns else "https://www.youtube.com/generate_204")
     o=curl("https://api.openai.com/v1/models")
     g=curl("https://github.com/")
     m=curl("https://gemini.google.com/")
@@ -484,7 +499,9 @@ def verify_live():
         and o["exit"]==0 and o["meta"].startswith(("401|","403|"))
         and g["exit"]==0 and g["meta"].startswith(("200|")))
     dns_preserved=s.get("dnsMode")=="system-preserved"
-    methods=([] if dns_preserved else ["encrypted-dns-doh"])+["http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"]
+    methods=(["encrypted-selective-doh"] if dns_preserved and s.get("selectiveDnsEncrypted")
+             else [] if dns_preserved else ["encrypted-dns-doh"])+[
+                "http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"]
     return {"ok":ok,"physicalInterface":physical,"dnsMode":s.get("dnsMode","direct-doh"),"directMethods":methods,"youtubeHttp80":h,"youtube":y,"openai":o,"github":g,"gemini":m}
 
 def _version_tuple(text):

@@ -39,8 +39,8 @@ jobs:
           python3 - <<'PY'
           import hashlib,json,pathlib,zipfile
           p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
-          expected="18D8FDF42EC878A936C324F1A8A6EFA39ABE69729B3FA604C2AB785BAA9E92B9"
-          assert p.is_file() and p.stat().st_size==8335607
+          expected="66B623D41DD7DC6C5BE141143E863D970EE2230C5D61F1D47142A16AD53DA296"
+          assert p.is_file() and p.stat().st_size==8336935
           assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
           meta=json.loads(pathlib.Path("RELEASE.json").read_text())
           assert meta.get("version")=="1.5.4","PUBLISHED_RELEASE_METADATA_MUST_REMAIN_STABLE"
@@ -82,6 +82,7 @@ jobs:
           python3 -B tests/encrypted_selective_dns_fake_lifecycle.py
           python3 -B tests/encrypted_selective_dns_gui_consent_contract.py
           python3 -B tests/r537_gui_consent_status_contract.py
+          python3 -B tests/r538_active_encrypted_status_contract.py
           python3 -B tests/tailscale_ui_state_contract.py
           python3 -B tests/tailscale_gui_scope_guard_contract.py
           python3 -B tests/encrypted_selective_dns_integration_contract.py
@@ -140,7 +141,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '18d8fdf42ec878a936c324f1a8a6efa39abe69729b3fa604c2ab785baa9e92b9' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '66b623d41dd7dc6c5be141143e863d970ee2230c5d61f1d47142a16ad53da296' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download and independently pin official Stable 1.5.4 package
         shell: bash
         run: |
@@ -169,7 +170,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '18d8fdf42ec878a936c324f1a8a6efa39abe69729b3fa604c2ab785baa9e92b9' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '66b623d41dd7dc6c5be141143e863d970ee2230c5d61f1d47142a16ad53da296' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download byte-pinned published Stable v1.5.4 archive
         shell: bash
         run: |
