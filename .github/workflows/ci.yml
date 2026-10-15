@@ -313,6 +313,20 @@ jobs:
           # and never rollback an already COMMITTED synthetic Root.
           sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" DIM_R555_EXACT_WRAPPER=true DIM_R562_SYNTHETIC_PROMOTION=true DIM_R565_SYNTHETIC_MUTABLE_DRIFT=true /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
 
+  linux-r566-calendar-catchup-ephemeral:
+    name: linux-r566-calendar-catchup-ephemeral
+    needs: linux-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: R566 actual systemd Persistent calendar expiry during inactive timer
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Unique synthetic root-owned unit on an EMPTY GitHub-hosted VM only.
+          sudo -n /usr/bin/env GITHUB_ACTIONS=true CI=true RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" GITHUB_RUN_ID="$GITHUB_RUN_ID" /usr/bin/python3 -B tests/r566_native_systemd_persistent_catchup.py
+
   linux-public-v154-regression:
     name: linux-public-v154-regression
     runs-on: ubuntu-latest
