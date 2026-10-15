@@ -327,6 +327,32 @@ jobs:
           # Unique synthetic root-owned unit on an EMPTY GitHub-hosted VM only.
           sudo -n /usr/bin/env GITHUB_ACTIONS=true CI=true RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" GITHUB_RUN_ID="$GITHUB_RUN_ID" /usr/bin/python3 -B tests/r566_native_systemd_persistent_catchup.py
 
+  linux-r567-denied-polkit-ephemeral:
+    name: linux-r567-denied-polkit-ephemeral
+    needs: linux-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: R567 build exact private RC1, unchanged public stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' 'b2960e957d2314f43da719aafe097e48fdd3caa647a02844333818dc50a37471' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R567 original production Polkit-denied upgrade preserves stable Root User
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Empty GitHub-hosted Ubuntu only. The shell-level Polkit stub
+          # RETURNS 126 without opening authentication or touching network.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r567_hosted_denied_polkit_rollback.py
+
   linux-public-v154-regression:
     name: linux-public-v154-regression
     runs-on: ubuntu-latest
