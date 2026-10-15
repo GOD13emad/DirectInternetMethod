@@ -84,7 +84,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(len(before),26)
         changed={name for name in before if before[name]!=after[name]}
         self.assertEqual(changed,{"app/user_uninstall_preserve.py","app/direct_internet_method.py",
-                                 "app/direct_method_helper.sh","system/protected_upgrade_transaction.py",
+                                 "app/direct_method_helper.sh","app/user_update_transaction.py","system/protected_upgrade_transaction.py",
                                  "system/upgrade_system.sh"})
         self.assertEqual(after["app/direct_internet_method.py"]["sha256"],
                          "732190BEF316C899D58EF6B4B47BD9DFC86BF761AC4A6BA5962FB0FEA27032F8")
