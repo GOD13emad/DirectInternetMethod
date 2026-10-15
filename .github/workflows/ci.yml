@@ -125,6 +125,35 @@ jobs:
           # All absolute-root writes occur inside the disposable GH-hosted Ubuntu VM only.
           sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r528_ephemeral_native_root_cli_contract.py
 
+  linux-root-user-integrated-ephemeral:
+    name: linux-root-user-integrated-ephemeral
+    needs: linux-native-root-ephemeral
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build and independently pin candidate package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' '45a29a65b3e34302ad8e0745324ec2a1c418bb43669f9b95b15963b02cdfcc49' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+      - name: Download and independently pin official Stable 1.5.4 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R529 actual Root and unprivileged User transaction with rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Fresh GitHub VM only; no real host services, DNS, GUI or Tailscale touched.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r529_ephemeral_root_user_transaction.py
+
   linux-public-v154-regression:
     name: linux-public-v154-regression
     runs-on: ubuntu-latest
