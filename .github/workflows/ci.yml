@@ -67,6 +67,13 @@ jobs:
         run: |
           set -euo pipefail
           python3 -B tests/r526_installer_metadata_contract.py
+      - name: R527 privileged Root files on disposable GitHub Ubuntu VM
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Real UID 0 on a fresh hosted VM; product writes only inside test-owned workspace fixture.
+          # The production Root CLI and real host network/systemd are never invoked.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r527_privileged_root_transaction_contract.py
       - name: R517 encrypted DNS and Tailscale negative-first contracts
         run: |
           set -euo pipefail
