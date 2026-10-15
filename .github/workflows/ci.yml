@@ -39,16 +39,16 @@ jobs:
           python3 - <<'PY'
           import hashlib,json,pathlib,zipfile
           p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
-          expected="27D5289236A9CDB125669E67269EF16A7C6FCD74AE9300E65B0C8AA2E10B5F70"
-          assert p.is_file() and p.stat().st_size==8340334
+          expected="E30367FF492984FACE32DCD9AC34C09AC5CBA7E18432CB5F1B4D939E91415805"
+          assert p.is_file() and p.stat().st_size==8360302
           assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
           meta=json.loads(pathlib.Path("RELEASE.json").read_text())
           assert meta.get("version")=="1.5.4","PUBLISHED_RELEASE_METADATA_MUST_REMAIN_STABLE"
           with zipfile.ZipFile(p) as z:
             root="DirectInternetMethod_1.5.5-rc1_Linux_x86_64/"
-            assert len(z.namelist())==28 and len(z.namelist())==len(set(z.namelist()))
+            assert len(z.namelist())==29 and len(z.namelist())==len(set(z.namelist()))
             j=json.loads(z.read(root+"PACKAGE_MANIFEST.json"))
-            assert j["version"]=="1.5.5-rc1" and len(j["files"])==26
+            assert j["version"]=="1.5.5-rc1" and len(j["files"])==27
             for x in j["files"]:
               data=z.read(root+x["file"])
               assert len(data)==x["bytes"]
@@ -144,7 +144,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '27d5289236a9cdb125669e67269ef16a7c6fcd74ae9300e65b0c8aa2e10b5f70' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'e30367ff492984face32dcd9ac34c09ac5cba7e18432cb5f1b4d939e91415805' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download and independently pin official Stable 1.5.4 package
         shell: bash
         run: |
@@ -173,7 +173,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '27d5289236a9cdb125669e67269ef16a7c6fcd74ae9300e65b0c8aa2e10b5f70' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'e30367ff492984face32dcd9ac34c09ac5cba7e18432cb5f1b4d939e91415805' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download byte-pinned published Stable v1.5.4 archive
         shell: bash
         run: |

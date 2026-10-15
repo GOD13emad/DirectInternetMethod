@@ -26,8 +26,7 @@ VERSION="1.5.5-rc1"
 BASELINE="1.5.2"
 OLD_USER="1.5.4"
 PIN_ROOT="EB107164CCEDE891C8BF41C06FF422F1B53B59D2D2DDF0B3DD23EBFE5DE9601B"
-PIN_USER="A909BBB12B78875A9438C756AE2DCAFF05E0DF2EBB5551E97544D2B20C46346F"
-PIN_PKG="27D5289236A9CDB125669E67269EF16A7C6FCD74AE9300E65B0C8AA2E10B5F70"
+PIN_USER="EAC84CB951F520F0E6A05D1452EF355A1CC89D7C68DEB73F91BA14C8E1C4BD66"
 GUARD=Path("/var/lib/directinternetmethod/upgrade-guard")
 BASELINE_FILE=GUARD/"baseline.json"
 RESULT=GUARD/"rollback-result.json"
@@ -119,7 +118,7 @@ def validate_source(source:Path):
     data=json.loads(manifest.read_text("utf8"))
     files=data.get("files")
     need(data.get("version")==VERSION and data.get("schema")==1 and
-         isinstance(files,list) and len(files)==26,"PACKAGE_MANIFEST")
+         isinstance(files,list) and len(files)==27,"PACKAGE_MANIFEST")
     pin={x.get("file"):x.get("sha256") for x in files if isinstance(x,dict)}
     for label,relative,want in (
         ("ROOT_TX","system/protected_upgrade_transaction.py",PIN_ROOT),

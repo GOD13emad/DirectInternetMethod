@@ -14,6 +14,7 @@ FILES=[
  ("linux/system/encrypted_selective_dns.py","system/encrypted_selective_dns.py"),
  ("linux/system/encrypted_selective_policy.py","system/encrypted_selective_policy.py"),
  ("linux/system/protected_upgrade_transaction.py","system/protected_upgrade_transaction.py"),
+ ("linux/system/upgrade_guard.py","system/upgrade_guard.py"),
  ("linux/system/upgrade_system.sh","system/upgrade_system.sh"),
  ("linux/system/uninstall_system.sh","system/uninstall_system.sh"),
  ("linux/app/direct_internet_method.py","app/direct_internet_method.py"),

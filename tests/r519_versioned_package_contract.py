@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":26,"sha256":"27D5289236A9CDB125669E67269EF16A7C6FCD74AE9300E65B0C8AA2E10B5F70"}
+EXPECTED={"version":VERSION,"files":27,"sha256":"E30367FF492984FACE32DCD9AC34C09AC5CBA7E18432CB5F1B4D939E91415805"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -54,7 +54,8 @@ class Tests(unittest.TestCase):
         included={r["file"] for r in self.rows}
         self.assertTrue({"system/encrypted_selective_dns.py","system/encrypted_selective_policy.py",
            "system/protected_upgrade_transaction.py","system/upgrade_system.sh",
-           "app/direct_method_helper.sh","app/user_update_transaction.py"}.issubset(included))
+           "app/direct_method_helper.sh","app/user_update_transaction.py",
+           "system/upgrade_guard.py"}.issubset(included))
     def test_r519b_uninstaller_accepts_only_new_ownership_version(self):
         rel="app/user_uninstall_preserve.py"
         got=self.info.read(self.prefix+rel)
@@ -79,7 +80,7 @@ class Tests(unittest.TestCase):
         self.assertEqual((prev["schema"],prev["version"],prev["platform"]),(1,VERSION,"linux-x86_64"))
         before={row["file"]:row for row in prev["files"]}
         after={row["file"]:row for row in self.rows}
-        self.assertEqual(set(before),set(after))
+        self.assertEqual(set(after),set(before)|{"system/upgrade_guard.py"})
         self.assertEqual(len(before),26)
         changed={name for name in before if before[name]!=after[name]}
         self.assertEqual(changed,{"app/user_uninstall_preserve.py","app/direct_internet_method.py",
@@ -106,7 +107,7 @@ class Tests(unittest.TestCase):
             self.assertEqual(digest(old.read_bytes()),
                              "47776640A1BB8B5D4490244565DDD47A6A817A999347566917CC73E21F41EC24")
             with zipfile.ZipFile(old) as z:
-                self.assertEqual(set(z.namelist()),set(self.n))
+                self.assertEqual(set(self.n),set(z.namelist())|{self.prefix+"system/upgrade_guard.py"})
                 self.assertEqual(z.read(self.prefix+"PACKAGE_MANIFEST.json"),old_manifest.read_bytes())
                 self.assertEqual(z.read(self.prefix+"app/user_uninstall_preserve.py"),old_source.read_bytes())
                 self.assertEqual(z.testzip(),None)
@@ -131,6 +132,10 @@ class Tests(unittest.TestCase):
         src=(R/"linux/system/upgrade_system.sh").read_text()
         self.assertIn(digest(ROOT_TXN.read_bytes()),src)
         self.assertIn('DirectInternetMethod_1.5.5-rc1_Linux_x86_64',src)
+        self.assertIn("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED",src)
+        self.assertIn("GUARD_SHA=",src)
+        self.assertLess(src.index("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED"),
+                        src.index('python3 "$SRC/system/protected_upgrade_transaction.py" stage'))
         self.assertIn('python3 "$SRC/system/protected_upgrade_transaction.py" stage',src)
         self.assertIn('python3 "$SRC/system/protected_upgrade_transaction.py" apply',src)
         self.assertNotIn(' commit',src)
@@ -146,7 +151,7 @@ class Tests(unittest.TestCase):
         self.assertIn('COEXIST_HELPER_SHA256="'+digest(HELPER.read_bytes()).lower()+'"',app)
         self.assertIn('installed.get("version") == "1.5.5-rc1"',app)
         updater=USER_TXN.read_text()
-        self.assertIn('len(package_doc["files"]) == 26',updater)
+        self.assertIn('len(package_doc["files"]) == 27',updater)
         self.assertIn('data.get("version") == "1.5.5-rc1"',updater)
         self.assertIn('"encrypted-dns-optin.txt"',updater)
     def test_rc_semver_prevents_implicit_downgrade(self):

@@ -154,7 +154,7 @@ def source_files(root: pathlib.Path) -> dict:
               package_doc.get("version") == "1.5.5-rc1" and
               package_doc.get("platform") == "linux-x86_64" and
               isinstance(package_doc.get("files"), list) and
-              len(package_doc["files"]) == 26, "EXTRACTED_PACKAGE_IDENTITY_WRONG")
+              len(package_doc["files"]) == 27, "EXTRACTED_PACKAGE_IDENTITY_WRONG")
         seen = set()
         digest_lines = []
         for item in package_doc["files"]:
