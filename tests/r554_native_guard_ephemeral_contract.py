@@ -28,9 +28,9 @@ R529=R/"tests/r529_ephemeral_root_user_transaction.py"
 R526=R/"tests/r526_installer_metadata_contract.py"
 ROOT=R/"linux/system/protected_upgrade_transaction.py"
 GUARD=R/"linux/system/upgrade_guard.py"
-PIN_PACKAGE="B2960E957D2314F43DA719AAFE097E48FDD3CAA647A02844333818DC50A37471"
+PIN_PACKAGE="DC80542A4594AB65168D1B4CB067C54741DB2D058B33D135AF2910DB0B0AE994"
 PIN_ROOT="EB107164CCEDE891C8BF41C06FF422F1B53B59D2D2DDF0B3DD23EBFE5DE9601B"
-PIN_GUARD="3B4900DB3251A81BF5776EE19D63A4CCDC032585DEFCC22DDFE06331B44BADD3"
+PIN_GUARD="3E579455ACDB711F3D84F4F5869228DF8DDEE24BF7CBED952C9465C43A8FAC09"
 PIN_USER="EAC84CB951F520F0E6A05D1452EF355A1CC89D7C68DEB73F91BA14C8E1C4BD66"
 NAME="directinternetmethod-upgrade-rollback"
 SEEN=Path("/var/lib/directinternetmethod/upgrade-guard/rollback-result.json")
@@ -310,12 +310,60 @@ def run():
         need(sha(p)==want,"NETWORK_FILE_MUTATED")
     need(before_link==(os.readlink("/etc/resolv.conf")
          if Path("/etc/resolv.conf").is_symlink() else None),"RESOLVER_SYMLINK_MUTATED")
+    # R568 is an explicit root-authorized maintenance command AFTER verified
+    # terminal two-sided rollback; never invoked by a live timer or installer.
+    retire=os.environ.get("DIM_R568_TEST_RETIRE_ROLLED_BACK")=="true"
+    retired=False
+    if retire:
+        need(not synthetic_promotion and not synthetic_reject,
+             "RETIRE_TEST_NEEDS_REAL_ROLLBACK")
+        need(root_tx.status()["status"]=="ROLLED_BACK"
+             and root_tx.pending.is_dir() and guard.GUARD.is_dir(),
+             "RETIRE_TEST_MISSING_REAL_TERMINAL_SLOT")
+        sha_receipt=sha(SEEN)
+        cli=["/usr/bin/python3","-B",str(guard.WORKER),
+             "retire-rolledback","--receipt-sha256"]
+        import subprocess
+        denied=subprocess.run(cli+["0"*64],text=True,capture_output=True,
+                              timeout=12,check=False)
+        need(denied.returncode!=0 and
+             "RETIRE_RECEIPT_SHA_CHANGED" in denied.stderr,
+             "RETIRE_BAD_EVIDENCE_NOT_REJECTED")
+        need(root_tx.pending.is_dir() and guard.GUARD.is_dir()
+             and guard.TIMER.exists(),"RETIRE_BAD_EVIDENCE_MUTATED_SLOT")
+        foreign=guard.GUARD/"r568-synthetic-foreign.txt"
+        need(not foreign.exists(),"RETIRE_SYNTHETIC_FOREIGN_PREEXISTS")
+        foreign.write_text("foreign-test")
+        foreign.chmod(0o600)
+        refused=subprocess.run(cli+[sha_receipt],text=True,capture_output=True,
+                               timeout=12,check=False)
+        need(refused.returncode!=0 and
+             "RETIRE_FOREIGN_ENTRY_SET" in refused.stderr,
+             "RETIRE_FOREIGN_ENTRY_NOT_REJECTED")
+        need(root_tx.pending.is_dir() and guard.GUARD.is_dir()
+             and guard.TIMER.exists(),"RETIRE_FOREIGN_ENTRY_MUTATED_SLOT")
+        foreign.unlink() # remove ONLY our synthetic test-owned file
+        result=command(cli+[sha_receipt],40)
+        doc=json.loads(result.splitlines()[-1])
+        need(doc["status"]=="PASS_AUTHORIZED_BOUNDED_ROLLBACK_RETIRE"
+             and doc["receiptSha256"]==sha_receipt,
+             "RETIRE_BOUNDED_RESULT_NOT_ACCEPTED")
+        need(root_tx.status()["status"]=="NO_PENDING_UPGRADE"
+             and not guard.GUARD.exists() and not guard.SERVICE.exists()
+             and not guard.TIMER.exists(),"RETIRE_LEFT_OWNED_ROOT_SLOT")
+        pf=guard.preflight(extracted)
+        need(pf["status"]=="SAFE_SOURCE_AND_INSTALLED_BASELINE_ONLY",
+             "RETIRE_NEXT_SAFE_UPDATE_STILL_BLOCKED")
+        retired=True
     # No reboot, no network/Tailscale manipulation, and no second install.
     need(not (app/"directmethod/state.json").exists(),"ACTIVE_ENGINE_UNEXPECTED")
-    command(["/usr/bin/systemctl","disable","--now",NAME+".timer"])
+    if not retired:
+        command(["/usr/bin/systemctl","disable","--now",NAME+".timer"])
     print(json.dumps({
       "syntheticRootAcceptanceOnly":synthetic_promotion,
       "acceptedRootUserInterruptedResume":synthetic_promotion and not synthetic_reject,
+      "operatorAttestedRollbackSlotRetired":retired,
+      "repeatUpgradeSafelyUnblocked":retired,
       "expectedFailClosedSyntheticMutableDrift":synthetic_reject,
       "revision":"R554","status":(
           "PASS_EPHEMERAL_SYNTHETIC_MUTABLE_DRIFT_FAIL_CLOSED_AFTER_ACCEPTED_ROOT"

@@ -374,11 +374,138 @@ def rollback_worker():
         "NO_ROLLBACK_ALREADY_COMMITTED","NO_CHANGE_NO_PENDING",
         "PASS_AUTONOMOUS_TWO_SIDED_RESTORATION") else 90
 
+def _exact_owned_inventory(root:Path,files:set[str],dirs:set[str],mode:int):
+    """Allowlist every file/dir; no symlinks, foreign nodes or hardlinks."""
+    need(root.is_dir() and not root.is_symlink(),"RETIRE_ROOT_UNSAFE")
+    st=root.stat()
+    need(st.st_uid==0 and stat.S_IMODE(st.st_mode)==mode,
+         "RETIRE_ROOT_OWNER_MODE")
+    actual_files=set();actual_dirs=set()
+    for item in root.rglob("*"):
+        rel=item.relative_to(root).as_posix()
+        s=item.lstat()
+        need(s.st_uid==0,"RETIRE_FOREIGN_OWNER_"+rel)
+        if stat.S_ISDIR(s.st_mode):
+            actual_dirs.add(rel)
+        elif stat.S_ISREG(s.st_mode):
+            need(s.st_nlink==1,"RETIRE_HARDLINK_"+rel)
+            actual_files.add(rel)
+        else:
+            raise RuntimeError("RETIRE_FOREIGN_NODE_"+rel)
+    need(actual_files==files and actual_dirs==dirs,"RETIRE_FOREIGN_ENTRY_SET")
+    return True
+
+def retire_rolledback(receipt_sha256:str):
+    """Narrow operator-authenticated *post-rollback* recovery-slot retirement.
+
+    Never auto-delete audit or live installation. An administrator must first
+    export the unique rollback evidence to project Brain and supply the exact
+    receipt SHA256. Root/User baseline must be byte-perfect; the guard and
+    root-owned slots are only retired when already terminal ROLLED_BACK.
+    Terminal COMMITTED, ambiguous, partial, live or foreign states are refused.
+    """
+    need(os.geteuid()==0 and Path(__file__).resolve()==WORKER,
+         "RETIRE_OWNED_ROOT_WORKER_REQUIRED")
+    need(type(receipt_sha256) is str and len(receipt_sha256)==64 and
+         all(ch in "0123456789abcdefABCDEF" for ch in receipt_sha256),
+         "RETIRE_EXACT_OPERATOR_RECEIPT_SHA_REQUIRED")
+    j=verify_guard_files()
+    regular(RESULT,0,0o600)
+    digest=sha_file(RESULT)
+    need(digest==receipt_sha256.upper(),"RETIRE_RECEIPT_SHA_CHANGED")
+    evidence=json.loads(RESULT.read_text("utf8"))
+    need(evidence.get("revision")=="R552"
+         and evidence.get("status")=="PASS_AUTONOMOUS_TWO_SIDED_RESTORATION"
+         and evidence.get("rootRollback")=="PASS"
+         and evidence.get("userRollback")=="PASS"
+         and evidence.get("recoveryAttempted") is True
+         and evidence.get("networkMutationAttempted") is False,
+         "RETIRE_ROLLBACK_EVIDENCE_NOT_ACCEPTED")
+    tx=imported_root()
+    need(tx.native and tx.status()["status"]=="ROLLED_BACK",
+         "RETIRE_NONTERMINAL_ROOT")
+    m=tx.manifest()
+    need(m.get("phase")=="ROLLED_BACK" and m.get("uid")==j["uid"] and
+         m.get("home")==j["home"] and m.get("fromVersion")==BASELINE and
+         m.get("toVersion")==VERSION,"RETIRE_FOREIGN_ROOT_TRANSACTION")
+    tx._validate_slot(m)
+    states,metadata=tx._target_states(m)
+    need(set(states)==set(m["files"]) and
+         all(states[name]==row["old"] for name,row in m["files"].items()) and
+         metadata==m["oldMetadataSHA"],"RETIRE_OLD_PROTECTED_BITS_NOT_RESTORED")
+    home=Path(j["home"])
+    need(not (home/USER_REL/"directmethod/state.json").exists(),
+         "RETIRE_LIVE_DIRECT_ENGINE")
+    verify_installed_after_restore(j)
+    # Full inventory before deleting anything, including directories.
+    names=set(m["files"])
+    slotfiles={"manifest.json","old/metadata","new/metadata"}
+    slotfiles.update("new/"+name for name in names)
+    slotfiles.update("old/"+name for name,row in m["files"].items() if row["old"])
+    _exact_owned_inventory(tx.pending,slotfiles,{"old","new"},0o700)
+    guardfiles={"baseline.json","rollback-result.json",
+                "worker.py","root_tx.py","user_tx.py"}
+    _exact_owned_inventory(GUARD,guardfiles,set(),0o711)
+    unit_sha={}
+    for item in (SERVICE,TIMER):
+        regular(item,0,0o644)
+        need(item.stat().st_nlink==1,"RETIRE_HARDLINK_UNIT")
+        unit_sha[item.name]=sha_file(item)
+    for item in [*([tx.pending/p for p in slotfiles]),
+                 BASELINE_FILE,RESULT,WORKER,ROOT_TX,USER_TX,SERVICE,TIMER]:
+        need(item.is_file() and not item.is_symlink() and item.stat().st_uid==0
+             and item.stat().st_nlink==1,"RETIRE_NAMED_ENTRY_CHANGED_"+item.name)
+    state=command(["/usr/bin/systemctl","show",UNIT+".service",
+                    "--property=ActiveState","--no-pager"])
+    need(state.returncode==0 and
+         ("ActiveState=inactive" in state.stdout or
+          "ActiveState=failed" in state.stdout),
+         "RETIRE_SERVICE_IS_BUSY")
+    # No destructive operation before all checks above. After successful
+    # restoration, first DISARM the timer and only then remove exact owned
+    # transaction files. A partial maintenance interruption remains visibly
+    # fail-closed, never auto-overwrites foreign content on a retry.
+    disarmed=command(["/usr/bin/systemctl","disable","--now",UNIT+".timer"])
+    need(disarmed.returncode==0,"RETIRE_TIMER_DISARM_FAILED")
+    for rel in sorted(slotfiles):
+        p=tx.pending/rel
+        need(p.is_file() and not p.is_symlink() and p.stat().st_uid==0,
+             "RETIRE_SLOT_RACE_"+rel)
+        p.unlink()
+    for name in ("new","old"):
+        (tx.pending/name).rmdir()
+    tx.pending.rmdir()
+    fsync_dir(tx.pending.parent)
+    for p in (ROOT_TX,USER_TX,BASELINE_FILE,WORKER,RESULT):
+        need(p.is_file() and not p.is_symlink() and p.stat().st_uid==0,
+             "RETIRE_GUARD_RACE_"+p.name)
+        p.unlink()
+    GUARD.rmdir()
+    fsync_dir(GUARD.parent)
+    for p in (SERVICE,TIMER):
+        need(p.is_file() and not p.is_symlink() and
+             sha_file(p)==unit_sha[p.name],"RETIRE_UNIT_CHANGED_"+p.name)
+        p.unlink()
+    fsync_dir(SERVICE.parent)
+    reload=command(["/usr/bin/systemctl","daemon-reload"])
+    need(reload.returncode==0,"RETIRE_SYSTEMD_RELOAD_FAILED")
+    need(tx.status()["status"]=="NO_PENDING_UPGRADE"
+         and not GUARD.exists() and not TIMER.exists() and not SERVICE.exists(),
+         "RETIRE_POSTCLEANUP_SLOT_LEFT")
+    need(sha_file(Path("/etc/resolv.conf"))==j["oldResolverSha"],
+         "RETIRE_DNS_CHANGED")
+    return {"status":"PASS_AUTHORIZED_BOUNDED_ROLLBACK_RETIRE",
+            "receiptSha256":digest,
+            "oldRootVersion":BASELINE,"oldUserVersion":OLD_USER,
+            "fileScopesExact":True,"networkMutationAttempted":False,
+            "timerDisarmed":True,"repeatUpgradeUnblocked":True}
+
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument("action",choices=("preflight","arm","status","rollback"))
+    parser.add_argument("action",choices=("preflight","arm","status","rollback","retire-rolledback"))
     parser.add_argument("--source",type=Path)
     parser.add_argument("--uid",type=int)
+    parser.add_argument("--receipt-sha256")
     opts=parser.parse_args()
     if opts.action in ("preflight","arm"):
         need(opts.source is not None,"SOURCE_REQUIRED")
@@ -387,6 +514,9 @@ def main():
         else:
             need(opts.uid is not None,"UID_REQUIRED")
             print(json.dumps(arm(opts.source,opts.uid),sort_keys=True))
+    elif opts.action=="retire-rolledback":
+        need(opts.receipt_sha256 is not None,"RETIRE_RECEIPT_REQUIRED")
+        print(json.dumps(retire_rolledback(opts.receipt_sha256),sort_keys=True))
     elif opts.action=="status":
         need(os.geteuid()==0,"ROOT_REQUIRED")
         print(json.dumps({"status":"ARMED",**verify_timer()},sort_keys=True))
