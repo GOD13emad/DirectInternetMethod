@@ -25,9 +25,11 @@ def inspect(raw,project):
     tree=ET.fromstring(raw)
     target=tree.find(".//TargetFramework")
     version=tree.find(".//Version")
+    revision=tree.find(".//IncludeSourceRevisionInInformationalVersion")
     output=tree.find(".//OutputType")
     assert target is not None and target.text==TARGET,(project,"TargetFramework")
     assert version is not None and version.text==CURRENT,(project,"product_version_guard")
+    assert revision is not None and revision.text=="false",(project,"reproducible_informational_version")
     assert output is not None and output.text=="WinExe",(project,"runtime_subsystem")
     if "/gui/" in project:
         wpf=tree.find(".//UseWPF")
@@ -40,6 +42,11 @@ def negative_first():
         inspect(data,project)
         assert data.count(b"net10.0-windows")==1
         assert b"net8.0-windows" not in data
+        # In-memory negative fixture: a commit-derived InformationalVersion
+        # would make unchanged source differ between CI GitHub revisions.
+        try:inspect(data.replace(b"<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>",b"<IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>"),project)
+        except AssertionError:pass
+        else:raise AssertionError(("FAIL_OPEN_SOURCE_REVISION_EMBED",project))
         # In-memory source mutations must be rejected before packaging.
         for wrong in (b"net8.0-windows",b"net9.0-windows",b"net11.0-windows"):
             try:inspect(data.replace(b"net10.0-windows",wrong),project)

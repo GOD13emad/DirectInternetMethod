@@ -22,9 +22,9 @@ Set-Location $Root
 & pwsh -NoProfile -NonInteractive -File tests/prepare_powershell_runtime.ps1
 if($LASTEXITCODE -ne 0){throw 'PWSH_BUNDLE_PREP_FAILED'}
 if((Get-FileHash (Join-Path $Root 'windows\vendor\pwsh\pwsh.exe') -Algorithm SHA256).Hash -cne 'BFB46AF89433268872DDB43D1CA7A3F433452EE91ED356A9786940F90118E285'){throw 'PWSH_BUNDLE_SHA'}
-& dotnet publish windows/gui/DirectInternetMethod.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o $gstage
+& dotnet publish windows/gui/DirectInternetMethod.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:ContinuousIntegrationBuild=true -o $gstage
 if($LASTEXITCODE -ne 0){throw 'GUI_PUBLISH_FAILED'}
-& dotnet publish windows/service/DirectInternetMethod.Service.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o $sstage
+& dotnet publish windows/service/DirectInternetMethod.Service.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:ContinuousIntegrationBuild=true -o $sstage
 if($LASTEXITCODE -ne 0){throw 'SERVICE_PUBLISH_FAILED'}
 $gb=Join-Path $gstage 'DirectInternetMethod.exe';$sb=Join-Path $sstage 'DirectInternetMethod.Service.exe'
 if(!(Test-Path $gb) -or !(Test-Path $sb)){throw 'RC1_BINARIES_MISSING'}
@@ -56,4 +56,7 @@ $report=[ordered]@{
  installation='NOT_TESTED_YET';publicReleaseUnchanged=$true
 }
 [IO.File]::WriteAllText((Join-Path $qa 'BUILD_R535.json'),(($report|ConvertTo-Json -Depth 5)+[Environment]::NewLine),[Text.UTF8Encoding]::new($false))
+Write-Output ('R548_GUI_SHA256='+$report.guiSha)
+Write-Output ('R548_SERVICE_SHA256='+$report.serviceSha)
+Write-Output ('R548_MANIFEST_SHA256='+$report.manifestSha)
 Write-Output ('PASS_R535_HOSTED_BUILD_SHA256='+$report.installerSha)
