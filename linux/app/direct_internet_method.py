@@ -686,6 +686,9 @@ class Window(Adw.ApplicationWindow):
 
         keys=Gtk.EventControllerKey();keys.connect("key-pressed",self.on_key);self.add_controller(keys)
         self.refresh()
+        # Observe route/process changes without doing periodic web requests.
+        self._status_timer_id=GLib.timeout_add_seconds(15,self.periodic_state_tick)
+        self.connect("close-request",self.stop_status_timer)
         if self.adult_check_enabled:
             threading.Thread(target=self.adult_sync_worker,args=(False,),daemon=True).start()
         threading.Thread(target=self.update_check_worker,args=(False,),daemon=True).start()
@@ -696,8 +699,30 @@ class Window(Adw.ApplicationWindow):
         else:
             self.maximize()
 
-    def refresh(self):
-        s=load_state();mode=s["mode"]
+    def stop_status_timer(self,*_args):
+        source_id=getattr(self,"_status_timer_id",0)
+        if source_id:
+            GLib.source_remove(source_id)
+            self._status_timer_id=0
+        return False
+
+    def periodic_state_tick(self):
+        # A read-only UI observation; no route/DNS/tunnel/service actions and
+        # no HTTP probes. The explicit Refresh button owns live website checks.
+        try:
+            current=load_state()
+        except Exception:
+            current={"mode":"STALE",
+                     "detail":"Automatic status verification failed. Use Refresh or Recovery."}
+        visible=self.status.get_text().removeprefix("Status: ")
+        if current["mode"]!=visible:
+            self.refresh(state=current,start_checks=False)
+        elif current["detail"]!=self.detail.get_text():
+            self.detail.set_text(current["detail"])
+        return True
+
+    def refresh(self,state=None,start_checks=True):
+        s=state if state is not None else load_state();mode=s["mode"]
         self.status.set_text("Status: "+mode);self.detail.set_text(s["detail"])
         for css in ("success","warning","error","dim-label"):
             self.status.remove_css_class(css)
@@ -716,10 +741,13 @@ class Window(Adw.ApplicationWindow):
         if recovery_ok:self.buttons["recovery"].add_css_class("destructive-action")
         self.live_check_generation+=1
         generation=self.live_check_generation
-        if mode=="ACTIVE":
+        if mode=="ACTIVE" and start_checks:
             self.gemini_live.set_text("Gemini: Checking…")
             self.adult_live.set_text("Adult coverage: Checking…" if self.adult_check_enabled else "Adult coverage: Disabled")
             threading.Thread(target=self.live_checks_worker,args=(generation,),daemon=True).start()
+        elif mode=="ACTIVE":
+            self.gemini_live.set_text("Gemini: Press Refresh for a live check")
+            self.adult_live.set_text("Adult coverage: Press Refresh for a live check" if self.adult_check_enabled else "Adult coverage: Disabled")
         else:
             self.gemini_live.set_text("Gemini: Available when Direct Method is active")
             self.adult_live.set_text("Adult coverage: Disabled" if not self.adult_check_enabled else "Adult coverage: Available when Direct Method is active")

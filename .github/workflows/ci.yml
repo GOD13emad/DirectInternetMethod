@@ -39,7 +39,7 @@ jobs:
           python3 - <<'PY'
           import hashlib,json,pathlib,zipfile
           p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
-          expected="0C5BA7F8DA540412E8417152D0E6FF75F1FFE4ADAB06EE0A1FE72223A94A4839"
+          expected="27D5289236A9CDB125669E67269EF16A7C6FCD74AE9300E65B0C8AA2E10B5F70"
           assert p.is_file() and p.stat().st_size==8338876
           assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
           meta=json.loads(pathlib.Path("RELEASE.json").read_text())
@@ -84,6 +84,7 @@ jobs:
           python3 -B tests/r537_gui_consent_status_contract.py
           python3 -B tests/r538_active_encrypted_status_contract.py
           python3 -B tests/r541_route_interface_drift_contract.py
+          python3 -B tests/r545_periodic_gui_status_contract.py
           python3 -B tests/tailscale_ui_state_contract.py
           python3 -B tests/tailscale_gui_scope_guard_contract.py
           python3 -B tests/encrypted_selective_dns_integration_contract.py
@@ -142,7 +143,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '0c5ba7f8da540412e8417152d0e6ff75f1ffe4adab06ee0a1fe72223a94a4839' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '27d5289236a9cdb125669e67269ef16a7c6fcd74ae9300e65b0c8aa2e10b5f70' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download and independently pin official Stable 1.5.4 package
         shell: bash
         run: |
@@ -171,7 +172,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '0c5ba7f8da540412e8417152d0e6ff75f1ffe4adab06ee0a1fe72223a94a4839' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '27d5289236a9cdb125669e67269ef16a7c6fcd74ae9300e65b0c8aa2e10b5f70' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download byte-pinned published Stable v1.5.4 archive
         shell: bash
         run: |
