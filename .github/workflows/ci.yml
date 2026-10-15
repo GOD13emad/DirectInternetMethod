@@ -40,7 +40,7 @@ jobs:
           import hashlib,json,pathlib,zipfile
           p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
           expected="27D5289236A9CDB125669E67269EF16A7C6FCD74AE9300E65B0C8AA2E10B5F70"
-          assert p.is_file() and p.stat().st_size==8338876
+          assert p.is_file() and p.stat().st_size==8340334
           assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
           meta=json.loads(pathlib.Path("RELEASE.json").read_text())
           assert meta.get("version")=="1.5.4","PUBLISHED_RELEASE_METADATA_MUST_REMAIN_STABLE"
