@@ -2,7 +2,7 @@
 """R552 source-extracted regression: worker/timer logic, ZERO installed actions."""
 import hashlib,importlib.util,json,os,pathlib,tempfile,types,unittest
 SRC=pathlib.Path(__file__).with_name("r552_native_upgrade_guard_candidate.py")
-SOURCE_SHA="C977DE6C8E31D6F1E6134DF4E46F080A2D2BFB5BD7854119C2B46A0FB175BAFB"
+SOURCE_SHA="A69875ABBB8A297B3C7A83A8B5C3A3455746AB7B63254DA7255F7B37210BC4E2"
 assert hashlib.sha256(SRC.read_bytes()).hexdigest().upper()==SOURCE_SHA
 spec=importlib.util.spec_from_file_location("r552_candidate",SRC)
 g=importlib.util.module_from_spec(spec)
@@ -106,6 +106,41 @@ class Cases(unittest.TestCase):
         self.assertNotIn("tailscale down",src)
         self.assertNotIn("nmcli con down",src)
         self.assertIn("Path(__file__).resolve()==WORKER",src)
+    def _stage_fixture(self):
+        app=self.home/g.USER_REL
+        app.mkdir(parents=True)
+        installed=app/"INSTALL.json"
+        installed.write_text('{"version":"1.5.4"}')
+        slot=self.home/g.PENDING_REL
+        slot.mkdir(parents=True,mode=0o700)
+        slot.chmod(0o700)
+        managed={f"managed-{i}":{"sha":"a"*64,"mode":0o755} for i in range(7)}
+        prior={k:{"exists":False,"sha":None} for k in managed}
+        prior["INSTALL.json"]={"exists":True,"sha":g.sha_file(installed).lower()}
+        row={"schema":1,"version":"1.5.5-rc1","previousVersion":"1.5.4",
+             "managed":managed,"old":prior,
+             "mutable":{f"setting-{i}":None for i in range(9)}}
+        manifest=slot/"manifest.json"
+        manifest.write_text(json.dumps(row));manifest.chmod(0o600)
+        return installed,manifest,row
+
+    def test_11_real_user_stage_schema_not_invented_phase(self):
+        installed,manifest,row=self._stage_fixture()
+        self.assertNotIn("phase",row)
+        accepted=g.staged_user_manifest(self.home,os.getuid(),installed)
+        self.assertEqual(accepted["version"],"1.5.5-rc1")
+        self.assertEqual(len(accepted["managed"]),7)
+
+    def test_12_stage_schema_and_metadata_drift_rejected(self):
+        installed,manifest,row=self._stage_fixture()
+        def reject(modified):
+            manifest.write_text(json.dumps(modified))
+            with self.assertRaises(RuntimeError):g.staged_user_manifest(self.home,os.getuid(),installed)
+        reject({**row,"previousVersion":"1.5.5-rc1"})
+        reject({**row,"managed":{}})
+        reject({**row,"old":{**row["old"],"INSTALL.json":{"exists":True,"sha":"0"*64}}})
+        reject({**row,"mutable":{}})
+
     def test_10_readiness_worker_does_not_query_elapsed_active_timer(self):
         txt=SRC.read_text()
         self.assertIn("j=verify_guard_files()",txt)

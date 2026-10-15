@@ -175,17 +175,35 @@ def unit_templates():
            "[Install]\nWantedBy=timers.target\n")
     return service.encode(),timer.encode()
 
+def staged_user_manifest(home:Path,uid:int,installed:Path):
+    """Attest the ACTUAL v1.5.5 User stage schema; no invented phase field."""
+    pending=home/PENDING_REL
+    need(pending.is_dir() and not pending.is_symlink(),"STAGED_USER_PENDING_REQUIRED")
+    need(pending.stat().st_uid==uid and stat.S_IMODE(pending.stat().st_mode)==0o700,
+         "PENDING_OWNER_OR_MODE")
+    manifest=pending/"manifest.json"
+    regular(manifest,uid,0o600)
+    j=json.loads(manifest.read_text("utf8"))
+    need(isinstance(j,dict) and j.get("schema")==1 and
+         j.get("version")==VERSION and j.get("previousVersion")==OLD_USER,
+         "USER_STAGE_IDENTITY")
+    managed=j.get("managed");prior=j.get("old");mutable=j.get("mutable")
+    need(isinstance(managed,dict) and len(managed) in (7,8) and
+         isinstance(prior,dict) and set(prior)==set(managed)|{"INSTALL.json"} and
+         isinstance(mutable,dict) and len(mutable)==9,
+         "USER_STAGE_FILESET")
+    meta=prior["INSTALL.json"]
+    need(isinstance(meta,dict) and meta.get("exists") is True and
+         str(meta.get("sha","")).lower()==sha_file(installed).lower(),
+         "USER_BASELINE_METADATA_CHANGED")
+    return j
+
 def arm(source:Path,expected_uid:int):
     need(os.geteuid()==0,"ROOT_REQUIRED")
     status=preflight(source)
     uid,user,home,um,rm,meta=checked_owner()
     need(uid==expected_uid,"USER_IDENTITY_CHANGED")
-    pending=home/PENDING_REL
-    need(pending.is_dir() and not pending.is_symlink(),"STAGED_USER_PENDING_REQUIRED")
-    pending_manifest=pending/"manifest.json"
-    regular(pending_manifest,uid)
-    j=json.loads(pending_manifest.read_text("utf8"))
-    need(j.get("version")==VERSION and j.get("phase")=="STAGED","USER_STAGE_IDENTITY")
+    staged_user_manifest(home,uid,um)
     baseline=guard_files(source,uid,user,home,um,rm)
     s,t=unit_templates()
     write_new(SERVICE,s,0o644)
