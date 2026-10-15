@@ -315,7 +315,7 @@ jobs:
 
   windows-private-r535-native:
     name: windows-private-r535-native
-    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/r535-windows-155rc1'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/r535-windows-155rc1' || github.ref == 'refs/heads/feature/r520-linux-155rc1-ci')
     needs: windows-source
     runs-on: windows-2025
     timeout-minutes: 35

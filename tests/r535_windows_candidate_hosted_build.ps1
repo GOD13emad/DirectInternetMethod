@@ -4,7 +4,7 @@ $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 $Root=$env:GITHUB_WORKSPACE
 if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:GITHUB_REPOSITORY -cne 'GOD13emad/DirectInternetMethod'){throw 'R535_GITHUB_HOST_ONLY'}
-if($env:GITHUB_REF -cne 'refs/heads/feature/r535-windows-155rc1' -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R535_BRANCH_HEAD_AUTHORITY'}
+if($env:GITHUB_REF -cnotin @('refs/heads/feature/r535-windows-155rc1','refs/heads/feature/r520-linux-155rc1-ci') -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R535_BRANCH_HEAD_AUTHORITY'}
 $r=Get-Content (Join-Path $Root 'windows\RELEASE.json') -Raw|ConvertFrom-Json
 if($r.version -cne '1.5.5-rc1' -or $r.status -cne 'PRIVATE_WINDOWS_RC1_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN'){throw 'R535_RC1_DECLARATION'}
 $qa=Join-Path $env:RUNNER_TEMP 'DIM_R535_NATIVE'
