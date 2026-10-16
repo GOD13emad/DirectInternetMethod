@@ -15,12 +15,22 @@ ci_workflow=(R/".github"/"workflows"/"ci.yml").read_text(encoding="utf-8-sig")
 signature_gate=(R/"tests"/"windows_distribution_signature_audit.ps1").read_text(encoding="utf-8-sig")
 gitattributes=(R/".gitattributes").read_text(encoding="utf-8-sig")
 install_registration_guard=(R/"tests"/"windows_install_registration_audit.ps1").read_text(encoding="utf-8-sig")
+native_r535_uninstall=(R/"tests"/"r535_windows_native_rollback.ps1").read_text(encoding="utf-8-sig")
 installed_release_verifier=(R/"tests"/"windows_installed_release_audit.ps1").read_text(encoding="utf-8-sig")
 D={"schema":2,"status":"PASS","checks":{},"hashes":{}}
 def check(name,cond):
     D["checks"][name]=bool(cond)
     if not cond:D["status"]="FAIL"
 def idx(s,x): return s.find(x)
+
+check("r535_registered_uninstaller_suffix_agnostic", all(x in native_r535_uninstall for x in (
+    "function ExactRegisteredUninstaller([object]$d)",
+    "unins[0-9]{3}[.](exe|dat|msg)",
+    "'ONE_UNINSTALLER'", "'MATCHED_UNINSTALL_LOG'",
+    "'EXACT_UNINSTALL_PATH_OWNED'",
+    "[void](ExactRegisteredUninstaller $d)",
+    "$uninstaller=ExactRegisteredUninstaller $d",
+)) and "$uninstaller=Join-Path $App 'unins000.exe'" not in native_r535_uninstall)
 
 check("start_refuses_broad_tunnel_before_mutation", idx(start,"REFUSE_BROAD_TUNNEL_ROUTE")>=0 and idx(start,"REFUSE_BROAD_TUNNEL_ROUTE") < idx(start,"New-NetIPAddress"))
 check("loopback_index_dynamic", all("DestinationPrefix '::1/128'" in x and "$LoopbackIndex=[int]$LoopbackRoute.InterfaceIndex" in x and "$LoopbackIndex=1" not in x for x in (start,stop,recovery)) and "DestinationPrefix '::1/128'" in status and "InterfaceIndex 1" not in status)
