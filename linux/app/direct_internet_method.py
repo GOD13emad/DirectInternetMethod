@@ -502,18 +502,20 @@ def verify_live():
         return {"exit":p.returncode,"meta":p.stdout.strip(),"error":p.stderr.strip()}
     d=subprocess.run(["getent","ahostsv4","www.youtube.com"],text=True,capture_output=True)
     h=curl("http://www.youtube.com/")
-    # Real YouTube page AND lightweight 204 must succeed. R674-R675 native
-    # tests reproduced one passing while the other fails on the same host.
-    # Never claim a working site or keep an unverified Start active on 204 alone.
+    # R674-R675: in DPI-only mode /generate_204 can pass while the
+    # real YouTube page is blocked. Require BOTH in that mode.
+    # R538: selected DNS may legitimately return 404 on generate_204
+    # despite a working real homepage. Preserve its accepted page-only gate.
+    selected_dns=bool(s.get("selectiveDns") or s.get("selectiveDnsEncrypted"))
     y=curl("https://www.youtube.com/")
-    y204=curl("https://www.youtube.com/generate_204")
+    y204=None if selected_dns else curl("https://www.youtube.com/generate_204")
     o=curl("https://api.openai.com/v1/models")
     g=curl("https://github.com/")
     m=curl("https://gemini.google.com/")
     ok=(not _external_tunnel_active() and d.returncode==0
         and h["exit"]==0 and h["meta"].startswith(("200|","301|","302|","303|","307|","308|"))
         and y["exit"]==0 and y["meta"].startswith(("200|"))
-        and y204["exit"]==0 and y204["meta"].startswith(("204|"))
+        and (selected_dns or (y204 is not None and y204["exit"]==0 and y204["meta"].startswith(("204|"))))
         and o["exit"]==0 and o["meta"].startswith(("401|","403|"))
         and g["exit"]==0 and g["meta"].startswith(("200|")))
     dns_preserved=s.get("dnsMode")=="system-preserved"

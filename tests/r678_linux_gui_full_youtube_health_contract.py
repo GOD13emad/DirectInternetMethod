@@ -3,8 +3,8 @@
 
 Only AST-extracted verify_live() and Window.worker() execute with mocked
 filesystem and subprocess responses. No GTK, network, route, sudo, DNS, service
-or installed-user app state is modified. Both Google-style YouTube 204 and a
-real YouTube HTTPS homepage must succeed to accept Start.
+or installed-user app state is modified. DPI-only mode requires both
+lightweight 204 and the real YouTube homepage; selected DNS retains the R538 page-only gate.
 """
 from __future__ import annotations
 import ast
@@ -85,10 +85,18 @@ class Contract(unittest.TestCase):
         self.assertEqual(urls.count("https://www.youtube.com/"),1)
         self.assertEqual(urls.count("https://www.youtube.com/generate_204"),1)
 
-    def test_selected_dns_also_requires_both_youtube_targets(self):
-        f,urls=fixture(page="200",lightweight="000",selective=True)
+    def test_selected_dns_real_page_succeeds_without_204_requirement(self):
+        # R538 proven: selected DNS can return 404 at generate_204 even
+        # when the main HTTPS homepage works; preserve that accepted behavior.
+        f,urls=fixture(page="200",lightweight="404",selective=True)
+        self.assertTrue(f()["ok"])
+        self.assertIn("https://www.youtube.com/",urls)
+        self.assertNotIn("https://www.youtube.com/generate_204",urls)
+
+    def test_selected_dns_rejects_broken_real_page_without_204_probe(self):
+        f,urls=fixture(page="000",lightweight="204",selective=True)
         self.assertFalse(f()["ok"])
-        self.assertIn("https://www.youtube.com/generate_204",urls)
+        self.assertNotIn("https://www.youtube.com/generate_204",urls)
 
     def test_route_drift_sends_no_http_or_dns(self):
         f,urls=fixture(route="eth9")
