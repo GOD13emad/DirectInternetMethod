@@ -39,8 +39,8 @@ jobs:
           python3 - <<'PY'
           import hashlib,json,pathlib,zipfile
           p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
-          expected="9380C8C7DCD4A0292CE7B4534B8F269C6461500D3CE89C1B80D1EB8E998A46AC"
-          assert p.is_file() and p.stat().st_size==8370720
+          expected="7CC3EC2ADFB993692971D5CF796404702CFE883C3FC90ECFB621CE4D04D4BADA"
+          assert p.is_file() and p.stat().st_size==8370808
           assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
           meta=json.loads(pathlib.Path("RELEASE.json").read_text())
           assert meta.get("version")=="1.5.4","PUBLISHED_RELEASE_METADATA_MUST_REMAIN_STABLE"
@@ -86,6 +86,7 @@ jobs:
           python3 -B tests/r538_active_encrypted_status_contract.py
           python3 -B tests/r541_route_interface_drift_contract.py
           python3 -B tests/r545_periodic_gui_status_contract.py
+          python3 -B tests/r678_linux_gui_full_youtube_health_contract.py
           python3 -B tests/r552_native_upgrade_guard_contract.py
           python3 -B tests/tailscale_ui_state_contract.py
           python3 -B tests/tailscale_gui_scope_guard_contract.py
@@ -145,7 +146,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '9380c8c7dcd4a0292ce7b4534b8f269c6461500d3ce89c1b80d1eb8e998a46ac' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '7cc3ec2adfb993692971d5cf796404702cfe883c3fc90ecfb621ce4d04d4bada' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download and independently pin official Stable 1.5.4 package
         shell: bash
         run: |
@@ -174,7 +175,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '9380c8c7dcd4a0292ce7b4534b8f269c6461500d3ce89c1b80d1eb8e998a46ac' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '7cc3ec2adfb993692971d5cf796404702cfe883c3fc90ecfb621ce4d04d4bada' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download byte-pinned published Stable v1.5.4 archive
         shell: bash
         run: |
@@ -207,7 +208,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '9380c8c7dcd4a0292ce7b4534b8f269c6461500d3ce89c1b80d1eb8e998a46ac' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '7cc3ec2adfb993692971d5cf796404702cfe883c3fc90ecfb621ce4d04d4bada' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R554 download exact public v1.5.4 baseline
         shell: bash
         run: |
@@ -236,7 +237,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '9380c8c7dcd4a0292ce7b4534b8f269c6461500d3ce89c1b80d1eb8e998a46ac' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '7cc3ec2adfb993692971d5cf796404702cfe883c3fc90ecfb621ce4d04d4bada' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R555 pin the official stable baseline from its immutable release
         shell: bash
         run: |
@@ -265,7 +266,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '9380c8c7dcd4a0292ce7b4534b8f269c6461500d3ce89c1b80d1eb8e998a46ac' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '7cc3ec2adfb993692971d5cf796404702cfe883c3fc90ecfb621ce4d04d4bada' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R562 download exact official v1.5.4 installed baseline
         shell: bash
         run: |
@@ -295,7 +296,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '9380c8c7dcd4a0292ce7b4534b8f269c6461500d3ce89c1b80d1eb8e998a46ac' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '7cc3ec2adfb993692971d5cf796404702cfe883c3fc90ecfb621ce4d04d4bada' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R565 download exact official v1.5.4 installed baseline
         shell: bash
         run: |
@@ -340,7 +341,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '9380c8c7dcd4a0292ce7b4534b8f269c6461500d3ce89c1b80d1eb8e998a46ac' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '7cc3ec2adfb993692971d5cf796404702cfe883c3fc90ecfb621ce4d04d4bada' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
           test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
           curl --fail --show-error --silent --location --retry 3 --max-time 120 \
             'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
@@ -366,7 +367,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '9380c8c7dcd4a0292ce7b4534b8f269c6461500d3ce89c1b80d1eb8e998a46ac' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '7cc3ec2adfb993692971d5cf796404702cfe883c3fc90ecfb621ce4d04d4bada' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
           test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
           curl --fail --show-error --silent --location --retry 3 --max-time 120 \
             'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \

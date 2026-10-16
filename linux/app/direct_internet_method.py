@@ -502,23 +502,25 @@ def verify_live():
         return {"exit":p.returncode,"meta":p.stdout.strip(),"error":p.stderr.strip()}
     d=subprocess.run(["getent","ahostsv4","www.youtube.com"],text=True,capture_output=True)
     h=curl("http://www.youtube.com/")
-    # Both selective modes must test a real YouTube page, not a
-    # Google-style /generate_204 URL that can falsely fail valid HTTPS.
-    selected_dns=bool(s.get("selectiveDns") or s.get("selectiveDnsEncrypted"))
-    y=curl("https://www.youtube.com/" if selected_dns else "https://www.youtube.com/generate_204")
+    # Real YouTube page AND lightweight 204 must succeed. R674-R675 native
+    # tests reproduced one passing while the other fails on the same host.
+    # Never claim a working site or keep an unverified Start active on 204 alone.
+    y=curl("https://www.youtube.com/")
+    y204=curl("https://www.youtube.com/generate_204")
     o=curl("https://api.openai.com/v1/models")
     g=curl("https://github.com/")
     m=curl("https://gemini.google.com/")
     ok=(not _external_tunnel_active() and d.returncode==0
         and h["exit"]==0 and h["meta"].startswith(("200|","301|","302|","303|","307|","308|"))
-        and y["exit"]==0 and y["meta"].startswith(("200|","204|"))
+        and y["exit"]==0 and y["meta"].startswith(("200|"))
+        and y204["exit"]==0 and y204["meta"].startswith(("204|"))
         and o["exit"]==0 and o["meta"].startswith(("401|","403|"))
         and g["exit"]==0 and g["meta"].startswith(("200|")))
     dns_preserved=s.get("dnsMode")=="system-preserved"
     methods=(["encrypted-selective-doh"] if dns_preserved and s.get("selectiveDnsEncrypted")
              else [] if dns_preserved else ["encrypted-dns-doh"])+[
                 "http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"]
-    return {"ok":ok,"physicalInterface":physical,"dnsMode":s.get("dnsMode","direct-doh"),"directMethods":methods,"youtubeHttp80":h,"youtube":y,"openai":o,"github":g,"gemini":m}
+    return {"ok":ok,"physicalInterface":physical,"dnsMode":s.get("dnsMode","direct-doh"),"directMethods":methods,"youtubeHttp80":h,"youtube":y,"youtube204":y204,"openai":o,"github":g,"gemini":m}
 
 def _version_tuple(text):
     """Stable must sort newer than prerelease with same three-digit version."""
