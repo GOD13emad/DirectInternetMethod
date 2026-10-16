@@ -399,6 +399,7 @@ jobs:
           python3 -B tests/selective_dns_integration_safety_contract.py
           python3 -B tests/tailscale_coexistence_contract.py
           python3 -B tests/release_metadata_audit.py
+          python3 -B tests/r664_direct_update_monotonicity_contract.py
           python3 build_linux_package.py
           python3 -B tests/linux_real_extracted_archive_contract.py
 
@@ -588,6 +589,8 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           python -B tests/release_metadata_audit.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+          python -B tests/r664_direct_update_monotonicity_contract.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python -B tests/release_publication_negative_regression.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }

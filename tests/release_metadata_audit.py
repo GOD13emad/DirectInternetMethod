@@ -56,7 +56,25 @@ def assert_unsigned_publication_acceptance(meta):
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 release = json.loads((ROOT / 'RELEASE.json').read_text(encoding='utf-8-sig'))
+def require_public_stable_forward_update_from_rc155(version: str) -> None:
+    """Public successors must be newer than deployed private Windows 1.5.5-rc1.
+
+    Both already-installed GUI and privileged service carry .NET AssemblyVersion
+    1.5.5.0 and compare GitHub's numeric stable tag using System.Version.
+    In System.Version, v1.5.5 is (1,5,5,-1), NOT newer than (1,5,5,0).
+    Therefore v1.5.5 Stable could strand both physical RC1 canaries indefinitely
+    on the private build. The earliest monotonically safe next Stable tag is
+    v1.5.6 unless a separately validated and installed promotion client exists.
+    This guard does not declare v1.5.6 acceptable for publication by itself.
+    """
+    if not re.fullmatch(r"[0-9]+[.][0-9]+[.][0-9]+", version):
+        raise SystemExit("RELEASE_VERSION_NOT_SEMVER")
+    parts = tuple(int(n) for n in version.split("."))
+    if parts > (1, 5, 4) and (*parts, -1) <= (1, 5, 5, 0):
+        raise SystemExit("PUBLIC_155_WOULD_NOT_AUTOUPDATE_DEPLOYED_PRIVATE_RC1_USE_156_OR_VERIFIED_PROMOTION")
+
 version = str(release['version'])
+require_public_stable_forward_update_from_rc155(version)
 platforms = release['platforms']
 
 expected = {}
