@@ -485,6 +485,8 @@ jobs:
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/windows_contract_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+          python -B tests/r685_windows_gui_real_youtube_contract.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/adult_coverage_data_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/router_gateway_contract_audit.py

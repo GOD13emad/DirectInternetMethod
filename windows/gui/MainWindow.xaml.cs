@@ -237,6 +237,12 @@ public partial class MainWindow : Window
         }
     }
 
+    // Engine ACTIVE can be PARTIAL. A lightweight HTTP 204 does not prove
+    // YouTube's real HTTPS homepage loads; R674-R677 observed this mismatch.
+    // Never mark the whole core-site set healthy unless both probes succeed.
+    static bool FullCoreReachability(ProbeResult youtubePage, ProbeResult youtube204, ProbeResult openai, ProbeResult github) =>
+        youtubePage.Ok && youtube204.Ok && openai.Ok && github.Ok;
+
     static string FmtHttp(ProbeResult p) =>
         p.Ok ? $"PASS · HTTP {p.Code} · {p.Ms} ms" :
         p.Reached ? $"FAIL · HTTP {p.Code} · {p.Ms} ms" :
@@ -312,7 +318,8 @@ public partial class MainWindow : Window
             bool coreReachabilityProven = false;
             if (ownedHealthy && mode == "ACTIVE" && !string.IsNullOrWhiteSpace(IpText.Text) && IpText.Text != "—")
             {
-                var ytTask = ProbeAsync("https://www.youtube.com/generate_204", IpText.Text, new[] { "200", "204" });
+                var ytTask = ProbeAsync("https://www.youtube.com/", IpText.Text, new[] { "200" });
+                var yt204Task = ProbeAsync("https://www.youtube.com/generate_204", IpText.Text, new[] { "204" });
                 var oaTask = ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401" });
                 var ghTask = ProbeAsync("https://github.com/", IpText.Text, new[] { "200", "301", "302" });
                 var geminiTask = ProbeAsync("https://gemini.google.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" });
@@ -325,14 +332,15 @@ public partial class MainWindow : Window
                         ProbeAsync("https://xhamster.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" })
                     }
                     : null;
-                var tasks = new List<Task> { ytTask, oaTask, ghTask, geminiTask };
+                var tasks = new List<Task> { ytTask, yt204Task, oaTask, ghTask, geminiTask };
                 if (adultTasks is not null) tasks.AddRange(adultTasks);
                 await Task.WhenAll(tasks);
                 var youtubeProbe = await ytTask;
+                var youtube204Probe = await yt204Task;
                 var openAiProbe = await oaTask;
                 var githubProbe = await ghTask;
-                coreReachabilityProven = youtubeProbe.Ok && openAiProbe.Ok && githubProbe.Ok;
-                YoutubeText.Text = FmtHttp(youtubeProbe);
+                coreReachabilityProven = FullCoreReachability(youtubeProbe, youtube204Probe, openAiProbe, githubProbe);
+                YoutubeText.Text = $"Page {FmtHttp(youtubeProbe)} | 204 {FmtHttp(youtube204Probe)}";
                 OpenAiText.Text = FmtOpenAiApiProbe(openAiProbe);
                 GithubText.Text = FmtHttp(githubProbe);
                 GeminiText.Text = FmtHttp(await geminiTask);

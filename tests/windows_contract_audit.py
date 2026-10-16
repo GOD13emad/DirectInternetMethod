@@ -106,7 +106,8 @@ check("ui_partial_active_core_reachability", all(x in gui for x in (
     "var youtubeProbe = await ytTask;",
     "var openAiProbe = await oaTask;",
     "var githubProbe = await ghTask;",
-    "coreReachabilityProven = youtubeProbe.Ok && openAiProbe.Ok && githubProbe.Ok;",
+    "var youtube204Probe = await yt204Task;",
+    "coreReachabilityProven = FullCoreReachability(youtubeProbe, youtube204Probe, openAiProbe, githubProbe);",
     'mode == "ACTIVE" && (!ownedHealthy || !coreReachabilityProven)',
     'StatusBadge.Text = "PARTIAL";',
     "StatusBadge.Foreground = warn;",
@@ -114,6 +115,15 @@ check("ui_partial_active_core_reachability", all(x in gui for x in (
     'StopButton.IsEnabled = mode is "ACTIVE" or "CONFLICT" or "DEGRADED";',
 )))
 
+check("ui_youtube_homepage_and_204_independent_health", all(x in gui for x in (
+    'var ytTask = ProbeAsync("https://www.youtube.com/", IpText.Text, new[] { "200" });',
+    'var yt204Task = ProbeAsync("https://www.youtube.com/generate_204", IpText.Text, new[] { "204" });',
+    'var tasks = new List<Task> { ytTask, yt204Task, oaTask, ghTask, geminiTask };',
+    'FullCoreReachability(ProbeResult youtubePage, ProbeResult youtube204, ProbeResult openai, ProbeResult github)',
+    'youtubePage.Ok && youtube204.Ok && openai.Ok && github.Ok',
+    'YoutubeText.Text = $"Page {FmtHttp(youtubeProbe)} | 204 {FmtHttp(youtube204Probe)}";',
+    'StatusBadge.Text = "PARTIAL";'
+)) and "coreReachabilityProven = youtubeProbe.Ok && openAiProbe.Ok && githubProbe.Ok;" not in gui)
 check("ui_direct_update_service_handoff", 'ServiceClient.Send("update")' in gui and 'ServiceClient.Send("recovery")' in gui and '"handoff"' in gui and "300000" in gui and "DownloadVerifiedAsync" not in gui and "LaunchInstaller" not in gui)
 check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "digest" in updater and "SHA256SUMS.txt" in updater and "DownloadVerifiedAsync" not in updater and "Process.Start" not in updater)
 
