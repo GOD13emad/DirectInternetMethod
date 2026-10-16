@@ -28,9 +28,9 @@ R529=R/"tests/r529_ephemeral_root_user_transaction.py"
 R526=R/"tests/r526_installer_metadata_contract.py"
 ROOT=R/"linux/system/protected_upgrade_transaction.py"
 GUARD=R/"linux/system/upgrade_guard.py"
-PIN_PACKAGE="DC80542A4594AB65168D1B4CB067C54741DB2D058B33D135AF2910DB0B0AE994"
+PIN_PACKAGE="9380C8C7DCD4A0292CE7B4534B8F269C6461500D3CE89C1B80D1EB8E998A46AC"
 PIN_ROOT="EB107164CCEDE891C8BF41C06FF422F1B53B59D2D2DDF0B3DD23EBFE5DE9601B"
-PIN_GUARD="3E579455ACDB711F3D84F4F5869228DF8DDEE24BF7CBED952C9465C43A8FAC09"
+PIN_GUARD="6E9FA25F7D3ADEBC6451DB81A7436467F47F9C2F6B34554951AC375F92BE9B1C"
 PIN_USER="EAC84CB951F520F0E6A05D1452EF355A1CC89D7C68DEB73F91BA14C8E1C4BD66"
 NAME="directinternetmethod-upgrade-rollback"
 SEEN=Path("/var/lib/directinternetmethod/upgrade-guard/rollback-result.json")
@@ -352,6 +352,9 @@ def run():
         need(root_tx.status()["status"]=="NO_PENDING_UPGRADE"
              and not guard.GUARD.exists() and not guard.SERVICE.exists()
              and not guard.TIMER.exists(),"RETIRE_LEFT_OWNED_ROOT_SLOT")
+        stamp=Path("/var/lib/systemd/timers/stamp-"+NAME+".timer")
+        need(not stamp.exists() and not stamp.is_symlink(),
+             "RETIRE_SYSTEMD_PERSISTENT_TIMER_STAMP_REMAINS")
         pf=guard.preflight(extracted)
         need(pf["status"]=="SAFE_SOURCE_AND_INSTALLED_BASELINE_ONLY",
              "RETIRE_NEXT_SAFE_UPDATE_STILL_BLOCKED")

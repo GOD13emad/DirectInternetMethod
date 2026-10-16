@@ -467,6 +467,10 @@ def retire_rolledback(receipt_sha256:str):
     # fail-closed, never auto-overwrites foreign content on a retry.
     disarmed=command(["/usr/bin/systemctl","disable","--now",UNIT+".timer"])
     need(disarmed.returncode==0,"RETIRE_TIMER_DISARM_FAILED")
+    # systemd Persistent= leaves a separate on-disk last-trigger stamp.
+    # Use the vendor-supported state-clean command before unit unlinking.
+    stamp=command(["/usr/bin/systemctl","clean","--what=state",UNIT+".timer"])
+    need(stamp.returncode==0,"RETIRE_PERSISTENT_TIMER_STATE_CLEAN_FAILED")
     for rel in sorted(slotfiles):
         p=tx.pending/rel
         need(p.is_file() and not p.is_symlink() and p.stat().st_uid==0,
