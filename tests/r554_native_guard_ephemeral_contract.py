@@ -324,7 +324,6 @@ def run():
         sha_receipt=sha(SEEN)
         cli=["/usr/bin/python3","-B",str(guard.WORKER),
              "retire-rolledback","--receipt-sha256"]
-        import subprocess
         denied=subprocess.run(cli+["0"*64],text=True,capture_output=True,
                               timeout=12,check=False)
         need(denied.returncode!=0 and
