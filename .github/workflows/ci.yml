@@ -531,6 +531,37 @@ jobs:
           $ErrorActionPreference='Stop'
           & pwsh -NoProfile -NonInteractive -File tests/r535_windows_native_rollback.ps1
           if($LASTEXITCODE -ne 0){throw 'R535_NATIVE_INSTALL_ROLLBACK_FAILED'}
+      - name: R600 attested tested private RC1 installer for owner canary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=$env:GITHUB_WORKSPACE
+          $report=Get-Content (Join-Path $env:RUNNER_TEMP 'DIM_R535_NATIVE\BUILD_R535.json') -Raw|ConvertFrom-Json
+          $native=Get-Content (Join-Path $env:RUNNER_TEMP 'DIM_R535_NATIVE\NATIVE_R535.json') -Raw|ConvertFrom-Json
+          $installer=Join-Path $root 'delivery\DirectInternetMethod_1.5.5-rc1_Windows_Setup.exe'
+          if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or
+             $env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
+             $env:GITHUB_REF -cne 'refs/heads/feature/r520-linux-155rc1-ci' -or
+             (git -C $root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R600_HOST_AUTHORITY'}
+          if($report.status -cne 'PASS_ISOLATED_HOSTED_RC1_BUILD' -or
+             $native.status -cne 'PASS_HOSTED_NATIVE_154_TO_155RC1_AND_BACK_154' -or
+             $report.head -cne $env:GITHUB_SHA -or
+             $native.source -cne $env:GITHUB_SHA -or
+             !(Test-Path -LiteralPath $installer -PathType Leaf)){throw 'R600_NATIVE_BUILD_ACCEPTANCE'}
+          $bytes=(Get-Item -LiteralPath $installer).Length
+          $sha=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
+          if($bytes -lt 50000000 -or $sha -cne [string]$report.installerSha){throw 'R600_TESTED_INSTALLER_SHA_CHANGED'}
+          if((Get-AuthenticodeSignature -FilePath $installer).Status.ToString() -cne 'NotSigned'){throw 'R600_SIGNATURE_POLICY_CHANGED'}
+          Write-Output ('R600_EXACT_TESTED_PRIVATE_CANARY_SHA256='+$sha)
+          Write-Output ('R600_TESTED_PRIVATE_CANARY_BYTES='+$bytes)
+      - name: Upload R600 exact tested installer (private ephemeral)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: r600-private-tested-rc1-${{ github.run_id }}
+          path: delivery/DirectInternetMethod_1.5.5-rc1_Windows_Setup.exe
+          if-no-files-found: error
+          retention-days: 2
+          compression-level: 0
       - name: Preserve R535 private verification receipts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
