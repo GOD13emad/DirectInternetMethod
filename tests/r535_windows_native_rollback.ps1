@@ -48,13 +48,31 @@ function Install([string]$exe,[string]$step) {
  $p=Start-Process -FilePath $exe -ArgumentList $args -Wait -PassThru -NoNewWindow
  Require ($p.ExitCode -eq 0) ($step+'_EXIT')
 }
+function ExactRegisteredUninstaller([object]$d) {
+ # Inno Setup allocates uninsNNN per directory, not per version. Inspect
+ # the real AppId registration and require just one corresponding file pair.
+ $entries=@(Get-ChildItem -LiteralPath $App -Force -ErrorAction Stop | Where-Object { $_.Name -match '^unins[0-9]{3}[.](exe|dat|msg)$' })
+ $exes=@($entries|Where-Object { $_.Extension -ieq '.exe' })
+ $datas=@($entries|Where-Object { $_.Extension -ieq '.dat' })
+ $msgs=@($entries|Where-Object { $_.Extension -ieq '.msg' })
+ Require ($exes.Count -eq 1 -and $datas.Count -eq 1 -and $msgs.Count -le 1) 'ONE_UNINSTALLER'
+ $stem=[IO.Path]::GetFileNameWithoutExtension($exes[0].Name)
+ Require ($stem -ieq [IO.Path]::GetFileNameWithoutExtension($datas[0].Name)) 'MATCHED_UNINSTALL_LOG'
+ Require ($msgs.Count -eq 0 -or $stem -ieq [IO.Path]::GetFileNameWithoutExtension($msgs[0].Name)) 'MATCHED_UNINSTALL_MSG'
+ foreach($item in $entries) {
+   Require (!$item.PSIsContainer -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) 'UNINSTALLER_NODE_UNSAFE'
+ }
+ $path=[IO.Path]::GetFullPath($exes[0].FullName)
+ Require ([string]$d.UninstallString -ieq ('"'+$path+'"')) 'EXACT_UNINSTALL_PATH_OWNED'
+ return $path
+}
 function Registered([string]$version) {
  Require (Test-Path $Key) 'SINGLE_HKLM_APPID'
  $d=Get-ItemProperty -LiteralPath $Key
  Require ($d.DisplayVersion -ceq $version) 'EXACT_REGISTERED_VERSION'
  Require ($d.InstallLocation.TrimEnd('\') -ieq $App.TrimEnd('\')) 'SINGLE_INSTALL_PATH'
  Require (!(Test-Path ('HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}_is1'))) 'NO_HKCU_DUPLICATE'
- Require ((Test-Path (Join-Path $App 'unins000.exe')) -and !(Test-Path (Join-Path $App 'unins001.exe'))) 'ONE_UNINSTALLER'
+ [void](ExactRegisteredUninstaller $d)
  return $d
 }
 try {
@@ -83,8 +101,7 @@ try {
  Require ((Get-Content (Join-Path $App 'RELEASE.json') -Raw|ConvertFrom-Json).version -ceq '1.5.5-rc1') 'RC1_INSTALLED_VERSION'
  Require ((FileSha $Config) -ceq $configSha -and (FileSha $Provider) -ceq $providerSha -and (FileSha $Evidence) -ceq $evidenceSha) 'IN_PLACE_USER_DATA_PRESERVED'
  $d=Registered '1.5.5-rc1'
- $uninstaller=Join-Path $App 'unins000.exe'
- Require ([string]$d.UninstallString -like ('*'+$uninstaller+'*')) 'EXACT_UNINSTALL_PATH_OWNED'
+ $uninstaller=ExactRegisteredUninstaller $d
  $u=Start-Process $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru -NoNewWindow
  Require ($u.ExitCode -eq 0) 'RC1_UNINSTALL_ZERO'
  Require (!(Test-Path $Key)) 'ONE_UNINSTALLER_REMOVED_REGISTRY'
