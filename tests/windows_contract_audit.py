@@ -79,7 +79,17 @@ check("all_sites_scope_optional_default_targeted", all(x in start for x in ("$Sc
 check("ui_gemini_adult_live_checks", all(x in xaml for x in ('Text="Gemini"','Text="Adult coverage"','x:Name="AdultSiteCheckToggle"','x:Name="GeminiText"','x:Name="AdultSiteText"')) and all(x in gui for x in ("https://www.pornhub.com/","https://www.xvideos.com/","https://www.xnxx.com/","https://xhamster.com/","FmtAdult")) and "pornhub" not in xaml.lower())
 check("ui_adult_check_default_off_persisted", all(x in gui for x in ("adultSiteLiveCheck","settings.json","AdultSiteCheckToggle_Changed")) and "bool adultCheckEnabled;" in gui)
 check("adult_catalog_opt_in", all(x in gui for x in ("adultCoverageEnabled","adult-enabled.txt","adult-hosts.txt","nsfw-onlydomains.txt","EnsureAdultCatalogAsync","Adult catalog is unexpectedly small","xvideos.com","xnxx.com","xhamster.com")) and all(x in start for x in ("$AdultEnabledFile","$AdultHosts","$AdultFallback","adultHostCount","ADULT_CATALOG_INVALID")) and 'adult-fallback-hosts.txt' in iss)
-check("startup_https_health_quorum", all(x in start for x in ("Curl-Probe-Retry","HTTPS_HEALTH_QUORUM_FAIL","$httpsProbePassCount -lt 2","httpsHealth=[ordered]@{required=2")) and all(x not in start for x in ("throw 'YOUTUBE_HTTP80_FAIL'","throw 'YOUTUBE_HTTPS_FAIL'","throw 'OPENAI_HTTPS_FAIL'","throw 'GITHUB_HTTPS_FAIL'")))
+check("startup_core_site_health_fields", all(x in start for x in (
+    "function Get-CoreSiteHealth($yt,$oa,$gh)",
+    "required=2",
+    "passed=3-$failed.Count",
+    "allCoreSitesOk=($failed.Count -eq 0)",
+    "unreachableCoreSites=@($failed.ToArray())",
+    "reachability=if($failed.Count -eq 0){'HEALTHY'}else{'PARTIAL'}",
+    "$httpsProbePassCount=[int]$httpsHealth.passed",
+    "$ev.status='PASS_ACTIVE'",
+)))
+check("startup_https_health_quorum", all(x in start for x in ("Curl-Probe-Retry","HTTPS_HEALTH_QUORUM_FAIL","$httpsProbePassCount -lt 2","$httpsHealth=Get-CoreSiteHealth $yt $oa $gh","httpsHealth=$httpsHealth")) and all(x not in start for x in ("throw 'YOUTUBE_HTTP80_FAIL'","throw 'YOUTUBE_HTTPS_FAIL'","throw 'OPENAI_HTTPS_FAIL'","throw 'GITHUB_HTTPS_FAIL'")))
 check("adult_strong_override_profile", all(x in strong_override.splitlines() for x in ("xhamster.com","xhamsterlive.com","xhcdn.com","reddit.com","redditstatic.com","redditmedia.com","redd.it")) and all(x in start for x in ("$StrongOverrideHostList","strong-override-hosts.txt","--hostlist='+$StrongOverrideHostList","--dpi-desync=fake,hostfakesplit","--dpi-desync-repeats=11")) and 'strong-override-hosts.txt' in iss)
 check("ui_openai_403_cannot_be_chatgpt_login_pass",
     'FmtOpenAiApiProbe(openAiProbe)' in gui
