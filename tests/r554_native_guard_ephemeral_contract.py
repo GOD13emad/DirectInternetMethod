@@ -227,6 +227,7 @@ def run():
         command(["/usr/bin/systemctl","start",NAME+".service"],100)
     need(SEEN.is_file() and not SEEN.is_symlink(),"SYSTEMD_RECEIPT_MISSING")
     receipt=json.loads(SEEN.read_text())
+    receipt_sha_before_retirement=sha(SEEN)
     if synthetic_reject:
         need(receipt.get("status")=="DEGRADED_UNRESOLVED"
              and receipt.get("uid")==0
@@ -385,7 +386,7 @@ def run():
       "userFileCount":len(original_user),
       "privateUserFileCount":len(private),
       "serviceDurationSeconds":round(time.monotonic()-start,3),
-      "watchdogReceiptSHA256":sha(SEEN)},sort_keys=True))
+      "watchdogReceiptSHA256":receipt_sha_before_retirement},sort_keys=True))
 if __name__=="__main__":
     try:run()
     except BaseException as e:
