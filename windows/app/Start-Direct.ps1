@@ -217,6 +217,21 @@ function Curl-Probe-Retry([string]$Url,[string]$LocalIp,[string]$AcceptPattern,[
  $last=$runs[-1]
  [ordered]@{url=$Url;exit=$last.exit;meta=$last.meta;ok=$false;attempts=$Attempts;runs=$runs}
 }
+function Get-CoreSiteHealth($yt,$oa,$gh) {
+  # A healthy engine/2-of-3 quorum does NOT prove all core sites accessible.
+  $failed=[Collections.Generic.List[string]]::new()
+  if(-not [bool]$yt.ok){[void]$failed.Add('youtube')}
+  if(-not [bool]$oa.ok){[void]$failed.Add('openai')}
+  if(-not [bool]$gh.ok){[void]$failed.Add('github')}
+  [ordered]@{
+    required=2
+    passed=3-$failed.Count
+    members=@('youtube','openai','github')
+    reachability=if($failed.Count -eq 0){'HEALTHY'}else{'PARTIAL'}
+    allCoreSitesOk=($failed.Count -eq 0)
+    unreachableCoreSites=@($failed.ToArray())
+  }
+}
 function Rollback($s){
  try{Remove-OwnedNrpt ([string]$s.nrptRuleName)}catch{}
  Clear-DnsClientCache -ErrorAction SilentlyContinue
@@ -459,7 +474,8 @@ try{
   $yt=Curl-Probe-Retry 'https://www.youtube.com/generate_204' $route.LocalIp '^(200|204)\|' 8 2
   $oa=Curl-Probe-Retry 'https://api.openai.com/v1/models' $route.LocalIp '^(200|401)\|' 7 2
   $gh=Curl-Probe-Retry 'https://github.com/' $route.LocalIp '^(200|301|302|303|307|308)\|' 7 2
-  $httpsProbePassCount=@($yt,$oa,$gh|Where-Object{$_.ok}).Count
+  $httpsHealth=Get-CoreSiteHealth $yt $oa $gh
+  $httpsProbePassCount=[int]$httpsHealth.passed
   $routes=@(Get-NetRoute -AddressFamily IPv4 -ErrorAction SilentlyContinue|Where-Object{$_.DestinationPrefix -in @('0.0.0.0/1','128.0.0.0/1')})
   $proxy=(netsh winhttp show proxy|Out-String).Trim()
   $icsLive=Get-Ics
@@ -474,7 +490,7 @@ try{
  Write-JsonAtomic $StatePath $state
  $ev.status='PASS_ACTIVE'
  $ev.live=[ordered]@{
-  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;strategy=$strategy;scope=$scope;runtimeHostCount=$merged.Count;adultCoverage=$adultEnabled;adultHostCount=$adultHostCount;youtubeHttp80=$yh;dns=$dy;youtube=$yt;openai=$oa;github=$gh;httpsHealth=[ordered]@{required=2;passed=$httpsProbePassCount;members=@('youtube','openai','github')}
+  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;strategy=$strategy;scope=$scope;runtimeHostCount=$merged.Count;adultCoverage=$adultEnabled;adultHostCount=$adultHostCount;youtubeHttp80=$yh;dns=$dy;youtube=$yt;openai=$oa;github=$gh;httpsHealth=$httpsHealth
   ics=$icsLive;proxy=$proxy;broadRouteCount=$routes.Count
   drivers=@(Get-OwnedDrivers|Select-Object Name,State,PathName)
  }
