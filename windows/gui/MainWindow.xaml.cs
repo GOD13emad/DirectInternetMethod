@@ -308,6 +308,8 @@ public partial class MainWindow : Window
             bool ownedHealthy = r.TryGetProperty("ownedResourcesHealthy", out var oh) && oh.GetBoolean();
             YoutubeText.Text = OpenAiText.Text = GithubText.Text = GeminiText.Text = mode == "CONFLICT" ? "Suspended by external tunnel" : ownedHealthy ? "Checking…" : "Available when Direct Method is healthy";
             AdultSiteText.Text = adultCheckEnabled ? (mode == "CONFLICT" ? "Suspended by external tunnel" : ownedHealthy ? "Checking…" : "Available when Direct Method is healthy") : "Disabled";
+            // Engine ownership is not proof that target sites are reachable.
+            bool coreReachabilityProven = false;
             if (ownedHealthy && mode == "ACTIVE" && !string.IsNullOrWhiteSpace(IpText.Text) && IpText.Text != "—")
             {
                 var ytTask = ProbeAsync("https://www.youtube.com/generate_204", IpText.Text, new[] { "200", "204" });
@@ -326,9 +328,13 @@ public partial class MainWindow : Window
                 var tasks = new List<Task> { ytTask, oaTask, ghTask, geminiTask };
                 if (adultTasks is not null) tasks.AddRange(adultTasks);
                 await Task.WhenAll(tasks);
-                YoutubeText.Text = FmtHttp(await ytTask);
-                OpenAiText.Text = FmtOpenAiApiProbe(await oaTask);
-                GithubText.Text = FmtHttp(await ghTask);
+                var youtubeProbe = await ytTask;
+                var openAiProbe = await oaTask;
+                var githubProbe = await ghTask;
+                coreReachabilityProven = youtubeProbe.Ok && openAiProbe.Ok && githubProbe.Ok;
+                YoutubeText.Text = FmtHttp(youtubeProbe);
+                OpenAiText.Text = FmtOpenAiApiProbe(openAiProbe);
+                GithubText.Text = FmtHttp(githubProbe);
                 GeminiText.Text = FmtHttp(await geminiTask);
                 AdultSiteText.Text = adultTasks is null ? "Disabled" : FmtAdult(await Task.WhenAll(adultTasks));
             }
@@ -342,6 +348,16 @@ public partial class MainWindow : Window
                 "OFF" => "Ready",
                 _ => "Unknown state"
             };
+            if (mode == "ACTIVE" && (!ownedHealthy || !coreReachabilityProven))
+            {
+                // Stay ACTIVE internally so Stop works; never claim full health
+                // just because two of three startup endpoints passed quorum.
+                StatusBadge.Text = "PARTIAL";
+                StatusBadge.Foreground = warn;
+                HealthText.Text = ownedHealthy
+                    ? "Direct path active · at least one core site unreachable"
+                    : "Direct path active · owned resource validation failed";
+            }
             if (!string.IsNullOrWhiteSpace(reason)) ToolTip = reason;
 
             StartButton.IsEnabled = mode == "OFF";
