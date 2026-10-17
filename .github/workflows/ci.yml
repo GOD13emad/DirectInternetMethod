@@ -184,6 +184,12 @@ jobs:
           $ErrorActionPreference='Stop'
           dotnet run --project tests/probe_process_security/ProbeProcessSecurity.csproj -c Release --no-launch-profile
           if($LASTEXITCODE -ne 0){throw 'R057_GUI_PROBE_SECURITY_REGRESSION_FAILED'}
+      - name: R061 Windows service system curl provenance negative fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          python -B tests/r061_windows_service_curl_contract.py
+          if($LASTEXITCODE -ne 0){throw 'R061_SERVICE_SYSTEM_CURL_SECURITY_REGRESSION_FAILED'}
       - name: Restore pinned PowerShell runtime
         shell: pwsh
         run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
