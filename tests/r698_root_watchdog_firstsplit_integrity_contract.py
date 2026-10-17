@@ -10,6 +10,8 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
+import shutil
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 def src(relative: str)->str:
@@ -80,7 +82,16 @@ if sys.platform.startswith("linux"):
         "--dpi-desync=multisplit","--dpi-desync-split-pos=1",
         "--new","--filter-tcp=443","--hostlist-domains=youtube.com",
         "--dpi-desync=multisplit","--dpi-desync-split-pos=1,sniext+1,host+1,midsld,endhost-1"]
-    p=subprocess.run(args,capture_output=True,text=True,timeout=12,check=False)
+    # Git stores this binary without an executable bit; the installer sets
+    # that bit on the installed copy. Never chmod original source or host.
+    with tempfile.TemporaryDirectory(prefix="dim-r698-nfqws-") as scratch:
+        executable=pathlib.Path(scratch)/"nfqws"
+        shutil.copyfile(binary,executable)
+        need(hashlib.sha256(executable.read_bytes()).digest()==
+             hashlib.sha256(binary.read_bytes()).digest(),"TEMP_BINARY_NOT_BYTE_EXACT")
+        executable.chmod(0o500)
+        args[0]=str(executable)
+        p=subprocess.run(args,capture_output=True,text=True,timeout=12,check=False)
     need(p.returncode==0 and "command line parameters verified" in p.stdout,
          "ORIGINAL_NFQWS1_NATIVE_PARSER_FAILED")
     print("R698_NATIVE_ORIGINAL_NFQWS1_3_PROFILE_DRYRUN_PASS")
