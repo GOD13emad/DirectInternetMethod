@@ -84,7 +84,7 @@ NPID=0
 CPID=0
 pid_owned(){{ return 1; }}
 remove_dns_link(){{ echo "UNEXPECTED_REMOVE_DNS" >&2;return 90; }}
-restore_selective_dns(){ test ! -e /run/directinternetmethod-selective/session.json; }
+restore_selective_dns(){{ test ! -e /run/directinternetmethod-selective/session.json; }}
 '''+real_fragment+'''
 cleanup_transient
 rc=$?
