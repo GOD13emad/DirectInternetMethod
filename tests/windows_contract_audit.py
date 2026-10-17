@@ -80,7 +80,7 @@ check("ui_gemini_adult_live_checks", all(x in xaml for x in ('Text="Gemini"','Te
 check("ui_adult_check_default_off_persisted", all(x in gui for x in ("adultSiteLiveCheck","settings.json","AdultSiteCheckToggle_Changed")) and "bool adultCheckEnabled;" in gui)
 check("adult_catalog_opt_in", all(x in gui for x in ("adultCoverageEnabled","adult-enabled.txt","adult-hosts.txt","nsfw-onlydomains.txt","EnsureAdultCatalogAsync","Adult catalog is unexpectedly small","xvideos.com","xnxx.com","xhamster.com")) and all(x in start for x in ("$AdultEnabledFile","$AdultHosts","$AdultFallback","adultHostCount","ADULT_CATALOG_INVALID")) and 'adult-fallback-hosts.txt' in iss)
 check("startup_core_site_health_fields", all(x in start for x in (
-    "function Get-CoreSiteHealth($yt,$oa,$gh)",
+    "function Get-CoreSiteHealth($ytPage,$yt204,$oa,$gh)",
     "required=2",
     "passed=3-$failed.Count",
     "allCoreSitesOk=($failed.Count -eq 0)",
@@ -89,7 +89,17 @@ check("startup_core_site_health_fields", all(x in start for x in (
     "$httpsProbePassCount=[int]$httpsHealth.passed",
     "$ev.status='PASS_ACTIVE'",
 )))
-check("startup_https_health_quorum", all(x in start for x in ("Curl-Probe-Retry","HTTPS_HEALTH_QUORUM_FAIL","$httpsProbePassCount -lt 2","$httpsHealth=Get-CoreSiteHealth $yt $oa $gh","httpsHealth=$httpsHealth")) and all(x not in start for x in ("throw 'YOUTUBE_HTTP80_FAIL'","throw 'YOUTUBE_HTTPS_FAIL'","throw 'OPENAI_HTTPS_FAIL'","throw 'GITHUB_HTTPS_FAIL'")))
+check("startup_https_health_quorum", all(x in start for x in ("Curl-Probe-Retry","HTTPS_HEALTH_QUORUM_FAIL","$httpsProbePassCount -lt 2","$httpsHealth=Get-CoreSiteHealth $ytPage $yt $oa $gh","httpsHealth=$httpsHealth")) and all(x not in start for x in ("throw 'YOUTUBE_HTTP80_FAIL'","throw 'YOUTUBE_HTTPS_FAIL'","throw 'OPENAI_HTTPS_FAIL'","throw 'GITHUB_HTTPS_FAIL'")))
+check("startup_true_youtube_page_plus_204_required", all(x in start for x in (
+    "function Get-CoreSiteHealth($ytPage,$yt204,$oa,$gh)",
+    "if(-not ([bool]$ytPage.ok -and [bool]$yt204.ok)){[void]$failed.Add('youtube')}",
+    "$ytPage=Curl-Probe-Retry 'https://www.youtube.com/' $route.LocalIp '^200\\|' 8 2",
+    "$yt=Curl-Probe-Retry 'https://www.youtube.com/generate_204' $route.LocalIp '^204\\|' 8 2",
+    "$httpsHealth=Get-CoreSiteHealth $ytPage $yt $oa $gh",
+    "youtubePage=$ytPage;youtube204=$yt",
+    "$httpsProbePassCount -lt 2",
+    "reachability=if($failed.Count -eq 0){'HEALTHY'}else{'PARTIAL'}",
+)) and "function Get-CoreSiteHealth($yt,$oa,$gh)" not in start)
 check("adult_strong_override_profile", all(x in strong_override.splitlines() for x in ("xhamster.com","xhamsterlive.com","xhcdn.com","reddit.com","redditstatic.com","redditmedia.com","redd.it")) and all(x in start for x in ("$StrongOverrideHostList","strong-override-hosts.txt","--hostlist='+$StrongOverrideHostList","--dpi-desync=fake,hostfakesplit","--dpi-desync-repeats=11")) and 'strong-override-hosts.txt' in iss)
 check("ui_openai_403_cannot_be_chatgpt_login_pass",
     'FmtOpenAiApiProbe(openAiProbe)' in gui

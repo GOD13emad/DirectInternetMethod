@@ -217,10 +217,10 @@ function Curl-Probe-Retry([string]$Url,[string]$LocalIp,[string]$AcceptPattern,[
  $last=$runs[-1]
  [ordered]@{url=$Url;exit=$last.exit;meta=$last.meta;ok=$false;attempts=$Attempts;runs=$runs}
 }
-function Get-CoreSiteHealth($yt,$oa,$gh) {
+function Get-CoreSiteHealth($ytPage,$yt204,$oa,$gh) {
   # A healthy engine/2-of-3 quorum does NOT prove all core sites accessible.
   $failed=[Collections.Generic.List[string]]::new()
-  if(-not [bool]$yt.ok){[void]$failed.Add('youtube')}
+  if(-not ([bool]$ytPage.ok -and [bool]$yt204.ok)){[void]$failed.Add('youtube')}
   if(-not [bool]$oa.ok){[void]$failed.Add('openai')}
   if(-not [bool]$gh.ok){[void]$failed.Add('github')}
   [ordered]@{
@@ -471,10 +471,11 @@ try{
 
   $dy=Dns-Probe 'www.youtube.com'
   $yh=Curl-Probe-Retry 'http://www.youtube.com/' $route.LocalIp '^(200|301|302|303|307|308)\|' 7 2
-  $yt=Curl-Probe-Retry 'https://www.youtube.com/generate_204' $route.LocalIp '^(200|204)\|' 8 2
+  $ytPage=Curl-Probe-Retry 'https://www.youtube.com/' $route.LocalIp '^200\|' 8 2
+  $yt=Curl-Probe-Retry 'https://www.youtube.com/generate_204' $route.LocalIp '^204\|' 8 2
   $oa=Curl-Probe-Retry 'https://api.openai.com/v1/models' $route.LocalIp '^(200|401)\|' 7 2
   $gh=Curl-Probe-Retry 'https://github.com/' $route.LocalIp '^(200|301|302|303|307|308)\|' 7 2
-  $httpsHealth=Get-CoreSiteHealth $yt $oa $gh
+  $httpsHealth=Get-CoreSiteHealth $ytPage $yt $oa $gh
   $httpsProbePassCount=[int]$httpsHealth.passed
   $routes=@(Get-NetRoute -AddressFamily IPv4 -ErrorAction SilentlyContinue|Where-Object{$_.DestinationPrefix -in @('0.0.0.0/1','128.0.0.0/1')})
   $proxy=(netsh winhttp show proxy|Out-String).Trim()
@@ -490,7 +491,7 @@ try{
  Write-JsonAtomic $StatePath $state
  $ev.status='PASS_ACTIVE'
  $ev.live=[ordered]@{
-  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;strategy=$strategy;scope=$scope;runtimeHostCount=$merged.Count;adultCoverage=$adultEnabled;adultHostCount=$adultHostCount;youtubeHttp80=$yh;dns=$dy;youtube=$yt;openai=$oa;github=$gh;httpsHealth=$httpsHealth
+  ctrldPid=$cpid;winwsPid=$wp.Id;directMethods=$DirectMethods;strategy=$strategy;scope=$scope;runtimeHostCount=$merged.Count;adultCoverage=$adultEnabled;adultHostCount=$adultHostCount;youtubeHttp80=$yh;dns=$dy;youtube=$yt;youtubePage=$ytPage;youtube204=$yt;openai=$oa;github=$gh;httpsHealth=$httpsHealth
   ics=$icsLive;proxy=$proxy;broadRouteCount=$routes.Count
   drivers=@(Get-OwnedDrivers|Select-Object Name,State,PathName)
  }

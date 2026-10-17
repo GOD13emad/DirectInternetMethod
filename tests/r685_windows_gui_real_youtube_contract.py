@@ -22,7 +22,7 @@ def need(cond,label):
     if not cond:raise SystemExit("R685_FAIL_"+label)
 
 need('StatusBadge.Text = "PARTIAL";' in GUI,"PRESERVE_PARTIAL_STATUS")
-need("function Get-CoreSiteHealth($yt,$oa,$gh)" in START and
+need("function Get-CoreSiteHealth($ytPage,$yt204,$oa,$gh)" in START and
      "$httpsProbePassCount -lt 2" in START,"PRESERVE_TWO_OF_THREE_START")
 need('var ytTask = ProbeAsync("https://www.youtube.com/", IpText.Text, new[] { "200" });' in GUI,
      "REAL_YOUTUBE_PAGE_PROBE_MISSING")
