@@ -35,7 +35,7 @@ internal static class ProbeProcessBuilder
             !ProbeHosts.Contains(endpoint.IdnHost))
             throw new ArgumentException("Probe endpoint is not an allowed HTTPS destination.", nameof(url));
 
-        var systemFolder = Environment.GetFolderPath(Environment.SpecialFolder.System);
+        var systemFolder = Environment.SystemDirectory;
         if (string.IsNullOrEmpty(systemFolder) || !Path.IsPathFullyQualified(systemFolder))
             throw new InvalidOperationException("Trusted Windows system directory unavailable.");
         var curl = Path.GetFullPath(Path.Combine(systemFolder, "curl.exe"));
