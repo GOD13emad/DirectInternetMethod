@@ -18,6 +18,7 @@ FILES=[
  ("linux/system/upgrade_system.sh","system/upgrade_system.sh"),
  ("linux/system/uninstall_system.sh","system/uninstall_system.sh"),
  ("linux/app/direct_internet_method.py","app/direct_internet_method.py"),
+ ("linux/app/socket_fallback.py","app/socket_fallback.py"),
  ("linux/app/router_gateway.py","app/router_gateway.py"),
  ("linux/app/router_gateway_core.py","app/router_gateway_core.py"),
  ("linux/app/user_update_transaction.py","app/user_update_transaction.py"),

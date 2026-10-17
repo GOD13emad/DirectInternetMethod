@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":27,"sha256":"C8E5A06387FF21EC0E048F8BB02DC1B4C31B364625E18EC641900356F60CE503"}
+EXPECTED={"version":VERSION,"files":28,"sha256":"697E1445ECC70148193227D6726AAEACE7AB1DFB6A3B89650487E474F476F648"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -82,14 +82,14 @@ class Tests(unittest.TestCase):
         self.assertEqual((prev["schema"],prev["version"],prev["platform"]),(1,VERSION,"linux-x86_64"))
         before={row["file"]:row for row in prev["files"]}
         after={row["file"]:row for row in self.rows}
-        self.assertEqual(set(after),set(before)|{"system/upgrade_guard.py"})
+        self.assertEqual(set(after),set(before)|{"system/upgrade_guard.py","app/socket_fallback.py"})
         self.assertEqual(len(before),26)
         changed={name for name in before if before[name]!=after[name]}
         self.assertEqual(changed,{"app/user_uninstall_preserve.py","app/direct_internet_method.py",
                                  "app/direct_method_helper.sh","app/user_update_transaction.py","system/protected_upgrade_transaction.py",
                                  "system/upgrade_system.sh","install.sh"})
         self.assertEqual(after["app/direct_internet_method.py"]["sha256"],
-                         "57B452CF570E8A1545340F13A140E9E6D86F4F2B6F282BA2AA3D992F64FE11AF")
+                         "6CF031D2C7F18D7E7E4F1F9A37A1A0EBD3CA589F16F7E26274496F1F53E9317B")
         self.assertIn("encrypted=encrypted_dns_optin_state()",
                       self.info.read(self.prefix+"app/direct_internet_method.py").decode())
         self.assertIn('s.get("selectiveDnsEncrypted")',
@@ -109,7 +109,7 @@ class Tests(unittest.TestCase):
             self.assertEqual(digest(old.read_bytes()),
                              "47776640A1BB8B5D4490244565DDD47A6A817A999347566917CC73E21F41EC24")
             with zipfile.ZipFile(old) as z:
-                self.assertEqual(set(self.n),set(z.namelist())|{self.prefix+"system/upgrade_guard.py"})
+                self.assertEqual(set(self.n),set(z.namelist())|{self.prefix+"system/upgrade_guard.py",self.prefix+"app/socket_fallback.py"})
                 self.assertEqual(z.read(self.prefix+"PACKAGE_MANIFEST.json"),old_manifest_bytes)
                 self.assertEqual(z.read(self.prefix+"app/user_uninstall_preserve.py"),old_source.read_bytes())
                 self.assertEqual(z.testzip(),None)
@@ -153,7 +153,7 @@ class Tests(unittest.TestCase):
         self.assertIn('COEXIST_HELPER_SHA256="'+digest(HELPER.read_bytes()).lower()+'"',app)
         self.assertIn('installed.get("version") == "1.5.5-rc1"',app)
         updater=USER_TXN.read_text()
-        self.assertIn('len(package_doc["files"]) == 27',updater)
+        self.assertIn('len(package_doc["files"]) == 28',updater)
         self.assertIn('data.get("version") == "1.5.5-rc1"',updater)
         self.assertIn('"encrypted-dns-optin.txt"',updater)
     def test_rc_semver_prevents_implicit_downgrade(self):

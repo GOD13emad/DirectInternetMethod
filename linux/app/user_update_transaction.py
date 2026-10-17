@@ -23,6 +23,7 @@ import sys
 
 FILES = (
     ("app/direct_internet_method.py", "direct_internet_method.py", 0o755),
+    ("app/socket_fallback.py", "socket_fallback.py", 0o644),
     ("app/router_gateway.py", "router_gateway.py", 0o755),
     ("app/router_gateway_core.py", "router_gateway_core.py", 0o644),
     ("app/direct-internet-method.svg", "direct-internet-method.svg", 0o644),
@@ -154,7 +155,7 @@ def source_files(root: pathlib.Path) -> dict:
               package_doc.get("version") == "1.5.5-rc1" and
               package_doc.get("platform") == "linux-x86_64" and
               isinstance(package_doc.get("files"), list) and
-              len(package_doc["files"]) == 27, "EXTRACTED_PACKAGE_IDENTITY_WRONG")
+              len(package_doc["files"]) == 28, "EXTRACTED_PACKAGE_IDENTITY_WRONG")
         seen = set()
         digest_lines = []
         for item in package_doc["files"]:

@@ -41,7 +41,7 @@ PREFIX = ARCHIVE_NAME.removesuffix(".zip") + "/"
 def build_zip(kind="good"):
     source = {"install.sh": b"#!/bin/bash\nexit 0\n"}
     source.update({f"app/fixture{i:02d}.bin": f"fixture-{i}\n".encode()
-                   for i in range(26)})
+                   for i in range(27)})
     if kind == "missing_installer":
         source["another_installer.sh"] = source.pop("install.sh")
     rows = [{"file": key, "bytes": len(raw),

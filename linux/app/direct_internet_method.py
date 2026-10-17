@@ -22,6 +22,7 @@ gi.require_version("Gtk","4.0")
 gi.require_version("Adw","1")
 from gi.repository import Gtk, Adw, GLib, Gdk
 from router_gateway import RouterGatewayWindow
+from socket_fallback import LocalSocketFallback
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
 VERSION="1.5.5-rc1"
@@ -618,7 +619,7 @@ def download_and_install_update(info):
             prefix=archive_name.removesuffix(".zip")+"/"
             with zipfile.ZipFile(zip_path) as z:
                 members=z.infolist()
-                if len(members)!=29 or len({m.filename for m in members})!=len(members):
+                if len(members)!=30 or len({m.filename for m in members})!=len(members):
                     raise RuntimeError("Linux update archive has an unexpected file inventory.")
                 names={}
                 total=0
@@ -647,7 +648,7 @@ def download_and_install_update(info):
                         manifest.get("version")!=release_version or
                         manifest.get("platform")!="linux-x86_64" or
                         not isinstance(manifest.get("files"),list) or
-                        len(manifest["files"])!=27):
+                        len(manifest["files"])!=28):
                     raise RuntimeError("Linux update package identity does not match release.")
                 referenced=set()
                 expected_lines=[]
@@ -698,10 +699,12 @@ def download_and_install_update(info):
 class Window(Adw.ApplicationWindow):
     def __init__(self,app):
         super().__init__(application=app,title="Direct Internet Method")
-        self.set_default_size(900,590)
-        self.set_size_request(780,540)
+        self.set_default_size(900,685)
+        self.set_size_request(780,615)
         self.set_resizable(True)
         self.available_update=None
+        # R747: local socket alternative exists only for this GUI lifetime.
+        self.local_socket_bridge=None
         self.adult_check_enabled=load_adult_site_check()
         if self.adult_check_enabled:
             try: save_adult_site_check(True)
@@ -761,6 +764,29 @@ class Window(Adw.ApplicationWindow):
         self.adult_live=Gtk.Label(label="Adult coverage: "+("Checking…" if self.adult_check_enabled else "Disabled"),xalign=0);self.adult_live.add_css_class("dim-label");live.append(self.adult_live)
         box.append(live)
 
+        # R747: independent, explicit, session-only SOCKS5 opt-in.
+        # Never edits the user's Firefox/Brave/system proxy configuration.
+        local_card=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=7)
+        local_card.add_css_class("card")
+        local_heading=Gtk.Label(label="Optional selected-site local SOCKS5 (manual app opt-in)",xalign=0)
+        local_heading.add_css_class("heading")
+        local_card.append(local_heading)
+        self.local_socket_status=Gtk.Label(
+            label="OFF — only approved public YouTube-related sites and three service controls; "
+                  "not system-wide access.",xalign=0,wrap=True)
+        self.local_socket_status.add_css_class("dim-label")
+        local_card.append(self.local_socket_status)
+        local_buttons=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8)
+        self.local_socket_start_button=Gtk.Button(label="Start local SOCKS5 (session only)")
+        self.local_socket_stop_button=Gtk.Button(label="Stop local SOCKS5")
+        self.local_socket_stop_button.set_sensitive(False)
+        self.local_socket_start_button.connect("clicked",self.on_local_socket_start)
+        self.local_socket_stop_button.connect("clicked",self.on_local_socket_stop)
+        local_buttons.append(self.local_socket_start_button)
+        local_buttons.append(self.local_socket_stop_button)
+        local_card.append(local_buttons)
+        box.append(local_card)
+
         buttons=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8);buttons.set_homogeneous(True)
         self.buttons={}
         for text_,action,css in [
@@ -780,9 +806,54 @@ class Window(Adw.ApplicationWindow):
         # Observe route/process changes without doing periodic web requests.
         self._status_timer_id=GLib.timeout_add_seconds(15,self.periodic_state_tick)
         self.connect("close-request",self.stop_status_timer)
+        self.connect("close-request",self.close_local_socket)
         if self.adult_check_enabled:
             threading.Thread(target=self.adult_sync_worker,args=(False,),daemon=True).start()
         threading.Thread(target=self.update_check_worker,args=(False,),daemon=True).start()
+
+    def on_local_socket_start(self,*_args):
+        # The exact user click is the only enabling action. No persistent
+        # configuration, no Root service and no changes to browser/DNS/proxy.
+        if self.local_socket_bridge is not None:
+            return
+        try:
+            if STATE.is_symlink() or STATE.exists():
+                raise RuntimeError("Stop the Direct Method engine first.")
+            if _external_tunnel_active():
+                raise RuntimeError("An unsupported external tunnel is active.")
+            candidate=LocalSocketFallback()
+            try:
+                port=candidate.start()
+            except BaseException:
+                candidate.stop()
+                raise
+            self.local_socket_bridge=candidate
+        except Exception as exc:
+            self.local_socket_status.set_text("Local SOCKS5 OFF — "+str(exc))
+            return
+        self.local_socket_start_button.set_sensitive(False)
+        self.local_socket_stop_button.set_sensitive(True)
+        self.local_socket_status.set_text(
+            f"ON — SOCKS5 127.0.0.1:{port}. Configure ONLY your chosen app "
+            "with remote DNS (socks5h). Only allowlisted HTTPS destinations; "
+            "no system/global proxy. Your app validates TLS certificates. "
+            "Stop here or close this GUI to disable."
+        )
+
+    def on_local_socket_stop(self,*_args):
+        self.close_local_socket()
+        self.local_socket_status.set_text(
+            "OFF — no localhost SOCKS5 process, no system proxy changes."
+        )
+
+    def close_local_socket(self,*_args):
+        bridge=self.local_socket_bridge
+        self.local_socket_bridge=None
+        if bridge is not None:
+            bridge.stop()
+        self.local_socket_start_button.set_sensitive(True)
+        self.local_socket_stop_button.set_sensitive(False)
+        return False
 
     def toggle_maximize(self,*_args):
         if self.is_maximized():
@@ -1063,6 +1134,9 @@ class Window(Adw.ApplicationWindow):
 
     def on_action(self,_button,action):
         ui_test_log("ACTION:"+action)
+        if action=="start" and self.local_socket_bridge is not None:
+            self.result.set_text("Stop the optional local SOCKS5 before starting system DPI.")
+            return
         if action=="refresh":
             self.refresh();self.result.set_text("");return
         if action=="router":
