@@ -157,6 +157,24 @@ class Tests(unittest.TestCase):
         # entries; only the unpublished RC1's inventory is extended.
         self.assertIn('archive_verify(z,STABLE_PREFIX,24)',native)
 
+    def test_hosted_root_watchdog_user_sha_matches_current_candidate(self):
+        # R748: adding/removing a managed user module changes this source
+        # without changing Root. Both sides of the independent watchdog and
+        # the hosted guard tests must follow the exact current user hash.
+        expected=digest(USER_TXN.read_bytes())
+        for filename,variable in (
+            ("tests/r532_ephemeral_root_watchdog_contract.py","USER_SHA"),
+            ("tests/r532_root_watchdog_worker.py","PIN_USER"),
+            ("tests/r554_native_guard_ephemeral_contract.py","PIN_USER"),
+        ):
+            text=(R/filename).read_text(encoding="utf8")
+            matches=re.findall(
+                rf'(?m)^\s*{variable}\s*=\s*["\x27]([a-fA-F0-9]{{64}})["\x27]',
+                text,
+            )
+            self.assertEqual(len(matches),1,filename)
+            self.assertEqual(matches[0].upper(),expected,filename)
+
     def test_user_installer_never_pretends_committed(self):
         src=INSTALLER.read_text()
         self.assertIn("ROOT_UPGRADE_STAGED=1",src)

@@ -37,7 +37,7 @@ UNIT = "dim-r532-watchdog"
 TIMER = UNIT + ".timer"
 SERVICE = UNIT + ".service"
 ROOT_SHA = "de3ed6765dc8db307297e49736483d02d7471b4f3fe7a77408a4368d7a2515a3"
-USER_SHA = "eac84cb951f520f0e6a05d1452ef355a1cc89d7c68deb73f91ba14c8e1c4bd66"
+USER_SHA = "c1bbf62d99e46cb8e349a38e60891027ff7276f85caceb597548c269203f28bf"
 
 def sha(p:Path)->str:
     h=hashlib.sha256()
