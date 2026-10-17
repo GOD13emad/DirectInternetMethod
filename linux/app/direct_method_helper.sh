@@ -818,6 +818,13 @@ EOF
         NFQWS_ARGS+=(
           --filter-tcp=80 "${HOST_ARGS[@]}" --dpi-desync=multisplit --dpi-desync-split-pos=method+2
         )
+        # A narrowly scoped YouTube ClientHello first-segment profile;
+        # leave general compatibility and Tailscale bypass unchanged.
+        NFQWS_ARGS+=(
+          --new --filter-tcp=443
+          --hostlist-domains=youtube.com,youtu.be,googlevideo.com
+          --dpi-desync=multisplit --dpi-desync-split-pos=1
+        )
         if [ "$ADULT_ON" = "1" ]; then
           NFQWS_ARGS+=(--new --filter-tcp=443 --hostlist="$STRONG_OVERRIDE" --dpi-desync=multisplit --dpi-desync-split-pos=sniext+1)
         fi
