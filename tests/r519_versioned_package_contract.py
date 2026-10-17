@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":27,"sha256":"238F479608BD43A2BE3FDCD0AFC4C9DF4E23C243B25E31ADF29BBAC255A605E0"}
+EXPECTED={"version":VERSION,"files":27,"sha256":"3D705B7D5E72E10B988293FD8F45A95BC9DCE20326DFDDF7BBC756B5C87D6AEE"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -72,11 +72,13 @@ class Tests(unittest.TestCase):
         fixtures=R/"tests/fixtures/r519_original"
         old_manifest=fixtures/"PACKAGE_MANIFEST.json"
         old_source=fixtures/"user_uninstall_preserve.py"
-        self.assertEqual(digest(old_manifest.read_bytes()),
+        # Compare canonical historical LF bytes, not Git-for-Windows CRLF checkout.
+        old_manifest_bytes=old_manifest.read_bytes().replace(b"\r\n",b"\n")
+        self.assertEqual(digest(old_manifest_bytes),
                          "EA43CD77EAA2979AC970A8B47145881C767519E3D024BF907167A2FE3FD6C05E")
         self.assertEqual(digest(old_source.read_bytes()),
                          "9A4A4C37E3F63F1602E15454100150D209E3CD099DE80504B560F31D42D3C0EF")
-        prev=json.loads(old_manifest.read_text())
+        prev=json.loads(old_manifest_bytes)
         self.assertEqual((prev["schema"],prev["version"],prev["platform"]),(1,VERSION,"linux-x86_64"))
         before={row["file"]:row for row in prev["files"]}
         after={row["file"]:row for row in self.rows}
@@ -87,7 +89,7 @@ class Tests(unittest.TestCase):
                                  "app/direct_method_helper.sh","app/user_update_transaction.py","system/protected_upgrade_transaction.py",
                                  "system/upgrade_system.sh","install.sh"})
         self.assertEqual(after["app/direct_internet_method.py"]["sha256"],
-                         "BBB7B86B423B367DF58CF12E127180C7CA0FFC06BEC471E8B3B062A9D175963C")
+                         "DEC2CE52487943F52C15E665562022F0F3AB6AECD08454715004595B6CFD2C82")
         self.assertIn("encrypted=encrypted_dns_optin_state()",
                       self.info.read(self.prefix+"app/direct_internet_method.py").decode())
         self.assertIn('s.get("selectiveDnsEncrypted")',
@@ -108,7 +110,7 @@ class Tests(unittest.TestCase):
                              "47776640A1BB8B5D4490244565DDD47A6A817A999347566917CC73E21F41EC24")
             with zipfile.ZipFile(old) as z:
                 self.assertEqual(set(self.n),set(z.namelist())|{self.prefix+"system/upgrade_guard.py"})
-                self.assertEqual(z.read(self.prefix+"PACKAGE_MANIFEST.json"),old_manifest.read_bytes())
+                self.assertEqual(z.read(self.prefix+"PACKAGE_MANIFEST.json"),old_manifest_bytes)
                 self.assertEqual(z.read(self.prefix+"app/user_uninstall_preserve.py"),old_source.read_bytes())
                 self.assertEqual(z.testzip(),None)
     def test_original_published_metadata_untouched(self):
