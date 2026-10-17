@@ -133,7 +133,11 @@ expect_absent(){
 put_state
 new_table; new_chain; injected_mark; mark; queues
 nft_table_presence
-nft_table_owned "$PHY"
+if ! nft_table_owned "$PHY"; then
+  echo "R711_FAIL_CLOSED_NATIVE_COMPLETE_OWNER_NO_MATCH" >&2
+  nft list table inet "$TABLE" >&2
+  exit 97
+fi
 cleanup_state_owned
 verify_clean
 expect_absent
