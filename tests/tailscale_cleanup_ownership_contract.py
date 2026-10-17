@@ -25,6 +25,7 @@ nft_output='''table inet directinternetmethod {
         type filter hook output priority mangle; policy accept;
         meta mark & 0x40000000 == 0x40000000 return
         %%MARK%%
+        oifname "enp1s0" tcp dport 443 tcp flags & (syn | ack) == syn return
         oifname "enp1s0" tcp dport 80 ct original packets 1-6 queue flags bypass to 200
         oifname "enp1s0" tcp dport 443 ct original packets 1-6 queue flags bypass to 200
         oifname "enp1s0" udp dport 443 ct original packets 1-6 queue flags bypass to 200
@@ -34,6 +35,8 @@ inject_mark='meta mark & 0x40000000 == 0x40000000 return'
 mark="meta mark & 0x00ff0000 == 0x00080000 return"
 cases=[
  ("split_coexistence_owns_marked_table", "system-preserved",mark,True,0,True),
+ ("split_coexistence_no_tcp443_syn_skip", "system-preserved",mark,True,81,False),
+ ("split_coexistence_bad_tcp443_syn_skip", "system-preserved",mark,True,81,False),
  ("split_coexistence_missing_injected_mark", "system-preserved",mark,True,81,False),
  ("split_coexistence_wrong_injected_mark", "system-preserved",mark,True,81,False),
  ("split_coexistence_rejects_missing_mark", "system-preserved","",True,81,False),
@@ -84,6 +87,8 @@ esac
                                "ctrldPid":0,"nfqwsPid":0}),encoding="utf-8")
   fixture=d/"nft.out"
   value=nft_output.replace("%%MARK%%",bypass)
+  if name=="split_coexistence_no_tcp443_syn_skip":value=value.replace('oifname "enp1s0" tcp dport 443 tcp flags & (syn | ack) == syn return',"",1)
+  if name=="split_coexistence_bad_tcp443_syn_skip":value=value.replace('oifname "enp1s0" tcp dport 443 tcp flags & (syn | ack) == syn return','oifname "enp1s0" tcp dport 443 tcp flags & (syn | ack) == ack return',1)
   if name=="split_coexistence_missing_injected_mark":value=value.replace(inject_mark,"",1)
   if name=="split_coexistence_wrong_injected_mark":value=value.replace(inject_mark,'meta mark & 0x40000000 == 0x00000000 return',1)
   if name=="split_coexistence_rejects_late_mark":

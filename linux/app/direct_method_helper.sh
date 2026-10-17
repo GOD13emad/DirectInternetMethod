@@ -157,7 +157,7 @@ import re, sys
 table, iface, mode = sys.argv[1:]
 lines = [line.strip() for line in sys.stdin if line.strip()]
 coexist = mode == "system-preserved"
-expected_count = 10 if coexist else 9
+expected_count = 11 if coexist else 10
 if len(lines) != expected_count:
     sys.exit(1)
 if lines[:2] != [f"table inet {table} {{", "chain output {"]:
@@ -175,6 +175,10 @@ if coexist:
     offset = 5
 queue = r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? bypass)"
 dev = r"oifname (?:" + re.escape(iface) + r"|" + re.escape(chr(34) + iface + chr(34)) + r")"
+syn_rule = dev + r" tcp dport 443 tcp flags & \(syn \| ack\) == syn return"
+if not re.fullmatch(syn_rule, lines[offset]):
+    sys.exit(1)
+offset += 1
 for index, (proto, port) in enumerate((("tcp", 80), ("tcp", 443), ("udp", 443))):
     rule = dev + " " + proto + " dport " + str(port) + " " + queue
     if not re.fullmatch(rule, lines[offset + index]):
@@ -313,6 +317,7 @@ queue=r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? 
 patterns=[r"meta mark & 0x0*40000000 == 0x0*40000000 return"]
 if coexist=="1":
     patterns.append(r"meta mark & 0x0*ff0000 == 0x0*80000 return")
+patterns.append(dev+r" tcp dport 443 tcp flags & \(syn \| ack\) == syn return")
 for proto,port in (("tcp",80),("tcp",443),("udp",443)):
     patterns.append(dev+r" "+proto+r" dport "+str(port)+r" "+queue)
 rules=inner[2:-1]
@@ -812,6 +817,10 @@ EOF
       # Tailscale LinuxBypassMark 0x80000/0xff0000 protects its own DERP/control traffic.
       nft "add rule inet $TABLE output meta mark & 0xff0000 == 0x80000 return"
     fi
+    # Original TCP SYN has no TLS payload. Let the kernel establish the
+    # connection without a potentially delayed NFQUEUE round-trip. Only
+    # physical WAN TCP/443 pure SYN is excluded; TLS data still reaches nfqws.
+    nft "add rule inet $TABLE output oifname \"$PHY\" tcp dport 443 tcp flags & (syn | ack) == syn return"
     nft add rule inet "$TABLE" output oifname "$PHY" tcp dport 80 ct original packets 1-6 queue num "$QNUM" bypass
     nft add rule inet "$TABLE" output oifname "$PHY" tcp dport 443 ct original packets 1-6 queue num "$QNUM" bypass
     nft add rule inet "$TABLE" output oifname "$PHY" udp dport 443 ct original packets 1-6 queue num "$QNUM" bypass

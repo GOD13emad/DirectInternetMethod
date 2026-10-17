@@ -23,7 +23,7 @@ assert helper.index(chain)<helper.index(expected)<helper.index('nft "add rule in
 assert helper.count(owned)==1 and helper.count(transient)==1
 live=helper.split(owned,1)[1].split('\n}\n',1)[0]
 rollback=helper.split(transient,1)[1].split('\n}\n',1)[0]
-assert 'expected_count = 10 if coexist else 9' in live
+assert 'expected_count = 11 if coexist else 10' in live
 assert 'offset = 4' in live
 assert 'lines[3]' in live and 'lines[4]' in live
 assert 'offset = 5' in live

@@ -115,6 +115,7 @@ mark(){
   nft "add rule inet $TABLE output meta mark & 0xff0000 == 0x80000 return"
 }
 queues(){
+  nft "add rule inet $TABLE output oifname enp1s0 tcp dport 443 tcp flags & (syn | ack) == syn return"
   nft add rule inet "$TABLE" output oifname enp1s0 tcp dport 80 ct original packets 1-6 queue num 200 bypass
   nft add rule inet "$TABLE" output oifname enp1s0 tcp dport 443 ct original packets 1-6 queue num 200 bypass
   nft add rule inet "$TABLE" output oifname enp1s0 udp dport 443 ct original packets 1-6 queue num 200 bypass
@@ -137,6 +138,21 @@ cleanup_state_owned
 verify_clean
 expect_absent
 echo "PASS_KERNEL_COMPLETE_OWNED_CLEANUP"
+# A table without its SYN fast-path cannot be claimed for destructive cleanup.
+put_state
+new_table; new_chain; injected_mark; mark
+nft add rule inet "$TABLE" output oifname enp1s0 tcp dport 80 ct original packets 1-6 queue num 200 bypass
+nft add rule inet "$TABLE" output oifname enp1s0 tcp dport 443 ct original packets 1-6 queue num 200 bypass
+nft add rule inet "$TABLE" output oifname enp1s0 udp dport 443 ct original packets 1-6 queue num 200 bypass
+if nft_table_owned "$PHY"; then echo FALSE_SYNSKIP_MISSING_OWNERSHIP >&2; exit 94;fi
+if cleanup_state_owned; then rc=0; else rc=$?;fi
+test "$rc" -eq 81
+test -f "$STATE"
+nft list table inet "$TABLE" >/dev/null
+nft delete table inet "$TABLE"
+expect_absent
+echo "PASS_KERNEL_MISSING_TCP443_SYN_EXEMPTION_FAIL_CLOSED"
+
 # A table lacking nfqws injected-packet exemption is NOT owned. Root must
 # preserve it rather than deleting a rule set that may loop reinjected packets.
 put_state
@@ -206,7 +222,7 @@ test -f "$STATE"
 nft delete table inet "$TABLE"
 expect_absent
 echo "PASS_KERNEL_FAILED_ROLLBACK_EXIT_NONZERO"
-echo "PASS_KERNEL_NAMESPACE_NFT_CONTRACT_8_OF_8"
+echo "PASS_KERNEL_NAMESPACE_NFT_CONTRACT_9_OF_9"
 '''
     script = functions + "\n" + cases
     # Fixture variables must be initialized before Bash set -u cleanup.
