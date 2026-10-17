@@ -55,7 +55,15 @@ try {
 
     $cancel = [Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds(25))
     # The service main entrypoint / Windows SCM are NOT invoked.
-    $task = $download.Invoke($null, [object[]]@($uri, $destination, $cancel.Token))
+    # Reflection.Invoke must receive actual CLR strings, not PowerShell PSObject wrappers.
+    $nativeArgs = [object[]]::new(3)
+    $nativeArgs[0] = [string][Management.Automation.PSObject]::Base($uri)
+    $nativeArgs[1] = [string][Management.Automation.PSObject]::Base($destination)
+    $nativeArgs[2] = $cancel.Token
+    if ($nativeArgs[0] -isnot [string] -or $nativeArgs[1] -isnot [string]) {
+        throw 'R062_REFLECTION_CLR_STRINGS_NOT_NORMALIZED'
+    }
+    $task = $download.Invoke($null, $nativeArgs)
     if ($task -isnot [Threading.Tasks.Task]) { throw 'R062_DOWNLOADER_NOT_ASYNC_TASK' }
 
     $client = $incoming.WaitAsync([TimeSpan]::FromSeconds(15)).GetAwaiter().GetResult()
