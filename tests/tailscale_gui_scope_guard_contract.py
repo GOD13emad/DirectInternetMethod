@@ -82,7 +82,8 @@ env["_external_tunnel_active"]=lambda:True
 assert mode()["mode"]=="BLOCKED",("exit node / foreign VPN must still block",mode())
 print("PASS unknown VPN/exit node still fail-closed")
 
-assert 'mode in ("BLOCKED","CONFIG_REQUIRED","BACKEND_UPDATE_REQUIRED","CONFLICT")' in src
+assert 'mode in ("ACTIVE","BLOCKED","CONFIG_REQUIRED","BACKEND_UPDATE_REQUIRED","CONFLICT")' in src
+assert 'R735_GUI_NO_UNVERIFIED_GREEN' in src
 assert 'start_ok=(mode=="OFF")' in src
 assert 'w.close();self.refresh()' in src
 print("PASS CONFIG_REQUIRED warning; no Start until Strategy save; immediate refresh")
