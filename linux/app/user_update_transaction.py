@@ -23,6 +23,7 @@ import sys
 
 FILES = (
     ("app/direct_internet_method.py", "direct_internet_method.py", 0o755),
+    ("app/socket_fallback.py", "socket_fallback.py", 0o644),
     ("app/router_gateway.py", "router_gateway.py", 0o755),
     ("app/router_gateway_core.py", "router_gateway_core.py", 0o644),
     ("app/direct-internet-method.svg", "direct-internet-method.svg", 0o644),
@@ -60,6 +61,7 @@ OFFICIAL_LEGACY_SHA = {
 MUTABLE = (
     "settings.json", "strategy.txt", "scope.txt", "custom-hosts.txt",
     "adult-enabled.txt", "adult-hosts.txt", "adult-hosts.meta.json",
+    "encrypted-dns-optin.txt", "selective-dns-optin.txt",
 )
 
 
@@ -135,7 +137,7 @@ def source_files(root: pathlib.Path) -> dict:
     """
     guard(root.is_absolute() and root.is_dir() and not root.is_symlink() and
           not root.parent.is_symlink(), "SOURCE_PACKAGE_INVALID")
-    archive_layout = root.name == "DirectInternetMethod_1.5.4_Linux_x86_64"
+    archive_layout = root.name == "DirectInternetMethod_1.5.5-rc1_Linux_x86_64"
     source_layout = root.name == "linux"
     guard(archive_layout or source_layout, "SOURCE_PACKAGE_LAYOUT_NOT_LINUX_OR_EXTRACTED_ZIP")
     if archive_layout:
@@ -150,10 +152,10 @@ def source_files(root: pathlib.Path) -> dict:
             raise RuntimeError("EXTRACTED_PACKAGE_MANIFEST_INVALID_JSON") from ex
         guard(isinstance(package_doc, dict) and package_doc.get("schema") == 1 and
               package_doc.get("product") == "Direct Internet Method" and
-              package_doc.get("version") == "1.5.4" and
+              package_doc.get("version") == "1.5.5-rc1" and
               package_doc.get("platform") == "linux-x86_64" and
               isinstance(package_doc.get("files"), list) and
-              len(package_doc["files"]) == 22, "EXTRACTED_PACKAGE_IDENTITY_WRONG")
+              len(package_doc["files"]) == 28, "EXTRACTED_PACKAGE_IDENTITY_WRONG")
         seen = set()
         digest_lines = []
         for item in package_doc["files"]:
@@ -275,7 +277,7 @@ def stage(src: pathlib.Path):
     try:
         (pending / "old").mkdir(mode=0o700)
         manifest = {
-            "schema": 1, "version": "1.5.4",
+            "schema": 1, "version": "1.5.5-rc1",
             "managed": {
                 rel: {"sha": row["sha"], "mode": row["mode"]}
                 for rel, row in payload.items()
@@ -310,7 +312,7 @@ def load_pending():
           not manifest_file.is_symlink(), "PENDING_TRANSACTION_NOT_VALID")
     guard(pending.stat().st_uid == os.getuid(), "PENDING_TRANSACTION_NOT_OWNED")
     data = json.loads(manifest_file.read_text(encoding="utf8"))
-    guard(data.get("schema") == 1 and data.get("version") == "1.5.4", "PENDING_TRANSACTION_VERSION_WRONG")
+    guard(data.get("schema") == 1 and data.get("version") == "1.5.5-rc1", "PENDING_TRANSACTION_VERSION_WRONG")
     allowed = {METADATA, *(rel for _, rel, _ in FILES), PROVIDERS}
     guard(set(data["old"]) == set(data["managed"]) | {METADATA} and
           set(data["old"]) <= allowed, "PENDING_FILESET_FOREIGN")
@@ -376,7 +378,7 @@ def check_metadata(app, data):
     path = app / METADATA
     guard(path.is_file() and not path.is_symlink(), "INSTALLED_METADATA_MISSING")
     doc = json.loads(path.read_text(encoding="utf8"))
-    guard(doc.get("version") == "1.5.4" and doc.get("schema") == 2, "INSTALLED_VERSION_METADATA_NOT_VALID")
+    guard(doc.get("version") == "1.5.5-rc1" and doc.get("schema") == 2, "INSTALLED_VERSION_METADATA_NOT_VALID")
     guard(doc.get("managedProviderSha256") == data["providerSha"], "PROVIDER_MANAGED_OWNERSHIP_METADATA_CHANGED")
     expected = {rel: row["sha"] for rel, row in data["managed"].items()
                 if rel != PROVIDERS}
@@ -419,7 +421,7 @@ def rollback():
         if rel == METADATA and observed not in (info["sha"], None):
             try:
                 doc = json.loads(dest.read_text(encoding="utf8"))
-                guard(doc.get("schema") == 2 and doc.get("version") == "1.5.4",
+                guard(doc.get("schema") == 2 and doc.get("version") == "1.5.5-rc1",
                       "FOREIGN_INSTALL_METADATA_PRESERVED")
             except (UnicodeError, ValueError) as ex:
                 raise RuntimeError("UNKNOWN_INSTALL_METADATA_ON_ROLLBACK") from ex
@@ -513,11 +515,11 @@ def recover_metadata_stage(expected_sha256: str):
     }
     guard(set(doc) == expected_keys and
           doc["schema"] == 2 and doc["product"] == "Direct Internet Method" and
-          doc["version"] == "1.5.4" and doc["platform"] == "linux-x86_64" and
+          doc["version"] == "1.5.5-rc1" and doc["platform"] == "linux-x86_64" and
           doc["networkMutationOnInstall"] is False and
           doc["normalRunRequiresAdmin"] is False and
           doc["systemBackend"] == "/usr/lib/directinternetmethod" and
-          doc["protectedBackendVersion"] in ("1.5.1", "1.5.2", "1.5.3", "1.5.4") and
+          doc["protectedBackendVersion"] == "1.5.5-rc1" and
           doc["protectedBackendByteCompatible"] is True and
           doc["onlineUpdate"] == "GitHub latest release + SHA256SUMS verification" and
           doc["updateMode"] == "IN_PLACE_SINGLE_INSTALL_DATA_PRESERVED",

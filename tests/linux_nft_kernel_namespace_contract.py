@@ -96,6 +96,7 @@ CTRLD="$TMP/not-ctrld"
 NFQWS="$TMP/not-nfqws"
 pid_owned(){ return 1; }
 remove_dns_link(){ echo "UNEXPECTED_DNS_LINK" >&2; return 99; }
+restore_selective_dns(){ test ! -e /run/directinternetmethod-selective/session.json; }
 
 put_state(){
   printf '%s\n' '{"dnsMode":"system-preserved","physicalInterface":"enp1s0","ctrldPid":0,"nfqwsPid":0}' > "$STATE"
@@ -106,6 +107,9 @@ new_table(){
 }
 new_chain(){
   nft "add chain inet $TABLE output { type filter hook output priority mangle; policy accept; }"
+}
+injected_mark(){
+  nft "add rule inet $TABLE output meta mark & 0x40000000 == 0x40000000 return"
 }
 mark(){
   nft "add rule inet $TABLE output meta mark & 0xff0000 == 0x80000 return"
@@ -126,17 +130,51 @@ expect_absent(){
 }
 # Positive complete table: production ownership checker and cleanup.
 put_state
-new_table; new_chain; mark; queues
+new_table; new_chain; injected_mark; mark; queues
 nft_table_presence
-nft_table_owned "$PHY"
+if ! nft_table_owned "$PHY"; then
+  echo "R711_FAIL_CLOSED_NATIVE_COMPLETE_OWNER_NO_MATCH" >&2
+  nft list table inet "$TABLE" >&2
+  exit 97
+fi
 cleanup_state_owned
 verify_clean
 expect_absent
 echo "PASS_KERNEL_COMPLETE_OWNED_CLEANUP"
+# A table with a *foreign* legacy SYN bypass is not owned and must be preserved.
+put_state
+new_table; new_chain; injected_mark; mark
+nft "add rule inet $TABLE output oifname enp1s0 tcp dport 443 tcp flags & (syn | ack) == syn return"
+nft add rule inet "$TABLE" output oifname enp1s0 tcp dport 80 ct original packets 1-6 queue num 200 bypass
+nft add rule inet "$TABLE" output oifname enp1s0 tcp dport 443 ct original packets 1-6 queue num 200 bypass
+nft add rule inet "$TABLE" output oifname enp1s0 udp dport 443 ct original packets 1-6 queue num 200 bypass
+if nft_table_owned "$PHY"; then echo FALSE_FOREIGN_SYN_BYPASS_ACCEPTED >&2; exit 94;fi
+if cleanup_state_owned; then rc=0; else rc=$?;fi
+test "$rc" -eq 81
+test -f "$STATE"
+nft list table inet "$TABLE" >/dev/null
+nft delete table inet "$TABLE"
+expect_absent
+echo "PASS_KERNEL_FOREIGN_TCP443_SYN_EXEMPTION_FAIL_CLOSED"
+
+# A table lacking nfqws injected-packet exemption is NOT owned. Root must
+# preserve it rather than deleting a rule set that may loop reinjected packets.
+put_state
+new_table; new_chain; mark; queues
+if nft_table_owned "$PHY"; then
+  echo "FALSE_OWNERSHIP_WITH_MISSING_INJECTED_MARK" >&2; exit 92
+fi
+if cleanup_state_owned; then rc=0; else rc=$?; fi
+test "$rc" -eq 81
+test -f "$STATE"
+nft list table inet "$TABLE" >/dev/null
+nft delete table inet "$TABLE"
+expect_absent
+echo "PASS_KERNEL_MISSING_NFQWS_INJECTED_MARK_FAIL_CLOSED"
 # Prefix-safe rollback: table only, chain+mark, complete table.
 for mode in empty partial full; do
   put_state; new_table
-  if [ "$mode" != "empty" ]; then new_chain; mark; fi
+  if [ "$mode" != "empty" ]; then new_chain; injected_mark; mark; fi
   if [ "$mode" = "full" ]; then queues; fi
   if cleanup_transient; then rc=0; else rc=$?; fi
   test "$rc" -eq 0
@@ -145,7 +183,7 @@ for mode in empty partial full; do
 done
 # Foreign rule after Start: state must be preserved with explicit diagnostic.
 put_state
-new_table; new_chain; mark; queues
+new_table; new_chain; injected_mark; mark; queues
 nft add rule inet "$TABLE" output ip daddr 203.0.113.7 drop
 if nft_table_transient_owned "$PHY" "$TAILSCALE_COEXIST"; then
   echo "FALSE_FOREIGN_OWNERSHIP" >&2; exit 90
@@ -159,7 +197,7 @@ expect_absent
 echo "PASS_KERNEL_FOREIGN_ROLLBACK_PRESERVATION"
 # Foreign rule after Start completion: stop must fail before killing process.
 put_state
-new_table; new_chain; mark; queues
+new_table; new_chain; injected_mark; mark; queues
 nft add rule inet "$TABLE" output ip daddr 203.0.113.7 drop
 if cleanup_state_owned; then rc=0; else rc=$?; fi
 test "$rc" -eq 81
@@ -170,10 +208,10 @@ expect_absent
 echo "PASS_KERNEL_FOREIGN_STATE_CLEANUP_PRESERVATION"
 # A real foreign table must cause the production EXIT trap to fail.
 put_state
-new_table; new_chain; mark; queues
+new_table; new_chain; injected_mark; mark; queues
 nft add rule inet "$TABLE" output ip daddr 203.0.113.7 drop
 export TABLE PHY TAILSCALE_COEXIST CREATED_TABLE CREATED_LINK CREATED_STATE RUN_HOSTS NPID CPID CTRLD NFQWS
-export -f rollback_on_exit cleanup_transient nft_table_presence nft_table_transient_owned pid_owned remove_dns_link
+export -f rollback_on_exit cleanup_transient nft_table_presence nft_table_transient_owned pid_owned remove_dns_link restore_selective_dns
 if trap_output="$(bash -c 'set -euo pipefail; ACTION=start; START_COMMITTED=0; trap rollback_on_exit EXIT; exit 0' 2>&1)";then
   trap_rc=0
 else
@@ -188,7 +226,7 @@ test -f "$STATE"
 nft delete table inet "$TABLE"
 expect_absent
 echo "PASS_KERNEL_FAILED_ROLLBACK_EXIT_NONZERO"
-echo "PASS_KERNEL_NAMESPACE_NFT_CONTRACT_7_OF_7"
+echo "PASS_KERNEL_NAMESPACE_NFT_CONTRACT_9_OF_9"
 '''
     script = functions + "\n" + cases
     # Fixture variables must be initialized before Bash set -u cleanup.

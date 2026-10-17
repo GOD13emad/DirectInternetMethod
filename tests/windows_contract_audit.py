@@ -15,12 +15,22 @@ ci_workflow=(R/".github"/"workflows"/"ci.yml").read_text(encoding="utf-8-sig")
 signature_gate=(R/"tests"/"windows_distribution_signature_audit.ps1").read_text(encoding="utf-8-sig")
 gitattributes=(R/".gitattributes").read_text(encoding="utf-8-sig")
 install_registration_guard=(R/"tests"/"windows_install_registration_audit.ps1").read_text(encoding="utf-8-sig")
+native_r535_uninstall=(R/"tests"/"r535_windows_native_rollback.ps1").read_text(encoding="utf-8-sig")
 installed_release_verifier=(R/"tests"/"windows_installed_release_audit.ps1").read_text(encoding="utf-8-sig")
 D={"schema":2,"status":"PASS","checks":{},"hashes":{}}
 def check(name,cond):
     D["checks"][name]=bool(cond)
     if not cond:D["status"]="FAIL"
 def idx(s,x): return s.find(x)
+
+check("r535_registered_uninstaller_suffix_agnostic", all(x in native_r535_uninstall for x in (
+    "function ExactRegisteredUninstaller([object]$d)",
+    "unins[0-9]{3}[.](exe|dat|msg)",
+    "'ONE_UNINSTALLER'", "'MATCHED_UNINSTALL_LOG'",
+    "'EXACT_UNINSTALL_PATH_OWNED'",
+    "[void](ExactRegisteredUninstaller $d)",
+    "$uninstaller=ExactRegisteredUninstaller $d",
+)) and "$uninstaller=Join-Path $App 'unins000.exe'" not in native_r535_uninstall)
 
 check("start_refuses_broad_tunnel_before_mutation", idx(start,"REFUSE_BROAD_TUNNEL_ROUTE")>=0 and idx(start,"REFUSE_BROAD_TUNNEL_ROUTE") < idx(start,"New-NetIPAddress"))
 check("loopback_index_dynamic", all("DestinationPrefix '::1/128'" in x and "$LoopbackIndex=[int]$LoopbackRoute.InterfaceIndex" in x and "$LoopbackIndex=1" not in x for x in (start,stop,recovery)) and "DestinationPrefix '::1/128'" in status and "InterfaceIndex 1" not in status)
@@ -69,10 +79,30 @@ check("all_sites_scope_optional_default_targeted", all(x in start for x in ("$Sc
 check("ui_gemini_adult_live_checks", all(x in xaml for x in ('Text="Gemini"','Text="Adult coverage"','x:Name="AdultSiteCheckToggle"','x:Name="GeminiText"','x:Name="AdultSiteText"')) and all(x in gui for x in ("https://www.pornhub.com/","https://www.xvideos.com/","https://www.xnxx.com/","https://xhamster.com/","FmtAdult")) and "pornhub" not in xaml.lower())
 check("ui_adult_check_default_off_persisted", all(x in gui for x in ("adultSiteLiveCheck","settings.json","AdultSiteCheckToggle_Changed")) and "bool adultCheckEnabled;" in gui)
 check("adult_catalog_opt_in", all(x in gui for x in ("adultCoverageEnabled","adult-enabled.txt","adult-hosts.txt","nsfw-onlydomains.txt","EnsureAdultCatalogAsync","Adult catalog is unexpectedly small","xvideos.com","xnxx.com","xhamster.com")) and all(x in start for x in ("$AdultEnabledFile","$AdultHosts","$AdultFallback","adultHostCount","ADULT_CATALOG_INVALID")) and 'adult-fallback-hosts.txt' in iss)
-check("startup_https_health_quorum", all(x in start for x in ("Curl-Probe-Retry","HTTPS_HEALTH_QUORUM_FAIL","$httpsProbePassCount -lt 2","httpsHealth=[ordered]@{required=2")) and all(x not in start for x in ("throw 'YOUTUBE_HTTP80_FAIL'","throw 'YOUTUBE_HTTPS_FAIL'","throw 'OPENAI_HTTPS_FAIL'","throw 'GITHUB_HTTPS_FAIL'")))
+check("startup_core_site_health_fields", all(x in start for x in (
+    "function Get-CoreSiteHealth($ytPage,$yt204,$oa,$gh)",
+    "required=2",
+    "passed=3-$failed.Count",
+    "allCoreSitesOk=($failed.Count -eq 0)",
+    "unreachableCoreSites=@($failed.ToArray())",
+    "reachability=if($failed.Count -eq 0){'HEALTHY'}else{'PARTIAL'}",
+    "$httpsProbePassCount=[int]$httpsHealth.passed",
+    "$ev.status='PASS_ACTIVE'",
+)))
+check("startup_https_health_quorum", all(x in start for x in ("Curl-Probe-Retry","HTTPS_HEALTH_QUORUM_FAIL","$httpsProbePassCount -lt 2","$httpsHealth=Get-CoreSiteHealth $ytPage $yt $oa $gh","httpsHealth=$httpsHealth")) and all(x not in start for x in ("throw 'YOUTUBE_HTTP80_FAIL'","throw 'YOUTUBE_HTTPS_FAIL'","throw 'OPENAI_HTTPS_FAIL'","throw 'GITHUB_HTTPS_FAIL'")))
+check("startup_true_youtube_page_plus_204_required", all(x in start for x in (
+    "function Get-CoreSiteHealth($ytPage,$yt204,$oa,$gh)",
+    "if(-not ([bool]$ytPage.ok -and [bool]$yt204.ok)){[void]$failed.Add('youtube')}",
+    "$ytPage=Curl-Probe-Retry 'https://www.youtube.com/' $route.LocalIp '^200\\|' 8 2",
+    "$yt=Curl-Probe-Retry 'https://www.youtube.com/generate_204' $route.LocalIp '^204\\|' 8 2",
+    "$httpsHealth=Get-CoreSiteHealth $ytPage $yt $oa $gh",
+    "youtubePage=$ytPage;youtube204=$yt",
+    "$httpsProbePassCount -lt 2",
+    "reachability=if($failed.Count -eq 0){'HEALTHY'}else{'PARTIAL'}",
+)) and "function Get-CoreSiteHealth($yt,$oa,$gh)" not in start)
 check("adult_strong_override_profile", all(x in strong_override.splitlines() for x in ("xhamster.com","xhamsterlive.com","xhcdn.com","reddit.com","redditstatic.com","redditmedia.com","redd.it")) and all(x in start for x in ("$StrongOverrideHostList","strong-override-hosts.txt","--hostlist='+$StrongOverrideHostList","--dpi-desync=fake,hostfakesplit","--dpi-desync-repeats=11")) and 'strong-override-hosts.txt' in iss)
 check("ui_openai_403_cannot_be_chatgpt_login_pass",
-    'FmtOpenAiApiProbe(await oaTask)' in gui
+    'FmtOpenAiApiProbe(openAiProbe)' in gui
     and 'ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401" })' in gui
     and 'ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401", "403" })' not in gui
     and '"403" when p.Reached => "API HTTP 403 forbidden · login unverified"' in gui
@@ -81,6 +111,29 @@ check("ui_openai_403_cannot_be_chatgpt_login_pass",
     and '"API transport unavailable · login unverified"' in gui)
 
 check("ui_live_probe_semantics", "FAIL · HTTP" in gui and 'https://gemini.google.com/' in gui and "adultTasks is not null" in gui and "full pages" in gui)
+check("ui_partial_active_core_reachability", all(x in gui for x in (
+    "bool coreReachabilityProven = false;",
+    "var youtubeProbe = await ytTask;",
+    "var openAiProbe = await oaTask;",
+    "var githubProbe = await ghTask;",
+    "var youtube204Probe = await yt204Task;",
+    "coreReachabilityProven = FullCoreReachability(youtubeProbe, youtube204Probe, openAiProbe, githubProbe);",
+    'mode == "ACTIVE" && (!ownedHealthy || !coreReachabilityProven)',
+    'StatusBadge.Text = "PARTIAL";',
+    "StatusBadge.Foreground = warn;",
+    "at least one core site unreachable",
+    'StopButton.IsEnabled = mode is "ACTIVE" or "CONFLICT" or "DEGRADED";',
+)))
+
+check("ui_youtube_homepage_and_204_independent_health", all(x in gui for x in (
+    'var ytTask = ProbeAsync("https://www.youtube.com/", IpText.Text, new[] { "200" });',
+    'var yt204Task = ProbeAsync("https://www.youtube.com/generate_204", IpText.Text, new[] { "204" });',
+    'var tasks = new List<Task> { ytTask, yt204Task, oaTask, ghTask, geminiTask };',
+    'FullCoreReachability(ProbeResult youtubePage, ProbeResult youtube204, ProbeResult openai, ProbeResult github)',
+    'youtubePage.Ok && youtube204.Ok && openai.Ok && github.Ok',
+    'YoutubeText.Text = $"Page {FmtHttp(youtubeProbe)} | 204 {FmtHttp(youtube204Probe)}";',
+    'StatusBadge.Text = "PARTIAL";'
+)) and "coreReachabilityProven = youtubeProbe.Ok && openAiProbe.Ok && githubProbe.Ok;" not in gui)
 check("ui_direct_update_service_handoff", 'ServiceClient.Send("update")' in gui and 'ServiceClient.Send("recovery")' in gui and '"handoff"' in gui and "300000" in gui and "DownloadVerifiedAsync" not in gui and "LaunchInstaller" not in gui)
 check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "digest" in updater and "SHA256SUMS.txt" in updater and "DownloadVerifiedAsync" not in updater and "Process.Start" not in updater)
 
@@ -227,7 +280,17 @@ check("draft_release_negative_fixtures_present",
 check("windows_ci_external_audits_fail_fast", ci_workflow.count("if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }") >= 7)
 
 files={(x["scope"],x["file"]) for x in manifest["files"]}
-check("manifest_version", manifest.get("version")=="1.5.4")
+release_meta=json.loads(txt("RELEASE.json"))
+allowed_status={
+  "1.5.4":("CANDIDATE_V154_UNPUBLISHED","1.5.3"),
+  "1.5.5-rc1":("PRIVATE_WINDOWS_RC1_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN","1.5.4"),
+}
+current=release_meta.get("version")
+check("manifest_version", current in allowed_status
+      and manifest.get("version")==current
+      and release_meta.get("status")==allowed_status[current][0]
+      and release_meta.get("previousAccepted",{}).get("version")==allowed_status[current][1])
+
 check("manifest_direct_update", manifest.get("directUpdate",{}).get("userUacRequired") is False and "SHA256SUMS.txt" in manifest.get("directUpdate",{}).get("integrity",""))
 check("manifest_native_exe", ("user","app/DirectInternetMethod.exe") in files)
 check("manifest_router_gateway_data", ("user","app/router_gateway/providers.json") in files)
@@ -273,8 +336,33 @@ thirdparty_notice_hashes={
 def checked_notice_mapping(filename):
     src = r"..\bin\zapret" + "\\" + filename
     dest = r"{commonpf}\DirectInternetMethod\Privileged\bin\zapret"
-    line = 'Source: "' + src + '"; DestDir: "' + dest + '"; Flags: ignoreversion'
+    line = 'Source: "' + src + '"; DestDir: "' + dest + '"; Flags: ignoreversion notimestamp'
     return iss.splitlines().count(line)==1
+def r549_inno_source_timestamp_contract(source):
+    try:
+        rows_section=source.split("[Files]\n",1)[1].split("[InstallDelete]",1)[0]
+    except IndexError:
+        return False
+    rows=[row.strip() for row in rows_section.splitlines()
+          if row.strip().startswith("Source: ")]
+    if len(rows)!=28 or len(set(rows))!=28:
+        return False
+    for row in rows:
+        if "Flags:" not in row:
+            return False
+        flags=row.split("Flags:",1)[1].strip().split()
+        if flags.count("notimestamp")!=1 or "touch" in flags or "comparetimestamp" in flags:
+            return False
+    return True
+
+# Negative-first source-time fixture: exactly 28 embedded records without
+# stored input timestamps. No change to owned uninstall/upgrade file scope.
+check("r549_inno_no_source_timestamps",
+      r549_inno_source_timestamp_contract(iss)
+      and not r549_inno_source_timestamp_contract(iss.replace(" notimestamp","",1))
+      and not r549_inno_source_timestamp_contract(
+          iss.replace(" notimestamp"," notimestamp touch",1)))
+
 check("installer_four_upstream_license_notices_byte_pinned",
     all(
        (W/"bin"/"zapret"/filename).is_file()

@@ -7,9 +7,11 @@ import os
 import pathlib
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import time
 import urllib.parse
 import urllib.request
@@ -20,9 +22,10 @@ gi.require_version("Gtk","4.0")
 gi.require_version("Adw","1")
 from gi.repository import Gtk, Adw, GLib, Gdk
 from router_gateway import RouterGatewayWindow
+from socket_fallback import LocalSocketFallback
 
 APP_ID="io.github.god13emad.DirectInternetMethod"
-VERSION="1.5.4"
+VERSION="1.5.5-rc1"
 GLib.set_prgname("DirectInternetMethod")
 GLib.set_application_name("Direct Internet Method")
 try:
@@ -46,7 +49,9 @@ STRATEGY_FILE=APP_HOME/"strategy.txt"
 SCOPE_FILE=APP_HOME/"scope.txt"
 SELECTIVE_DNS_OPT_IN=APP_HOME/"selective-dns-optin.txt"
 SELECTIVE_DNS_TOKEN="I_ACCEPT_UNENCRYPTED_SELECTIVE_DNS_V1"
-COEXIST_HELPER_SHA256="e52fcaeb9c60d9e43d4a5b75462455ad8c5ee4d82fee679a0cc4a3520d8abea5"
+ENCRYPTED_DNS_OPT_IN=APP_HOME/"encrypted-dns-optin.txt"
+ENCRYPTED_DNS_TOKEN="I_ACCEPT_ENCRYPTED_SELECTIVE_DNS_V1"
+COEXIST_HELPER_SHA256="82051dce83480a9c1c291ab9f13acff44b359655387dc253cb6db00eaa27795a"
 LATEST_API="https://api.github.com/repos/GOD13emad/DirectInternetMethod/releases/latest"
 
 def selective_dns_optin_state():
@@ -80,6 +85,47 @@ def selective_dns_optin_save(enabled):
         if SELECTIVE_DNS_OPT_IN.stat().st_uid!=os.getuid():
             raise ValueError("Foreign experimental DNS settings cannot be deleted")
         SELECTIVE_DNS_OPT_IN.unlink()
+
+
+def encrypted_dns_optin_state():
+    """Distinct explicit consent; NEVER convert old unencrypted consent."""
+    try:
+        if ENCRYPTED_DNS_OPT_IN.is_symlink():
+            return "INVALID"
+        if not ENCRYPTED_DNS_OPT_IN.exists():
+            return "OFF"
+        st=ENCRYPTED_DNS_OPT_IN.stat()
+        if not ENCRYPTED_DNS_OPT_IN.is_file() or st.st_uid!=os.getuid() or st.st_mode & 0o077:
+            return "INVALID"
+        if selective_dns_optin_state()!="OFF":
+            return "INVALID"
+        return ("ON" if ENCRYPTED_DNS_OPT_IN.read_text(encoding="utf-8").strip()==
+                ENCRYPTED_DNS_TOKEN else "INVALID")
+    except Exception:
+        return "INVALID"
+
+
+def encrypted_dns_optin_save(enabled):
+    if ENCRYPTED_DNS_OPT_IN.is_symlink():
+        raise ValueError("Encrypted DNS consent symlink is unsafe")
+    if enabled:
+        if selective_dns_optin_state()!="OFF":
+            raise ValueError("Unencrypted DNS consent must first be disabled")
+        ENCRYPTED_DNS_OPT_IN.parent.mkdir(parents=True,exist_ok=True)
+        fd,temp=tempfile.mkstemp(prefix=".dim-encrypted-consent-",dir=str(ENCRYPTED_DNS_OPT_IN.parent))
+        try:
+            with os.fdopen(fd,"w",encoding="utf-8") as f:
+                f.write(ENCRYPTED_DNS_TOKEN+"\n")
+                f.flush();os.fsync(f.fileno())
+            os.chmod(temp,0o600)
+            os.replace(temp,ENCRYPTED_DNS_OPT_IN)
+        finally:
+            if os.path.lexists(temp):os.unlink(temp)
+    elif ENCRYPTED_DNS_OPT_IN.exists():
+        st=ENCRYPTED_DNS_OPT_IN.stat()
+        if st.st_uid!=os.getuid() or not ENCRYPTED_DNS_OPT_IN.is_file():
+            raise ValueError("Foreign encrypted DNS consent cannot be deleted")
+        ENCRYPTED_DNS_OPT_IN.unlink()
 
 
 def ui_test_log(message):
@@ -138,7 +184,7 @@ def sync_adult_catalog(force=False):
     last_error=None
     for source_url in ADULT_CATALOG_URLS:
         try:
-            req=urllib.request.Request(source_url,headers={"User-Agent":"DirectInternetMethod/1.5.4"})
+            req=urllib.request.Request(source_url,headers={"User-Agent":"DirectInternetMethod/1.5.5-rc1"})
             with urllib.request.urlopen(req,timeout=20) as resp:
                 raw=resp.read(4*1024*1024+1)
             if len(raw)<100000 or len(raw)>4*1024*1024:
@@ -292,7 +338,7 @@ def _coexistence_backend_ready():
                 not helper.is_file() or not meta.is_file()):
             return False
         installed=json.loads(meta.read_text(encoding="utf-8"))
-        return (installed.get("version") in ("1.5.2","1.5.3","1.5.4") and
+        return (installed.get("version") == "1.5.5-rc1" and
                 installed.get("uid")==os.getuid() and
                 hashlib.sha256(helper.read_bytes()).hexdigest()==COEXIST_HELPER_SHA256)
     except Exception:
@@ -352,6 +398,24 @@ def load_state():
             if not _coexistence_backend_ready():
                 return {"mode":"BACKEND_UPDATE_REQUIRED",
                         "detail":"Tailscale split mode is safe, but the installed privileged backend is older or unverified. Start is disabled until the verified backend is installed with rollback; Tailscale and DNS are unchanged."}
+            # Render the SAME explicit encrypted-DNS consent semantics that the
+            # protected controller requires. Never advertise "DNS off" when
+            # DoH is opted in, nor enable Start with an invalid/conflicting
+            # token that would fail after privileged network actions begin.
+            encrypted=encrypted_dns_optin_state()
+            if encrypted=="INVALID":
+                return {"mode":"CONFIG_REQUIRED",
+                        "detail":"Encrypted DNS consent is invalid, unsafe or conflicts with unencrypted DNS consent. Open Strategy to resolve it before Start; DNS and MagicDNS remain unchanged."}
+            if encrypted=="ON":
+                try:
+                    method=STRATEGY_FILE.read_text(encoding="utf-8").strip().lower()
+                except Exception:
+                    method="invalid"
+                if method!="balanced":
+                    return {"mode":"CONFIG_REQUIRED",
+                            "detail":"Encrypted targeted DNS requires an explicit Balanced strategy and Targeted scope. Reopen Strategy and Save before Start; no network settings changed."}
+                return {"mode":"OFF",
+                        "detail":"Tailscale split network active. Encrypted targeted DNS (Control D DoH) is explicitly OPTED IN for selected sites. Start uses Balanced DPI with guarded per-link DoH; physical DNS and MagicDNS stay protected. HTTPS reachability is not guaranteed."}
             opt=selective_dns_optin_state()
             if opt=="INVALID":
                 return {"mode":"CONFIG_REQUIRED","detail":"Experimental split-DNS preference is unsafe or unrecognized. Reopen Strategy and explicitly set it."}
@@ -364,7 +428,7 @@ def load_state():
                     return {"mode":"CONFIG_REQUIRED",
                             "detail":"Experimental split DNS requires Targeted + Balanced. Plain, unencrypted third-party UDP DNS is used only for selected sites; disable it or select Balanced in Strategy."}
                 return {"mode":"OFF","detail":"Tailscale split network active. Experimental selective DNS is OPTED IN: third-party UDP upstream is UNENCRYPTED; MagicDNS stays separate. Start runs Balanced DPI and crash-guarded local DNS."}
-            return {"mode":"OFF","detail":"Tailscale split network active. Start uses physical-interface DPI; system DNS/MagicDNS remain unchanged. Experimental selective DNS is OFF."}
+            return {"mode":"OFF","detail":"Tailscale split network active. Start uses physical-interface DPI; system DNS/MagicDNS remain unchanged. Optional encrypted and unencrypted selective DNS are both OFF."}
         return {"mode":"OFF","detail":"No active Direct Internet Method state."}
     uid=os.getuid()
     preserved=s.get("dnsMode")=="system-preserved" and bool(s.get("tailscaleCoexistence"))
@@ -373,8 +437,30 @@ def load_state():
               _systemd_unit_matches(s.get("ctrldUnit"),s.get("ctrldPid"),f"directinternetmethod-ctrld-{uid}.service"))
     nfqws_ok=_systemd_unit_matches(s.get("nfqwsUnit"),s.get("nfqwsPid"),f"directinternetmethod-nfqws-{uid}.service")
     if ctrld_ok and nfqws_ok:
+        # NFQUEUE nft output rules are bound to the physical interface
+        # recorded at Start. A changed/default route silently bypasses all
+        # filtering even while the nfqws PID and systemd unit remain ACTIVE.
+        # Read current routing only; never switch a user's network here.
+        recorded_iface=str(s.get("physicalInterface") or "")
+        current_iface=_top_default_iface()
+        if not recorded_iface or not current_iface or current_iface!=recorded_iface:
+            return {"mode":"STALE",
+                    "detail":f"Network path changed: owned NFQUEUE rules use {recorded_iface or 'missing'}, "
+                             f"but the current default route uses {current_iface or 'missing'}. "
+                             "Stop or Recovery, then Start after the route stabilizes; "
+                             "Tailscale and DNS were not altered."}
         if preserved:
-            if s.get("selectiveDns"):
+            # Authoritative ACTIVE state is written by the protected helper,
+            # not inferred from (possibly since-revoked) user preference files.
+            if s.get("selectiveDnsEncrypted") and s.get("selectiveDns"):
+                return {"mode":"CONFLICT",
+                        "detail":"Both mutually exclusive selective DNS modes are marked active. Stop and use Recovery before any new Start; physical DNS and MagicDNS must be preserved."}
+            if s.get("selectiveDnsEncrypted"):
+                detail=(f"Tailscale coexistence: {s.get('physicalInterface','?')}  "
+                        "Encrypted targeted DoH ACTIVE for selected sites (Control D HTTPS upstream); "
+                        "physical DNS and MagicDNS preserved; Balanced DPI running. "
+                        "HTTPS target reachability requires real probe verification.")
+            elif s.get("selectiveDns"):
                 detail=f"Tailscale coexistence: {s.get('physicalInterface','?')}  Local experimental selective DNS ACTIVE; third-party upstream UDP is UNENCRYPTED, MagicDNS remains separate; Balanced DPI running"
             else:
                 detail=f"Tailscale coexistence: {s.get('physicalInterface','?')}  DNS/MagicDNS preserved  Methods: HTTP + TLS/SNI + QUIC (DPI only)"
@@ -403,6 +489,12 @@ def verify_live():
         return {"ok":False,"error":"STATE_UNREADABLE_AFTER_START"}
     if not physical:
         return {"ok":False,"error":"PHYSICAL_INTERFACE_MISSING"}
+    current_iface=_top_default_iface()
+    if not current_iface or current_iface!=physical:
+        return {"ok":False,"error":"PHYSICAL_INTERFACE_ROUTE_DRIFT",
+                "recordedInterface":physical,"currentInterface":current_iface}
+    if s.get("selectiveDns") and s.get("selectiveDnsEncrypted"):
+        return {"ok":False,"error":"CONFLICTING_SELECTIVE_DNS_STATE"}
     if _external_tunnel_active():
         return {"ok":False,"error":"EXTERNAL_TUNNEL_APPEARED_AFTER_START"}
     def curl(url):
@@ -413,25 +505,36 @@ def verify_live():
         return {"exit":p.returncode,"meta":p.stdout.strip(),"error":p.stderr.strip()}
     d=subprocess.run(["getent","ahostsv4","www.youtube.com"],text=True,capture_output=True)
     h=curl("http://www.youtube.com/")
-    y=curl("https://www.youtube.com/" if s.get("selectiveDns") else "https://www.youtube.com/generate_204")
+    # R674-R675: in DPI-only mode /generate_204 can pass while the
+    # real YouTube page is blocked. Require BOTH in that mode.
+    # R538: selected DNS may legitimately return 404 on generate_204
+    # despite a working real homepage. Preserve its accepted page-only gate.
+    selected_dns=bool(s.get("selectiveDns") or s.get("selectiveDnsEncrypted"))
+    y=curl("https://www.youtube.com/")
+    y204=None if selected_dns else curl("https://www.youtube.com/generate_204")
     o=curl("https://api.openai.com/v1/models")
     g=curl("https://github.com/")
     m=curl("https://gemini.google.com/")
     ok=(not _external_tunnel_active() and d.returncode==0
         and h["exit"]==0 and h["meta"].startswith(("200|","301|","302|","303|","307|","308|"))
-        and y["exit"]==0 and y["meta"].startswith(("200|","204|"))
+        and y["exit"]==0 and y["meta"].startswith(("200|"))
+        and (selected_dns or (y204 is not None and y204["exit"]==0 and y204["meta"].startswith(("204|"))))
         and o["exit"]==0 and o["meta"].startswith(("401|","403|"))
         and g["exit"]==0 and g["meta"].startswith(("200|")))
     dns_preserved=s.get("dnsMode")=="system-preserved"
-    methods=([] if dns_preserved else ["encrypted-dns-doh"])+["http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"]
-    return {"ok":ok,"physicalInterface":physical,"dnsMode":s.get("dnsMode","direct-doh"),"directMethods":methods,"youtubeHttp80":h,"youtube":y,"openai":o,"github":g,"gemini":m}
+    methods=(["encrypted-selective-doh"] if dns_preserved and s.get("selectiveDnsEncrypted")
+             else [] if dns_preserved else ["encrypted-dns-doh"])+[
+                "http-host-split-tcp80","tls-sni-desync-tcp443","quic-desync-udp443"]
+    return {"ok":ok,"physicalInterface":physical,"dnsMode":s.get("dnsMode","direct-doh"),"directMethods":methods,"youtubeHttp80":h,"youtube":y,"youtube204":y204,"openai":o,"github":g,"gemini":m}
 
 def _version_tuple(text):
-    s=text.strip().lstrip("vV")
-    try:
-        return tuple(int(x) for x in s.split(".")[:3])
-    except Exception:
-        return (0,0,0)
+    """Stable must sort newer than prerelease with same three-digit version."""
+    s=str(text).strip().lstrip("vV")
+    hit=re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:-(rc)(\d+))?",s)
+    if not hit:
+        return (0,0,0,-1,0)
+    x,y,z,kind,number=hit.groups()
+    return (int(x),int(y),int(z), 0 if kind else 1, int(number or 0))
 
 def check_update_sync():
     req=urllib.request.Request(LATEST_API,headers={"User-Agent":f"DirectInternetMethod/{VERSION}","Accept":"application/vnd.github+json"})
@@ -467,56 +570,141 @@ def _download(url,path):
         shutil.copyfileobj(src,dst)
 
 def download_and_install_update(info):
+    # R739: one private, automatically disposed cache slot per update attempt.
+    # Never overwrite stale/user-owned downloads, nor retain a second installer.
+    release_version=str(info.get("version") or "")
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+",release_version):
+        raise RuntimeError("Unsafe Linux update release version.")
+    archive_name=f"DirectInternetMethod_{release_version}_Linux_x86_64.zip"
+    asset=info.get("asset") or {}
+    sums=info.get("sums") or {}
+    if (asset.get("name")!=archive_name or sums.get("name")!="SHA256SUMS.txt"):
+        raise RuntimeError("Unexpected Linux update asset name.")
+    for item in (asset,sums):
+        if not re.fullmatch(r"sha256:[0-9A-Fa-f]{64}",str(item.get("digest") or "")):
+            raise RuntimeError("Linux update asset digest is invalid.")
     cache=pathlib.Path.home()/".cache/DirectInternetMethod/updates"
-    cache.mkdir(parents=True,exist_ok=True)
-    sums_path=cache/"SHA256SUMS.txt"
-    zip_path=cache/info["asset"]["name"]
-    _download(info["sums"]["url"],sums_path)
-    sums_actual=hashlib.sha256(sums_path.read_bytes()).hexdigest().upper()
-    sums_api=str(info["sums"]["digest"]).split(":",1)[1].upper()
-    if sums_actual!=sums_api:
-        sums_path.unlink(missing_ok=True)
-        raise RuntimeError("Downloaded SHA256SUMS.txt does not match GitHub asset digest.")
-    matches=[]
-    for raw in sums_path.read_text(encoding="utf-8").splitlines():
-        parts=raw.strip().split()
-        if len(parts)>=2 and parts[-1].lstrip("*")==info["asset"]["name"]:
-            matches.append(parts[0].upper())
-    if len(matches)!=1 or not re.fullmatch(r"[0-9A-F]{64}",matches[0]):
-        raise RuntimeError("SHA256SUMS.txt must contain exactly one valid checksum for the Linux update.")
-    expected=matches[0]
-    api_expected=str(info["asset"]["digest"]).split(":",1)[1].upper()
-    if expected!=api_expected:
-        raise RuntimeError("Linux update checksum disagrees with GitHub asset digest.")
-    _download(info["asset"]["url"],zip_path)
-    actual=hashlib.sha256(zip_path.read_bytes()).hexdigest().upper()
-    if actual!=expected or actual!=api_expected:
-        zip_path.unlink(missing_ok=True)
-        raise RuntimeError("Downloaded Linux update failed three-way SHA-256 verification.")
+    if (cache.is_symlink() or cache.parent.is_symlink()
+            or cache.parent.parent.is_symlink()):
+        raise RuntimeError("Update cache path contains a symlink.")
+    created_parent=not cache.parent.exists()
+    created_cache=not cache.exists()
+    cache.mkdir(parents=True,exist_ok=True,mode=0o700)
+    if (not cache.is_dir() or cache.is_symlink() or
+            (hasattr(os,"getuid") and cache.stat().st_uid!=os.getuid())):
+        raise RuntimeError("Update cache is not owned by the current user.")
+    try:
+        with tempfile.TemporaryDirectory(prefix="dim-update-",dir=str(cache)) as work:
+            temp=pathlib.Path(work)
+            sums_path=temp/"SHA256SUMS.txt"
+            zip_path=temp/archive_name
+            _download(sums["url"],sums_path)
+            actual_sums=hashlib.sha256(sums_path.read_bytes()).hexdigest().upper()
+            if actual_sums!=sums["digest"].split(":",1)[1].upper():
+                raise RuntimeError("Downloaded SHA256SUMS.txt does not match GitHub asset digest.")
+            matches=[]
+            for raw in sums_path.read_text(encoding="utf-8").splitlines():
+                parts=raw.strip().split()
+                if len(parts)>=2 and parts[-1].lstrip("*")==archive_name:
+                    matches.append(parts[0].upper())
+            if len(matches)!=1 or not re.fullmatch(r"[0-9A-F]{64}",matches[0]):
+                raise RuntimeError("SHA256SUMS.txt must contain exactly one Linux update checksum.")
+            expected=matches[0]
+            if expected!=asset["digest"].split(":",1)[1].upper():
+                raise RuntimeError("Linux update checksum disagrees with GitHub asset digest.")
+            _download(asset["url"],zip_path)
+            if hashlib.sha256(zip_path.read_bytes()).hexdigest().upper()!=expected:
+                raise RuntimeError("Downloaded Linux update failed three-way SHA-256 verification.")
 
-    temp=pathlib.Path(tempfile.mkdtemp(prefix="dim-update-",dir=str(cache)))
-    with zipfile.ZipFile(zip_path) as z:
-        base=temp.resolve()
-        for member in z.infolist():
-            target=(temp/member.filename).resolve()
-            if base not in target.parents and target!=base:
-                raise RuntimeError("Unsafe update archive path.")
-        z.extractall(temp)
-    installers=list(temp.rglob("install.sh"))
-    if len(installers)!=1:
-        raise RuntimeError("Update archive does not contain exactly one installer.")
-    p=subprocess.run(["bash",str(installers[0])],text=True,capture_output=True,timeout=180)
-    if p.returncode!=0:
-        raise RuntimeError((p.stderr or p.stdout or f"installer exit {p.returncode}").strip())
-    return p.stdout.strip()
+            prefix=archive_name.removesuffix(".zip")+"/"
+            with zipfile.ZipFile(zip_path) as z:
+                members=z.infolist()
+                if len(members)!=30 or len({m.filename for m in members})!=len(members):
+                    raise RuntimeError("Linux update archive has an unexpected file inventory.")
+                names={}
+                total=0
+                for member in members:
+                    name=member.filename
+                    parts=pathlib.PurePosixPath(name).parts
+                    if (not name.startswith(prefix) or "\\" in name or
+                            ".." in parts or member.is_dir() or
+                            pathlib.PurePosixPath(name).as_posix()!=name or
+                            stat.S_ISLNK(member.external_attr>>16) or
+                            member.file_size>64000000):
+                        raise RuntimeError("Unsafe Linux update archive entry.")
+                    total+=member.file_size
+                    if total>256000000:
+                        raise RuntimeError("Linux update archive is oversized.")
+                    names[name]=member
+                manifest_name=prefix+"PACKAGE_MANIFEST.json"
+                checksum_name=prefix+"SHA256SUMS.txt"
+                try:
+                    manifest=json.loads(z.read(manifest_name))
+                    inside_sums=z.read(checksum_name).decode("utf-8")
+                except (KeyError,ValueError,UnicodeError) as exc:
+                    raise RuntimeError("Linux update internal manifest is invalid.") from exc
+                if (manifest.get("schema")!=1 or
+                        manifest.get("product")!="Direct Internet Method" or
+                        manifest.get("version")!=release_version or
+                        manifest.get("platform")!="linux-x86_64" or
+                        not isinstance(manifest.get("files"),list) or
+                        len(manifest["files"])!=28):
+                    raise RuntimeError("Linux update package identity does not match release.")
+                referenced=set()
+                expected_lines=[]
+                for entry in manifest["files"]:
+                    if not isinstance(entry,dict) or set(entry)!={"file","bytes","sha256"}:
+                        raise RuntimeError("Linux update manifest member is invalid.")
+                    rel=entry["file"]
+                    if (not isinstance(rel,str) or not rel or "\\" in rel or
+                            pathlib.PurePosixPath(rel).is_absolute() or
+                            ".." in pathlib.PurePosixPath(rel).parts or
+                            pathlib.PurePosixPath(rel).as_posix()!=rel or
+                            rel in referenced):
+                        raise RuntimeError("Linux update manifest contains an unsafe path.")
+                    referenced.add(rel)
+                    name=prefix+rel
+                    if (name not in names or type(entry["bytes"]) is not int or
+                            entry["bytes"]<0 or not isinstance(entry["sha256"],str) or
+                            not re.fullmatch(r"[0-9A-F]{64}",entry["sha256"])):
+                        raise RuntimeError("Linux update manifest digest is invalid.")
+                    data=z.read(name)
+                    if (len(data)!=entry["bytes"] or
+                            hashlib.sha256(data).hexdigest().upper()!=entry["sha256"]):
+                        raise RuntimeError("Linux update package payload digest mismatch.")
+                    expected_lines.append(f'{entry["sha256"]}  {rel}\n')
+                if (set(names)!={prefix+rel for rel in referenced}|{manifest_name,checksum_name}
+                        or inside_sums!="".join(expected_lines) or
+                        "install.sh" not in referenced):
+                    raise RuntimeError("Linux update package manifest/file inventory mismatch.")
+                z.extractall(temp)
+            installer=temp/prefix/"install.sh"
+            if not installer.is_file() or installer.is_symlink():
+                raise RuntimeError("Linux update installer path is invalid.")
+            p=subprocess.run(["bash",str(installer)],text=True,capture_output=True,timeout=180)
+            if p.returncode!=0:
+                raise RuntimeError((p.stderr or p.stdout or
+                                    f"installer exit {p.returncode}").strip())
+            return p.stdout.strip()
+    finally:
+        # Only remove empty directories *created by this attempt*. Never touch
+        # preexisting cache files or any unrelated user data.
+        if created_cache:
+            try:cache.rmdir()
+            except OSError:pass
+        if created_parent:
+            try:cache.parent.rmdir()
+            except OSError:pass
 
 class Window(Adw.ApplicationWindow):
     def __init__(self,app):
         super().__init__(application=app,title="Direct Internet Method")
-        self.set_default_size(900,590)
-        self.set_size_request(780,540)
+        self.set_default_size(900,685)
+        self.set_size_request(780,615)
         self.set_resizable(True)
         self.available_update=None
+        # R747: local socket alternative exists only for this GUI lifetime.
+        self.local_socket_bridge=None
         self.adult_check_enabled=load_adult_site_check()
         if self.adult_check_enabled:
             try: save_adult_site_check(True)
@@ -570,9 +758,34 @@ class Window(Adw.ApplicationWindow):
         self.adult_switch=Gtk.Switch(active=self.adult_check_enabled);live_header.append(self.adult_switch)
         self.adult_switch.connect("notify::active",self.on_adult_toggle)
         live.append(live_header)
+        self.core_live=Gtk.Label(label="Core HTTPS: Available when Direct Method is active",xalign=0)
+        self.core_live.add_css_class("dim-label");live.append(self.core_live)
         self.gemini_live=Gtk.Label(label="Gemini: —",xalign=0);self.gemini_live.add_css_class("dim-label");live.append(self.gemini_live)
         self.adult_live=Gtk.Label(label="Adult coverage: "+("Checking…" if self.adult_check_enabled else "Disabled"),xalign=0);self.adult_live.add_css_class("dim-label");live.append(self.adult_live)
         box.append(live)
+
+        # R747: independent, explicit, session-only SOCKS5 opt-in.
+        # Never edits the user's Firefox/Brave/system proxy configuration.
+        local_card=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=7)
+        local_card.add_css_class("card")
+        local_heading=Gtk.Label(label="Optional selected-site local SOCKS5 (manual app opt-in)",xalign=0)
+        local_heading.add_css_class("heading")
+        local_card.append(local_heading)
+        self.local_socket_status=Gtk.Label(
+            label="OFF — only approved public YouTube-related sites and three service controls; "
+                  "not system-wide access.",xalign=0,wrap=True)
+        self.local_socket_status.add_css_class("dim-label")
+        local_card.append(self.local_socket_status)
+        local_buttons=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8)
+        self.local_socket_start_button=Gtk.Button(label="Start local SOCKS5 (session only)")
+        self.local_socket_stop_button=Gtk.Button(label="Stop local SOCKS5")
+        self.local_socket_stop_button.set_sensitive(False)
+        self.local_socket_start_button.connect("clicked",self.on_local_socket_start)
+        self.local_socket_stop_button.connect("clicked",self.on_local_socket_stop)
+        local_buttons.append(self.local_socket_start_button)
+        local_buttons.append(self.local_socket_stop_button)
+        local_card.append(local_buttons)
+        box.append(local_card)
 
         buttons=Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL,spacing=8);buttons.set_homogeneous(True)
         self.buttons={}
@@ -590,9 +803,57 @@ class Window(Adw.ApplicationWindow):
 
         keys=Gtk.EventControllerKey();keys.connect("key-pressed",self.on_key);self.add_controller(keys)
         self.refresh()
+        # Observe route/process changes without doing periodic web requests.
+        self._status_timer_id=GLib.timeout_add_seconds(15,self.periodic_state_tick)
+        self.connect("close-request",self.stop_status_timer)
+        self.connect("close-request",self.close_local_socket)
         if self.adult_check_enabled:
             threading.Thread(target=self.adult_sync_worker,args=(False,),daemon=True).start()
         threading.Thread(target=self.update_check_worker,args=(False,),daemon=True).start()
+
+    def on_local_socket_start(self,*_args):
+        # The exact user click is the only enabling action. No persistent
+        # configuration, no Root service and no changes to browser/DNS/proxy.
+        if self.local_socket_bridge is not None:
+            return
+        try:
+            if STATE.is_symlink() or STATE.exists():
+                raise RuntimeError("Stop the Direct Method engine first.")
+            if _external_tunnel_active():
+                raise RuntimeError("An unsupported external tunnel is active.")
+            candidate=LocalSocketFallback()
+            try:
+                port=candidate.start()
+            except BaseException:
+                candidate.stop()
+                raise
+            self.local_socket_bridge=candidate
+        except Exception as exc:
+            self.local_socket_status.set_text("Local SOCKS5 OFF — "+str(exc))
+            return
+        self.local_socket_start_button.set_sensitive(False)
+        self.local_socket_stop_button.set_sensitive(True)
+        self.local_socket_status.set_text(
+            f"ON — SOCKS5 127.0.0.1:{port}. Configure ONLY your chosen app "
+            "with remote DNS (socks5h). Only allowlisted HTTPS destinations; "
+            "no system/global proxy. Your app validates TLS certificates. "
+            "Stop here or close this GUI to disable."
+        )
+
+    def on_local_socket_stop(self,*_args):
+        self.close_local_socket()
+        self.local_socket_status.set_text(
+            "OFF — no localhost SOCKS5 process, no system proxy changes."
+        )
+
+    def close_local_socket(self,*_args):
+        bridge=self.local_socket_bridge
+        self.local_socket_bridge=None
+        if bridge is not None:
+            bridge.stop()
+        self.local_socket_start_button.set_sensitive(True)
+        self.local_socket_stop_button.set_sensitive(False)
+        return False
 
     def toggle_maximize(self,*_args):
         if self.is_maximized():
@@ -600,12 +861,35 @@ class Window(Adw.ApplicationWindow):
         else:
             self.maximize()
 
-    def refresh(self):
-        s=load_state();mode=s["mode"]
+    def stop_status_timer(self,*_args):
+        source_id=getattr(self,"_status_timer_id",0)
+        if source_id:
+            GLib.source_remove(source_id)
+            self._status_timer_id=0
+        return False
+
+    def periodic_state_tick(self):
+        # A read-only UI observation; no route/DNS/tunnel/service actions and
+        # no HTTP probes. The explicit Refresh button owns live website checks.
+        try:
+            current=load_state()
+        except Exception:
+            current={"mode":"STALE",
+                     "detail":"Automatic status verification failed. Use Refresh or Recovery."}
+        visible=self.status.get_text().removeprefix("Status: ")
+        if current["mode"]!=visible and not (current["mode"]=="ACTIVE" and visible=="PARTIAL"):
+            self.refresh(state=current,start_checks=False)
+        elif visible!="PARTIAL" and current["detail"]!=self.detail.get_text():
+            self.detail.set_text(current["detail"])
+        return True
+
+    def refresh(self,state=None,start_checks=True):
+        s=state if state is not None else load_state();mode=s["mode"]
         self.status.set_text("Status: "+mode);self.detail.set_text(s["detail"])
         for css in ("success","warning","error","dim-label"):
             self.status.remove_css_class(css)
-        self.status.add_css_class("success" if mode=="ACTIVE" else "warning" if mode in ("BLOCKED","CONFIG_REQUIRED","BACKEND_UPDATE_REQUIRED","CONFLICT") else "error" if mode=="STALE" else "dim-label")
+        # R735_GUI_NO_UNVERIFIED_GREEN: ACTIVE proves engine ownership, not site HTTPS.
+        self.status.add_css_class("warning" if mode in ("ACTIVE","BLOCKED","CONFIG_REQUIRED","BACKEND_UPDATE_REQUIRED","CONFLICT") else "error" if mode=="STALE" else "dim-label")
         start_ok=(mode=="OFF")
         stop_ok=(mode in ("ACTIVE","CONFLICT","STALE"))
         recovery_ok=(mode in ("CONFLICT","STALE"))
@@ -620,11 +904,17 @@ class Window(Adw.ApplicationWindow):
         if recovery_ok:self.buttons["recovery"].add_css_class("destructive-action")
         self.live_check_generation+=1
         generation=self.live_check_generation
-        if mode=="ACTIVE":
+        if mode=="ACTIVE" and start_checks:
+            if hasattr(self,"core_live"):self.core_live.set_text("Core HTTPS: Checking YouTube, OpenAI, GitHub…")
             self.gemini_live.set_text("Gemini: Checking…")
             self.adult_live.set_text("Adult coverage: Checking…" if self.adult_check_enabled else "Adult coverage: Disabled")
             threading.Thread(target=self.live_checks_worker,args=(generation,),daemon=True).start()
+        elif mode=="ACTIVE":
+            if hasattr(self,"core_live"):self.core_live.set_text("Core HTTPS: Press Refresh to verify")
+            self.gemini_live.set_text("Gemini: Press Refresh for a live check")
+            self.adult_live.set_text("Adult coverage: Press Refresh for a live check" if self.adult_check_enabled else "Adult coverage: Disabled")
         else:
+            if hasattr(self,"core_live"):self.core_live.set_text("Core HTTPS: Available when Direct Method is active")
             self.gemini_live.set_text("Gemini: Available when Direct Method is active")
             self.adult_live.set_text("Adult coverage: Disabled" if not self.adult_check_enabled else "Adult coverage: Available when Direct Method is active")
 
@@ -632,11 +922,31 @@ class Window(Adw.ApplicationWindow):
         try:
             state=json.loads(STATE.read_text(encoding="utf-8"))
             physical=str(state.get("physicalInterface") or "")
+            selected_dns=bool(state.get("selectiveDns") or state.get("selectiveDnsEncrypted"))
         except Exception:
             physical=""
+            selected_dns=False
         if not physical:
+            GLib.idle_add(self.finish_core_checks,generation,{"error":"PHYSICAL_INTERFACE_MISSING"})
             GLib.idle_add(self.finish_live_checks,generation,{"ok":False,"reached":False},[{"ok":False,"reached":False}] if self.adult_check_enabled else None)
             return
+        # Explicit Refresh only; no periodic web polling, no DNS/route mutation.
+        checks={
+            "youtube":("https://www.youtube.com/",{"200"}),
+            "openai":("https://api.openai.com/v1/models",{"200","401","403"}),
+            "github":("https://github.com/",{"200"}),
+        }
+        if not selected_dns:
+            checks["youtube204"]=("https://www.youtube.com/generate_204",{"204"})
+        try:
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                futures={name:pool.submit(probe_url,url,physical,allowed)
+                         for name,(url,allowed) in checks.items()}
+                core={name:future.result() for name,future in futures.items()}
+            core["selected_dns"]=selected_dns
+        except Exception:
+            core={"error":"CORE_PROBE_FAILED"}
+        GLib.idle_add(self.finish_core_checks,generation,core)
         gemini=probe_url("https://gemini.google.com/",physical,{"200","301","302","303","307","308"})
         adult=None
         if self.adult_check_enabled:
@@ -648,6 +958,33 @@ class Window(Adw.ApplicationWindow):
                 probe_url("https://xhamster.com/",physical,allowed),
             ]
         GLib.idle_add(self.finish_live_checks,generation,gemini,adult)
+
+    def finish_core_checks(self,generation,core):
+        if generation!=self.live_check_generation:
+            return False
+        try:
+            if load_state().get("mode")!="ACTIVE":
+                return False
+        except Exception:
+            return False
+        # Selected DNS acceptance intentionally requires the real page only.
+        # DPI-only acceptance requires BOTH page200 and generate_204=204.
+        selected=bool(core.get("selected_dns"))
+        healthy=(all(isinstance(core.get(site),dict) and core[site].get("ok") is True
+                     for site in ("youtube","openai","github"))
+                 and (selected or (isinstance(core.get("youtube204"),dict)
+                                   and core["youtube204"].get("ok") is True)))
+        self.status.set_text("Status: ACTIVE" if healthy else "Status: PARTIAL")
+        self.status.remove_css_class("success")
+        self.status.remove_css_class("warning")
+        self.status.add_css_class("success" if healthy else "warning")
+        if hasattr(self,"core_live"):
+            if healthy:
+                self.core_live.set_text("Core HTTPS: healthy · YouTube page, OpenAI, GitHub" +
+                                        (" · selected DNS" if selected else " · YouTube 204"))
+            else:
+                self.core_live.set_text("Core HTTPS: PARTIAL · at least one service unreachable; Stop remains available")
+        return False
 
     def finish_live_checks(self,generation,gemini,adult):
         if generation!=self.live_check_generation:
@@ -744,6 +1081,11 @@ class Window(Adw.ApplicationWindow):
         selective_toggle=Gtk.CheckButton(label="Opt in: experimental selected-sites DNS (unencrypted third-party UDP)")
         selective_toggle.set_active(selective_dns_optin_state()=="ON")
         outer.append(selective_toggle)
+        encrypted_toggle=Gtk.CheckButton(label="Opt in: encrypted targeted DNS (DoH to Control D; experimental)")
+        encrypted_toggle.set_active(encrypted_dns_optin_state()=="ON")
+        outer.append(encrypted_toggle)
+        enc_warn=Gtk.Label(label="Separate encrypted-DNS opt-in. Requires Targeted + Balanced and Tailscale split mode, without Seman or another VPN. Routes only supported domains over DoH. Does not guarantee all sites or remove service-side restrictions. The old unencrypted DNS consent does NOT authorize this mode.",xalign=0,wrap=True)
+        enc_warn.add_css_class("dim-label");outer.append(enc_warn)
         warn=Gtk.Label(label="Privacy warning: experimental DNS sends selected site names to 194.225.152.10 over UNENCRYPTED UDP; this is not DoH. Only Targeted + Balanced with Tailscale split mode is supported. Disabled by default. Route, Google DNS and MagicDNS must stay protected.",xalign=0,wrap=True)
         warn.add_css_class("dim-label");outer.append(warn)
         hint=Gtk.Label(label="Targeted mode affects only built-in and Custom Sites. All Sites mode can help unknown blocked domains, but may reduce compatibility or speed on some sites. Neither mode creates a VPN, proxy, or default-route tunnel.",xalign=0,wrap=True)
@@ -756,6 +1098,15 @@ class Window(Adw.ApplicationWindow):
             try:
                 value=("balanced","compatibility","strong")[int(combo.get_selected())]
                 enable_dns=bool(selective_toggle.get_active())
+                enable_encrypted=bool(encrypted_toggle.get_active())
+                if enable_dns and enable_encrypted:
+                    raise ValueError("Choose exactly one DNS option. The two consent modes cannot coexist.")
+                if encrypted_dns_optin_state()=="INVALID":
+                    raise ValueError("Existing encrypted DNS consent is invalid or unsafe; inspect it before saving.")
+                if selective_dns_optin_state()=="INVALID":
+                    raise ValueError("Existing unencrypted DNS consent is invalid; inspect it before saving.")
+                if enable_encrypted and (value!="balanced" or scope_toggle.get_active()):
+                    raise ValueError("Encrypted DNS requires Targeted + Balanced and Tailscale split mode.")
                 if enable_dns and (value!="balanced" or scope_toggle.get_active()):
                     raise ValueError("Experimental unencrypted split DNS requires Balanced and Targeted. Select those options first.")
                 STRATEGY_FILE.parent.mkdir(parents=True,exist_ok=True)
@@ -768,8 +1119,12 @@ class Window(Adw.ApplicationWindow):
                 st=SCOPE_FILE.with_suffix(".tmp")
                 st.write_text(scope_value+"\n",encoding="utf-8")
                 os.replace(st,SCOPE_FILE)
+                # Explicitly revoke old permission before granting new one.
+                # Never interpret the unencrypted consent token as encrypted approval.
                 selective_dns_optin_save(enable_dns)
-                privacy=(" experimental UNENCRYPTED selected DNS is opted in" if enable_dns else " experimental DNS off")
+                encrypted_dns_optin_save(enable_encrypted)
+                privacy=(" encrypted selected DNS opt-in" if enable_encrypted else
+                         " UNENCRYPTED selected DNS opt-in" if enable_dns else " experimental DNS off")
                 self.result.set_text(f"Strategy saved: {value}; scope: {scope_value};{privacy}. Stop/Start to apply.")
                 w.close();self.refresh()
             except Exception as e:
@@ -779,6 +1134,9 @@ class Window(Adw.ApplicationWindow):
 
     def on_action(self,_button,action):
         ui_test_log("ACTION:"+action)
+        if action=="start" and self.local_socket_bridge is not None:
+            self.result.set_text("Stop the optional local SOCKS5 before starting system DPI.")
+            return
         if action=="refresh":
             self.refresh();self.result.set_text("");return
         if action=="router":

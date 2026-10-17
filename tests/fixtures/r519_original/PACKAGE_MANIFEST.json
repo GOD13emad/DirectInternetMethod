@@ -1,0 +1,138 @@
+{
+  "schema": 1,
+  "product": "Direct Internet Method",
+  "version": "1.5.5-rc1",
+  "platform": "linux-x86_64",
+  "files": [
+    {
+      "file": "README.md",
+      "bytes": 2277,
+      "sha256": "2E2D817FD4728903E7085C4D7D02786107206881DA47FE4DFA6AA3C6F4E4AF76"
+    },
+    {
+      "file": "install.sh",
+      "bytes": 12035,
+      "sha256": "4970935FC3A8B886D7DE3C94C7F15A1F4D132348139BC1996B182334EBF99C1F"
+    },
+    {
+      "file": "uninstall.sh",
+      "bytes": 2011,
+      "sha256": "FAB9EF8FFD12E4102F72D227DD72FD0703944759667E31C8CF04995282C72E43"
+    },
+    {
+      "file": "system/install_system.sh",
+      "bytes": 5109,
+      "sha256": "5C37143358CF9C85B36877DCD2CD454AC8D7FF5A0DB589EA1B96DD69B2F144A8"
+    },
+    {
+      "file": "system/control.sh",
+      "bytes": 799,
+      "sha256": "10BACBC871E5CEA1B109A82130AE2E1C490BC26E4E1CE91CACC6D893BE2C0A49"
+    },
+    {
+      "file": "system/selective_dns.py",
+      "bytes": 22253,
+      "sha256": "9701D1C0D03499F24678CF31E9FE0B68015EFA1EF3CA9E3653035B0B27727D65"
+    },
+    {
+      "file": "system/encrypted_selective_dns.py",
+      "bytes": 25600,
+      "sha256": "6DA9BAB94E1F4AF5C9FBE0742F96B3E2B5A0392294B27EDA3F4012095D9993DA"
+    },
+    {
+      "file": "system/encrypted_selective_policy.py",
+      "bytes": 4263,
+      "sha256": "BCADC01C4A0DEDA0AB7C678155BE6F6960D3B68D9CFE1307DF85A94F18785663"
+    },
+    {
+      "file": "system/protected_upgrade_transaction.py",
+      "bytes": 19091,
+      "sha256": "4CE00525AF4773FE25CB7E3E5EDFD661B6A30C6B677964E12F24BCA6650F328D"
+    },
+    {
+      "file": "system/upgrade_system.sh",
+      "bytes": 2202,
+      "sha256": "8246D48A5CB0E812E370E7883F3EFEE39A9F44931DE1B054F3FC62A6FC067A09"
+    },
+    {
+      "file": "system/uninstall_system.sh",
+      "bytes": 1317,
+      "sha256": "AB8E24FD468B7DEEBAC2F5CC4D7D5C309EDCB7E66B4F414BC9FB3FF97906F530"
+    },
+    {
+      "file": "app/direct_internet_method.py",
+      "bytes": 48905,
+      "sha256": "A342342D2982701E3379530BACEED6B068BC90735289D3C31860830ECDC1275F"
+    },
+    {
+      "file": "app/router_gateway.py",
+      "bytes": 5914,
+      "sha256": "936376D29F05B0E8B37FA6BD8A4CDB3F3160463E138EE4ABAB43E18AECFC1C86"
+    },
+    {
+      "file": "app/router_gateway_core.py",
+      "bytes": 3351,
+      "sha256": "7817DD0BAE1E42D82A85FCCE823E872D30CC4A2E95D515D0C1540A29D7DF4A90"
+    },
+    {
+      "file": "app/user_update_transaction.py",
+      "bytes": 27787,
+      "sha256": "A909BBB12B78875A9438C756AE2DCAFF05E0DF2EBB5551E97544D2B20C46346F"
+    },
+    {
+      "file": "app/user_uninstall_preserve.py",
+      "bytes": 5150,
+      "sha256": "9A4A4C37E3F63F1602E15454100150D209E3CD099DE80504B560F31D42D3C0EF"
+    },
+    {
+      "file": "app/router_gateway/providers.json",
+      "bytes": 6912,
+      "sha256": "EB9AF7A7BA94B068CE4C2930E61DAF0E7409106B11EE1546F46E33DA0B037A19"
+    },
+    {
+      "file": "app/direct_method_helper.sh",
+      "bytes": 34771,
+      "sha256": "B6641270D1ED8687A2FB1331016F212533BFD4E490331213FF24684D2999A397"
+    },
+    {
+      "file": "app/hosts.txt",
+      "bytes": 269,
+      "sha256": "F9B2E12B4B77CAAD86FA15A14AC546A4611527280E4A0ECE5566EB1FF1B07184"
+    },
+    {
+      "file": "app/adult_hosts_fallback.txt",
+      "bytes": 448,
+      "sha256": "25BA72F6D56EF1C405115C7AA5D6ED1985E8F6D56F306A95D5AD800602A75288"
+    },
+    {
+      "file": "app/strong_override_hosts.txt",
+      "bytes": 40,
+      "sha256": "A706F1035230EDDFB1EA5037A4234AEA351018265F2B359DA4C9E1347A3A900A"
+    },
+    {
+      "file": "app/direct-internet-method.svg",
+      "bytes": 1275,
+      "sha256": "305A2FA1F5310F9619110E805194846FD191FBE7C90843D3BF7492D8C1D155C3"
+    },
+    {
+      "file": "runtime/ctrld",
+      "bytes": 7961828,
+      "sha256": "CA64579A2BC866CF72F3E46663E551162AFEFF0D448E899A01817A095E45B071"
+    },
+    {
+      "file": "runtime/nfqws",
+      "bytes": 125760,
+      "sha256": "F34615964D7321650197CD69D3F7CBFDAABE8118B5A0D57C6E41DCCDFF658999"
+    },
+    {
+      "file": "licenses/LICENSE-ctrld.txt",
+      "bytes": 1101,
+      "sha256": "55D82D13FE55D4B2AEC42166FCCD3C16C267B7131ECF2FBD7C3C6C3463494501"
+    },
+    {
+      "file": "licenses/LICENSE-zapret.txt",
+      "bytes": 1069,
+      "sha256": "DCF5ABD3E5D876C1065982871C0CEC7368C0E61FC795C541798729516BB6B54F"
+    }
+  ]
+}
