@@ -505,6 +505,8 @@ jobs:
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python -B tests/r720_windows_start_youtube_truth_contract.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+          python -B tests/r726_windows_privileged_curl_provenance_contract.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/adult_coverage_data_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/router_gateway_contract_audit.py

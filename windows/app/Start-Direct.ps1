@@ -202,7 +202,9 @@ function Dns-Probe([string]$Name){
  }catch{[ordered]@{name=$Name;ok=$false;ms=-1;answers=@();private=@();error=$_.Exception.Message}}
 }
 function Curl-Probe([string]$Url,[string]$LocalIp,[int]$Timeout=7){
- $m=& curl.exe -4 --interface $LocalIp --noproxy '*' -sS -o NUL -w '%{http_code}|%{remote_ip}|%{time_connect}|%{time_appconnect}|%{time_total}' --max-time $Timeout $Url 2>&1
+ $SystemCurl=Join-Path ([Environment]::SystemDirectory) 'curl.exe'
+ if(-not [IO.File]::Exists($SystemCurl)){throw 'WINDOWS_SYSTEM_CURL_MISSING'}
+ $m=& $SystemCurl -4 --interface $LocalIp --noproxy '*' -sS -o NUL -w '%{http_code}|%{remote_ip}|%{time_connect}|%{time_appconnect}|%{time_total}' --max-time $Timeout $Url 2>&1
  [ordered]@{url=$Url;exit=$LASTEXITCODE;meta=($m -join ' ')}
 }
 function Curl-Probe-Retry([string]$Url,[string]$LocalIp,[string]$AcceptPattern,[int]$Timeout=7,[int]$Attempts=2){
