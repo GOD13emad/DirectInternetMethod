@@ -16,7 +16,8 @@ import stat
 import sys
 
 CODE_NAMES = frozenset({
-    "direct_internet_method.py", "router_gateway.py", "router_gateway_core.py",
+    "direct_internet_method.py", "socket_fallback.py",
+    "router_gateway.py", "router_gateway_core.py",
     "direct-internet-method.svg", "uninstall.sh", "user_uninstall_preserve.py",
     "user_update_transaction.py",
 })

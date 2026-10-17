@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":28,"sha256":"697E1445ECC70148193227D6726AAEACE7AB1DFB6A3B89650487E474F476F648"}
+EXPECTED={"version":VERSION,"files":28,"sha256":"BB702C9B104DC2D6168806604883F73202B9294DCD2F735D51645B2B11B41CA0"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -61,7 +61,8 @@ class Tests(unittest.TestCase):
         got=self.info.read(self.prefix+rel)
         declared=next(row for row in self.rows if row["file"]==rel)
         self.assertEqual(digest(got),declared["sha256"])
-        self.assertEqual(declared["sha256"],"6691AA7262307F41DDAD1B5EB409E1C7AAC3B2171B5285156045849D969F6B8A")
+        self.assertEqual(declared["sha256"],"06825BCD25B237625DBC4FF60250763C38A27238A6273E0C97E847EAD385E64F")
+        self.assertIn('"socket_fallback.py"', got.decode())
         self.assertIn('doc.get("version") == "1.5.5-rc1"',got.decode())
         self.assertNotIn('doc.get("version") == "1.5.4"',got.decode())
         self.assertEqual(digest((R/"linux/app/user_uninstall_preserve.py").read_bytes()),declared["sha256"])
