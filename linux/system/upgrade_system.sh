@@ -40,7 +40,7 @@ PY
 # Arm the separately root-owned boot-persistent R553 guard BEFORE any
 # protected Root Stage/Apply. Source identity is a frozen independent SHA;
 # a signed-in OS administrator still authenticates through the installer.
-GUARD_SHA="A243C30D8C98B2249A2D44072DE51D147DABE483579C9B4E6127D6110212986E"
+GUARD_SHA="CDB853DAB914E73059C252746BAA5413F5DF27D1EFDEC183391404E4CA48BC17"
 [ -f "$SRC/system/upgrade_guard.py" ] && [ ! -L "$SRC/system/upgrade_guard.py" ] || {
     echo "R553_GUARD_SOURCE_MISSING_OR_SYMLINK" >&2; exit 87;
 }
@@ -84,7 +84,7 @@ try:
     assert data["oldUserMetaSha"]==sha(home/".local/share/DirectInternetMethod/INSTALL.json")
     assert data["rootTransactionSha"]==root_sha
     assert sha(guard/"root_tx.py")==root_sha
-    assert sha(guard/"user_tx.py")=="EAC84CB951F520F0E6A05D1452EF355A1CC89D7C68DEB73F91BA14C8E1C4BD66"
+    assert sha(guard/"user_tx.py")=="C1BBF62D99E46CB8E349A38E60891027FF7276F85CACEB597548C269203F28BF"
     assert data["userTransactionSha"]==sha(guard/"user_tx.py")
     assert data["workerSha"]==sha(guard/"worker.py")
     pending=home/".local/state/DirectInternetMethod/update-pending"

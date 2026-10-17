@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":28,"sha256":"33741C43D52ED8F23595CA6E7B2191431D8063E498E7EC94CDDCBDFCD9473C78"}
+EXPECTED={"version":VERSION,"files":28,"sha256":"C436FF92A7A5AB7EDAD95AE0EC4CB28FF56C47FA85A91F322344354705810387"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -153,6 +153,11 @@ class Tests(unittest.TestCase):
         self.assertIn(f"archive_verify(z,CANDIDATE_PREFIX,{expected+2})",native)
         self.assertIn(f'len(manifest.get("files",[]))=={expected}',native)
         self.assertIn('GUARD_SHA="'+digest(guard.encode("utf8"))+'"',wrapper)
+        # The independent guard and system wrapper MUST agree with the
+        # installed user transaction, including future managed-file changes.
+        user_sha=digest(USER_TXN.read_bytes())
+        self.assertIn('PIN_USER="'+user_sha+'"',guard)
+        self.assertIn('assert sha(guard/"user_tx.py")=="'+user_sha+'"',wrapper)
         # Immutable original public Stable stays deliberately at 24 ZIP
         # entries; only the unpublished RC1's inventory is extended.
         self.assertIn('archive_verify(z,STABLE_PREFIX,24)',native)
