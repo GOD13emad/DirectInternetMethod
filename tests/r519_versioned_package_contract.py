@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":28,"sha256":"BB702C9B104DC2D6168806604883F73202B9294DCD2F735D51645B2B11B41CA0"}
+EXPECTED={"version":VERSION,"files":28,"sha256":"33741C43D52ED8F23595CA6E7B2191431D8063E498E7EC94CDDCBDFCD9473C78"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -142,6 +142,21 @@ class Tests(unittest.TestCase):
         self.assertIn('python3 "$SRC/system/protected_upgrade_transaction.py" stage',src)
         self.assertIn('python3 "$SRC/system/protected_upgrade_transaction.py" apply',src)
         self.assertNotIn(' commit',src)
+    def test_guard_and_hosted_root_zip_inventory_track_live_manifest(self):
+        # R748 negative-first: source/unit guards must accept the same exact
+        # archive member count as the deterministic current ZIP (no bypass).
+        guard=(R/"linux/system/upgrade_guard.py").read_text(encoding="utf8")
+        wrapper=(R/"linux/system/upgrade_system.sh").read_text(encoding="utf8")
+        native=(R/"tests/r528_ephemeral_native_root_cli_contract.py").read_text(encoding="utf8")
+        expected=EXPECTED["files"]
+        self.assertIn(f"len(files)=={expected}",guard)
+        self.assertIn(f"archive_verify(z,CANDIDATE_PREFIX,{expected+2})",native)
+        self.assertIn(f'len(manifest.get("files",[]))=={expected}',native)
+        self.assertIn('GUARD_SHA="'+digest(guard.encode("utf8"))+'"',wrapper)
+        # Immutable original public Stable stays deliberately at 24 ZIP
+        # entries; only the unpublished RC1's inventory is extended.
+        self.assertIn('archive_verify(z,STABLE_PREFIX,24)',native)
+
     def test_user_installer_never_pretends_committed(self):
         src=INSTALLER.read_text()
         self.assertIn("ROOT_UPGRADE_STAGED=1",src)

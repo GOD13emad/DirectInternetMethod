@@ -23,7 +23,7 @@ import zipfile
 
 BASE=Path(__file__).resolve().parents[1]
 STABLE_SHA="4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7"
-CANDIDATE_SHA="bb702c9b104dc2d6168806604883f73202b9294dcd2f735d51645b2b11b41ca0"
+CANDIDATE_SHA="33741c43d52ed8f23595ca6e7b2191431d8063e498e7ec94cddcbdfcd9473c78"
 STABLE_ARCHIVE="DirectInternetMethod_1.5.4_Linux_x86_64.zip"
 CANDIDATE_ARCHIVE="DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip"
 STABLE_PREFIX="DirectInternetMethod_1.5.4_Linux_x86_64/"
@@ -121,9 +121,9 @@ def stage_exact_candidate(candidate_zip:Path,temp:Path)->Path:
     need(not extract.exists() and not extract.is_symlink(),"TEMP_SOURCE_COLLISION")
     extract.mkdir(mode=0o700)
     with zipfile.ZipFile(candidate_zip) as z:
-        archive_verify(z,CANDIDATE_PREFIX,29)
+        archive_verify(z,CANDIDATE_PREFIX,30)
         manifest=json.loads(z.read(CANDIDATE_PREFIX+"PACKAGE_MANIFEST.json"))
-        need(manifest.get("version")=="1.5.5-rc1" and len(manifest.get("files",[]))==27,
+        need(manifest.get("version")=="1.5.5-rc1" and len(manifest.get("files",[]))==28,
              "RC1_PACKAGE_VERSION_MANIFEST")
         for f in manifest["files"]:
             relative=f["file"]

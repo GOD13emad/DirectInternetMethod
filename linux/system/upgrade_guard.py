@@ -119,7 +119,7 @@ def validate_source(source:Path):
     data=json.loads(manifest.read_text("utf8"))
     files=data.get("files")
     need(data.get("version")==VERSION and data.get("schema")==1 and
-         isinstance(files,list) and len(files)==27,"PACKAGE_MANIFEST")
+         isinstance(files,list) and len(files)==28,"PACKAGE_MANIFEST")
     pin={x.get("file"):x.get("sha256") for x in files if isinstance(x,dict)}
     for label,relative,want in (
         ("ROOT_TX","system/protected_upgrade_transaction.py",PIN_ROOT),
