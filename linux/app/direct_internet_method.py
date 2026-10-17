@@ -7,6 +7,7 @@ import os
 import pathlib
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 import threading
@@ -568,48 +569,131 @@ def _download(url,path):
         shutil.copyfileobj(src,dst)
 
 def download_and_install_update(info):
+    # R739: one private, automatically disposed cache slot per update attempt.
+    # Never overwrite stale/user-owned downloads, nor retain a second installer.
+    release_version=str(info.get("version") or "")
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+",release_version):
+        raise RuntimeError("Unsafe Linux update release version.")
+    archive_name=f"DirectInternetMethod_{release_version}_Linux_x86_64.zip"
+    asset=info.get("asset") or {}
+    sums=info.get("sums") or {}
+    if (asset.get("name")!=archive_name or sums.get("name")!="SHA256SUMS.txt"):
+        raise RuntimeError("Unexpected Linux update asset name.")
+    for item in (asset,sums):
+        if not re.fullmatch(r"sha256:[0-9A-Fa-f]{64}",str(item.get("digest") or "")):
+            raise RuntimeError("Linux update asset digest is invalid.")
     cache=pathlib.Path.home()/".cache/DirectInternetMethod/updates"
-    cache.mkdir(parents=True,exist_ok=True)
-    sums_path=cache/"SHA256SUMS.txt"
-    zip_path=cache/info["asset"]["name"]
-    _download(info["sums"]["url"],sums_path)
-    sums_actual=hashlib.sha256(sums_path.read_bytes()).hexdigest().upper()
-    sums_api=str(info["sums"]["digest"]).split(":",1)[1].upper()
-    if sums_actual!=sums_api:
-        sums_path.unlink(missing_ok=True)
-        raise RuntimeError("Downloaded SHA256SUMS.txt does not match GitHub asset digest.")
-    matches=[]
-    for raw in sums_path.read_text(encoding="utf-8").splitlines():
-        parts=raw.strip().split()
-        if len(parts)>=2 and parts[-1].lstrip("*")==info["asset"]["name"]:
-            matches.append(parts[0].upper())
-    if len(matches)!=1 or not re.fullmatch(r"[0-9A-F]{64}",matches[0]):
-        raise RuntimeError("SHA256SUMS.txt must contain exactly one valid checksum for the Linux update.")
-    expected=matches[0]
-    api_expected=str(info["asset"]["digest"]).split(":",1)[1].upper()
-    if expected!=api_expected:
-        raise RuntimeError("Linux update checksum disagrees with GitHub asset digest.")
-    _download(info["asset"]["url"],zip_path)
-    actual=hashlib.sha256(zip_path.read_bytes()).hexdigest().upper()
-    if actual!=expected or actual!=api_expected:
-        zip_path.unlink(missing_ok=True)
-        raise RuntimeError("Downloaded Linux update failed three-way SHA-256 verification.")
+    if (cache.is_symlink() or cache.parent.is_symlink()
+            or cache.parent.parent.is_symlink()):
+        raise RuntimeError("Update cache path contains a symlink.")
+    created_parent=not cache.parent.exists()
+    created_cache=not cache.exists()
+    cache.mkdir(parents=True,exist_ok=True,mode=0o700)
+    if (not cache.is_dir() or cache.is_symlink() or
+            (hasattr(os,"getuid") and cache.stat().st_uid!=os.getuid())):
+        raise RuntimeError("Update cache is not owned by the current user.")
+    try:
+        with tempfile.TemporaryDirectory(prefix="dim-update-",dir=str(cache)) as work:
+            temp=pathlib.Path(work)
+            sums_path=temp/"SHA256SUMS.txt"
+            zip_path=temp/archive_name
+            _download(sums["url"],sums_path)
+            actual_sums=hashlib.sha256(sums_path.read_bytes()).hexdigest().upper()
+            if actual_sums!=sums["digest"].split(":",1)[1].upper():
+                raise RuntimeError("Downloaded SHA256SUMS.txt does not match GitHub asset digest.")
+            matches=[]
+            for raw in sums_path.read_text(encoding="utf-8").splitlines():
+                parts=raw.strip().split()
+                if len(parts)>=2 and parts[-1].lstrip("*")==archive_name:
+                    matches.append(parts[0].upper())
+            if len(matches)!=1 or not re.fullmatch(r"[0-9A-F]{64}",matches[0]):
+                raise RuntimeError("SHA256SUMS.txt must contain exactly one Linux update checksum.")
+            expected=matches[0]
+            if expected!=asset["digest"].split(":",1)[1].upper():
+                raise RuntimeError("Linux update checksum disagrees with GitHub asset digest.")
+            _download(asset["url"],zip_path)
+            if hashlib.sha256(zip_path.read_bytes()).hexdigest().upper()!=expected:
+                raise RuntimeError("Downloaded Linux update failed three-way SHA-256 verification.")
 
-    temp=pathlib.Path(tempfile.mkdtemp(prefix="dim-update-",dir=str(cache)))
-    with zipfile.ZipFile(zip_path) as z:
-        base=temp.resolve()
-        for member in z.infolist():
-            target=(temp/member.filename).resolve()
-            if base not in target.parents and target!=base:
-                raise RuntimeError("Unsafe update archive path.")
-        z.extractall(temp)
-    installers=list(temp.rglob("install.sh"))
-    if len(installers)!=1:
-        raise RuntimeError("Update archive does not contain exactly one installer.")
-    p=subprocess.run(["bash",str(installers[0])],text=True,capture_output=True,timeout=180)
-    if p.returncode!=0:
-        raise RuntimeError((p.stderr or p.stdout or f"installer exit {p.returncode}").strip())
-    return p.stdout.strip()
+            prefix=archive_name.removesuffix(".zip")+"/"
+            with zipfile.ZipFile(zip_path) as z:
+                members=z.infolist()
+                if len(members)!=29 or len({m.filename for m in members})!=len(members):
+                    raise RuntimeError("Linux update archive has an unexpected file inventory.")
+                names={}
+                total=0
+                for member in members:
+                    name=member.filename
+                    parts=pathlib.PurePosixPath(name).parts
+                    if (not name.startswith(prefix) or "\\" in name or
+                            ".." in parts or member.is_dir() or
+                            pathlib.PurePosixPath(name).as_posix()!=name or
+                            stat.S_ISLNK(member.external_attr>>16) or
+                            member.file_size>64000000):
+                        raise RuntimeError("Unsafe Linux update archive entry.")
+                    total+=member.file_size
+                    if total>256000000:
+                        raise RuntimeError("Linux update archive is oversized.")
+                    names[name]=member
+                manifest_name=prefix+"PACKAGE_MANIFEST.json"
+                checksum_name=prefix+"SHA256SUMS.txt"
+                try:
+                    manifest=json.loads(z.read(manifest_name))
+                    inside_sums=z.read(checksum_name).decode("utf-8")
+                except (KeyError,ValueError,UnicodeError) as exc:
+                    raise RuntimeError("Linux update internal manifest is invalid.") from exc
+                if (manifest.get("schema")!=1 or
+                        manifest.get("product")!="Direct Internet Method" or
+                        manifest.get("version")!=release_version or
+                        manifest.get("platform")!="linux-x86_64" or
+                        not isinstance(manifest.get("files"),list) or
+                        len(manifest["files"])!=27):
+                    raise RuntimeError("Linux update package identity does not match release.")
+                referenced=set()
+                expected_lines=[]
+                for entry in manifest["files"]:
+                    if not isinstance(entry,dict) or set(entry)!={"file","bytes","sha256"}:
+                        raise RuntimeError("Linux update manifest member is invalid.")
+                    rel=entry["file"]
+                    if (not isinstance(rel,str) or not rel or "\\" in rel or
+                            pathlib.PurePosixPath(rel).is_absolute() or
+                            ".." in pathlib.PurePosixPath(rel).parts or
+                            pathlib.PurePosixPath(rel).as_posix()!=rel or
+                            rel in referenced):
+                        raise RuntimeError("Linux update manifest contains an unsafe path.")
+                    referenced.add(rel)
+                    name=prefix+rel
+                    if (name not in names or type(entry["bytes"]) is not int or
+                            entry["bytes"]<0 or not isinstance(entry["sha256"],str) or
+                            not re.fullmatch(r"[0-9A-F]{64}",entry["sha256"])):
+                        raise RuntimeError("Linux update manifest digest is invalid.")
+                    data=z.read(name)
+                    if (len(data)!=entry["bytes"] or
+                            hashlib.sha256(data).hexdigest().upper()!=entry["sha256"]):
+                        raise RuntimeError("Linux update package payload digest mismatch.")
+                    expected_lines.append(f'{entry["sha256"]}  {rel}\n')
+                if (set(names)!={prefix+rel for rel in referenced}|{manifest_name,checksum_name}
+                        or inside_sums!="".join(expected_lines) or
+                        "install.sh" not in referenced):
+                    raise RuntimeError("Linux update package manifest/file inventory mismatch.")
+                z.extractall(temp)
+            installer=temp/prefix/"install.sh"
+            if not installer.is_file() or installer.is_symlink():
+                raise RuntimeError("Linux update installer path is invalid.")
+            p=subprocess.run(["bash",str(installer)],text=True,capture_output=True,timeout=180)
+            if p.returncode!=0:
+                raise RuntimeError((p.stderr or p.stdout or
+                                    f"installer exit {p.returncode}").strip())
+            return p.stdout.strip()
+    finally:
+        # Only remove empty directories *created by this attempt*. Never touch
+        # preexisting cache files or any unrelated user data.
+        if created_cache:
+            try:cache.rmdir()
+            except OSError:pass
+        if created_parent:
+            try:cache.parent.rmdir()
+            except OSError:pass
 
 class Window(Adw.ApplicationWindow):
     def __init__(self,app):
