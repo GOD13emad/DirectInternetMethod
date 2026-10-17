@@ -2,7 +2,7 @@
 """R552 source-extracted regression: worker/timer logic, ZERO installed actions."""
 import hashlib,importlib.util,json,os,pathlib,tempfile,types,unittest
 SRC=pathlib.Path(__file__).resolve().parents[1]/"linux/system/upgrade_guard.py"
-SOURCE_SHA="CDB853DAB914E73059C252746BAA5413F5DF27D1EFDEC183391404E4CA48BC17"
+SOURCE_SHA="913DBE39499344BFF96BA41D33AB0B0A2EBEB662D604A0C45A528D18207EFEC2"
 assert hashlib.sha256(SRC.read_bytes()).hexdigest().upper()==SOURCE_SHA
 spec=importlib.util.spec_from_file_location("r552_candidate",SRC)
 g=importlib.util.module_from_spec(spec)
@@ -194,6 +194,103 @@ class Cases(unittest.TestCase):
         self.assertNotIn("user_command",self.events)
         self.assertEqual(json.loads(self.result.read_text())["status"],
                          "PASS_RESUMED_ACCEPTED_ROOT_USER_COMMIT")
+
+    def _terminal_rolledback_fixture(self):
+        """Synthetic exact root owner/perms, never real host Root/files."""
+        self.fake["uid"]=os.getuid()
+        self.fake["oldRootMetaSha"]="ORIG_ROOT"
+        prior=g.regular
+        self.addCleanup(lambda:setattr(g,"regular",prior))
+        def fake_regular(path,uid=None,mode=None):
+            if path==g.RESULT:
+                if not path.is_file() or path.is_symlink() or mode!=0o600:
+                    raise RuntimeError("R751_TEST_RESULT_NOT_REGULAR")
+                return path.stat()
+            return prior(path,uid,mode)
+        g.regular=fake_regular
+        receipt={
+            "revision":"R552",
+            "status":"PASS_AUTONOMOUS_TWO_SIDED_RESTORATION",
+            "uid":0,
+            "rootPhaseBefore":"APPLIED",
+            "rootRollback":"PASS",
+            "userRollback":"PASS",
+            "recoveryAttempted":True,
+            "networkMutationAttempted":False,
+            "whenUtc":"2026-10-17T22:39:13Z",
+            "durationSeconds":0.119,
+        }
+        self.result.write_bytes(g.canonical(receipt))
+        self.result.chmod(0o600)
+        root_home=str(self.home)
+        uid=self.fake["uid"]
+        class RolledBack:
+            native=True
+            def __init__(self):self.calls=[]
+            def status(self):
+                self.calls.append("status")
+                return {"status":"ROLLED_BACK"}
+            def manifest(self):
+                self.calls.append("manifest")
+                return {"phase":"ROLLED_BACK","fromVersion":g.BASELINE,
+                        "toVersion":g.VERSION,"uid":uid,"home":root_home,
+                        "files":{"helper":{"old":"ORIGINAL"}},"oldMetadataSHA":"ORIG_ROOT"}
+            def _validate_slot(self,manifest):
+                self.calls.append("validate")
+            def _target_states(self,manifest):
+                self.calls.append("target_states")
+                return {"helper":"ORIGINAL"},"ORIG_ROOT"
+            def rollback(self):
+                raise AssertionError("ALREADY_ROLLED_BACK_MUST_NOT_ROLLBACK_AGAIN")
+        tx=RolledBack()
+        g.imported_root=lambda:tx
+        return tx,receipt
+
+    def test_19_terminal_rolledback_second_timer_is_idempotent_and_retained(self):
+        tx,receipt=self._terminal_rolledback_fixture()
+        original=self.result.read_bytes()
+        self.assertEqual(g.rollback_worker(),0)
+        self.assertEqual(self.result.read_bytes(),original)
+        self.assertIn("validate_restored",self.events)
+        self.assertNotIn("user_command",self.events)
+        self.assertEqual(tx.calls,["status","manifest","validate","target_states"])
+
+    def test_20_repeat_third_timer_keeps_original_receipt(self):
+        tx,_=self._terminal_rolledback_fixture()
+        original=self.result.read_bytes()
+        self.assertEqual(g.rollback_worker(),0)
+        self.assertEqual(g.rollback_worker(),0)
+        self.assertEqual(self.result.read_bytes(),original)
+        self.assertEqual(self.events,["validate_restored","validate_restored"])
+
+    def test_21_rolledback_wrong_receipt_must_fail_closed(self):
+        tx,receipt=self._terminal_rolledback_fixture()
+        receipt["userRollback"]="FAIL"
+        self.result.write_bytes(g.canonical(receipt))
+        self.assertEqual(g.rollback_worker(),90)
+        self.assertEqual(self.result.read_bytes(),g.canonical(receipt))
+        self.assertNotIn("validate_restored",self.events)
+        self.assertNotIn("user_command",self.events)
+
+    def test_22_rolledback_missing_receipt_must_fail_closed(self):
+        tx,_=self._terminal_rolledback_fixture()
+        self.result.unlink()
+        self.assertEqual(g.rollback_worker(),90)
+        self.assertNotIn("validate_restored",self.events)
+        self.assertNotIn("user_command",self.events)
+
+    def test_23_rolledback_root_original_hash_drift_must_fail_closed(self):
+        tx,_=self._terminal_rolledback_fixture()
+        tx._target_states=lambda m:({"helper":"FOREIGN"},"ORIG_ROOT")
+        self.assertEqual(g.rollback_worker(),90)
+        self.assertNotIn("validate_restored",self.events)
+
+    def test_24_rolledback_user_pending_must_not_report_clean(self):
+        tx,_=self._terminal_rolledback_fixture()
+        pending=self.home/g.PENDING_REL
+        pending.mkdir(parents=True)
+        self.assertEqual(g.rollback_worker(),90)
+        self.assertNotIn("validate_restored",self.events)
 
     def test_09_sources_are_not_host_install_commands(self):
         src=SRC.read_text()

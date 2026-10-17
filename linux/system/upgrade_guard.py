@@ -343,7 +343,45 @@ def rollback_worker():
             # engine is unsafe; require authorized local Recovery.
             need(not (home/USER_REL/"directmethod/state.json").exists(),
                  "LIVE_ENGINE_REQUIRES_LOCAL_RECOVERY")
-            if phase=="NO_PENDING_UPGRADE" and not pending.exists():
+            if phase=="ROLLED_BACK":
+                # R751: independent OnActiveSec/OnCalendar timer expressions may
+                # re-activate the service after the first successful rollback.
+                # Verify terminal Root/User bytes and the immutable original
+                # root-owned success receipt; NEVER roll back a second time,
+                # overwrite its evidence, or auto-retire the guard/slot here.
+                need(not pending.exists() and not pending.is_symlink(),
+                     "ROLLEDBACK_USER_PENDING_REMAINS")
+                regular(RESULT,0,0o600)
+                need(RESULT.stat().st_nlink==1,"ROLLEDBACK_RECEIPT_HARDLINK")
+                receipt_bytes=RESULT.read_bytes()
+                prior=json.loads(receipt_bytes)
+                need(receipt_bytes==canonical(prior),"ROLLEDBACK_RECEIPT_NONCANONICAL")
+                need(prior.get("revision")=="R552" and
+                     prior.get("status")=="PASS_AUTONOMOUS_TWO_SIDED_RESTORATION" and
+                     prior.get("rootRollback")=="PASS" and
+                     prior.get("userRollback")=="PASS" and
+                     prior.get("recoveryAttempted") is True and
+                     prior.get("networkMutationAttempted") is False and
+                     prior.get("uid")==0,
+                     "ROLLEDBACK_PRIOR_RECEIPT_NOT_SUCCESSFUL")
+                m=tx.manifest()
+                need(m.get("phase")=="ROLLED_BACK" and
+                     m.get("fromVersion")==BASELINE and
+                     m.get("toVersion")==VERSION and
+                     m.get("uid")==j["uid"] and
+                     m.get("home")==j["home"] and
+                     m.get("oldMetadataSHA")==j["oldRootMetaSha"],
+                     "ROLLEDBACK_FOREIGN_ROOT_TRANSACTION")
+                tx._validate_slot(m)
+                states,metadata=tx._target_states(m)
+                need(set(states)==set(m["files"]) and
+                     all(states[name]==m["files"][name]["old"] for name in states) and
+                     metadata==m["oldMetadataSHA"],
+                     "ROLLEDBACK_ORIGINAL_ROOT_BYTES_CHANGED")
+                verify_installed_after_restore(j)
+                report["status"]="NO_CHANGE_ALREADY_ROLLED_BACK"
+                report["restoredReceiptSha256"]=sha_file(RESULT)
+            elif phase=="NO_PENDING_UPGRADE" and not pending.exists():
                 report["status"]="NO_CHANGE_NO_PENDING"
             else:
                 need(phase in ("STAGED","APPLIED","DEGRADED","NO_PENDING_UPGRADE"),
@@ -372,7 +410,8 @@ def rollback_worker():
     return 0 if report["status"] in (
         "PASS_RESUMED_ACCEPTED_ROOT_USER_COMMIT",
         "NO_ROLLBACK_ALREADY_COMMITTED","NO_CHANGE_NO_PENDING",
-        "PASS_AUTONOMOUS_TWO_SIDED_RESTORATION") else 90
+        "PASS_AUTONOMOUS_TWO_SIDED_RESTORATION",
+        "NO_CHANGE_ALREADY_ROLLED_BACK") else 90
 
 def _exact_owned_inventory(root:Path,files:set[str],dirs:set[str],mode:int):
     """Allowlist every file/dir; no symlinks, foreign nodes or hardlinks."""
