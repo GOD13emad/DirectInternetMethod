@@ -96,6 +96,7 @@ CTRLD="$TMP/not-ctrld"
 NFQWS="$TMP/not-nfqws"
 pid_owned(){ return 1; }
 remove_dns_link(){ echo "UNEXPECTED_DNS_LINK" >&2; return 99; }
+restore_selective_dns(){ test ! -e /run/directinternetmethod-selective/session.json; }
 
 put_state(){
   printf '%s\n' '{"dnsMode":"system-preserved","physicalInterface":"enp1s0","ctrldPid":0,"nfqwsPid":0}' > "$STATE"
