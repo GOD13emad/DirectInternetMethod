@@ -37,7 +37,7 @@ Check("fixed_system32_curl_not_path_or_cwd", () =>
 {
     var plan = ProbeProcessBuilder.Create(valid, physical);
     var expected = Path.GetFullPath(Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.System), "curl.exe"));
+        Environment.SystemDirectory, "curl.exe"));
     Need(string.Equals(plan.FileName, expected, StringComparison.OrdinalIgnoreCase),
         "Executable is not the OS system curl");
     Need(Path.IsPathFullyQualified(plan.FileName), "Executable path not absolute");
