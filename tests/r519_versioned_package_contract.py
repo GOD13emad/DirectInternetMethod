@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":27,"sha256":"C1E644E53CA3EB106B6DCA5ED942A2ECB2052FB636FF0E60FD9E5A5B0783E332"}
+EXPECTED={"version":VERSION,"files":27,"sha256":"BBCFC4AB1C3688C4E07D3BDCC7EDEA65A104CE32B659D52F22DB1AEB559E6146"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -85,7 +85,7 @@ class Tests(unittest.TestCase):
         changed={name for name in before if before[name]!=after[name]}
         self.assertEqual(changed,{"app/user_uninstall_preserve.py","app/direct_internet_method.py",
                                  "app/direct_method_helper.sh","app/user_update_transaction.py","system/protected_upgrade_transaction.py",
-                                 "system/upgrade_system.sh"})
+                                 "system/upgrade_system.sh","install.sh"})
         self.assertEqual(after["app/direct_internet_method.py"]["sha256"],
                          "D3A9B4D6F8D75C41FC2D3A12B1376BEB305E7388F852192FA6DAE2D65C5CBDCA")
         self.assertIn("encrypted=encrypted_dns_optin_state()",

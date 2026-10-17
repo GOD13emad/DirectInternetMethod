@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 umask 077
+# The source archive must remain read-only/clean during an in-place update.
+# Python imports run from this directory; never accumulate __pycache__ files.
+export PYTHONDONTWRITEBYTECODE=1
 HERE="$(cd "$(dirname "$0")" && pwd)"
 APP="$HOME/.local/share/DirectInternetMethod"
 BIN="$HOME/.local/bin"
