@@ -112,6 +112,7 @@ esac
        f'NFQWS=/nonexistent/nfqws\n' +
        ('pid_owned(){ return 0; }\nkill(){ touch "$MOCK_KILLS"; }\n' if name=="split_coexistence_foreign_extra_rule" else 'pid_owned(){ return 1; }\n') +
        'remove_dns_link(){ echo UNEXPECTED_DNS_LINK_REMOVAL >&2; return 89; }\n'
+       'restore_selective_dns(){ test ! -e /run/directinternetmethod-selective/session.json; }\n'
        +functions+
        '\ncleanup_state_owned\n'
        'rc=$?\n'
