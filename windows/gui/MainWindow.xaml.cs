@@ -211,15 +211,7 @@ public partial class MainWindow : Window
         var sw = Stopwatch.StartNew();
         try
         {
-            var psi = new ProcessStartInfo("curl.exe",
-                $"-4 --interface {localIp} --noproxy * -A \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140 Safari/537.36\" -sS -o NUL -w \"%{{http_code}}|%{{remote_ip}}|%{{time_total}}\" --connect-timeout 5 --max-time 8 \"{url}\"")
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
+            var psi = ProbeProcessBuilder.Create(url, localIp);
             using var p = Process.Start(psi)!;
             var stdout = await p.StandardOutput.ReadToEndAsync();
             await p.WaitForExitAsync();
