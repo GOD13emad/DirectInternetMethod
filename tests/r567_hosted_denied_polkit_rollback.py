@@ -23,7 +23,7 @@ import textwrap
 BASE=Path(__file__).resolve().parents[1]
 R528=BASE/"tests/r528_ephemeral_native_root_cli_contract.py"
 R529=BASE/"tests/r529_ephemeral_root_user_transaction.py"
-ARCHIVE="EAF1AE50924FE9D8B440044C7BFB3232A51EB912786A235CC70FB2E2911E6291"
+ARCHIVE="C8E5A06387FF21EC0E048F8BB02DC1B4C31B364625E18EC641900356F60CE503"
 
 def require(v,code):
     if not v: raise RuntimeError("R567_DENIED_AUTH_FAIL_CLOSED_"+code)
