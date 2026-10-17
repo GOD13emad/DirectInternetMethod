@@ -191,7 +191,7 @@ put_state
 new_table; new_chain; injected_mark; mark; queues
 nft add rule inet "$TABLE" output ip daddr 203.0.113.7 drop
 export TABLE PHY TAILSCALE_COEXIST CREATED_TABLE CREATED_LINK CREATED_STATE RUN_HOSTS NPID CPID CTRLD NFQWS
-export -f rollback_on_exit cleanup_transient nft_table_presence nft_table_transient_owned pid_owned remove_dns_link
+export -f rollback_on_exit cleanup_transient nft_table_presence nft_table_transient_owned pid_owned remove_dns_link restore_selective_dns
 if trap_output="$(bash -c 'set -euo pipefail; ACTION=start; START_COMMITTED=0; trap rollback_on_exit EXIT; exit 0' 2>&1)";then
   trap_rc=0
 else
