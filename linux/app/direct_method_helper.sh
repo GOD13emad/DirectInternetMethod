@@ -157,7 +157,7 @@ import re, sys
 table, iface, mode = sys.argv[1:]
 lines = [line.strip() for line in sys.stdin if line.strip()]
 coexist = mode == "system-preserved"
-expected_count = 9 if coexist else 8
+expected_count = 10 if coexist else 9
 if len(lines) != expected_count:
     sys.exit(1)
 if lines[:2] != [f"table inet {table} {{", "chain output {"]:
@@ -166,11 +166,13 @@ if not re.fullmatch(r"type filter hook output priority (?:mangle|-150); policy a
     sys.exit(1)
 if lines[-2:] != ["}", "}"]:
     sys.exit(1)
-offset = 3
+if not re.fullmatch(r"meta mark & 0x0*40000000 == 0x0*40000000 return", lines[3]):
+    sys.exit(1)
+offset = 4
 if coexist:
-    if not re.fullmatch(r"meta mark & 0x0*ff0000 == 0x0*80000 return", lines[3]):
+    if not re.fullmatch(r"meta mark & 0x0*ff0000 == 0x0*80000 return", lines[4]):
         sys.exit(1)
-    offset = 4
+    offset = 5
 queue = r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? bypass)"
 dev = r"oifname (?:" + re.escape(iface) + r"|" + re.escape(chr(34) + iface + chr(34)) + r")"
 for index, (proto, port) in enumerate((("tcp", 80), ("tcp", 443), ("udp", 443))):
@@ -308,7 +310,7 @@ if not re.fullmatch(r"type filter hook output priority (?:mangle|-150); policy a
     sys.exit(1)
 dev=r"oifname (?:"+re.escape(iface)+r"|" + re.escape(chr(34)+iface+chr(34))+r")"
 queue=r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? bypass)"
-patterns=[]
+patterns=[r"meta mark & 0x0*40000000 == 0x0*40000000 return"]
 if coexist=="1":
     patterns.append(r"meta mark & 0x0*ff0000 == 0x0*80000 return")
 for proto,port in (("tcp",80),("tcp",443),("udp",443)):
@@ -803,6 +805,9 @@ EOF
     nft add table inet "$TABLE"
     CREATED_TABLE=1
     nft "add chain inet $TABLE output { type filter hook output priority mangle; policy accept; }"
+    # nfqws v72.13 marks injected packets 0x40000000. Ignore those before
+    # queues to prevent requeue loops, independent of Tailscale safeguards.
+    nft "add rule inet $TABLE output meta mark & 0x40000000 == 0x40000000 return"
     if [ "$TAILSCALE_COEXIST" -eq 1 ]; then
       # Tailscale LinuxBypassMark 0x80000/0xff0000 protects its own DERP/control traffic.
       nft "add rule inet $TABLE output meta mark & 0xff0000 == 0x80000 return"

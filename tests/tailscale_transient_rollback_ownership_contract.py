@@ -19,23 +19,29 @@ fixture='''table inet directinternetmethod {
     }
 }
 '''
+inject_mark='meta mark & 0x40000000 == 0x40000000 return'
 mark='meta mark & 0x00ff0000 == 0x00080000 return'
 queue=[
 'oifname "enp1s0" tcp dport 80 ct original packets 1-6 queue flags bypass to 200',
 'oifname "enp1s0" tcp dport 443 ct original packets 1-6 queue flags bypass to 200',
 'oifname "enp1s0" udp dport 443 ct original packets 1-6 queue flags bypass to 200',
 ]
-valid=[mark]+queue
+valid=[inject_mark,mark]+queue
 cases=[
  ("coexist_empty_table","table inet directinternetmethod {\n}\n","1",True),
  ("coexist_empty_chain",fixture.replace("%%RULES%%",""),"1",True),
- ("coexist_mark_only",fixture.replace("%%RULES%%",mark),"1",True),
+ ("coexist_injected_mark_only",fixture.replace("%%RULES%%",inject_mark),"1",True),
+ ("coexist_injected_and_ts_mark_only",fixture.replace("%%RULES%%",inject_mark+"\n"+mark),"1",True),
+ ("coexist_missing_injected_mark",fixture.replace("%%RULES%%",mark),"1",False),
+ ("coexist_wrong_injected_mark",fixture.replace("%%RULES%%",'meta mark & 0x40000000 == 0x00000000 return'+"\n"+mark),"1",False),
  ("coexist_partial_rules",fixture.replace("%%RULES%%","\n".join(valid[:2])),"1",True),
  ("coexist_all_rules",fixture.replace("%%RULES%%","\n".join(valid)),"1",True),
  ("coexist_foreign_added",fixture.replace("%%RULES%%","\n".join(valid+["ip daddr 203.0.113.7 drop"])),"1",False),
- ("coexist_wrong_iface",fixture.replace("%%RULES%%","\n".join([mark,queue[0].replace("enp1s0","enp9s0")])),"1",False),
+ ("coexist_wrong_iface",fixture.replace("%%RULES%%","\n".join([inject_mark,mark,queue[0].replace("enp1s0","enp9s0")])),"1",False),
  ("coexist_wrong_order",fixture.replace("%%RULES%%","\n".join([queue[0],mark])),"1",False),
  ("standalone_foreign_mark",fixture.replace("%%RULES%%","\n".join(valid)),"0",False),
+ ("standalone_injected_mark_only",fixture.replace("%%RULES%%",inject_mark),"0",True),
+ ("standalone_injected_and_queue",fixture.replace("%%RULES%%","\n".join([inject_mark]+queue)),"0",True),
  ("coexist_foreign_chain",fixture.replace("%%RULES%%","\n".join(valid)).replace("\n}\n","\n    chain input { type filter hook input priority filter; policy accept; }\n}\n"),"1",False),
 ]
 with tempfile.TemporaryDirectory(prefix="dim_transient_rollback_") as td:

@@ -23,22 +23,26 @@ functions="\n".join(f(n) for n in (
 nft_output='''table inet directinternetmethod {
     chain output {
         type filter hook output priority mangle; policy accept;
+        meta mark & 0x40000000 == 0x40000000 return
         %%MARK%%
         oifname "enp1s0" tcp dport 80 ct original packets 1-6 queue flags bypass to 200
         oifname "enp1s0" tcp dport 443 ct original packets 1-6 queue flags bypass to 200
         oifname "enp1s0" udp dport 443 ct original packets 1-6 queue flags bypass to 200
     }
 }'''
+inject_mark='meta mark & 0x40000000 == 0x40000000 return'
 mark="meta mark & 0x00ff0000 == 0x00080000 return"
 cases=[
  ("split_coexistence_owns_marked_table", "system-preserved",mark,True,0,True),
+ ("split_coexistence_missing_injected_mark", "system-preserved",mark,True,81,False),
+ ("split_coexistence_wrong_injected_mark", "system-preserved",mark,True,81,False),
  ("split_coexistence_rejects_missing_mark", "system-preserved","",True,81,False),
  ("split_coexistence_rejects_wrong_mark", "system-preserved",
   "meta mark & 0xff0000 == 0x00010000 return",True,81,False),
  ("split_coexistence_rejects_wrong_mask", "system-preserved",
   "meta mark & 0x007f0000 == 0x00080000 return",True,81,False),
  ("split_coexistence_rejects_late_mark", "system-preserved",mark,True,81,False),
- ("standalone_owns_unmarked_table","direct-doh","",True,0,True),
+ ("standalone_owns_only_nfmark_table","direct-doh","",True,0,True),
  ("split_coexistence_no_table","system-preserved","",False,0,True),
  ("split_coexistence_foreign_extra_rule", "system-preserved",mark,True,81,False),
 ]
@@ -80,6 +84,8 @@ esac
                                "ctrldPid":0,"nfqwsPid":0}),encoding="utf-8")
   fixture=d/"nft.out"
   value=nft_output.replace("%%MARK%%",bypass)
+  if name=="split_coexistence_missing_injected_mark":value=value.replace(inject_mark,"",1)
+  if name=="split_coexistence_wrong_injected_mark":value=value.replace(inject_mark,'meta mark & 0x40000000 == 0x00000000 return',1)
   if name=="split_coexistence_rejects_late_mark":
    value=nft_output.replace("%%MARK%%","")
    first='oifname "enp1s0" tcp dport 80 ct original packets 1-6 queue flags bypass to 200'

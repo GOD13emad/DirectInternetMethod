@@ -39,8 +39,8 @@ jobs:
           python3 - <<'PY'
           import hashlib,json,pathlib,zipfile
           p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
-          expected="4FC8AFC9BBE8BC5492E4B8C10C905E773C9DAF1F1C2E806A0A9C321D25A42C84"
-          assert p.is_file() and p.stat().st_size==8371329
+          expected="C1E644E53CA3EB106B6DCA5ED942A2ECB2052FB636FF0E60FD9E5A5B0783E332"
+          assert p.is_file() and p.stat().st_size==8371711
           assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
           meta=json.loads(pathlib.Path("RELEASE.json").read_text())
           assert meta.get("version")=="1.5.4","PUBLISHED_RELEASE_METADATA_MUST_REMAIN_STABLE"
@@ -88,6 +88,11 @@ jobs:
           python3 -B tests/r545_periodic_gui_status_contract.py
           python3 -B tests/r678_linux_gui_full_youtube_health_contract.py
           python3 -B tests/r698_root_watchdog_firstsplit_integrity_contract.py
+          python3 -B tests/r702_nfqws_reinjected_mark_contract.py
+          python3 -B tests/tailscale_nft_ownership_contract.py
+          python3 -B tests/tailscale_cleanup_ownership_contract.py
+          python3 -B tests/tailscale_transient_rollback_ownership_contract.py
+          python3 -B tests/linux_nft_kernel_namespace_contract.py --source-only
           python3 -B tests/r552_native_upgrade_guard_contract.py
           python3 -B tests/tailscale_ui_state_contract.py
           python3 -B tests/tailscale_gui_scope_guard_contract.py
@@ -135,6 +140,14 @@ jobs:
           # All absolute-root writes occur inside the disposable GH-hosted Ubuntu VM only.
           sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r528_ephemeral_native_root_cli_contract.py
 
+      - name: R702 strict NFT ownership on disposable kernel network namespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The test validates root and real nft inside a fresh unshare --net
+          # child; it rejects host netns and never edits the runner's routes.
+          sudo -n /usr/bin/python3 -B tests/linux_nft_kernel_namespace_contract.py --kernel
+
   linux-root-user-integrated-ephemeral:
     name: linux-root-user-integrated-ephemeral
     needs: linux-native-root-ephemeral
@@ -147,7 +160,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '4FC8AFC9BBE8BC5492E4B8C10C905E773C9DAF1F1C2E806A0A9C321D25A42C84' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'C1E644E53CA3EB106B6DCA5ED942A2ECB2052FB636FF0E60FD9E5A5B0783E332' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download and independently pin official Stable 1.5.4 package
         shell: bash
         run: |
@@ -176,7 +189,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '4FC8AFC9BBE8BC5492E4B8C10C905E773C9DAF1F1C2E806A0A9C321D25A42C84' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'C1E644E53CA3EB106B6DCA5ED942A2ECB2052FB636FF0E60FD9E5A5B0783E332' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download byte-pinned published Stable v1.5.4 archive
         shell: bash
         run: |
@@ -209,7 +222,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '4FC8AFC9BBE8BC5492E4B8C10C905E773C9DAF1F1C2E806A0A9C321D25A42C84' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'C1E644E53CA3EB106B6DCA5ED942A2ECB2052FB636FF0E60FD9E5A5B0783E332' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R554 download exact public v1.5.4 baseline
         shell: bash
         run: |
@@ -238,7 +251,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '4FC8AFC9BBE8BC5492E4B8C10C905E773C9DAF1F1C2E806A0A9C321D25A42C84' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'C1E644E53CA3EB106B6DCA5ED942A2ECB2052FB636FF0E60FD9E5A5B0783E332' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R555 pin the official stable baseline from its immutable release
         shell: bash
         run: |
@@ -267,7 +280,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '4FC8AFC9BBE8BC5492E4B8C10C905E773C9DAF1F1C2E806A0A9C321D25A42C84' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'C1E644E53CA3EB106B6DCA5ED942A2ECB2052FB636FF0E60FD9E5A5B0783E332' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R562 download exact official v1.5.4 installed baseline
         shell: bash
         run: |
@@ -297,7 +310,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '4FC8AFC9BBE8BC5492E4B8C10C905E773C9DAF1F1C2E806A0A9C321D25A42C84' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'C1E644E53CA3EB106B6DCA5ED942A2ECB2052FB636FF0E60FD9E5A5B0783E332' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R565 download exact official v1.5.4 installed baseline
         shell: bash
         run: |
@@ -342,7 +355,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '4FC8AFC9BBE8BC5492E4B8C10C905E773C9DAF1F1C2E806A0A9C321D25A42C84' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'C1E644E53CA3EB106B6DCA5ED942A2ECB2052FB636FF0E60FD9E5A5B0783E332' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
           test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
           curl --fail --show-error --silent --location --retry 3 --max-time 120 \
             'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
@@ -368,7 +381,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '4FC8AFC9BBE8BC5492E4B8C10C905E773C9DAF1F1C2E806A0A9C321D25A42C84' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'C1E644E53CA3EB106B6DCA5ED942A2ECB2052FB636FF0E60FD9E5A5B0783E332' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
           test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
           curl --fail --show-error --silent --location --retry 3 --max-time 120 \
             'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \

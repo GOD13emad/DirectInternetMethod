@@ -107,6 +107,9 @@ new_table(){
 new_chain(){
   nft "add chain inet $TABLE output { type filter hook output priority mangle; policy accept; }"
 }
+injected_mark(){
+  nft "add rule inet $TABLE output meta mark & 0x40000000 == 0x40000000 return"
+}
 mark(){
   nft "add rule inet $TABLE output meta mark & 0xff0000 == 0x80000 return"
 }
@@ -126,17 +129,31 @@ expect_absent(){
 }
 # Positive complete table: production ownership checker and cleanup.
 put_state
-new_table; new_chain; mark; queues
+new_table; new_chain; injected_mark; mark; queues
 nft_table_presence
 nft_table_owned "$PHY"
 cleanup_state_owned
 verify_clean
 expect_absent
 echo "PASS_KERNEL_COMPLETE_OWNED_CLEANUP"
+# A table lacking nfqws injected-packet exemption is NOT owned. Root must
+# preserve it rather than deleting a rule set that may loop reinjected packets.
+put_state
+new_table; new_chain; mark; queues
+if nft_table_owned "$PHY"; then
+  echo "FALSE_OWNERSHIP_WITH_MISSING_INJECTED_MARK" >&2; exit 92
+fi
+if cleanup_state_owned; then rc=0; else rc=$?; fi
+test "$rc" -eq 81
+test -f "$STATE"
+nft list table inet "$TABLE" >/dev/null
+nft delete table inet "$TABLE"
+expect_absent
+echo "PASS_KERNEL_MISSING_NFQWS_INJECTED_MARK_FAIL_CLOSED"
 # Prefix-safe rollback: table only, chain+mark, complete table.
 for mode in empty partial full; do
   put_state; new_table
-  if [ "$mode" != "empty" ]; then new_chain; mark; fi
+  if [ "$mode" != "empty" ]; then new_chain; injected_mark; mark; fi
   if [ "$mode" = "full" ]; then queues; fi
   if cleanup_transient; then rc=0; else rc=$?; fi
   test "$rc" -eq 0
@@ -145,7 +162,7 @@ for mode in empty partial full; do
 done
 # Foreign rule after Start: state must be preserved with explicit diagnostic.
 put_state
-new_table; new_chain; mark; queues
+new_table; new_chain; injected_mark; mark; queues
 nft add rule inet "$TABLE" output ip daddr 203.0.113.7 drop
 if nft_table_transient_owned "$PHY" "$TAILSCALE_COEXIST"; then
   echo "FALSE_FOREIGN_OWNERSHIP" >&2; exit 90
@@ -159,7 +176,7 @@ expect_absent
 echo "PASS_KERNEL_FOREIGN_ROLLBACK_PRESERVATION"
 # Foreign rule after Start completion: stop must fail before killing process.
 put_state
-new_table; new_chain; mark; queues
+new_table; new_chain; injected_mark; mark; queues
 nft add rule inet "$TABLE" output ip daddr 203.0.113.7 drop
 if cleanup_state_owned; then rc=0; else rc=$?; fi
 test "$rc" -eq 81
@@ -170,7 +187,7 @@ expect_absent
 echo "PASS_KERNEL_FOREIGN_STATE_CLEANUP_PRESERVATION"
 # A real foreign table must cause the production EXIT trap to fail.
 put_state
-new_table; new_chain; mark; queues
+new_table; new_chain; injected_mark; mark; queues
 nft add rule inet "$TABLE" output ip daddr 203.0.113.7 drop
 export TABLE PHY TAILSCALE_COEXIST CREATED_TABLE CREATED_LINK CREATED_STATE RUN_HOSTS NPID CPID CTRLD NFQWS
 export -f rollback_on_exit cleanup_transient nft_table_presence nft_table_transient_owned pid_owned remove_dns_link
@@ -188,7 +205,7 @@ test -f "$STATE"
 nft delete table inet "$TABLE"
 expect_absent
 echo "PASS_KERNEL_FAILED_ROLLBACK_EXIT_NONZERO"
-echo "PASS_KERNEL_NAMESPACE_NFT_CONTRACT_7_OF_7"
+echo "PASS_KERNEL_NAMESPACE_NFT_CONTRACT_8_OF_8"
 '''
     script = functions + "\n" + cases
     # Fixture variables must be initialized before Bash set -u cleanup.
