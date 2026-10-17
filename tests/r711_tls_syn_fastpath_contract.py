@@ -32,10 +32,10 @@ verify(h.count(SYN)==1,"SYN_MATCH_EXACT_NARROWED")
 own=fragment("nft_table_owned")
 trans=fragment("nft_table_transient_owned")
 verify('expected_count = 11 if coexist else 10' in own,"COMPLETE_OWNED_ROW_COUNT")
-verify('tcp flags & \\(syn \\| ack\\) == syn return' in own,"COMPLETE_OWNED_SYN_EXACT_MATCH")
-verify('tcp flags & \\(syn \\| ack\\) == syn return' in trans,"TRANSIENT_OWNED_SYN_EXACT_MATCH")
+verify('tcp flags (?:syn / syn,ack|&' in own,"COMPLETE_OWNED_SYN_EXACT_MATCH")
+verify('tcp flags (?:syn / syn,ack|&' in trans,"TRANSIENT_OWNED_SYN_EXACT_MATCH")
 verify('patterns.append(' in trans and
-       trans.index('tcp flags & \\(syn \\| ack\\)')<
+       trans.index('tcp flags (?:syn / syn,ack|&')<
        trans.index('for proto,port in'),"TRANSIENT_SEQUENCE")
 verify('meta mark & 0x0*40000000' in own and 'meta mark & 0x0*ff0000' in own,"PRESERVE_MARKS")
 verify('ROLLBACK_FOREIGN_NFT_PRESERVED' in h,"FAIL_CLOSED_TRANSIENT")

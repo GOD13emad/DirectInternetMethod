@@ -175,7 +175,7 @@ if coexist:
     offset = 5
 queue = r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? bypass)"
 dev = r"oifname (?:" + re.escape(iface) + r"|" + re.escape(chr(34) + iface + chr(34)) + r")"
-syn_rule = dev + r" tcp dport 443 tcp flags & \(syn \| ack\) == syn return"
+syn_rule = dev + r" tcp dport 443 tcp flags (?:syn / syn,ack|& \(syn \| ack\) == syn) return"
 if not re.fullmatch(syn_rule, lines[offset]):
     sys.exit(1)
 offset += 1
@@ -317,7 +317,7 @@ queue=r"ct original packets 1-6 queue (?:flags bypass to 200|num 200(?: flags)? 
 patterns=[r"meta mark & 0x0*40000000 == 0x0*40000000 return"]
 if coexist=="1":
     patterns.append(r"meta mark & 0x0*ff0000 == 0x0*80000 return")
-patterns.append(dev+r" tcp dport 443 tcp flags & \(syn \| ack\) == syn return")
+patterns.append(dev+r" tcp dport 443 tcp flags (?:syn / syn,ack|& \(syn \| ack\) == syn) return")
 for proto,port in (("tcp",80),("tcp",443),("udp",443)):
     patterns.append(dev+r" "+proto+r" dport "+str(port)+r" "+queue)
 rules=inner[2:-1]
