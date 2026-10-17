@@ -259,7 +259,12 @@ internal static class Program
 
     static async Task DownloadWithSystemCurlAsync(string url, string destination, CancellationToken ct)
     {
-        var curl = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "curl.exe");
+        // Resolve the updater helper exclusively from the Windows-owned system directory.
+        // Never let caller PATH or a resolved folder string choose the executable.
+        var systemFolder = Environment.SystemDirectory;
+        if (string.IsNullOrWhiteSpace(systemFolder) || !Path.IsPathFullyQualified(systemFolder))
+            throw new InvalidOperationException("Trusted Windows system directory unavailable.");
+        var curl = Path.GetFullPath(Path.Combine(systemFolder, "curl.exe"));
         if (!File.Exists(curl))
             throw new FileNotFoundException("Windows curl.exe is unavailable.", curl);
 
