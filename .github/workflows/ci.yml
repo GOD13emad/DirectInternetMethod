@@ -87,6 +87,7 @@ jobs:
           python3 -B tests/r541_route_interface_drift_contract.py
           python3 -B tests/r545_periodic_gui_status_contract.py
           python3 -B tests/r678_linux_gui_full_youtube_health_contract.py
+          python3 -B tests/r735_linux_live_core_truth_contract.py
           python3 -B tests/r698_root_watchdog_firstsplit_integrity_contract.py
           python3 -B tests/r702_nfqws_reinjected_mark_contract.py
           python3 -B tests/r709_installer_no_bytecode_cache_contract.py

@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import time
 import urllib.parse
 import urllib.request
@@ -670,6 +671,8 @@ class Window(Adw.ApplicationWindow):
         self.adult_switch=Gtk.Switch(active=self.adult_check_enabled);live_header.append(self.adult_switch)
         self.adult_switch.connect("notify::active",self.on_adult_toggle)
         live.append(live_header)
+        self.core_live=Gtk.Label(label="Core HTTPS: Available when Direct Method is active",xalign=0)
+        self.core_live.add_css_class("dim-label");live.append(self.core_live)
         self.gemini_live=Gtk.Label(label="Gemini: —",xalign=0);self.gemini_live.add_css_class("dim-label");live.append(self.gemini_live)
         self.adult_live=Gtk.Label(label="Adult coverage: "+("Checking…" if self.adult_check_enabled else "Disabled"),xalign=0);self.adult_live.add_css_class("dim-label");live.append(self.adult_live)
         box.append(live)
@@ -719,9 +722,9 @@ class Window(Adw.ApplicationWindow):
             current={"mode":"STALE",
                      "detail":"Automatic status verification failed. Use Refresh or Recovery."}
         visible=self.status.get_text().removeprefix("Status: ")
-        if current["mode"]!=visible:
+        if current["mode"]!=visible and not (current["mode"]=="ACTIVE" and visible=="PARTIAL"):
             self.refresh(state=current,start_checks=False)
-        elif current["detail"]!=self.detail.get_text():
+        elif visible!="PARTIAL" and current["detail"]!=self.detail.get_text():
             self.detail.set_text(current["detail"])
         return True
 
@@ -730,7 +733,8 @@ class Window(Adw.ApplicationWindow):
         self.status.set_text("Status: "+mode);self.detail.set_text(s["detail"])
         for css in ("success","warning","error","dim-label"):
             self.status.remove_css_class(css)
-        self.status.add_css_class("success" if mode=="ACTIVE" else "warning" if mode in ("BLOCKED","CONFIG_REQUIRED","BACKEND_UPDATE_REQUIRED","CONFLICT") else "error" if mode=="STALE" else "dim-label")
+        # R735_GUI_NO_UNVERIFIED_GREEN: ACTIVE proves engine ownership, not site HTTPS.
+        self.status.add_css_class("warning" if mode in ("ACTIVE","BLOCKED","CONFIG_REQUIRED","BACKEND_UPDATE_REQUIRED","CONFLICT") else "error" if mode=="STALE" else "dim-label")
         start_ok=(mode=="OFF")
         stop_ok=(mode in ("ACTIVE","CONFLICT","STALE"))
         recovery_ok=(mode in ("CONFLICT","STALE"))
@@ -746,13 +750,16 @@ class Window(Adw.ApplicationWindow):
         self.live_check_generation+=1
         generation=self.live_check_generation
         if mode=="ACTIVE" and start_checks:
+            if hasattr(self,"core_live"):self.core_live.set_text("Core HTTPS: Checking YouTube, OpenAI, GitHub…")
             self.gemini_live.set_text("Gemini: Checking…")
             self.adult_live.set_text("Adult coverage: Checking…" if self.adult_check_enabled else "Adult coverage: Disabled")
             threading.Thread(target=self.live_checks_worker,args=(generation,),daemon=True).start()
         elif mode=="ACTIVE":
+            if hasattr(self,"core_live"):self.core_live.set_text("Core HTTPS: Press Refresh to verify")
             self.gemini_live.set_text("Gemini: Press Refresh for a live check")
             self.adult_live.set_text("Adult coverage: Press Refresh for a live check" if self.adult_check_enabled else "Adult coverage: Disabled")
         else:
+            if hasattr(self,"core_live"):self.core_live.set_text("Core HTTPS: Available when Direct Method is active")
             self.gemini_live.set_text("Gemini: Available when Direct Method is active")
             self.adult_live.set_text("Adult coverage: Disabled" if not self.adult_check_enabled else "Adult coverage: Available when Direct Method is active")
 
@@ -760,11 +767,31 @@ class Window(Adw.ApplicationWindow):
         try:
             state=json.loads(STATE.read_text(encoding="utf-8"))
             physical=str(state.get("physicalInterface") or "")
+            selected_dns=bool(state.get("selectiveDns") or state.get("selectiveDnsEncrypted"))
         except Exception:
             physical=""
+            selected_dns=False
         if not physical:
+            GLib.idle_add(self.finish_core_checks,generation,{"error":"PHYSICAL_INTERFACE_MISSING"})
             GLib.idle_add(self.finish_live_checks,generation,{"ok":False,"reached":False},[{"ok":False,"reached":False}] if self.adult_check_enabled else None)
             return
+        # Explicit Refresh only; no periodic web polling, no DNS/route mutation.
+        checks={
+            "youtube":("https://www.youtube.com/",{"200"}),
+            "openai":("https://api.openai.com/v1/models",{"200","401","403"}),
+            "github":("https://github.com/",{"200"}),
+        }
+        if not selected_dns:
+            checks["youtube204"]=("https://www.youtube.com/generate_204",{"204"})
+        try:
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                futures={name:pool.submit(probe_url,url,physical,allowed)
+                         for name,(url,allowed) in checks.items()}
+                core={name:future.result() for name,future in futures.items()}
+            core["selected_dns"]=selected_dns
+        except Exception:
+            core={"error":"CORE_PROBE_FAILED"}
+        GLib.idle_add(self.finish_core_checks,generation,core)
         gemini=probe_url("https://gemini.google.com/",physical,{"200","301","302","303","307","308"})
         adult=None
         if self.adult_check_enabled:
@@ -776,6 +803,33 @@ class Window(Adw.ApplicationWindow):
                 probe_url("https://xhamster.com/",physical,allowed),
             ]
         GLib.idle_add(self.finish_live_checks,generation,gemini,adult)
+
+    def finish_core_checks(self,generation,core):
+        if generation!=self.live_check_generation:
+            return False
+        try:
+            if load_state().get("mode")!="ACTIVE":
+                return False
+        except Exception:
+            return False
+        # Selected DNS acceptance intentionally requires the real page only.
+        # DPI-only acceptance requires BOTH page200 and generate_204=204.
+        selected=bool(core.get("selected_dns"))
+        healthy=(all(isinstance(core.get(site),dict) and core[site].get("ok") is True
+                     for site in ("youtube","openai","github"))
+                 and (selected or (isinstance(core.get("youtube204"),dict)
+                                   and core["youtube204"].get("ok") is True)))
+        self.status.set_text("Status: ACTIVE" if healthy else "Status: PARTIAL")
+        self.status.remove_css_class("success")
+        self.status.remove_css_class("warning")
+        self.status.add_css_class("success" if healthy else "warning")
+        if hasattr(self,"core_live"):
+            if healthy:
+                self.core_live.set_text("Core HTTPS: healthy · YouTube page, OpenAI, GitHub" +
+                                        (" · selected DNS" if selected else " · YouTube 204"))
+            else:
+                self.core_live.set_text("Core HTTPS: PARTIAL · at least one service unreachable; Stop remains available")
+        return False
 
     def finish_live_checks(self,generation,gemini,adult):
         if generation!=self.live_check_generation:
