@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":28,"sha256":"F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6"}
+EXPECTED={"version":VERSION,"files":28,"sha256":"4B4A76C02873982DE817380A4A23AAF399EC7B3AE9756CA12D39F1499EE86E2C"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -66,7 +66,7 @@ class Tests(unittest.TestCase):
         self.assertIn('doc.get("version") == "1.5.5-rc1"',got.decode())
         self.assertNotIn('doc.get("version") == "1.5.4"',got.decode())
         self.assertEqual(digest((R/"linux/app/user_uninstall_preserve.py").read_bytes()),declared["sha256"])
-    def test_original_unreleased_candidate_preserved_and_only_uninstaller_delta(self):
+    def test_original_unreleased_candidate_preserved_and_current_source_delta(self):
         # CI does not commit an 8.3 MB obsolete candidate ZIP. Its original
         # manifest and changed single source member are pinned byte-for-byte
         # as compact historical fixtures (all 26 original file SHA entries).
@@ -86,9 +86,13 @@ class Tests(unittest.TestCase):
         self.assertEqual(set(after),set(before)|{"system/upgrade_guard.py","app/socket_fallback.py"})
         self.assertEqual(len(before),26)
         changed={name for name in before if before[name]!=after[name]}
+        # Preserve the immutable historical manifest and explicitly recognize
+        # the new R762 controller hardening in the current unreleased package.
         self.assertEqual(changed,{"app/user_uninstall_preserve.py","app/direct_internet_method.py",
                                  "app/direct_method_helper.sh","app/user_update_transaction.py","system/protected_upgrade_transaction.py",
-                                 "system/upgrade_system.sh","install.sh"})
+                                 "system/upgrade_system.sh","install.sh","system/encrypted_selective_dns.py"})
+        self.assertEqual(after["system/encrypted_selective_dns.py"]["sha256"],
+                         "6E12A906D0B3AD6FD910303B55F89F76EB56C2EF1AABF15549806641285E461F")
         self.assertEqual(after["app/direct_internet_method.py"]["sha256"],
                          "6CF031D2C7F18D7E7E4F1F9A37A1A0EBD3CA589F16F7E26274496F1F53E9317B")
         self.assertIn("encrypted=encrypted_dns_optin_state()",

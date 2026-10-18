@@ -48,16 +48,31 @@ class R762TrustedSystemExec(unittest.TestCase):
         self.assertNotIn("shell",run.call_args.kwargs)
         self.assertEqual(result.stdout,"ok")
 
-    def test_04_every_allowed_binary_is_absolute_root_owned_not_world_writable(self):
+    def test_04_every_allowed_binary_is_absolute_root_owned_when_installed(self):
+        # Hosted CI may not have optional Tailscale/dig tools. Their absence
+        # must fail closed on invocation, not reject testing the whole source.
+        found=0
         for label,name in MOD.TRUSTED_SYSTEM_BINARIES.items():
             path=pathlib.Path(name)
             with self.subTest(label=label):
                 self.assertTrue(path.is_absolute())
+                self.assertEqual(str(path),"/usr/bin/"+label)
+                if not path.exists():
+                    continue
                 self.assertTrue(path.is_file())
                 self.assertFalse(path.is_symlink())
                 st=path.stat()
                 self.assertEqual(st.st_uid,0)
                 self.assertFalse(st.st_mode & 0o022)
+                found+=1
+        self.assertGreaterEqual(found,1)
+
+    def test_05_missing_trusted_binary_fails_closed_before_spawn(self):
+        with patch.dict(MOD.TRUSTED_SYSTEM_BINARIES,
+                        {"resolvectl":"/usr/bin/dim-r763-known-missing-tool"}):
+            with patch.object(MOD.subprocess,"run",side_effect=AssertionError("spawned")):
+                with self.assertRaisesRegex(RuntimeError,"FAIL_CLOSED_TRUSTED_TOOL_MISSING"):
+                    MOD.call("resolvectl","--version")
 
 
 if __name__ == "__main__":
