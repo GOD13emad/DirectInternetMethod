@@ -84,6 +84,7 @@ jobs:
           python3 -B tests/r764_parent_path_security_contract.py
           python3 -B tests/r766_systemd_exec_origin_contract.py
           python3 -B tests/r767_consent_parent_nofollow_contract.py
+          python3 -B tests/r769_root_file_descriptor_boundary_contract.py
           python3 -B tests/encrypted_selective_dns_fake_lifecycle.py
           python3 -B tests/encrypted_selective_dns_gui_consent_contract.py
           python3 -B tests/r537_gui_consent_status_contract.py

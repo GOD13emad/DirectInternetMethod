@@ -50,18 +50,53 @@ SCHEMA=1
 def need(ok,why):
     if not ok:raise RuntimeError("FAIL_CLOSED_"+why)
 def sha(data):return hashlib.sha256(data).hexdigest().upper()
+@contextmanager
+def verified_regular_fd(path):
+    """Pin a regular file by descriptor, never traversing a symlink parent.
+
+    Unlike inspecting path.is_file() then opening later, both the metadata and
+    streamed bytes refer to the same opened inode. This does not modify files.
+    """
+    path=pathlib.Path(path)
+    need(path.is_absolute() and ".." not in path.parts and
+         len(path.parts)>=2,"UNSAFE_ABSOLUTE_FILE_PATH")
+    flags=os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC
+    parent=os.open("/",flags|os.O_DIRECTORY)
+    opened=None
+    try:
+        for part in path.parts[1:-1]:
+            try:
+                child=os.open(part,flags|os.O_DIRECTORY,dir_fd=parent)
+            except OSError as exc:
+                raise RuntimeError("FAIL_CLOSED_UNSAFE_PARENT_COMPONENT") from exc
+            os.close(parent)
+            parent=child
+        try:
+            opened=os.open(path.name,flags,dir_fd=parent)
+        except OSError as exc:
+            raise RuntimeError("FAIL_CLOSED_UNSAFE_FILE_COMPONENT") from exc
+        st=os.fstat(opened)
+        need(stat.S_ISREG(st.st_mode),"UNSAFE_FILE_TYPE_OR_SIZE")
+        yield opened,st
+    finally:
+        if opened is not None:os.close(opened)
+        os.close(parent)
+
 def hash_file(path):
     h=hashlib.sha256()
-    with path.open("rb") as f:
-        for b in iter(lambda:f.read(1048576),b""):h.update(b)
+    with verified_regular_fd(path) as (fd,_):
+        with os.fdopen(os.dup(fd),"rb") as stream:
+            for block in iter(lambda:stream.read(1048576),b""):
+                h.update(block)
     return h.hexdigest().upper()
 def canonical(doc):
     return (json.dumps(doc,sort_keys=True,indent=2,ensure_ascii=False)+"\n").encode("utf8")
 def no_symlink_regular(path,owner=True):
-    need(path.is_file() and not path.is_symlink(),"MISSING_OR_SYMLINK_"+path.name)
-    st=path.stat()
-    if owner:need(st.st_uid==0 and st.st_gid==0,"OWNER_"+path.name)
-    return st
+    path=pathlib.Path(path)
+    need(not path.is_symlink(),"MISSING_OR_SYMLINK_"+path.name)
+    with verified_regular_fd(path) as (_,st):
+        if owner:need(st.st_uid==0 and st.st_gid==0,"OWNER_"+path.name)
+        return st
 def guarded_file_bytes(path, *, native_receipt=False, limit=2**21):
     """Read a bounded file through dirfds, refusing symlinks in EVERY parent.
 
