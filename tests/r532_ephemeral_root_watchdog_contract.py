@@ -36,7 +36,7 @@ WORKER_RETURN = GUARD / "timer-return.json"
 UNIT = "dim-r532-watchdog"
 TIMER = UNIT + ".timer"
 SERVICE = UNIT + ".service"
-ROOT_SHA = "7e539f39ce89e4352655ec820730ba18ea6397b91a970943d8a3a37d739acb3b"
+ROOT_SHA = "a4261e4afd63019bfc953030496bcb0b60949ecc5516c2cc639e081de91641ae"
 USER_SHA = "c1bbf62d99e46cb8e349a38e60891027ff7276f85caceb597548c269203f28bf"
 
 def sha(p:Path)->str:
