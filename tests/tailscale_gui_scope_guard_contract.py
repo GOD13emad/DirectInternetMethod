@@ -35,8 +35,10 @@ env={"json":json,"STATE":state,"SCOPE_FILE":scope,"pathlib":SimpleNamespace(Path
      "os":SimpleNamespace(getuid=lambda:1000),
      "_external_tunnel_active":lambda:False,
      "_tailscale_split_safe":lambda:True,
+     "_top_default_iface":lambda:"enp1s0",
      "_coexistence_backend_ready":lambda:True,
      "selective_dns_optin_state":lambda:"OFF",
+     "encrypted_dns_optin_state":lambda:"OFF",
      "_systemd_unit_matches":lambda *args:False}
 exec(code,env)
 def mode():return env["load_state"]()
@@ -80,7 +82,8 @@ env["_external_tunnel_active"]=lambda:True
 assert mode()["mode"]=="BLOCKED",("exit node / foreign VPN must still block",mode())
 print("PASS unknown VPN/exit node still fail-closed")
 
-assert 'mode in ("BLOCKED","CONFIG_REQUIRED","BACKEND_UPDATE_REQUIRED","CONFLICT")' in src
+assert 'mode in ("ACTIVE","BLOCKED","CONFIG_REQUIRED","BACKEND_UPDATE_REQUIRED","CONFLICT")' in src
+assert 'R735_GUI_NO_UNVERIFIED_GREEN' in src
 assert 'start_ok=(mode=="OFF")' in src
 assert 'w.close();self.refresh()' in src
 print("PASS CONFIG_REQUIRED warning; no Start until Strategy save; immediate refresh")
@@ -102,16 +105,16 @@ exec(helpercode,h_env)
 check=h_env["_coexistence_backend_ready"]
 assert check() is False
 FakePath.entries[good]="safe-backend"
-FakePath.entries[meta]='{"version":"1.5.2","uid":1000}'
+FakePath.entries[meta]='{"version":"1.5.5-rc1","uid":1000}'
 assert check() is True, "pinned helper and metadata must be recognized"
 FakePath.entries[good]="different-backend"
 assert check() is False, "foreign helper must be refused"
 FakePath.entries[good]="safe-backend"
 FakePath.entries[meta]='{"version":"1.5.1","uid":1000}'
 assert check() is False, "old metadata must be refused"
-FakePath.entries[meta]='{"version":"1.5.2","uid":1001}'
+FakePath.entries[meta]='{"version":"1.5.5-rc1","uid":1001}'
 assert check() is False, "different user metadata must be refused"
-FakePath.entries[meta]='{"version":"1.5.2","uid":1000}'
+FakePath.entries[meta]='{"version":"1.5.5-rc1","uid":1000}'
 FakePath.symlinks.add(good)
 assert check() is False, "helper symlink must be refused"
 FakePath.symlinks.clear()

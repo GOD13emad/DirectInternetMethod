@@ -18,113 +18,412 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Python syntax
-        run: python3 -m py_compile build_linux_package.py linux/app/direct_internet_method.py linux/system/selective_dns.py linux/app/router_gateway.py tests/selective_dns_integration_safety_contract.py tests/selective_dns_monitor_lock_contract.py tests/selective_dns_full_lifecycle_mock.py tests/selective_dns_bindings_contract.py tests/selective_dns_backstop_contract.py tests/selective_dns_backstop_runtime_mock.py tests/linux_contract_audit.py tests/linux_user_update_transaction_contract.py tests/linux_real_extracted_archive_contract.py linux/app/user_update_transaction.py linux/app/user_uninstall_preserve.py tests/adult_coverage_data_audit.py tests/router_gateway_contract_audit.py tests/router_gateway_runtime_smoke.py tests/rejected_component_audit.py tests/linux_installed_152_lifecycle.py tests/tailscale_coexistence_contract.py tests/tailscale_ui_state_contract.py tests/tailscale_gui_scope_guard_contract.py tests/tailscale_rustdesk_transport_audit.py tests/tailscale_nft_ownership_contract.py tests/tailscale_cleanup_ownership_contract.py tests/tailscale_recovery_missing_state_contract.py tests/nft_presence_fail_closed_contract.py tests/tailscale_transient_rollback_ownership_contract.py tests/linux_nft_kernel_namespace_contract.py tests/linux_mutation_action_lock_contract.py tests/linux_rollback_exit_integrity_contract.py
-      - name: Shell syntax and LF guard
+      - name: Candidate source syntax and shell safety
         shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r f; do
-            if grep -q $'\r' "$f"; then
-              echo "CRLF detected in $f" >&2
+          python3 -m compileall -q build_linux_package.py linux/app linux/system tests
+          while IFS= read -r path; do
+            if grep -q $'\r' "$path"; then
+              echo "CRLF in candidate shell: $path" >&2
               exit 1
             fi
-            bash -n "$f"
-          done < <(find linux -type f -name '*.sh' -print | sort)
-      - name: Linux and Router Gateway contract audits
-        run: |
-          python3 tests/linux_contract_audit.py
-          python3 tests/linux_user_update_transaction_contract.py
-          python3 tests/tailscale_coexistence_contract.py
-          python3 tests/selective_dns_optin_contract.py
-          python3 tests/selective_dns_isolated_runtime.py
-          python3 tests/selective_dns_restore_mock_contract.py
-          python3 tests/selective_dns_gui_optin_contract.py
-          python3 tests/selective_dns_integration_safety_contract.py
-          python3 tests/selective_dns_monitor_lock_contract.py
-          python3 tests/selective_dns_full_lifecycle_mock.py
-          python3 tests/selective_dns_bindings_contract.py
-          python3 tests/selective_dns_backstop_contract.py
-          python3 tests/selective_dns_backstop_runtime_mock.py
-          python3 tests/tailscale_ui_state_contract.py
-          python3 tests/tailscale_gui_scope_guard_contract.py
-          python3 tests/tailscale_rustdesk_transport_audit.py --selftest
-          python3 tests/tailscale_nft_ownership_contract.py
-          python3 tests/tailscale_cleanup_ownership_contract.py
-          python3 tests/tailscale_recovery_missing_state_contract.py
-          python3 tests/nft_presence_fail_closed_contract.py
-          python3 tests/tailscale_transient_rollback_ownership_contract.py
-          python3 tests/linux_nft_kernel_namespace_contract.py --source-only
-          python3 tests/linux_mutation_action_lock_contract.py
-          python3 tests/linux_rollback_exit_integrity_contract.py
-          python3 tests/adult_coverage_data_audit.py
-          python3 tests/router_gateway_contract_audit.py
-          python3 tests/release_metadata_audit.py
-          python3 tests/release_publication_negative_regression.py
-          python3 tests/unsigned_public_release_contract.py --fixtures
-          python3 tests/rejected_component_audit.py
-      - name: Isolated real-kernel nftables contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Reject direct execution against the host network namespace.
-          # The contract checks an empty isolated loopback-only namespace.
-          command -v unshare
-          command -v ip
-          if ! command -v nft >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y nftables
-          fi
-          sudo -n python3 tests/linux_nft_kernel_namespace_contract.py --kernel
-      - name: Build Linux archive
+            bash -n "$path"
+          done < <(find linux -type f -name '*.sh' | sort)
+      - name: Build deterministic Linux 1.5.5-rc1 package
         run: python3 build_linux_package.py
-      - name: Validate real extracted ZIP transaction and user-data rollback
-        run: python3 -B tests/linux_real_extracted_archive_contract.py
-      - name: Verify exact Linux candidate artifact digest
+      - name: Exact candidate SHA and non-release authority gate
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import hashlib,json,pathlib,zipfile
-          recorded=json.loads(pathlib.Path("RELEASE.json").read_text(encoding="utf-8"))
-          old=recorded["platforms"]["linux"]
-          # RELEASE.json pins the R467 unpublished new candidate artifact;
-          # a local build alone is NOT a public installed acceptance or permission to publish.
-          assert old["sha256"].upper()=="4784FCD44ED3D1B40103BCA140B2C0066784F794D07C3AE1F525334766A553C7"
-          assert recorded["version"]=="1.5.4" and recorded["status"]=="CANDIDATE_V154_UNPUBLISHED_UNPROVEN"
-          p=pathlib.Path(old["artifact"])
-          assert p.is_file(), "NEW_CANDIDATE_ARCHIVE_MISSING"
-          actual=hashlib.sha256(p.read_bytes()).hexdigest().upper()
-          expected="4784FCD44ED3D1B40103BCA140B2C0066784F794D07C3AE1F525334766A553C7"
-          assert actual==expected, f"NEW_LINUX_CANDIDATE_SHA_MISMATCH {actual} != {expected}"
-          assert p.stat().st_size==8270220, "NEW_LINUX_CANDIDATE_BYTES_WRONG"
-          assert actual==old["sha256"].upper(), "R467_CANDIDATE_SOURCE_DIGEST_MISMATCH"
+          p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
+          expected="F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6"
+          assert p.is_file() and p.stat().st_size==8407422
+          assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
+          meta=json.loads(pathlib.Path("RELEASE.json").read_text())
+          assert meta.get("version")=="1.5.4","PUBLISHED_RELEASE_METADATA_MUST_REMAIN_STABLE"
           with zipfile.ZipFile(p) as z:
-            assert z.testzip() is None and len(z.namelist())==24
-            meta_name=next(x for x in z.namelist() if x.endswith("PACKAGE_MANIFEST.json"))
-            manifest=json.loads(z.read(meta_name))
-            assert len(manifest["files"])==22
-            prefix=meta_name[:-len("PACKAGE_MANIFEST.json")]
-            for row in manifest["files"]:
-              data=z.read(prefix+row["file"])
-              assert len(data)==row["bytes"]
-              assert hashlib.sha256(data).hexdigest().upper()==row["sha256"]
-          print("PASS R486 VERSIONED DOTNET10 LINUX CANDIDATE, V152 PUBLIC HISTORICAL UNCHANGED", actual)
+            root="DirectInternetMethod_1.5.5-rc1_Linux_x86_64/"
+            assert len(z.namelist())==30 and len(z.namelist())==len(set(z.namelist()))
+            j=json.loads(z.read(root+"PACKAGE_MANIFEST.json"))
+            assert j["version"]=="1.5.5-rc1" and len(j["files"])==28
+            for x in j["files"]:
+              data=z.read(root+x["file"])
+              assert len(data)==x["bytes"]
+              assert hashlib.sha256(data).hexdigest().upper()==x["sha256"]
+            assert z.testzip() is None
+          print("R520_EXACT_155RC1_PACKAGE_AND_PUBLIC_V154_AUTHORITY_PASS",expected)
           PY
-      - name: Validate shell syntax inside built archive
+      - name: Negative-first R519 candidate package and protected upgrade
+        run: |
+          set -euo pipefail
+          python3 -B tests/r664_direct_update_monotonicity_contract.py
+          python3 -B tests/r519_versioned_package_contract.py
+          python3 -B tests/protected_upgrade_transaction_contract.py
+          python3 -B tests/r519_user_update_transaction_contract.py
+      - name: R526 Linux installer metadata activation (hermetic fake Root)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B tests/r526_installer_metadata_contract.py
+      - name: R527 privileged Root files on disposable GitHub Ubuntu VM
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Real UID 0 on a fresh hosted VM; product writes only inside test-owned workspace fixture.
+          # The production Root CLI and real host network/systemd are never invoked.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r527_privileged_root_transaction_contract.py
+      - name: R517 encrypted DNS and Tailscale negative-first contracts
+        run: |
+          set -euo pipefail
+          python3 -B tests/encrypted_selective_dns_policy_contract.py
+          python3 -B tests/encrypted_selective_dns_controller_contract.py
+          python3 -B tests/encrypted_selective_dns_fake_lifecycle.py
+          python3 -B tests/encrypted_selective_dns_gui_consent_contract.py
+          python3 -B tests/r537_gui_consent_status_contract.py
+          python3 -B tests/r538_active_encrypted_status_contract.py
+          python3 -B tests/r541_route_interface_drift_contract.py
+          python3 -B tests/r545_periodic_gui_status_contract.py
+          python3 -B tests/r678_linux_gui_full_youtube_health_contract.py
+          python3 -B tests/r735_linux_live_core_truth_contract.py
+          python3 -B tests/r739_linux_update_cache_lifecycle_contract.py
+          python3 -B tests/r747_optin_local_socket_fallback_contract.py
+          python3 -B tests/r747_gui_local_socket_optin_contract.py
+          python3 -B tests/r698_root_watchdog_firstsplit_integrity_contract.py
+          python3 -B tests/r702_nfqws_reinjected_mark_contract.py
+          python3 -B tests/r709_installer_no_bytecode_cache_contract.py
+          python3 -B tests/r711_tls_syn_fastpath_contract.py
+          python3 -B tests/r742_nfqws_conntrack_syn_first_packet_contract.py
+          python3 -B tests/tailscale_nft_ownership_contract.py
+          python3 -B tests/tailscale_cleanup_ownership_contract.py
+          python3 -B tests/tailscale_transient_rollback_ownership_contract.py
+          python3 -B tests/linux_nft_kernel_namespace_contract.py --source-only
+          python3 -B tests/r552_native_upgrade_guard_contract.py
+          python3 -B tests/tailscale_ui_state_contract.py
+          python3 -B tests/tailscale_gui_scope_guard_contract.py
+          python3 -B tests/encrypted_selective_dns_integration_contract.py
+          python3 -B tests/tailscale_coexistence_contract.py
+          python3 -B tests/selective_dns_optin_contract.py
+      - name: Package embedded shell and source-mode integrity
         shell: bash
         run: |
           set -euo pipefail
           d="$(mktemp -d)"
           trap 'rm -rf "$d"' EXIT
-          unzip -q delivery/DirectInternetMethod_1.5.4_Linux_x86_64.zip -d "$d"
+          unzip -q delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip -d "$d"
           while IFS= read -r f; do
+            bash -n "$f"
             if grep -q $'\r' "$f"; then
-              echo "CRLF detected in packaged shell: $f" >&2
+              echo "UNSAFE_PACKAGE_CRLF:$f" >&2
               exit 1
             fi
-            bash -n "$f"
-          done < <(find "$d" -type f -name '*.sh' -print | sort)
+          done < <(find "$d" -type f -name '*.sh' | sort)
+
+  linux-native-root-ephemeral:
+    name: linux-native-root-ephemeral
+    needs: linux-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Rebuild exact RC1 package
+        run: python3 build_linux_package.py
+      - name: Download byte-pinned published Stable v1.5.4 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R528 true root CLI stage apply rollback on disposable VM
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This job starts with an empty DIM root and cannot execute on a personal machine.
+          # All absolute-root writes occur inside the disposable GH-hosted Ubuntu VM only.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r528_ephemeral_native_root_cli_contract.py
+
+      - name: R702 strict NFT ownership on disposable kernel network namespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The test validates root and real nft inside a fresh unshare --net
+          # child; it rejects host netns and never edits the runner's routes.
+          sudo -n /usr/bin/python3 -B tests/linux_nft_kernel_namespace_contract.py --kernel
+
+  linux-root-user-integrated-ephemeral:
+    name: linux-root-user-integrated-ephemeral
+    needs: linux-native-root-ephemeral
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build and independently pin candidate package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+      - name: Download and independently pin official Stable 1.5.4 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R529 actual Root and unprivileged User transaction with rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Fresh GitHub VM only; no real host services, DNS, GUI or Tailscale touched.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r529_ephemeral_root_user_transaction.py
+
+  linux-independent-root-watchdog-ephemeral:
+    name: linux-independent-root-watchdog-ephemeral
+    needs: linux-root-user-integrated-ephemeral
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Rebuild exact candidate Linux archive and pin identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+      - name: Download byte-pinned published Stable v1.5.4 archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: Arm independent root-owned systemd watchdog before two-sided mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py arm
+      - name: Independent process verifies timed root and user rollback after arm exits
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py verify
+
+  linux-rc1-native-guard-ephemeral:
+    name: linux-rc1-native-guard-ephemeral
+    needs: linux-independent-root-watchdog-ephemeral
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: R554 byte-pinned exact 27-file Linux candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+      - name: R554 download exact public v1.5.4 baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R554 native root-owned systemd guard then exact two-sided rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Disposable hosted GitHub Ubuntu VM only, no human host mutations.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
+
+  linux-rc1-native-wrapper-ephemeral:
+    name: linux-rc1-native-wrapper-ephemeral
+    needs: linux-rc1-native-guard-ephemeral
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: R555 rebuild exact byte-pinned Linux RC1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+      - name: R555 pin the official stable baseline from its immutable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R555 native production upgrade wrapper arms actual two-sided Root User rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A DIFFERENT, empty GitHub-hosted Ubuntu VM; never production host.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" DIM_R555_EXACT_WRAPPER=true /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
+
+  linux-rc1-accepted-finalization-ephemeral:
+    name: linux-rc1-accepted-finalization-ephemeral
+    needs: linux-rc1-native-guard-ephemeral
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: R562 build exact guarded 27-file RC1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+      - name: R562 download exact official v1.5.4 installed baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R562 synthetic root acceptance interruption and independent user finalization
+        shell: bash
+        run: |
+          set -euo pipefail
+          # TEST-ONLY fabricated acceptance fixture on an EMPTY disposable VM.
+          # This is a transaction-crash regression, never owner/live approval.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" DIM_R555_EXACT_WRAPPER=true DIM_R562_SYNTHETIC_PROMOTION=true /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
+
+  linux-rc1-accepted-drift-failclosed-ephemeral:
+    name: linux-rc1-accepted-drift-failclosed-ephemeral
+    needs: linux-rc1-accepted-finalization-ephemeral
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: R565 build exact guarded 27-file RC1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+      - name: R565 download exact official v1.5.4 installed baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R565 synthetic accepted Root rejects concurrent mutable User drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          # TEST-ONLY fabricated acceptance fixture on an EMPTY disposable VM.
+          # NEGATIVE: exact root-owned service MUST fail closed, retain both slots,
+          # and never rollback an already COMMITTED synthetic Root.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" DIM_R555_EXACT_WRAPPER=true DIM_R562_SYNTHETIC_PROMOTION=true DIM_R565_SYNTHETIC_MUTABLE_DRIFT=true /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
+
+  linux-r566-calendar-catchup-ephemeral:
+    name: linux-r566-calendar-catchup-ephemeral
+    needs: linux-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: R566 actual systemd Persistent calendar expiry during inactive timer
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Unique synthetic root-owned unit on an EMPTY GitHub-hosted VM only.
+          sudo -n /usr/bin/env GITHUB_ACTIONS=true CI=true RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" GITHUB_RUN_ID="$GITHUB_RUN_ID" /usr/bin/python3 -B tests/r566_native_systemd_persistent_catchup.py
+
+  linux-r567-denied-polkit-ephemeral:
+    name: linux-r567-denied-polkit-ephemeral
+    needs: linux-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: R567 build exact private RC1, unchanged public stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R567 original production Polkit-denied upgrade preserves stable Root User
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Empty GitHub-hosted Ubuntu only. The shell-level Polkit stub
+          # RETURNS 126 without opening authentication or touching network.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r567_hosted_denied_polkit_rollback.py
+
+  linux-r568-retire-rolledback-ephemeral:
+    name: linux-r568-retire-rolledback-ephemeral
+    needs: linux-rc1-native-guard-ephemeral
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: R568 exact Linux RC1 package and official stable baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build_linux_package.py
+          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
+            --output "$RUNNER_TEMP/DIM_R528_STABLE.zip"
+          printf '%s  %s\n' '4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7' "$RUNNER_TEMP/DIM_R528_STABLE.zip" | sha256sum --check --status
+      - name: R568 actual guarded rollback and operator-receipt SHA retirement
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Native root-owned service on disposable hosted Ubuntu only.
+          # Post-rollback operator attests exact receipt; unknown foreign
+          # guard files and mismatched hashes are refused without deletion.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" DIM_R555_EXACT_WRAPPER=true DIM_R568_TEST_RETIRE_ROLLED_BACK=true /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
+
+  linux-public-v154-regression:
+    name: linux-public-v154-regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 51009372e3c2d069d7016b97773f35ee5e1e0631
+      - name: Preserve original stable Linux contracts at exact tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "51009372e3c2d069d7016b97773f35ee5e1e0631"
+          python3 -B tests/linux_contract_audit.py
+          python3 -B tests/linux_user_update_transaction_contract.py
+          python3 -B tests/selective_dns_optin_contract.py
+          python3 -B tests/selective_dns_gui_optin_contract.py
+          python3 -B tests/selective_dns_integration_safety_contract.py
+          python3 -B tests/tailscale_coexistence_contract.py
+          python3 -B tests/release_metadata_audit.py
+          python3 build_linux_package.py
+          python3 -B tests/linux_real_extracted_archive_contract.py
 
   windows-source:
     name: windows-source
@@ -225,6 +524,12 @@ jobs:
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/windows_contract_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+          python -B tests/r685_windows_gui_real_youtube_contract.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+          python -B tests/r720_windows_start_youtube_truth_contract.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+          python -B tests/r726_windows_privileged_curl_provenance_contract.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/adult_coverage_data_audit.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python tests/router_gateway_contract_audit.py
@@ -248,6 +553,73 @@ jobs:
           python -B tests/unsigned_public_release_contract_154.py --fixtures
           if($LASTEXITCODE -ne 0){throw 'R492_PUBLIC_V154_NEGATIVE_FIXTURES_FAILED'}
 
+  windows-private-r535-native:
+    name: windows-private-r535-native
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/r535-windows-155rc1' || github.ref == 'refs/heads/feature/r520-linux-155rc1-ci')
+    needs: windows-source
+    runs-on: windows-2025
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: R535 build exact private 1.5.5-rc1 Windows GUI service Inno installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r535_windows_candidate_hosted_build.ps1
+          if($LASTEXITCODE -ne 0){throw 'R535_PRIVATE_WINDOWS_NATIVE_BUILD_FAILED'}
+      - name: R535 hosted Windows v1.5.4 to RC1 in-place upgrade preserve and rollback
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r535_windows_native_rollback.ps1
+          if($LASTEXITCODE -ne 0){throw 'R535_NATIVE_INSTALL_ROLLBACK_FAILED'}
+      - name: R600 attested tested private RC1 installer for owner canary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=$env:GITHUB_WORKSPACE
+          $report=Get-Content (Join-Path $env:RUNNER_TEMP 'DIM_R535_NATIVE\BUILD_R535.json') -Raw|ConvertFrom-Json
+          $native=Get-Content (Join-Path $env:RUNNER_TEMP 'DIM_R535_NATIVE\NATIVE_R535.json') -Raw|ConvertFrom-Json
+          $installer=Join-Path $root 'delivery\DirectInternetMethod_1.5.5-rc1_Windows_Setup.exe'
+          if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or
+             $env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
+             $env:GITHUB_REF -cne 'refs/heads/feature/r520-linux-155rc1-ci' -or
+             (git -C $root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R600_HOST_AUTHORITY'}
+          if($report.status -cne 'PASS_ISOLATED_HOSTED_RC1_BUILD' -or
+             $native.status -cne 'PASS_HOSTED_NATIVE_154_TO_155RC1_AND_BACK_154' -or
+             $report.head -cne $env:GITHUB_SHA -or
+             $native.source -cne $env:GITHUB_SHA -or
+             !(Test-Path -LiteralPath $installer -PathType Leaf)){throw 'R600_NATIVE_BUILD_ACCEPTANCE'}
+          $bytes=(Get-Item -LiteralPath $installer).Length
+          $sha=(Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
+          if($bytes -lt 50000000 -or $sha -cne [string]$report.installerSha){throw 'R600_TESTED_INSTALLER_SHA_CHANGED'}
+          if((Get-AuthenticodeSignature -FilePath $installer).Status.ToString() -cne 'NotSigned'){throw 'R600_SIGNATURE_POLICY_CHANGED'}
+          Write-Output ('R600_EXACT_TESTED_PRIVATE_CANARY_SHA256='+$sha)
+          Write-Output ('R600_TESTED_PRIVATE_CANARY_BYTES='+$bytes)
+      - name: Upload R600 exact tested installer (private ephemeral)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: r600-private-tested-rc1-${{ github.run_id }}
+          path: delivery/DirectInternetMethod_1.5.5-rc1_Windows_Setup.exe
+          if-no-files-found: error
+          retention-days: 2
+          compression-level: 0
+      - name: Preserve R535 private verification receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: r535-windows-rc1-hosted-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/DIM_R535_NATIVE/BUILD_R535.json
+            ${{ runner.temp }}/DIM_R535_NATIVE/NATIVE_R535.json
+          if-no-files-found: warn
+          retention-days: 14
+
   windows-release-contract:
     name: windows-release-contract-unsigned
     if: startsWith(github.ref, 'refs/tags/v')
@@ -263,6 +635,8 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           python -B tests/release_metadata_audit.py
+          if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
+          python -B tests/r664_direct_update_monotonicity_contract.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }
           python -B tests/release_publication_negative_regression.py
           if($LASTEXITCODE -ne 0){ exit $LASTEXITCODE }

@@ -16,7 +16,8 @@ import stat
 import sys
 
 CODE_NAMES = frozenset({
-    "direct_internet_method.py", "router_gateway.py", "router_gateway_core.py",
+    "direct_internet_method.py", "socket_fallback.py",
+    "router_gateway.py", "router_gateway_core.py",
     "direct-internet-method.svg", "uninstall.sh", "user_uninstall_preserve.py",
     "user_update_transaction.py",
 })
@@ -50,7 +51,7 @@ def load_owned():
     meta = app / "INSTALL.json"
     ensure(meta.is_file() and not meta.is_symlink(), "UNINSTALL_INSTALL_METADATA_MISSING")
     doc = json.loads(meta.read_text(encoding="utf8"))
-    ensure(doc.get("schema") == 2 and doc.get("version") == "1.5.4",
+    ensure(doc.get("schema") == 2 and doc.get("version") == "1.5.5-rc1",
            "UNINSTALL_MANIFEST_OWNER_VERSION_UNVERIFIED")
     codes = doc.get("managedCodeSha256")
     launchers = doc.get("managedLaunchersSha256")

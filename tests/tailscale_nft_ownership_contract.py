@@ -18,6 +18,7 @@ fragment="\n".join(function(x) for x in ("nft_table_owned","state_value"))
 table_template='''table inet directinternetmethod {
         chain output {
                 type filter hook output priority mangle; policy accept;
+                meta mark & 0x40000000 == 0x40000000 return
                 %%MARK%%
                 oifname "enp1s0" tcp dport 80 ct original packets 1-6 queue flags bypass to 200
                 oifname "enp1s0" tcp dport 443 ct original packets 1-6 queue flags bypass to 200
@@ -25,9 +26,14 @@ table_template='''table inet directinternetmethod {
         }
 }
 '''
+INJECT_MARK='meta mark & 0x40000000 == 0x40000000 return'
 MARK='meta mark & 0x00ff0000 == 0x00080000 return'
 CASES=[
  ("coexist_mark_and_interface", "system-preserved", MARK, "enp1s0", True),
+ ("coexist_unexpected_tcp443_syn_exemption", "system-preserved", MARK, "enp1s0", False),
+ ("coexist_wrong_tcp443_syn_exemption", "system-preserved", MARK, "enp1s0", False),
+ ("coexist_missing_injected_mark", "system-preserved", MARK, "enp1s0", False),
+ ("coexist_bad_injected_mark", "system-preserved", MARK, "enp1s0", False),
  ("coexist_missing_bypass_mark", "system-preserved", "", "enp1s0", False),
  ("coexist_wrong_interface", "system-preserved", MARK, "enp9s0", False),
  ("coexist_mark_on_wrong_value", "system-preserved", "meta mark & 0xff0000 == 0x00010000 return", "enp1s0", False),
@@ -54,6 +60,10 @@ with tempfile.TemporaryDirectory(prefix="dim_tail_nft_mock_") as d:
  env["MOCK_NFT_TABLE"]=str(table)
  for name,mode,mark,iface,expected in CASES:
   value=table_template.replace("%%MARK%%",mark)
+  if name=="coexist_unexpected_tcp443_syn_exemption":value=value.replace('oifname "enp1s0" tcp dport 80', 'oifname "enp1s0" tcp dport 443 tcp flags & (syn | ack) == syn return\n                oifname "enp1s0" tcp dport 80',1)
+  if name=="coexist_wrong_tcp443_syn_exemption":value=value.replace('oifname "enp1s0" tcp dport 80', 'oifname "enp1s0" tcp dport 443 tcp flags & (syn | ack) == ack return\n                oifname "enp1s0" tcp dport 80',1)
+  if name=="coexist_missing_injected_mark":value=value.replace(INJECT_MARK,"",1)
+  if name=="coexist_bad_injected_mark":value=value.replace(INJECT_MARK,'meta mark & 0x40000000 == 0x00000000 return',1)
   if name=="coexist_bypass_mark_after_first_queue":
    value=table_template.replace("%%MARK%%","")
    first='oifname "enp1s0" tcp dport 80 ct original packets 1-6 queue flags bypass to 200'
