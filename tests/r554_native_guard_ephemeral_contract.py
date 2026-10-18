@@ -20,6 +20,7 @@ import pwd
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 
 R=Path(__file__).resolve().parents[1]
@@ -195,14 +196,25 @@ def run():
             "tailscalePreserved":True,
             "physicalDNSPreserved":True
         }
-        acceptance=Path(temp)/"DIM_R562_TEST_ONLY_ACCEPTANCE.json"
-        need(not acceptance.exists() and not acceptance.is_symlink(),
-             "FOREIGN_TEST_ACCEPTANCE_EXISTS")
-        acceptance.write_text(json.dumps(fixture,sort_keys=True,indent=2)+"\n")
-        need(root_tx.commit(acceptance)["status"]=="COMMITTED",
-             "SYNTHETIC_ROOT_FINALIZATION")
-        need(root_tx.status()["status"]=="COMMITTED" and pending.is_dir(),
-             "ROOT_COMMITTED_USER_STILL_PENDING_WINDOW")
+        # Native Root now refuses receipts routed through user-owned parents.
+        # The old Path(temp) is deliberately runner-owned and must remain
+        # rejected. Generate this TEST-ONLY receipt in a private OS-root
+        # directory instead of weakening the production Root validation.
+        with tempfile.TemporaryDirectory(prefix="DIM_R562_ROOT_PRIVATE_RECEIPT_",dir="/tmp") as td:
+            private=Path(td)
+            st=private.stat()
+            need(st.st_uid==0 and stat.S_IMODE(st.st_mode)==0o700,
+                 "TEST_RECEIPT_ROOT_PRIVATE_PARENT")
+            acceptance=private/"DIM_R562_TEST_ONLY_ACCEPTANCE.json"
+            need(not acceptance.exists() and not acceptance.is_symlink(),
+                 "FOREIGN_TEST_ACCEPTANCE_EXISTS")
+            acceptance.write_text(json.dumps(fixture,sort_keys=True,indent=2)+"\n")
+            acceptance.chmod(0o600)
+            need(acceptance.stat().st_uid==0,"TEST_RECEIPT_ROOT_OWNER")
+            need(root_tx.commit(acceptance)["status"]=="COMMITTED",
+                 "SYNTHETIC_ROOT_FINALIZATION")
+            need(root_tx.status()["status"]=="COMMITTED" and pending.is_dir(),
+                 "ROOT_COMMITTED_USER_STILL_PENDING_WINDOW")
     if synthetic_reject:
         # The *only* deliberate user-data mutation happens on this disposable
         # GitHub runner AFTER synthetically accepting Root and BEFORE user commit.
