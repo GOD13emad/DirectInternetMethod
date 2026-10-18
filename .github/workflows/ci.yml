@@ -82,6 +82,7 @@ jobs:
           python3 -B tests/encrypted_selective_dns_controller_contract.py
           python3 -B tests/r762_trusted_dns_system_binary_origin_contract.py
           python3 -B tests/r764_parent_path_security_contract.py
+          python3 -B tests/r766_systemd_exec_origin_contract.py
           python3 -B tests/encrypted_selective_dns_fake_lifecycle.py
           python3 -B tests/encrypted_selective_dns_gui_consent_contract.py
           python3 -B tests/r537_gui_consent_status_contract.py

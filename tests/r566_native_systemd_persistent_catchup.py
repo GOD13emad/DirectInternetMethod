@@ -14,6 +14,8 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -26,8 +28,34 @@ PIN_GUARD="7CA937E3589DC4F33C58658DBAD98E4A6308FCBC456B1D460F027FF499B3B09D"
 def need(value,reason):
     if not value:raise RuntimeError("R566_SYSTEMD_FAIL_CLOSED_"+reason)
 
+# This disposable Root systemd test must not become a generic command
+# launcher. Only known unit operations, under the one absolute OS-owned
+# systemctl executable, are permitted; all variable unit IDs are numeric.
+UNIT_RE=re.compile(r"dim-r566-catchup-[0-9]{1,29}\.(?:timer|service)\Z")
+
+
 def run(*args,timeout=12):
-    p=subprocess.run(args,text=True,capture_output=True,timeout=timeout,check=False)
+    need(len(args)>=2 and all(type(item) is str for item in args) and
+         args[0]=="/usr/bin/systemctl","UNTRUSTED_COMMAND_ORIGIN")
+    program=Path("/usr/bin/systemctl")
+    need(program.is_file() and not program.is_symlink() and
+         program.stat().st_uid==0 and not program.stat().st_mode & 0o022,
+         "UNTRUSTED_SYSTEMCTL_BINARY")
+    action=args[1]
+    if action=="daemon-reload":
+        need(args==("/usr/bin/systemctl","daemon-reload"),
+             "INVALID_DAEMON_RELOAD_ARGUMENTS")
+    elif action in ("start","stop"):
+        need(len(args)==3 and bool(UNIT_RE.fullmatch(args[2])),
+             "INVALID_SYSTEMD_UNIT_ARGUMENTS")
+    elif action=="show":
+        need(len(args)==6 and bool(UNIT_RE.fullmatch(args[2])) and
+             args[3:]==("-p","ActiveState","--value"),
+             "INVALID_SYSTEMD_SHOW_ARGUMENTS")
+    else:
+        need(False,"UNTRUSTED_SYSTEMCTL_ACTION")
+    p=subprocess.run(("/usr/bin/systemctl",*args[1:]),text=True,
+                     capture_output=True,timeout=timeout,check=False)
     need(p.returncode==0,"COMMAND_"+str(p.returncode)+"_"+p.stderr[-170:].replace(" ","_"))
     return p.stdout.strip()
 
