@@ -39,8 +39,8 @@ jobs:
           python3 - <<'PY'
           import hashlib,json,pathlib,zipfile
           p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
-          expected="387216967DC1E0681D122B7EBADA721983E7FC2C618FF0E1E7C1535DB5ED497F"
-          assert p.is_file() and p.stat().st_size==8412857
+          expected="FA99FCAA8E03C712C0D78EAEE39C2CF102427A2CE9866FD97E1F76059775F14F"
+          assert p.is_file() and p.stat().st_size==8414235
           assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
           meta=json.loads(pathlib.Path("RELEASE.json").read_text())
           assert meta.get("version")=="1.5.4","PUBLISHED_RELEASE_METADATA_MUST_REMAIN_STABLE"
@@ -172,7 +172,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '387216967DC1E0681D122B7EBADA721983E7FC2C618FF0E1E7C1535DB5ED497F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'FA99FCAA8E03C712C0D78EAEE39C2CF102427A2CE9866FD97E1F76059775F14F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download and independently pin official Stable 1.5.4 package
         shell: bash
         run: |
@@ -201,7 +201,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '387216967DC1E0681D122B7EBADA721983E7FC2C618FF0E1E7C1535DB5ED497F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'FA99FCAA8E03C712C0D78EAEE39C2CF102427A2CE9866FD97E1F76059775F14F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download byte-pinned published Stable v1.5.4 archive
         shell: bash
         run: |
@@ -234,7 +234,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '387216967DC1E0681D122B7EBADA721983E7FC2C618FF0E1E7C1535DB5ED497F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'FA99FCAA8E03C712C0D78EAEE39C2CF102427A2CE9866FD97E1F76059775F14F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R554 download exact public v1.5.4 baseline
         shell: bash
         run: |
@@ -263,7 +263,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '387216967DC1E0681D122B7EBADA721983E7FC2C618FF0E1E7C1535DB5ED497F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'FA99FCAA8E03C712C0D78EAEE39C2CF102427A2CE9866FD97E1F76059775F14F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R555 pin the official stable baseline from its immutable release
         shell: bash
         run: |
@@ -292,7 +292,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '387216967DC1E0681D122B7EBADA721983E7FC2C618FF0E1E7C1535DB5ED497F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'FA99FCAA8E03C712C0D78EAEE39C2CF102427A2CE9866FD97E1F76059775F14F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R562 download exact official v1.5.4 installed baseline
         shell: bash
         run: |
@@ -322,7 +322,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '387216967DC1E0681D122B7EBADA721983E7FC2C618FF0E1E7C1535DB5ED497F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'FA99FCAA8E03C712C0D78EAEE39C2CF102427A2CE9866FD97E1F76059775F14F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R565 download exact official v1.5.4 installed baseline
         shell: bash
         run: |
@@ -367,7 +367,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '387216967DC1E0681D122B7EBADA721983E7FC2C618FF0E1E7C1535DB5ED497F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'FA99FCAA8E03C712C0D78EAEE39C2CF102427A2CE9866FD97E1F76059775F14F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
           test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
           curl --fail --show-error --silent --location --retry 3 --max-time 120 \
             'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
@@ -393,7 +393,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' '387216967DC1E0681D122B7EBADA721983E7FC2C618FF0E1E7C1535DB5ED497F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'FA99FCAA8E03C712C0D78EAEE39C2CF102427A2CE9866FD97E1F76059775F14F' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
           test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
           curl --fail --show-error --silent --location --retry 3 --max-time 120 \
             'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
