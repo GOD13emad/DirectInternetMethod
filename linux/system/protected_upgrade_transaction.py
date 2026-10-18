@@ -60,7 +60,8 @@ def verified_regular_fd(path):
     path=pathlib.Path(path)
     need(path.is_absolute() and ".." not in path.parts and
          len(path.parts)>=2,"UNSAFE_ABSOLUTE_FILE_PATH")
-    flags=os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC
+    # O_NONBLOCK prevents a user-owned FIFO from blocking Root before fstat.
+    flags=os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC|os.O_NONBLOCK
     parent=os.open("/",flags|os.O_DIRECTORY)
     opened=None
     try:
@@ -108,7 +109,8 @@ def guarded_file_bytes(path, *, native_receipt=False, limit=2**21):
     path=pathlib.Path(path)
     need(path.is_absolute() and ".." not in path.parts and
          len(path.parts)>=2, "UNSAFE_ABSOLUTE_FILE_PATH")
-    flags=os.O_RDONLY|os.O_CLOEXEC|os.O_NOFOLLOW
+    # The source package is user-owned: never block on a FIFO before type check.
+    flags=os.O_RDONLY|os.O_CLOEXEC|os.O_NOFOLLOW|os.O_NONBLOCK
     directory=os.open("/",flags|os.O_DIRECTORY)
     opened=None
     try:
