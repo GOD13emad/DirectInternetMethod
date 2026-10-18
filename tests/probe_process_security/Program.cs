@@ -32,6 +32,22 @@ void Reject(string label, string url, string ip)
 
 const string valid = "https://www.youtube.com/generate_204";
 const string physical = "192.168.8.42";
+// R759 NEGATIVE-FIRST: dangerous interface inputs must never fall back to
+// wildcard/loopback/broadcast routing while probing supposedly physical egress.
+Reject("nonphysical_unspecified", valid, "0.0.0.0");
+Reject("nonphysical_loopback", valid, "127.0.0.1");
+Reject("nonphysical_multicast", valid, "224.0.0.1");
+Reject("nonphysical_limited_broadcast", valid, "255.255.255.255");
+Reject("nonphysical_link_local", valid, "169.254.10.20");
+Reject("nonphysical_zero_net", valid, "0.1.2.3");
+Reject("nonphysical_loopback_other", valid, "127.4.5.6");
+Reject("nonphysical_reserved", valid, "240.0.0.1");
+Check("physical_usb_rfc1918_ipv4_accepted", () =>
+    Need(ProbeProcessBuilder.Create(valid, "10.106.38.164").ArgumentList[2] == "10.106.38.164",
+         "Safe USB private IPv4 was rejected"));
+Check("physical_carrier_grade_nat_ipv4_accepted", () =>
+    Need(ProbeProcessBuilder.Create(valid, "100.100.64.2").ArgumentList[2] == "100.100.64.2",
+         "Safe CGNAT IPv4 was rejected"));
 
 Check("fixed_system32_curl_not_path_or_cwd", () =>
 {

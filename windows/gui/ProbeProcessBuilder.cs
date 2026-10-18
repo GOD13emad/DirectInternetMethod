@@ -26,6 +26,14 @@ internal static class ProbeProcessBuilder
             !string.Equals(ip.ToString(), ipText, StringComparison.Ordinal))
             throw new ArgumentException("Probe requires one canonical physical IPv4 address.", nameof(localIp));
 
+        // An unspecified source may select the system default route rather
+        // than the verified physical adapter. Loopback, link-local,
+        // multicast, and reserved IPv4 are never valid physical egress.
+        var octets = ip.GetAddressBytes();
+        if (octets[0] == 0 || octets[0] == 127 || octets[0] >= 224 ||
+            (octets[0] == 169 && octets[1] == 254))
+            throw new ArgumentException("Probe requires a physical unicast IPv4 address.", nameof(localIp));
+
         if (!Uri.TryCreate(url, UriKind.Absolute, out var endpoint) ||
             endpoint.Scheme != Uri.UriSchemeHttps ||
             endpoint.Port != 443 ||
