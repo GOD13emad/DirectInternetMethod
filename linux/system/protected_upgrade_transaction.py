@@ -62,6 +62,53 @@ def no_symlink_regular(path,owner=True):
     st=path.stat()
     if owner:need(st.st_uid==0 and st.st_gid==0,"OWNER_"+path.name)
     return st
+def guarded_file_bytes(path, *, native_receipt=False, limit=2**21):
+    """Read a bounded file through dirfds, refusing symlinks in EVERY parent.
+
+    Package bytes may be user-owned; their exact SHA is separately pinned.
+    Final native acceptance is more privileged and must have an OS-owned,
+    non-group/world-writable file under safe OS-owned directories. A root-owned
+    sticky directory (for example /tmp) may contain a private root test slot.
+    """
+    path=pathlib.Path(path)
+    need(path.is_absolute() and ".." not in path.parts and
+         len(path.parts)>=2, "UNSAFE_ABSOLUTE_FILE_PATH")
+    flags=os.O_RDONLY|os.O_CLOEXEC|os.O_NOFOLLOW
+    directory=os.open("/",flags|os.O_DIRECTORY)
+    opened=None
+    try:
+        for part in path.parts[1:-1]:
+            try:
+                child=os.open(part,flags|os.O_DIRECTORY,dir_fd=directory)
+            except OSError as exc:
+                raise RuntimeError("FAIL_CLOSED_UNSAFE_PARENT_COMPONENT") from exc
+            os.close(directory);directory=child
+            if native_receipt:
+                entry=os.fstat(directory)
+                need(entry.st_uid==0 and
+                     (not entry.st_mode & 0o022 or
+                      (bool(entry.st_mode & stat.S_ISVTX) and
+                       stat.S_ISDIR(entry.st_mode))),
+                     "RECEIPT_PARENT_OWNER")
+        try:
+            opened=os.open(path.name,flags,dir_fd=directory)
+        except OSError as exc:
+            raise RuntimeError("FAIL_CLOSED_UNSAFE_FILE_COMPONENT") from exc
+        info=os.fstat(opened)
+        need(stat.S_ISREG(info.st_mode) and 0<=info.st_size<=limit,
+             "UNSAFE_FILE_TYPE_OR_SIZE")
+        if native_receipt:
+            need(info.st_uid==0 and info.st_gid==0 and
+                 not info.st_mode & 0o022, "UNTRUSTED_RECEIPT_OWNER")
+        with os.fdopen(os.dup(opened),"rb") as reader:
+            content=reader.read(limit+1)
+        need(len(content)<=limit, "FILE_SIZE_CHANGED_DURING_READ")
+        return content
+    finally:
+        if opened is not None:os.close(opened)
+        os.close(directory)
+
+
 def flush_dir(directory):
     f=os.open(directory,os.O_DIRECTORY)
     try:os.fsync(f)
@@ -187,7 +234,7 @@ class RootTransaction:
             for name,rel,target,old,want,mode in FILES:
                 file=src/rel
                 no_symlink_regular(file,False)
-                blob=file.read_bytes()
+                blob=guarded_file_bytes(file)
                 need(sha(blob)==want,"PACKAGE_SOURCE_SHA_"+name)
                 data[name]=blob
             self.pending.mkdir(mode=0o700)
@@ -323,7 +370,8 @@ class RootTransaction:
             acceptance=pathlib.Path(acceptance)
             need(acceptance.is_file() and not acceptance.is_symlink(),
                  "NATIVE_ACCEPTANCE_MISSING")
-            receipt=json.loads(acceptance.read_text("utf8"))
+            receipt=json.loads(guarded_file_bytes(
+                acceptance,native_receipt=self.native,limit=65536).decode("utf8"))
             need(receipt.get("revision")=="R519" and
                  receipt.get("status")=="PASS_NATIVE_ROOT_UPGRADE" and
                  receipt.get("sourceRootSHA")==sha(canonical(m["files"])) and
