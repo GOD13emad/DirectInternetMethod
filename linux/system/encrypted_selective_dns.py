@@ -58,8 +58,30 @@ def need(condition: bool, why: str) -> None:
         raise RuntimeError("FAIL_CLOSED_" + why)
 
 
+# Root action helpers must never resolve their executable from the caller's PATH.
+# All call sites select one of these fixed, OS-owned executables.
+TRUSTED_SYSTEM_BINARIES = {
+    "resolvectl": "/usr/bin/resolvectl",
+    "tailscale": "/usr/bin/tailscale",
+    "nmcli": "/usr/bin/nmcli",
+    "ip": "/usr/bin/ip",
+    "ss": "/usr/bin/ss",
+    "systemctl": "/usr/bin/systemctl",
+    "busctl": "/usr/bin/busctl",
+    "dig": "/usr/bin/dig",
+    "systemd-run": "/usr/bin/systemd-run",
+}
+
+
 def call(*args: str, seconds: int = 10, ok: bool = True) -> subprocess.CompletedProcess:
-    p = subprocess.run(args, capture_output=True, text=True, timeout=seconds)
+    need(bool(args) and type(args[0]) is str and args[0] in TRUSTED_SYSTEM_BINARIES,
+         "UNTRUSTED_COMMAND")
+    executable = pathlib.Path(TRUSTED_SYSTEM_BINARIES[args[0]])
+    need(executable.is_file() and not executable.is_symlink(), "TRUSTED_TOOL_MISSING")
+    mode = executable.stat()
+    need(mode.st_uid == 0 and mode.st_mode & 0o022 == 0, "TRUSTED_TOOL_OWNER")
+    p = subprocess.run((str(executable), *args[1:]), capture_output=True, text=True,
+                       timeout=seconds)
     if ok and p.returncode:
         raise RuntimeError("CALL_FAILED_" + repr(args[:3]) + "_" + str(p.returncode) +
                            "_" + p.stderr[-100:])
