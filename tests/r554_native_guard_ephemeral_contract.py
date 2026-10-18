@@ -201,11 +201,11 @@ def run():
         # rejected. Generate this TEST-ONLY receipt in a private OS-root
         # directory instead of weakening the production Root validation.
         with tempfile.TemporaryDirectory(prefix="DIM_R562_ROOT_PRIVATE_RECEIPT_",dir="/tmp") as td:
-            private=Path(td)
-            st=private.stat()
+            acceptance_dir=Path(td)
+            st=acceptance_dir.stat()
             need(st.st_uid==0 and stat.S_IMODE(st.st_mode)==0o700,
                  "TEST_RECEIPT_ROOT_PRIVATE_PARENT")
-            acceptance=private/"DIM_R562_TEST_ONLY_ACCEPTANCE.json"
+            acceptance=acceptance_dir/"DIM_R562_TEST_ONLY_ACCEPTANCE.json"
             need(not acceptance.exists() and not acceptance.is_symlink(),
                  "FOREIGN_TEST_ACCEPTANCE_EXISTS")
             acceptance.write_text(json.dumps(fixture,sort_keys=True,indent=2)+"\n")
