@@ -62,7 +62,8 @@ def preflight_vm():
     need(os.environ.get("GITHUB_ACTIONS")=="true" and os.environ.get("CI")=="true"
          and os.environ.get("RUNNER_ENVIRONMENT")=="github-hosted"
          and os.environ.get("GITHUB_REPOSITORY")=="GOD13emad/DirectInternetMethod"
-         and Path(os.environ.get("GITHUB_WORKSPACE","")).resolve()==R.resolve(),
+         and os.environ.get("GITHUB_WORKSPACE")==str(R)
+         and R==Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod"),
          "GITHUB_EPHEMERAL_ONLY")
     need(Path("/proc/1/comm").read_text().strip()=="systemd","SYSTEMD_PID1")
     runner=pwd.getpwnam("runner")

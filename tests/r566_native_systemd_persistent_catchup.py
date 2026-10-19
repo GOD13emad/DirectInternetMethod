@@ -65,7 +65,9 @@ def preflight():
     need(env.get("GITHUB_ACTIONS")=="true" and env.get("CI")=="true" and
          env.get("RUNNER_ENVIRONMENT")=="github-hosted" and
          env.get("GITHUB_REPOSITORY")=="GOD13emad/DirectInternetMethod" and
-         Path(env.get("GITHUB_WORKSPACE","")).resolve()==ROOT,"HOSTED_RUNNER_ONLY")
+         env.get("GITHUB_WORKSPACE")==str(ROOT) and
+         ROOT==Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod"),
+         "HOSTED_RUNNER_ONLY")
     need(Path("/proc/1/comm").read_text().strip()=="systemd","SYSTEMD_PID_ONE")
     need(hashlib.sha256(GUARD.read_bytes()).hexdigest().upper()==PIN_GUARD,"PINNED_GUARD")
     spec=importlib.util.spec_from_file_location("r566_exact_production_guard",GUARD)
@@ -77,12 +79,15 @@ def main():
     guard=preflight()
     identity=os.environ["GITHUB_RUN_ID"]
     need(identity.isdecimal() and len(identity)<30,"RUN_ID")
-    name="dim-r566-catchup-"+identity
+    # Fixed, fail-closed unit ID on a fresh disposable VM; the GitHub run
+    # identifier is checked for provenance but never enters a privileged
+    # filesystem pathname or systemd unit name.
+    name="dim-r566-catchup-784"
     service=Path("/etc/systemd/system")/(name+".service")
     timer=Path("/etc/systemd/system")/(name+".timer")
     for target in (service,timer):
         need(not target.exists() and not target.is_symlink(),"FOREIGN_SYSTEMD_UNIT")
-    with tempfile.TemporaryDirectory(prefix="dim-r566-"+identity+"-",dir="/run") as directory:
+    with tempfile.TemporaryDirectory(prefix="dim-r566-784-",dir="/run") as directory:
         root=Path(directory)
         os.chmod(root,0o700)
         marker=root/"fired.json"

@@ -53,7 +53,8 @@ def hosted():
     require(e.get("CI")=="true" and e.get("GITHUB_ACTIONS")=="true" and
         e.get("RUNNER_ENVIRONMENT")=="github-hosted" and
         e.get("GITHUB_REPOSITORY")=="GOD13emad/DirectInternetMethod" and
-        Path(e.get("GITHUB_WORKSPACE","")).resolve()==BASE,
+        e.get("GITHUB_WORKSPACE")==str(BASE) and
+        BASE==Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod"),
         "FRESH_GITHUB_VM_ONLY")
     runner=pwd.getpwnam("runner")
     require(runner.pw_dir=="/home/runner" and runner.pw_uid>0,"RUNNER")

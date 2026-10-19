@@ -75,8 +75,11 @@ def verify_host():
     need(os.environ.get("RUNNER_ENVIRONMENT")=="github-hosted" and
          os.environ.get("GITHUB_REPOSITORY")=="GOD13emad/DirectInternetMethod",
          "EPHEMERAL_REPO_RUNNER_REQUIRED")
-    need(Path(os.environ.get("GITHUB_WORKSPACE","")).resolve()==BASE.resolve(),"EXACT_WORKSPACE")
-    need(Path(os.environ.get("RUNNER_TEMP","/does-not-exist")).is_dir(),"RUNNER_TEMP_REQUIRED")
+    need(os.environ.get("GITHUB_WORKSPACE")==str(BASE) and
+         BASE==Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod"),
+         "EXACT_WORKSPACE")
+    need(os.environ.get("RUNNER_TEMP")=="/home/runner/work/_temp" and
+         Path("/home/runner/work/_temp").is_dir(),"RUNNER_TEMP_REQUIRED")
     need(pwd.getpwnam("runner").pw_dir=="/home/runner","TEST_RUNNER_USER")
     need(Path("/proc/1/comm").read_text().strip()=="systemd","INDEPENDENT_SYSTEMD_PID1")
     need(WORKER_SOURCE.is_file() and not WORKER_SOURCE.is_symlink(),"GUARD_SOURCE_MISSING")

@@ -47,9 +47,13 @@ def assert_ephemeral_runner():
     runner_temp = os.environ.get("RUNNER_TEMP")
     if not workspace or not runner_temp:
         raise RuntimeError("R527_RUNNER_PATHS_REQUIRED")
-    if Path(workspace).resolve() != BASE.resolve():
+    # The runner directory is a *literal* repository-owned CI location, not
+    # an arbitrary root path derived from job-provided environment variables.
+    expected_workspace=Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod")
+    expected_temp=Path("/home/runner/work/_temp")
+    if workspace!=str(expected_workspace) or BASE!=expected_workspace:
         raise RuntimeError("R527_WORKSPACE_MISMATCH")
-    if not Path(runner_temp).is_dir():
+    if runner_temp!=str(expected_temp) or not expected_temp.is_dir() or expected_temp.is_symlink():
         raise RuntimeError("R527_RUNNER_TEMP_MISSING")
     if BASE == Path("/") or BASE == Path("/usr") or BASE == Path("/home"):
         raise RuntimeError("R527_REAL_ROOT_BLOCKED")

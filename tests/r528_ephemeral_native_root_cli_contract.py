@@ -29,6 +29,8 @@ CANDIDATE_ARCHIVE="DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip"
 STABLE_PREFIX="DirectInternetMethod_1.5.4_Linux_x86_64/"
 CANDIDATE_PREFIX="DirectInternetMethod_1.5.5-rc1_Linux_x86_64/"
 SOURCE=BASE/"linux/system/protected_upgrade_transaction.py"
+HOSTED_WORKSPACE=Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod")
+HOSTED_TEMP=Path("/home/runner/work/_temp")
 MAPPING={
  "selective_dns.py":"system/selective_dns.py",
  "control.sh":"system/control.sh",
@@ -73,11 +75,13 @@ def prerequisites():
          "NOT_HOSTED_RUNNER")
     workspace=os.environ.get("GITHUB_WORKSPACE")
     runner_temp=os.environ.get("RUNNER_TEMP")
-    need(bool(workspace) and Path(workspace).resolve()==BASE.resolve(),"WORKSPACE_AUTHORITY")
-    need(bool(runner_temp) and Path(runner_temp).is_dir(),"RUNNER_TEMP_AUTHORITY")
+    need(workspace==str(HOSTED_WORKSPACE) and BASE==HOSTED_WORKSPACE,
+         "WORKSPACE_AUTHORITY")
+    need(runner_temp==str(HOSTED_TEMP) and HOSTED_TEMP.is_dir() and
+         not HOSTED_TEMP.is_symlink(),"RUNNER_TEMP_AUTHORITY")
     need(json.loads((BASE/"RELEASE.json").read_text())["version"]=="1.5.4",
          "STABLE_RELEASE_AUTHORITY")
-    stable=Path(runner_temp)/"DIM_R528_STABLE.zip"
+    stable=HOSTED_TEMP/"DIM_R528_STABLE.zip"
     candidate=BASE/"delivery"/CANDIDATE_ARCHIVE
     need(stable.is_file() and fsha(stable)==STABLE_SHA,"PINNED_PUBLIC_STABLE_ZIP")
     need(candidate.is_file() and fsha(candidate)==CANDIDATE_SHA,
@@ -101,7 +105,7 @@ def prerequisites():
     need(user.pw_uid>0 and user.pw_dir=="/home/runner","STANDARD_HOSTED_RUNNER_USER")
     need(not Path("/home/runner/.local/share/DirectInternetMethod/directmethod/state.json").exists(),
          "EXISTING_ACTIVE_USER_ENGINE")
-    return stable,candidate,Path(runner_temp),user
+    return stable,candidate,HOSTED_TEMP,user
 
 def archive_verify(z:zipfile.ZipFile,prefix:str,expected_count:int):
     names=z.namelist()
