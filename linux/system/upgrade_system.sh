@@ -40,7 +40,7 @@ PY
 # Arm the separately root-owned boot-persistent R553 guard BEFORE any
 # protected Root Stage/Apply. Source identity is a frozen independent SHA;
 # a signed-in OS administrator still authenticates through the installer.
-GUARD_SHA="7769872F47112496AA1B0B3F0A0FFDBA5F8CF72226505462AA42FBBE0C8D70F0"
+GUARD_SHA="B66A8B493C343E539EA9FC2FAAA26AD0AEBA067BE07ABCDAD3009502206A52FB"
 [ -f "$SRC/system/upgrade_guard.py" ] && [ ! -L "$SRC/system/upgrade_guard.py" ] || {
     echo "R553_GUARD_SOURCE_MISSING_OR_SYMLINK" >&2; exit 87;
 }

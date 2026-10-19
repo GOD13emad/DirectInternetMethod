@@ -231,9 +231,31 @@ def staged_user_manifest(home:Path,uid:int,installed:Path):
          j.get("version")==VERSION and j.get("previousVersion")==OLD_USER,
          "USER_STAGE_IDENTITY")
     managed=j.get("managed");prior=j.get("old");mutable=j.get("mutable")
-    need(isinstance(managed,dict) and len(managed) in (7,8) and
-         isinstance(prior,dict) and set(prior)==set(managed)|{"INSTALL.json"} and
-         isinstance(mutable,dict) and len(mutable)==9,
+    # Exact package user-code file set; providers.json is managed only when
+    # the prior installed provider still matches its recorded managed SHA.
+    # R784 physical MMZ proved the old (7,8) cardinality wrongly rejected a
+    # legitimate 9-member stage with a managed provider. Never broaden this
+    # check to arbitrary ninth/foreign files.
+    user_files=frozenset((
+        "direct_internet_method.py","socket_fallback.py","router_gateway.py",
+        "router_gateway_core.py","direct-internet-method.svg","uninstall.sh",
+        "user_uninstall_preserve.py","user_update_transaction.py"))
+    provider="router_gateway/providers.json"
+    mutable_files=frozenset((
+        "settings.json","strategy.txt","scope.txt","custom-hosts.txt",
+        "adult-enabled.txt","adult-hosts.txt","adult-hosts.meta.json",
+        "encrypted-dns-optin.txt","selective-dns-optin.txt"))
+    managed_provider=j.get("providerManaged")
+    expected=user_files|({provider} if managed_provider is True else set())
+    provider_sha=j.get("providerSha")
+    need(type(managed_provider) is bool and
+         isinstance(managed,dict) and set(managed)==expected and
+         isinstance(prior,dict) and set(prior)==expected|{"INSTALL.json"} and
+         isinstance(mutable,dict) and set(mutable)==mutable_files and
+         (provider_sha is None if managed_provider is False else
+          isinstance(provider_sha,str) and
+          isinstance(managed[provider],dict) and
+          managed[provider].get("sha")==provider_sha),
          "USER_STAGE_FILESET")
     meta=prior["INSTALL.json"]
     need(isinstance(meta,dict) and meta.get("exists") is True and
