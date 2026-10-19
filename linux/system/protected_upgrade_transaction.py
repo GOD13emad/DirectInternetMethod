@@ -287,6 +287,22 @@ class RootTransaction:
                 blob=guarded_file_bytes(file)
                 need(sha(blob)==want,"PACKAGE_SOURCE_SHA_"+name)
                 data[name]=blob
+            # R778: both protected baseline snapshots must be captured through
+            # the same pinned descriptor used to check identity and permissions.
+            # Fail before creating a Root pending slot if files changed after
+            # _baseline(), rather than retaining an untrusted backup.
+            originals={}
+            for name,rel,target,old,new,mode in FILES:
+                if old:
+                    old_blob=checked_regular_bytes(
+                        self.p(target),owner=self.native,mode=mode,
+                        max_bytes=1048576)
+                    need(sha(old_blob)==old,"BASELINE_BACKUP_CHANGED_"+name)
+                    originals[name]=old_blob
+            orig=checked_regular_bytes(
+                self.meta,owner=self.native,mode=0o644,max_bytes=65536)
+            need(json.loads(orig.decode("utf8"))==before,
+                 "BASELINE_METADATA_CHANGED_AFTER_PREFLIGHT")
             self.pending.mkdir(mode=0o700)
             (self.pending/"old").mkdir(mode=0o700)
             (self.pending/"new").mkdir(mode=0o700)
@@ -295,9 +311,8 @@ class RootTransaction:
                 for name,rel,target,old,new,mode in FILES:
                     atomic_bytes(self.pending/"new"/name,data[name],0o600,self.native)
                     if old:
-                        atomic_bytes(self.pending/"old"/name,self.p(target).read_bytes(),0o600,self.native)
+                        atomic_bytes(self.pending/"old"/name,originals[name],0o600,self.native)
                     entries[name]={"target":target,"old":old,"new":new,"mode":mode}
-                orig=self.meta.read_bytes()
                 atomic_bytes(self.pending/"old"/"metadata",orig,0o600,self.native)
                 new_meta=dict(before,version=TARGET_VERSION)
                 new_blob=canonical(new_meta)
