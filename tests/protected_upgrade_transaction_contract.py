@@ -152,6 +152,35 @@ class FakeFixture(unittest.TestCase):
             self.tx.commit(self.root/"NO_SATISFACTORY_NATIVE_RUN.json")
         self.all_new()
         self.assertTrue(self.tx.pending.exists())
+    def test_r783_relative_source_refuses_before_pending_creation(self):
+        # The actual read remains descriptor-relative to a validated absolute
+        # package source; a relative caller path must not be accepted.
+        relative=pathlib.Path(os.path.relpath(self.pkg,ROOT))
+        with self.assertRaisesRegex(RuntimeError,"PACKAGE_SOURCE"):
+            self.tx.stage(relative)
+        self.assertFalse(self.tx.pending.exists())
+        self.all_old()
+
+    def test_r783_acceptance_symlink_fails_without_commit(self):
+        self.tx.stage(self.pkg)
+        self.tx.apply()
+        link=self.root/"r783_receipt_symlink.json"
+        link.symlink_to(self.meta)
+        with self.assertRaisesRegex(RuntimeError,"NATIVE_ACCEPTANCE_MISSING"):
+            self.tx.commit(link)
+        self.assertEqual(self.tx.status()["status"],"APPLIED")
+        self.all_new()
+
+    def test_r783_acceptance_parent_symlink_fails_without_commit(self):
+        self.tx.stage(self.pkg)
+        self.tx.apply()
+        alias=self.root/"r783_parent_symlink"
+        alias.symlink_to(self.root,target_is_directory=True)
+        with self.assertRaisesRegex(RuntimeError,"UNSAFE_PARENT_COMPONENT"):
+            self.tx.commit(alias/"receipt.json")
+        self.assertEqual(self.tx.status()["status"],"APPLIED")
+        self.all_new()
+
     def test_acceptance_requires_real_gates(self):
         self.tx.stage(self.pkg);self.tx.apply()
         meta=self.tx.manifest()

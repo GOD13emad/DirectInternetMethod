@@ -277,7 +277,12 @@ class RootTransaction:
             need(not self.pending.exists() and not self.pending.is_symlink(),"SLOT_ALREADY_EXISTS")
             before=self._baseline()
             src=pathlib.Path(source)
-            need(src.is_dir() and not src.is_symlink(),"PACKAGE_SOURCE")
+            # R783: source member bytes are opened and SHA-pinned later through
+            # guarded_file_bytes() on the SAME verified inode. A separate
+            # is_dir()/is_symlink() pathname precheck cannot authenticate the
+            # later descriptor and adds an avoidable time-of-check race.
+            need(src.is_absolute() and ".." not in src.parts and
+                 len(src.parts)>=2,"PACKAGE_SOURCE")
             # Source may be user-owned (pkexec), but its bytes are pinned to
             # the independently tested GitHub candidate; only mapped files read.
             data={}
@@ -433,10 +438,20 @@ class RootTransaction:
                  "COMMIT_BACKEND_CHANGED")
             need(meta==m["newMetadataSHA"],"COMMIT_META_CHANGED")
             acceptance=pathlib.Path(acceptance)
-            need(acceptance.is_file() and not acceptance.is_symlink(),
-                 "NATIVE_ACCEPTANCE_MISSING")
-            receipt=json.loads(guarded_file_bytes(
-                acceptance,native_receipt=self.native,limit=65536).decode("utf8"))
+            # R783: avoid pathname file/symlink preflight. guarded_file_bytes
+            # alone opens NOFOLLOW through pinned dirfds, fstats that exact
+            # inode, enforces root-owned receipt metadata in native mode and
+            # reads the bounded bytes. Preserve the prior rejection contract
+            # for missing or symlinked acceptance files.
+            try:
+                receipt_blob=guarded_file_bytes(
+                    acceptance,native_receipt=self.native,limit=65536)
+            except RuntimeError as exc:
+                if str(exc)=="FAIL_CLOSED_UNSAFE_FILE_COMPONENT":
+                    raise RuntimeError(
+                        "FAIL_CLOSED_NATIVE_ACCEPTANCE_MISSING") from exc
+                raise
+            receipt=json.loads(receipt_blob.decode("utf8"))
             need(receipt.get("revision")=="R519" and
                  receipt.get("status")=="PASS_NATIVE_ROOT_UPGRADE" and
                  receipt.get("sourceRootSHA")==sha(canonical(m["files"])) and
