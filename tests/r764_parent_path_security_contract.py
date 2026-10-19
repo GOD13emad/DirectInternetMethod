@@ -44,6 +44,7 @@ class R764PathParents(unittest.TestCase):
         data={"revision":"R519","status":"PASS_NATIVE_ROOT_UPGRADE",
               "sourceRootSHA":module.m.sha(module.m.canonical(doc["files"])),
               "protectedMetadataSHA":doc["newMetadataSHA"],
+              "transactionNonce":doc["transactionNonce"],
               "nativeStartStopRecovery":True,
               "tailscalePreserved":True,"physicalDNSPreserved":True}
         receipt.write_text(json.dumps(data)+"\n")

@@ -2,7 +2,7 @@ name: Source and Release Contracts
 
 on:
   push:
-    branches: [main, 'feature/**', 'hotfix/**']
+    branches: [main, 'feature/**', 'hotfix/**', 'security/r776-pinned-root-read-qa']
     tags: ['v*']
   pull_request:
     branches: [main]
@@ -39,8 +39,8 @@ jobs:
           python3 - <<'PY'
           import hashlib,json,pathlib,zipfile
           p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
-          expected="F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E"
-          assert p.is_file() and p.stat().st_size==8422093
+          expected="D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720"
+          assert p.is_file() and p.stat().st_size==8422557
           assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
           meta=json.loads(pathlib.Path("RELEASE.json").read_text())
           assert meta.get("version")=="1.5.4","PUBLISHED_RELEASE_METADATA_MUST_REMAIN_STABLE"
@@ -62,6 +62,7 @@ jobs:
           python3 -B tests/r664_direct_update_monotonicity_contract.py
           python3 -B tests/r519_versioned_package_contract.py
           python3 -B tests/protected_upgrade_transaction_contract.py
+          python3 -B tests/r789_receipt_replay_synthetic_probe.py
           python3 -B tests/r519_user_update_transaction_contract.py
       - name: R526 Linux installer metadata activation (hermetic fake Root)
         shell: bash
@@ -177,7 +178,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download and independently pin official Stable 1.5.4 package
         shell: bash
         run: |
@@ -206,7 +207,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download byte-pinned published Stable v1.5.4 archive
         shell: bash
         run: |
@@ -239,7 +240,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R554 download exact public v1.5.4 baseline
         shell: bash
         run: |
@@ -268,7 +269,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R555 pin the official stable baseline from its immutable release
         shell: bash
         run: |
@@ -297,7 +298,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R562 download exact official v1.5.4 installed baseline
         shell: bash
         run: |
@@ -327,7 +328,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R565 download exact official v1.5.4 installed baseline
         shell: bash
         run: |
@@ -372,7 +373,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
           test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
           curl --fail --show-error --silent --location --retry 3 --max-time 120 \
             'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
@@ -398,7 +399,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
           test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
           curl --fail --show-error --silent --location --retry 3 --max-time 120 \
             'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
@@ -565,7 +566,7 @@ jobs:
 
   windows-private-r535-native:
     name: windows-private-r535-native
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/r535-windows-155rc1' || github.ref == 'refs/heads/feature/r520-linux-155rc1-ci')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/r535-windows-155rc1' || github.ref == 'refs/heads/feature/r520-linux-155rc1-ci' || github.ref == 'refs/heads/security/r776-pinned-root-read-qa')
     needs: windows-source
     runs-on: windows-2025
     timeout-minutes: 35
@@ -598,7 +599,7 @@ jobs:
           $installer=Join-Path $root 'delivery\DirectInternetMethod_1.5.5-rc1_Windows_Setup.exe'
           if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or
              $env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
-             $env:GITHUB_REF -cne 'refs/heads/feature/r520-linux-155rc1-ci' -or
+             $env:GITHUB_REF -cnotin @('refs/heads/feature/r520-linux-155rc1-ci','refs/heads/security/r776-pinned-root-read-qa') -or
              (git -C $root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R600_HOST_AUTHORITY'}
           if($report.status -cne 'PASS_ISOLATED_HOSTED_RC1_BUILD' -or
              $native.status -cne 'PASS_HOSTED_NATIVE_154_TO_155RC1_AND_BACK_154' -or
@@ -634,7 +635,7 @@ jobs:
     name: linux-r782-root-owned-bootstrap-ephemeral
     # Actual UID 0 on a fresh original-repository GitHub VM ONLY.
     # Never run this job on a user's machine, a fork, or a tag release.
-    if: github.event_name == 'workflow_dispatch' && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/security/r776-pinned-root-read-qa'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/security/r776-pinned-root-read-qa'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -647,8 +648,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 -B build_linux_package.py
-          printf '%s  %s\n' 'F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
-          printf '%s  %s\n' 'C81E9D6F1B517CCE19ADD72CBA6E442D18A0E88B435AAAAD3433158E48964E80' 'tools/security/privileged_entry.py' | sha256sum --check --status
+          printf '%s  %s\n' 'D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '2783753829826E43C47779A90A38C941486A93F16F481E222AFC214F45B3DA78' 'tools/security/privileged_entry.py' | sha256sum --check --status
       - name: Real root-owned bootstrap staged freeze and bad-manifest fail closed
         shell: bash
         run: |

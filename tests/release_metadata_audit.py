@@ -164,7 +164,8 @@ private_win_rc1 = (
     and win_release.get('publication',{}).get('publishedAt') is None
     and (branch == 'feature/r535-windows-155rc1'
          or ref in ('refs/heads/feature/r535-windows-155rc1',
-                    'refs/heads/feature/r520-linux-155rc1-ci'))
+                    'refs/heads/feature/r520-linux-155rc1-ci',
+                    'refs/heads/security/r776-pinned-root-read-qa'))
 )
 if win_version != version and not private_win_rc1:
     raise SystemExit('WINDOWS_PRIVATE_RC1_IDENTITY_NOT_AUTHORIZED')

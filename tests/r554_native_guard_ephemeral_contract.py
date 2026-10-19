@@ -29,9 +29,9 @@ R529=R/"tests/r529_ephemeral_root_user_transaction.py"
 R526=R/"tests/r526_installer_metadata_contract.py"
 ROOT=R/"linux/system/protected_upgrade_transaction.py"
 GUARD=R/"linux/system/upgrade_guard.py"
-PIN_PACKAGE="F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E"
-PIN_ROOT="D003A699741CC1C069204833A1CB07743AA30FA2D829447C2683695F339149C2"
-PIN_GUARD="B66A8B493C343E539EA9FC2FAAA26AD0AEBA067BE07ABCDAD3009502206A52FB"
+PIN_PACKAGE="D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720"
+PIN_ROOT="C6F4DF4084C44F6F67E9144F9C4F6FECFA339086039659A252A2C609F16EDA60"
+PIN_GUARD="CE3D3B56510BA2D106B078D3F6FF24C9C71022ADDDA9FE4DEAD9296A27EE133B"
 PIN_USER="C1BBF62D99E46CB8E349A38E60891027FF7276F85CACEB597548C269203F28BF"
 NAME="directinternetmethod-upgrade-rollback"
 SEEN=Path("/var/lib/directinternetmethod/upgrade-guard/rollback-result.json")
@@ -193,6 +193,7 @@ def run():
             "syntheticAcceptanceFixture":True,
             "sourceRootSHA":rootmod.sha(rootmod.canonical(m["files"])),
             "protectedMetadataSHA":m["newMetadataSHA"],
+            "transactionNonce":m["transactionNonce"],
             "nativeStartStopRecovery":True,
             "tailscalePreserved":True,
             "physicalDNSPreserved":True

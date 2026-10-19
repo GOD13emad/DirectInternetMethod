@@ -46,6 +46,7 @@ class SwappedPathAfterCheck(unittest.TestCase):
             "fromVersion": mod.CURRENT_BACKEND_VERSION,
             "toVersion": mod.TARGET_VERSION, "phase": "STAGED",
             "files": {name: {} for name,*_ in mod.FILES},
+            "transactionNonce": "0"*64,
         }
         self.evil_manifest = dict(self.good_manifest, phase="COMMITTED")
         write_json(self.manifest, self.good_manifest, mode=0o600)

@@ -10,13 +10,13 @@ This directory is deliberately **outside** the primary `/usr/lib/directinternetm
 
 The source of this bootstrap is `tools/security/privileged_entry.py` in the exact reviewed commit. Its SHA-256 in the R781 test candidate is:
 
-`C81E9D6F1B517CCE19ADD72CBA6E442D18A0E88B435AAAAD3433158E48964E80`
+`2783753829826E43C47779A90A38C941486A93F16F481E222AFC214F45B3DA78`
 
 It freezes only the **single accepted** `v1.5.5-rc1` package, using a compiled-in manifest SHA-256:
 
-`5754B16D7C4916749691EC71012AAE2BAAFA28638293B10BA225962702381BF4`
+`7C0F7D85EC86C0C956B13CDEC101D2A1BEEA750B2EDD0F4AF8E87DA8824334D4`
 
-The built Linux ZIP is **UNRELEASED**: SHA-256 `F60AB5672A91EA5A16F9264831C5CFB9D7A397535BD71CD1704EA7AC8C83566E` (8,422,093 bytes, 28 payload members).
+The built Linux ZIP is **UNRELEASED**: SHA-256 `D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720` (8,422,557 bytes, 28 payload members).
 
 ## Exact sequence and guardrails
 
@@ -31,7 +31,7 @@ The built Linux ZIP is **UNRELEASED**: SHA-256 `F60AB5672A91EA5A16F9264831C5CFB9
 
 This SHA-pinned release-specific approach intentionally requires **another explicit administrator review and trusted-anchor update** for a future package with a different manifest. The project does not require arbitrary publisher digital signatures or silently trust an unverified GitHub release.
 
-R781 rootless tests only exercise preflight, source freezing, rejection and code provenance. They do **not** prove protected install, timer/rollback, UAC/Polkit consent, live TLS routing or product-wide security. Native ephemeral hosted Root tests, independent review of PR #62/#63, expert adjudication of all CodeQL High findings and owner-authorized physical acceptance are still separate gates. No trusted entry has been installed on either physical Linux host.
+R781 rootless tests only exercise preflight, source freezing, rejection and code provenance. They do **not** prove protected install, timer/rollback, UAC/Polkit consent, live TLS routing or product-wide security. Native ephemeral hosted Root tests, independent review of PR #62/#63, expert adjudication of all CodeQL High findings and owner-authorized physical acceptance are still separate gates. The current new digest of the trusted entry has NOT been installed on either physical Linux host. Read-only native SHA checks on 2026-10-19 found previous root-owned 0500 entry SHA256 `DD878D594830A3C1A85283E3399BF96B42B9FBC02AF68D993DE5507D605577D8` on both; replacing it requires fresh administrator consent after reviewed security acceptance.
 
 ## Revocation and recovery
 

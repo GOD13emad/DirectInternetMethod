@@ -268,6 +268,11 @@ class RootTransaction:
              data.get("toVersion")==TARGET_VERSION,"MANIFEST_VERSION")
         need(data.get("phase") in ("STAGED","APPLIED","ROLLED_BACK","DEGRADED","COMMITTED"),
              "MANIFEST_PHASE")
+        # Bind each Root acceptance to this particular staged attempt, not an
+        # earlier successful receipt for the same deterministic payload.
+        need(type(data.get("transactionNonce")) is str and
+             re.fullmatch(r"[0-9a-f]{64}",data["transactionNonce"]) is not None,
+             "MANIFEST_NONCE")
         need(set(data.get("files",{}))=={row[0] for row in FILES},"MANIFEST_FILE_LIST")
         return data
     def write_manifest(self,data):
@@ -325,7 +330,8 @@ class RootTransaction:
                 payload={"schema":SCHEMA,"revision":"R519","phase":"STAGED",
                          "fromVersion":CURRENT_BACKEND_VERSION,"toVersion":TARGET_VERSION,
                          "files":entries,"oldMetadataSHA":sha(orig),"newMetadataSHA":sha(new_blob),
-                         "uid":before["uid"],"home":before["home"],"user":before["user"]}
+                         "uid":before["uid"],"home":before["home"],"user":before["user"],
+                         "transactionNonce":os.urandom(32).hex()}
                 self.write_manifest(payload)
                 return {"status":"STAGED","files":len(FILES),"version":TARGET_VERSION}
             except BaseException:
@@ -455,6 +461,7 @@ class RootTransaction:
             need(receipt.get("revision")=="R519" and
                  receipt.get("status")=="PASS_NATIVE_ROOT_UPGRADE" and
                  receipt.get("sourceRootSHA")==sha(canonical(m["files"])) and
+                 receipt.get("transactionNonce")==m["transactionNonce"] and
                  receipt.get("protectedMetadataSHA")==meta and
                  receipt.get("nativeStartStopRecovery") is True and
                  receipt.get("tailscalePreserved") is True and

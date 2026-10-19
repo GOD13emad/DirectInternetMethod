@@ -188,6 +188,7 @@ class FakeFixture(unittest.TestCase):
         a={"revision":"R519","status":"PASS_NATIVE_ROOT_UPGRADE",
            "sourceRootSHA":m.sha(m.canonical(meta["files"])),
            "protectedMetadataSHA":meta["newMetadataSHA"],
+           "transactionNonce":meta["transactionNonce"],
            "nativeStartStopRecovery":False,"tailscalePreserved":True,
            "physicalDNSPreserved":True}
         f.write_text(json.dumps(a))
