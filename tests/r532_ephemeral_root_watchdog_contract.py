@@ -36,7 +36,7 @@ WORKER_RETURN = GUARD / "timer-return.json"
 UNIT = "dim-r532-watchdog"
 TIMER = UNIT + ".timer"
 SERVICE = UNIT + ".service"
-ROOT_SHA = "de3ed6765dc8db307297e49736483d02d7471b4f3fe7a77408a4368d7a2515a3"
+ROOT_SHA = "94c7d314809f582f437847c3b4f32f9fa8388e14526c138373974a70dea0afc8"
 USER_SHA = "c1bbf62d99e46cb8e349a38e60891027ff7276f85caceb597548c269203f28bf"
 
 def sha(p:Path)->str:
@@ -75,8 +75,11 @@ def verify_host():
     need(os.environ.get("RUNNER_ENVIRONMENT")=="github-hosted" and
          os.environ.get("GITHUB_REPOSITORY")=="GOD13emad/DirectInternetMethod",
          "EPHEMERAL_REPO_RUNNER_REQUIRED")
-    need(Path(os.environ.get("GITHUB_WORKSPACE","")).resolve()==BASE.resolve(),"EXACT_WORKSPACE")
-    need(Path(os.environ.get("RUNNER_TEMP","/does-not-exist")).is_dir(),"RUNNER_TEMP_REQUIRED")
+    need(os.environ.get("GITHUB_WORKSPACE")==str(BASE) and
+         BASE==Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod"),
+         "EXACT_WORKSPACE")
+    need(os.environ.get("RUNNER_TEMP")=="/home/runner/work/_temp" and
+         Path("/home/runner/work/_temp").is_dir(),"RUNNER_TEMP_REQUIRED")
     need(pwd.getpwnam("runner").pw_dir=="/home/runner","TEST_RUNNER_USER")
     need(Path("/proc/1/comm").read_text().strip()=="systemd","INDEPENDENT_SYSTEMD_PID1")
     need(WORKER_SOURCE.is_file() and not WORKER_SOURCE.is_symlink(),"GUARD_SOURCE_MISSING")

@@ -20,6 +20,7 @@ import pwd
 import stat
 import subprocess
 import sys
+import tempfile
 import time
 
 R=Path(__file__).resolve().parents[1]
@@ -28,9 +29,9 @@ R529=R/"tests/r529_ephemeral_root_user_transaction.py"
 R526=R/"tests/r526_installer_metadata_contract.py"
 ROOT=R/"linux/system/protected_upgrade_transaction.py"
 GUARD=R/"linux/system/upgrade_guard.py"
-PIN_PACKAGE="F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6"
-PIN_ROOT="DE3ED6765DC8DB307297E49736483D02D7471B4F3FE7A77408A4368D7A2515A3"
-PIN_GUARD="913DBE39499344BFF96BA41D33AB0B0A2EBEB662D604A0C45A528D18207EFEC2"
+PIN_PACKAGE="0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934"
+PIN_ROOT="94C7D314809F582F437847C3B4F32F9FA8388E14526C138373974A70DEA0AFC8"
+PIN_GUARD="F8CADEC8F1387C7A3CB5F1BC59FDCB17298869A2B2856FF937A14660977FFE10"
 PIN_USER="C1BBF62D99E46CB8E349A38E60891027FF7276F85CACEB597548C269203F28BF"
 NAME="directinternetmethod-upgrade-rollback"
 SEEN=Path("/var/lib/directinternetmethod/upgrade-guard/rollback-result.json")
@@ -61,7 +62,8 @@ def preflight_vm():
     need(os.environ.get("GITHUB_ACTIONS")=="true" and os.environ.get("CI")=="true"
          and os.environ.get("RUNNER_ENVIRONMENT")=="github-hosted"
          and os.environ.get("GITHUB_REPOSITORY")=="GOD13emad/DirectInternetMethod"
-         and Path(os.environ.get("GITHUB_WORKSPACE","")).resolve()==R.resolve(),
+         and os.environ.get("GITHUB_WORKSPACE")==str(R)
+         and R==Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod"),
          "GITHUB_EPHEMERAL_ONLY")
     need(Path("/proc/1/comm").read_text().strip()=="systemd","SYSTEMD_PID1")
     runner=pwd.getpwnam("runner")
@@ -191,18 +193,30 @@ def run():
             "syntheticAcceptanceFixture":True,
             "sourceRootSHA":rootmod.sha(rootmod.canonical(m["files"])),
             "protectedMetadataSHA":m["newMetadataSHA"],
+            "transactionNonce":m["transactionNonce"],
             "nativeStartStopRecovery":True,
             "tailscalePreserved":True,
             "physicalDNSPreserved":True
         }
-        acceptance=Path(temp)/"DIM_R562_TEST_ONLY_ACCEPTANCE.json"
-        need(not acceptance.exists() and not acceptance.is_symlink(),
-             "FOREIGN_TEST_ACCEPTANCE_EXISTS")
-        acceptance.write_text(json.dumps(fixture,sort_keys=True,indent=2)+"\n")
-        need(root_tx.commit(acceptance)["status"]=="COMMITTED",
-             "SYNTHETIC_ROOT_FINALIZATION")
-        need(root_tx.status()["status"]=="COMMITTED" and pending.is_dir(),
-             "ROOT_COMMITTED_USER_STILL_PENDING_WINDOW")
+        # Native Root now refuses receipts routed through user-owned parents.
+        # The old Path(temp) is deliberately runner-owned and must remain
+        # rejected. Generate this TEST-ONLY receipt in a private OS-root
+        # directory instead of weakening the production Root validation.
+        with tempfile.TemporaryDirectory(prefix="DIM_R562_ROOT_PRIVATE_RECEIPT_",dir="/tmp") as td:
+            acceptance_dir=Path(td)
+            st=acceptance_dir.stat()
+            need(st.st_uid==0 and stat.S_IMODE(st.st_mode)==0o700,
+                 "TEST_RECEIPT_ROOT_PRIVATE_PARENT")
+            acceptance=acceptance_dir/"DIM_R562_TEST_ONLY_ACCEPTANCE.json"
+            need(not acceptance.exists() and not acceptance.is_symlink(),
+                 "FOREIGN_TEST_ACCEPTANCE_EXISTS")
+            acceptance.write_text(json.dumps(fixture,sort_keys=True,indent=2)+"\n")
+            acceptance.chmod(0o600)
+            need(acceptance.stat().st_uid==0,"TEST_RECEIPT_ROOT_OWNER")
+            need(root_tx.commit(acceptance)["status"]=="COMMITTED",
+                 "SYNTHETIC_ROOT_FINALIZATION")
+            need(root_tx.status()["status"]=="COMMITTED" and pending.is_dir(),
+                 "ROOT_COMMITTED_USER_STILL_PENDING_WINDOW")
     if synthetic_reject:
         # The *only* deliberate user-data mutation happens on this disposable
         # GitHub runner AFTER synthetically accepting Root and BEFORE user commit.

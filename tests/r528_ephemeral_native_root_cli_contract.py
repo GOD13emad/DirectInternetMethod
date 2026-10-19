@@ -23,12 +23,14 @@ import zipfile
 
 BASE=Path(__file__).resolve().parents[1]
 STABLE_SHA="4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7"
-CANDIDATE_SHA="f10e23085d2677fa6522809c4da3d41d3b8ebe930aee3c6d4d3cba0b8b0145c6"
+CANDIDATE_SHA="0c4d22f98c7c4ecea2cde1c0232b3c3928c022779ba8a644cd3dc46ff13ce934"
 STABLE_ARCHIVE="DirectInternetMethod_1.5.4_Linux_x86_64.zip"
 CANDIDATE_ARCHIVE="DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip"
 STABLE_PREFIX="DirectInternetMethod_1.5.4_Linux_x86_64/"
 CANDIDATE_PREFIX="DirectInternetMethod_1.5.5-rc1_Linux_x86_64/"
 SOURCE=BASE/"linux/system/protected_upgrade_transaction.py"
+HOSTED_WORKSPACE=Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod")
+HOSTED_TEMP=Path("/home/runner/work/_temp")
 MAPPING={
  "selective_dns.py":"system/selective_dns.py",
  "control.sh":"system/control.sh",
@@ -73,11 +75,13 @@ def prerequisites():
          "NOT_HOSTED_RUNNER")
     workspace=os.environ.get("GITHUB_WORKSPACE")
     runner_temp=os.environ.get("RUNNER_TEMP")
-    need(bool(workspace) and Path(workspace).resolve()==BASE.resolve(),"WORKSPACE_AUTHORITY")
-    need(bool(runner_temp) and Path(runner_temp).is_dir(),"RUNNER_TEMP_AUTHORITY")
+    need(workspace==str(HOSTED_WORKSPACE) and BASE==HOSTED_WORKSPACE,
+         "WORKSPACE_AUTHORITY")
+    need(runner_temp==str(HOSTED_TEMP) and HOSTED_TEMP.is_dir() and
+         not HOSTED_TEMP.is_symlink(),"RUNNER_TEMP_AUTHORITY")
     need(json.loads((BASE/"RELEASE.json").read_text())["version"]=="1.5.4",
          "STABLE_RELEASE_AUTHORITY")
-    stable=Path(runner_temp)/"DIM_R528_STABLE.zip"
+    stable=HOSTED_TEMP/"DIM_R528_STABLE.zip"
     candidate=BASE/"delivery"/CANDIDATE_ARCHIVE
     need(stable.is_file() and fsha(stable)==STABLE_SHA,"PINNED_PUBLIC_STABLE_ZIP")
     need(candidate.is_file() and fsha(candidate)==CANDIDATE_SHA,
@@ -101,7 +105,7 @@ def prerequisites():
     need(user.pw_uid>0 and user.pw_dir=="/home/runner","STANDARD_HOSTED_RUNNER_USER")
     need(not Path("/home/runner/.local/share/DirectInternetMethod/directmethod/state.json").exists(),
          "EXISTING_ACTIVE_USER_ENGINE")
-    return stable,candidate,Path(runner_temp),user
+    return stable,candidate,HOSTED_TEMP,user
 
 def archive_verify(z:zipfile.ZipFile,prefix:str,expected_count:int):
     names=z.namelist()
@@ -213,7 +217,12 @@ def run_native():
         t.commit(temp/"NO_NATIVE_ACCEPTANCE_RECEIPT.json")
         raise RuntimeError("R528_BAD_ACCEPTANCE_WAS_ALLOWED")
     except RuntimeError as exc:
-        need("FAIL_CLOSED_NATIVE_ACCEPTANCE_MISSING" in str(exc),
+        # R783: the disposable native runner puts its absent receipt under a
+        # runner-owned temporary ancestor. The single-descriptor receipt read
+        # must fail closed before opening that leaf; an untrusted parent and
+        # a missing trusted leaf are both narrowly acceptable reject causes.
+        need(("FAIL_CLOSED_NATIVE_ACCEPTANCE_MISSING" in str(exc) or
+              "FAIL_CLOSED_RECEIPT_PARENT_OWNER" in str(exc)),
              "UNEXPECTED_ACCEPTANCE_REJECTION")
     need(t.rollback()["status"]=="ROLLED_BACK","ROOT_ROLLBACK")
     need(t.status()["status"]=="ROLLED_BACK","ROOT_ROLLBACK_STATE")

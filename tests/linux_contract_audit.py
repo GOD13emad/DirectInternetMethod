@@ -21,7 +21,12 @@ def check(name,cond):
     D["checks"][name]=bool(cond)
     if not cond:D["status"]="FAIL"
 
-check("version_154_backend_compatible", 'VERSION="1.5.4"' in ui and '"version":"1.5.4"' in install and '"version":"1.5.4"' in sysinstall and 'd.get("version") in ("1.5.1","1.5.2","1.5.3","1.5.4")' in install)
+check("version_155rc1_exact_update_with_accepted_stable_baseline",
+      'VERSION="1.5.5-rc1"' in ui and
+      '"version":"1.5.5-rc1"' in sysinstall and
+      'd.get("version")=="1.5.5-rc1"' in install and
+      'CURRENT_BACKEND_VERSION="1.5.2"' in txt("system/protected_upgrade_transaction.py") and
+      'OLD_USER="1.5.4"' in txt("system/upgrade_guard.py"))
 check("no_default_route_mutation", not re.search(r'ip\s+route\s+(add|del|replace).*default|nmcli\s+.*ipv4\.gateway',helper,re.I))
 check("no_unconditional_physical_dns_mutation", "nmcli connection modify" not in helper and
       "resolvectl dns enp" not in helper and "resolvectl dns eth" not in helper and
@@ -110,8 +115,11 @@ check("ui_explicit_window_controls", all(x in ui for x in ("self.minimize()","se
 check("ui_live_verify_rollback", 'LIVE_VERIFY_FAILED_ROLLED_BACK' in ui and 'run_system_action("stop")' in ui)
 check("ui_fixed_systemd_actions", 'unit=f"directinternetmethod-{action}.service"' in ui and 'subprocess.run(["systemctl","start",unit]' in ui)
 check("ui_multiprotocol_label", "Encrypted DNS (DoH) + HTTP/TLS/QUIC DPI bypass" in ui)
-check("ui_online_update_hash_gate", "SHA256SUMS.txt" in ui and "hashlib.sha256" in ui and "Unsafe update archive path." in ui)
-check("ui_online_update_three_way_digest_gate", all(x in ui for x in ("GitHub release asset digest is missing/invalid","SHA256SUMS.txt must contain exactly one valid checksum","Linux update checksum disagrees with GitHub asset digest","three-way SHA-256 verification","expected_linux=f\"DirectInternetMethod_{release_version}_Linux_x86_64.zip\"")))
+check("ui_online_update_hash_gate", all(x in ui for x in (
+      "SHA256SUMS.txt", "hashlib.sha256", "Unsafe Linux update release version.",
+      "Update cache path contains a symlink.",
+      "Update cache is not owned by the current user.")))
+check("ui_online_update_three_way_digest_gate", all(x in ui for x in ("GitHub release asset digest is missing/invalid","SHA256SUMS.txt must contain exactly one Linux update checksum","Linux update checksum disagrees with GitHub asset digest","three-way SHA-256 verification","expected_linux=f\"DirectInternetMethod_{release_version}_Linux_x86_64.zip\"")))
 check("target_hostlist_scope", "^gemini.google.com" in hostlist.splitlines() and all(x not in hostlist.splitlines() for x in ("pornhub.com","phncdn.com","xvideos.com","xnxx.com","xhamster.com")) and all(x in adult_fallback.splitlines() for x in ("pornhub.com","phncdn.com","xvideos.com","xvideos-cdn.com","xvcdn.com","xnxx.com","xnxx-cdn.com","xhamster.com","xhcdn.com","redtube.com","rdtcdn.com")))
 check("critical_global_services_hostlist", all(x in hostlist.splitlines() for x in ("openai.com","chatgpt.com","oaistatic.com","oaiusercontent.com","github.com","githubusercontent.com","githubassets.com","reddit.com","redditstatic.com","redditmedia.com","redd.it")))
 check("custom_site_hostlist", all(x in helper for x in ('CUSTOM_HOSTS="$STATE_BASE/custom-hosts.txt"','USER_HOSTLIST_SYMLINK_REJECTED','python3 - "$HOSTS" "$CUSTOM_HOSTS" "$ADULT_FALLBACK" "$ADULT_HOSTS" "$ADULT_ON" "$RUN_HOSTS"','"custom-hostlist"')) and all(x in ui for x in ('CUSTOM_HOSTS=APP_HOME/"custom-hosts.txt"','normalize_custom_site','save_custom_hosts_text','("Custom Sites","custom",None)','Maximum 256 entries')))
@@ -142,15 +150,24 @@ check("real_linux_zip_provider_is_sibling_to_linux_not_fictitious_app_dir",
       and "PROVIDER_PACKAGE_DIR_UNSAFE" in transaction
       and '"router_gateway/providers.json"' in build)
 check("linux_package_includes_router_core", '("linux/app/router_gateway_core.py","app/router_gateway_core.py")' in build)
-check("install_one_time_admin", 'pkexec /bin/bash "$HERE/system/install_system.sh"' in install)
+check("install_one_time_admin", 'pkexec /usr/bin/python3 -I "$TRUSTED_BOOTSTRAP" --action install' in install)
+check("install_root_trusted_entry_only", 'pkexec /bin/bash "$HERE/system/' not in install and
+      'R781_TRUSTED_BOOTSTRAP_NOT_PROVISIONED' in install)
 check("install_idempotent_backend_hash_gate", "backend_matches_current()" in install and 'sha256sum "$src"' in install and "keeping root-owned code unchanged" in install)
 check("installed_root_backend_mismatch_triggers_explicit_rollback_and_no_root_overwrite",
-      "Protected backend differs; update refused until root rollback is verified" in install
-      and "rollback_failed_install 25" in install
-      and "rollback_failed_install 22" in install
-      and "rollback_failed_install 24" in install
-      and "if [ -e /var/lib/directinternetmethod/install.json ]" in install)
-check("linux_hash_compatible_prior_backend_no_repeat_admin", 'd.get("version") in ("1.5.1","1.5.2","1.5.3","1.5.4")' in install and 'sha256sum "$src"' in install and 'if backend_matches_current; then' in install and 'keeping root-owned code unchanged' in install)
+      all(x in install for x in (
+          "rollback_failed_install 25", "rollback_failed_install 22",
+          "rollback_failed_install 24", "rollback_failed_install 87",
+          "ROOT_UPGRADE_STAGED=1", "backend_matches_current ||",
+          "if ! trusted_bootstrap_ready; then",
+          'pkexec /usr/bin/python3 -I "$TRUSTED_BOOTSTRAP" --action upgrade',
+          "Foreign/partial root backend; no mutation authorized.")))
+check("linux_exact_current_backend_no_repeat_admin",
+      'd.get("version")=="1.5.5-rc1"' in install and
+      'sha256sum "$src"' in install and
+      'if backend_matches_current; then' in install and
+      'keeping root-owned code unchanged' in install and
+      'pkexec /bin/bash "$HERE/system/' not in install)
 check("linux_install_reports_backend_version_authoritatively", 'protectedBackendVersion' in install and 'protectedBackendByteCompatible' in install and '/var/lib/directinternetmethod/install.json' in install)
 check("linux_lifecycle_acceptance_old_backend_sha_gated", "COMPATIBLE_OLD_BACKEND_HASH_MISMATCH" in (R/"tests"/"linux_installed_152_lifecycle.py").read_text(encoding="utf-8") and "compatibleBackendHashChecks" in (R/"tests"/"linux_installed_152_lifecycle.py").read_text(encoding="utf-8"))
 check("linux_fresh_install_parent_permissions", 'install -d -m 0755 "$ROOT" "$ROOT/runtime" "$ROOT/runtime/usr" "$ROOT/runtime/usr/bin" "$ROOT/licenses"' in sysinstall and 'install -d -m 0755 /var/lib/directinternetmethod' in sysinstall and 'mkdir -p /var/lib/directinternetmethod' not in sysinstall)

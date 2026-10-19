@@ -20,6 +20,7 @@ import pwd
 import re
 import subprocess
 import sys
+import stat
 import tempfile
 import time
 import uuid
@@ -58,8 +59,30 @@ def need(condition: bool, why: str) -> None:
         raise RuntimeError("FAIL_CLOSED_" + why)
 
 
+# Root action helpers must never resolve their executable from the caller's PATH.
+# All call sites select one of these fixed, OS-owned executables.
+TRUSTED_SYSTEM_BINARIES = {
+    "resolvectl": "/usr/bin/resolvectl",
+    "tailscale": "/usr/bin/tailscale",
+    "nmcli": "/usr/bin/nmcli",
+    "ip": "/usr/bin/ip",
+    "ss": "/usr/bin/ss",
+    "systemctl": "/usr/bin/systemctl",
+    "busctl": "/usr/bin/busctl",
+    "dig": "/usr/bin/dig",
+    "systemd-run": "/usr/bin/systemd-run",
+}
+
+
 def call(*args: str, seconds: int = 10, ok: bool = True) -> subprocess.CompletedProcess:
-    p = subprocess.run(args, capture_output=True, text=True, timeout=seconds)
+    need(bool(args) and type(args[0]) is str and args[0] in TRUSTED_SYSTEM_BINARIES,
+         "UNTRUSTED_COMMAND")
+    executable = pathlib.Path(TRUSTED_SYSTEM_BINARIES[args[0]])
+    need(executable.is_file() and not executable.is_symlink(), "TRUSTED_TOOL_MISSING")
+    mode = executable.stat()
+    need(mode.st_uid == 0 and mode.st_mode & 0o022 == 0, "TRUSTED_TOOL_OWNER")
+    p = subprocess.run((str(executable), *args[1:]), capture_output=True, text=True,
+                       timeout=seconds)
     if ok and p.returncode:
         raise RuntimeError("CALL_FAILED_" + repr(args[:3]) + "_" + str(p.returncode) +
                            "_" + p.stderr[-100:])
@@ -143,23 +166,74 @@ def read_state() -> dict | None:
 
 
 def require_consent(uid: int, home: str) -> None:
+    # This is a privileged opt-in check. Reading a legitimate leaf through
+    # a user-controlled symlink parent can otherwise select an unrelated
+    # token/profile. Traverse *all* directories by descriptor, no-follow.
     need(type(uid) is int and 0 < uid < 2**31, "UID")
+    need(type(home) is str and home.startswith("/home/"), "HOME_OWNER")
     p = pathlib.Path(home)
-    need(p.is_dir() and not p.is_symlink() and p.is_absolute() and
-         str(p).startswith("/home/") and p.stat().st_uid == uid,"HOME_OWNER")
-    app = p / ".local/share/DirectInternetMethod"
-    opt = app / NEW_OPTIN
-    old = app / OLD_OPTIN
-    need(not old.exists() and not old.is_symlink(), "LEGACY_UNENCRYPTED_OPTIN_CONFLICT")
-    need(opt.is_file() and not opt.is_symlink(), "EXPLICIT_ENCRYPTED_CONSENT_MISSING")
-    st = opt.stat()
-    need(st.st_uid == uid and st.st_mode & 0o077 == 0 and
-         st.st_size < 130 and opt.read_text().strip() == CONSENT,
-         "CONSENT_NOT_EXACT_OR_PRIVATE")
-    for n,expected in (("strategy.txt","balanced"),("scope.txt","targeted")):
-        pref=app/n
-        need(pref.is_file() and not pref.is_symlink() and
-             pref.read_text().strip() == expected,"INVALID_CONSENT_PROFILE_"+n)
+    need(p.is_absolute() and ".." not in p.parts and
+         len(p.parts) >= 3, "HOME_OWNER")
+    directory = os.open("/", os.O_RDONLY | os.O_DIRECTORY |
+                       os.O_NOFOLLOW | os.O_CLOEXEC)
+    try:
+        home_parts = p.parts[1:]
+        names = home_parts + (".local", "share", "DirectInternetMethod")
+        for index, name in enumerate(names):
+            need(name not in (".", "..", "") and "/" not in name,
+                 "CONSENT_PARENT_COMPONENT")
+            try:
+                child = os.open(name, os.O_RDONLY | os.O_DIRECTORY |
+                                os.O_NOFOLLOW | os.O_CLOEXEC,
+                                dir_fd=directory)
+            except OSError as exc:
+                raise RuntimeError("FAIL_CLOSED_CONSENT_PARENT_COMPONENT") from exc
+            os.close(directory)
+            directory = child
+            info = os.fstat(directory)
+            if index == len(home_parts) - 1:
+                need(info.st_uid == uid, "HOME_OWNER")
+            if index >= len(home_parts):
+                need(info.st_uid == uid, "CONSENT_PARENT_OWNER")
+
+        try:
+            os.stat(OLD_OPTIN, dir_fd=directory, follow_symlinks=False)
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            raise RuntimeError("FAIL_CLOSED_LEGACY_UNENCRYPTED_OPTIN_CONFLICT") from exc
+        else:
+            need(False, "LEGACY_UNENCRYPTED_OPTIN_CONFLICT")
+
+        def token(name: str, missing: str, invalid: str, length: int, private: bool=False) -> str:
+            need("/" not in name and name not in (".", "..", ""),
+                 "BAD_CONSENT_TOKEN_NAME")
+            try:
+                f = os.open(name, os.O_RDONLY | os.O_NOFOLLOW |
+                           os.O_CLOEXEC, dir_fd=directory)
+            except OSError as exc:
+                raise RuntimeError("FAIL_CLOSED_" + missing) from exc
+            try:
+                meta = os.fstat(f)
+                need(stat.S_ISREG(meta.st_mode) and meta.st_uid == uid and
+                     0 <= meta.st_size <= length and
+                     (not private or meta.st_mode & 0o077 == 0), invalid)
+                contents = os.read(f, length + 1)
+                need(len(contents) <= length, invalid)
+                return contents.decode("utf8").strip()
+            finally:
+                os.close(f)
+
+        need(token(NEW_OPTIN, "EXPLICIT_ENCRYPTED_CONSENT_MISSING",
+                   "CONSENT_NOT_EXACT_OR_PRIVATE",129, private=True) == CONSENT,
+             "CONSENT_NOT_EXACT_OR_PRIVATE")
+        for name, value in (("strategy.txt", "balanced"),
+                            ("scope.txt", "targeted")):
+            need(token(name, "INVALID_CONSENT_PROFILE_" + name,
+                       "INVALID_CONSENT_PROFILE_" + name,32) == value,
+                 "INVALID_CONSENT_PROFILE_" + name)
+    finally:
+        os.close(directory)
 
 
 def link_state(iface: str) -> dict:

@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":28,"sha256":"F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6"}
+EXPECTED={"version":VERSION,"files":28,"sha256":"0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -66,7 +66,7 @@ class Tests(unittest.TestCase):
         self.assertIn('doc.get("version") == "1.5.5-rc1"',got.decode())
         self.assertNotIn('doc.get("version") == "1.5.4"',got.decode())
         self.assertEqual(digest((R/"linux/app/user_uninstall_preserve.py").read_bytes()),declared["sha256"])
-    def test_original_unreleased_candidate_preserved_and_only_uninstaller_delta(self):
+    def test_original_unreleased_candidate_preserved_and_current_source_delta(self):
         # CI does not commit an 8.3 MB obsolete candidate ZIP. Its original
         # manifest and changed single source member are pinned byte-for-byte
         # as compact historical fixtures (all 26 original file SHA entries).
@@ -86,9 +86,13 @@ class Tests(unittest.TestCase):
         self.assertEqual(set(after),set(before)|{"system/upgrade_guard.py","app/socket_fallback.py"})
         self.assertEqual(len(before),26)
         changed={name for name in before if before[name]!=after[name]}
+        # Preserve the immutable historical manifest and explicitly recognize
+        # the new R762 controller hardening in the current unreleased package.
         self.assertEqual(changed,{"app/user_uninstall_preserve.py","app/direct_internet_method.py",
                                  "app/direct_method_helper.sh","app/user_update_transaction.py","system/protected_upgrade_transaction.py",
-                                 "system/upgrade_system.sh","install.sh"})
+                                 "system/upgrade_system.sh","install.sh","system/encrypted_selective_dns.py"})
+        self.assertEqual(after["system/encrypted_selective_dns.py"]["sha256"],
+                         "A8A8DD6155DDC4E2C5295A6CAA7B8809144C43985B47FD4664501ED683DB0AAE")
         self.assertEqual(after["app/direct_internet_method.py"]["sha256"],
                          "6CF031D2C7F18D7E7E4F1F9A37A1A0EBD3CA589F16F7E26274496F1F53E9317B")
         self.assertIn("encrypted=encrypted_dns_optin_state()",
@@ -138,9 +142,11 @@ class Tests(unittest.TestCase):
         self.assertIn("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED",src)
         self.assertIn("GUARD_SHA=",src)
         self.assertLess(src.index("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED"),
-                        src.index('python3 "$SRC/system/protected_upgrade_transaction.py" stage'))
-        self.assertIn('python3 "$SRC/system/protected_upgrade_transaction.py" stage',src)
-        self.assertIn('python3 "$SRC/system/protected_upgrade_transaction.py" apply',src)
+                        src.index('python3 -B "$GUARD_ROOT_TX" stage'))
+        self.assertIn('python3 -B "$GUARD_ROOT_TX" stage',src)
+        self.assertIn('python3 -B "$GUARD_ROOT_TX" apply',src)
+        self.assertIn('R779_BOOTSTRAP_COPY_SHA_CHANGED',src)
+        self.assertNotIn('python3 "$SRC/system/upgrade_guard.py" arm',src)
         self.assertNotIn(' commit',src)
     def test_guard_and_hosted_root_zip_inventory_track_live_manifest(self):
         # R748 negative-first: source/unit guards must accept the same exact
@@ -184,7 +190,10 @@ class Tests(unittest.TestCase):
         src=INSTALLER.read_text()
         self.assertIn("ROOT_UPGRADE_STAGED=1",src)
         self.assertIn('R519_CANDIDATE_PENDING_NATIVE_ROOT_USER_COMMIT',src)
-        self.assertIn('pkexec /bin/bash "$HERE/system/upgrade_system.sh"',src)
+        self.assertIn('pkexec /usr/bin/python3 -I "$TRUSTED_BOOTSTRAP" --action upgrade',src)
+        self.assertIn('pkexec /usr/bin/python3 -I "$TRUSTED_BOOTSTRAP" --action install',src)
+        self.assertNotIn('pkexec /bin/bash "$HERE/system/',src)
+        self.assertIn('R781_TRUSTED_BOOTSTRAP_NOT_PROVISIONED',src)
         self.assertIn('python3 "$USER_TRANSACTION" --rollback',src)
     def test_gui_and_user_metadata_pins(self):
         app=GUI.read_text()

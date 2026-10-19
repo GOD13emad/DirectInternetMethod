@@ -14,6 +14,8 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -21,13 +23,39 @@ import time
 
 ROOT=Path(__file__).resolve().parents[1]
 GUARD=ROOT/"linux/system/upgrade_guard.py"
-PIN_GUARD="913DBE39499344BFF96BA41D33AB0B0A2EBEB662D604A0C45A528D18207EFEC2"
+PIN_GUARD="F8CADEC8F1387C7A3CB5F1BC59FDCB17298869A2B2856FF937A14660977FFE10"
 
 def need(value,reason):
     if not value:raise RuntimeError("R566_SYSTEMD_FAIL_CLOSED_"+reason)
 
+# This disposable Root systemd test must not become a generic command
+# launcher. Only known unit operations, under the one absolute OS-owned
+# systemctl executable, are permitted; all variable unit IDs are numeric.
+UNIT_RE=re.compile(r"dim-r566-catchup-[0-9]{1,29}\.(?:timer|service)\Z")
+
+
 def run(*args,timeout=12):
-    p=subprocess.run(args,text=True,capture_output=True,timeout=timeout,check=False)
+    need(len(args)>=2 and all(type(item) is str for item in args) and
+         args[0]=="/usr/bin/systemctl","UNTRUSTED_COMMAND_ORIGIN")
+    program=Path("/usr/bin/systemctl")
+    need(program.is_file() and not program.is_symlink() and
+         program.stat().st_uid==0 and not program.stat().st_mode & 0o022,
+         "UNTRUSTED_SYSTEMCTL_BINARY")
+    action=args[1]
+    if action=="daemon-reload":
+        need(args==("/usr/bin/systemctl","daemon-reload"),
+             "INVALID_DAEMON_RELOAD_ARGUMENTS")
+    elif action in ("start","stop"):
+        need(len(args)==3 and bool(UNIT_RE.fullmatch(args[2])),
+             "INVALID_SYSTEMD_UNIT_ARGUMENTS")
+    elif action=="show":
+        need(len(args)==6 and bool(UNIT_RE.fullmatch(args[2])) and
+             args[3:]==("-p","ActiveState","--value"),
+             "INVALID_SYSTEMD_SHOW_ARGUMENTS")
+    else:
+        need(False,"UNTRUSTED_SYSTEMCTL_ACTION")
+    p=subprocess.run(("/usr/bin/systemctl",*args[1:]),text=True,
+                     capture_output=True,timeout=timeout,check=False)
     need(p.returncode==0,"COMMAND_"+str(p.returncode)+"_"+p.stderr[-170:].replace(" ","_"))
     return p.stdout.strip()
 
@@ -37,7 +65,9 @@ def preflight():
     need(env.get("GITHUB_ACTIONS")=="true" and env.get("CI")=="true" and
          env.get("RUNNER_ENVIRONMENT")=="github-hosted" and
          env.get("GITHUB_REPOSITORY")=="GOD13emad/DirectInternetMethod" and
-         Path(env.get("GITHUB_WORKSPACE","")).resolve()==ROOT,"HOSTED_RUNNER_ONLY")
+         env.get("GITHUB_WORKSPACE")==str(ROOT) and
+         ROOT==Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod"),
+         "HOSTED_RUNNER_ONLY")
     need(Path("/proc/1/comm").read_text().strip()=="systemd","SYSTEMD_PID_ONE")
     need(hashlib.sha256(GUARD.read_bytes()).hexdigest().upper()==PIN_GUARD,"PINNED_GUARD")
     spec=importlib.util.spec_from_file_location("r566_exact_production_guard",GUARD)
@@ -49,12 +79,15 @@ def main():
     guard=preflight()
     identity=os.environ["GITHUB_RUN_ID"]
     need(identity.isdecimal() and len(identity)<30,"RUN_ID")
-    name="dim-r566-catchup-"+identity
+    # Fixed, fail-closed unit ID on a fresh disposable VM; the GitHub run
+    # identifier is checked for provenance but never enters a privileged
+    # filesystem pathname or systemd unit name.
+    name="dim-r566-catchup-784"
     service=Path("/etc/systemd/system")/(name+".service")
     timer=Path("/etc/systemd/system")/(name+".timer")
     for target in (service,timer):
         need(not target.exists() and not target.is_symlink(),"FOREIGN_SYSTEMD_UNIT")
-    with tempfile.TemporaryDirectory(prefix="dim-r566-"+identity+"-",dir="/run") as directory:
+    with tempfile.TemporaryDirectory(prefix="dim-r566-784-",dir="/run") as directory:
         root=Path(directory)
         os.chmod(root,0o700)
         marker=root/"fired.json"

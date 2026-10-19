@@ -2,7 +2,7 @@
 """R552 source-extracted regression: worker/timer logic, ZERO installed actions."""
 import hashlib,importlib.util,json,os,pathlib,tempfile,types,unittest
 SRC=pathlib.Path(__file__).resolve().parents[1]/"linux/system/upgrade_guard.py"
-SOURCE_SHA="913DBE39499344BFF96BA41D33AB0B0A2EBEB662D604A0C45A528D18207EFEC2"
+SOURCE_SHA="F8CADEC8F1387C7A3CB5F1BC59FDCB17298869A2B2856FF937A14660977FFE10"
 assert hashlib.sha256(SRC.read_bytes()).hexdigest().upper()==SOURCE_SHA
 spec=importlib.util.spec_from_file_location("r552_candidate",SRC)
 g=importlib.util.module_from_spec(spec)
@@ -306,12 +306,20 @@ class Cases(unittest.TestCase):
         slot=self.home/g.PENDING_REL
         slot.mkdir(parents=True,mode=0o700)
         slot.chmod(0o700)
-        managed={f"managed-{i}":{"sha":"a"*64,"mode":0o755} for i in range(7)}
+        names=("direct_internet_method.py","socket_fallback.py",
+               "router_gateway.py","router_gateway_core.py",
+               "direct-internet-method.svg","uninstall.sh",
+               "user_uninstall_preserve.py","user_update_transaction.py")
+        managed={k:{"sha":"a"*64,"mode":0o755} for k in names}
         prior={k:{"exists":False,"sha":None} for k in managed}
         prior["INSTALL.json"]={"exists":True,"sha":g.sha_file(installed).lower()}
+        mutable=("settings.json","strategy.txt","scope.txt","custom-hosts.txt",
+                 "adult-enabled.txt","adult-hosts.txt","adult-hosts.meta.json",
+                 "encrypted-dns-optin.txt","selective-dns-optin.txt")
         row={"schema":1,"version":"1.5.5-rc1","previousVersion":"1.5.4",
              "managed":managed,"old":prior,
-             "mutable":{f"setting-{i}":None for i in range(9)}}
+             "providerManaged":False,"providerSha":None,
+             "mutable":{k:None for k in mutable}}
         manifest=slot/"manifest.json"
         manifest.write_text(json.dumps(row));manifest.chmod(0o600)
         return installed,manifest,row
@@ -321,7 +329,51 @@ class Cases(unittest.TestCase):
         self.assertNotIn("phase",row)
         accepted=g.staged_user_manifest(self.home,os.getuid(),installed)
         self.assertEqual(accepted["version"],"1.5.5-rc1")
-        self.assertEqual(len(accepted["managed"]),7)
+        self.assertEqual(len(accepted["managed"]),8)
+
+    def test_25_real_managed_provider_nine_members_accepted(self):
+        installed,manifest,row=self._stage_fixture()
+        provider="router_gateway/providers.json"
+        digest="b"*64
+        row["managed"][provider]={"sha":digest,"mode":0o644}
+        row["old"][provider]={"exists":True,"sha":digest}
+        row["providerManaged"]=True
+        row["providerSha"]=digest
+        manifest.write_text(json.dumps(row))
+        result=g.staged_user_manifest(self.home,os.getuid(),installed)
+        self.assertEqual(len(result["managed"]),9)
+        self.assertEqual(result["providerSha"],digest)
+
+    def test_26_managed_provider_flag_or_digest_drift_refused(self):
+        installed,manifest,row=self._stage_fixture()
+        provider="router_gateway/providers.json"
+        def refuse():
+            manifest.write_text(json.dumps(row))
+            with self.assertRaisesRegex(RuntimeError,"USER_STAGE_FILESET"):
+                g.staged_user_manifest(self.home,os.getuid(),installed)
+        row["providerManaged"]=True
+        refuse()  # Missing managed provider entry.
+        row["managed"][provider]={"sha":"a"*64,"mode":0o644}
+        row["old"][provider]={"exists":True,"sha":"a"*64}
+        row["providerSha"]="0"*64
+        refuse()  # SHA not the staged provider's digest.
+        row["providerSha"]="a"*64
+        row["providerManaged"]=False
+        refuse()  # Unmanaged means provider file must NOT be staged.
+
+    def test_27_foreign_extra_managed_and_mutable_paths_refused(self):
+        installed,manifest,row=self._stage_fixture()
+        def refuse():
+            manifest.write_text(json.dumps(row))
+            with self.assertRaisesRegex(RuntimeError,"USER_STAGE_FILESET"):
+                g.staged_user_manifest(self.home,os.getuid(),installed)
+        row["managed"]["foreign_plugin.sh"]={"sha":"c"*64,"mode":0o700}
+        row["old"]["foreign_plugin.sh"]={"exists":False,"sha":None}
+        refuse()
+        del row["managed"]["foreign_plugin.sh"]
+        del row["old"]["foreign_plugin.sh"]
+        row["mutable"]["arbitrary-foreign-user-data"]="00"
+        refuse()
 
     def test_12_stage_schema_and_metadata_drift_rejected(self):
         installed,manifest,row=self._stage_fixture()

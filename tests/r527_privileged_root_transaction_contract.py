@@ -47,9 +47,13 @@ def assert_ephemeral_runner():
     runner_temp = os.environ.get("RUNNER_TEMP")
     if not workspace or not runner_temp:
         raise RuntimeError("R527_RUNNER_PATHS_REQUIRED")
-    if Path(workspace).resolve() != BASE.resolve():
+    # The runner directory is a *literal* repository-owned CI location, not
+    # an arbitrary root path derived from job-provided environment variables.
+    expected_workspace=Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod")
+    expected_temp=Path("/home/runner/work/_temp")
+    if workspace!=str(expected_workspace) or BASE!=expected_workspace:
         raise RuntimeError("R527_WORKSPACE_MISMATCH")
-    if not Path(runner_temp).is_dir():
+    if runner_temp!=str(expected_temp) or not expected_temp.is_dir() or expected_temp.is_symlink():
         raise RuntimeError("R527_RUNNER_TEMP_MISSING")
     if BASE == Path("/") or BASE == Path("/usr") or BASE == Path("/home"):
         raise RuntimeError("R527_REAL_ROOT_BLOCKED")
@@ -185,7 +189,12 @@ class PrivilegedRootFileTransaction(unittest.TestCase):
     def test_12_commit_without_live_acceptance_forbidden(self):
         self.tx.stage(self.fx.pkg)
         self.tx.apply()
-        with self.assertRaisesRegex(RuntimeError, "NATIVE_ACCEPTANCE_MISSING"):
+        # The fake Root fixture lives under runner-owned GITHUB_WORKSPACE.
+        # R783's single-descriptor reader rejects its untrusted ancestor
+        # before it would check the missing receipt leaf. Both are narrowly
+        # valid fail-closed causes; neither may commit or mutate the baseline.
+        with self.assertRaisesRegex(RuntimeError,
+                                    "NATIVE_ACCEPTANCE_MISSING|RECEIPT_PARENT_OWNER"):
             self.tx.commit(self.root / "not-a-real-acceptance.json")
         self.assertEqual(self.tx.status()["status"], "APPLIED")
         self.assertEqual(self.tx.rollback()["status"], "ROLLED_BACK")

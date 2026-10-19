@@ -6,7 +6,7 @@ set -Eeuo pipefail
 umask 077
 SRC="${1:-}"
 REQ_UID="${2:-}"
-TX_SHA="DE3ED6765DC8DB307297E49736483D02D7471B4F3FE7A77408A4368D7A2515A3"
+TX_SHA="94C7D314809F582F437847C3B4F32F9FA8388E14526C138373974A70DEA0AFC8"
 [ "$(id -u)" = 0 ] || { echo 'ROOT_REQUIRED' >&2; exit 77; }
 case "$REQ_UID" in ''|*[!0-9]*) echo 'UID_INVALID' >&2; exit 77;; esac
 [ "$REQ_UID" -gt 0 ] && [ "$REQ_UID" -lt 2147483648 ] || exit 77
@@ -40,7 +40,7 @@ PY
 # Arm the separately root-owned boot-persistent R553 guard BEFORE any
 # protected Root Stage/Apply. Source identity is a frozen independent SHA;
 # a signed-in OS administrator still authenticates through the installer.
-GUARD_SHA="913DBE39499344BFF96BA41D33AB0B0A2EBEB662D604A0C45A528D18207EFEC2"
+GUARD_SHA="F8CADEC8F1387C7A3CB5F1BC59FDCB17298869A2B2856FF937A14660977FFE10"
 [ -f "$SRC/system/upgrade_guard.py" ] && [ ! -L "$SRC/system/upgrade_guard.py" ] || {
     echo "R553_GUARD_SOURCE_MISSING_OR_SYMLINK" >&2; exit 87;
 }
@@ -48,7 +48,29 @@ GUARD_SHA="913DBE39499344BFF96BA41D33AB0B0A2EBEB662D604A0C45A528D18207EFEC2"
   "$(printf '%s' "$GUARD_SHA" | tr '[:upper:]' '[:lower:]')" ] || {
     echo "R553_GUARD_SOURCE_SHA_CHANGED" >&2; exit 87;
 }
-python3 "$SRC/system/upgrade_guard.py" arm --source "$SRC" --uid "$REQ_UID"
+# R779: the user-owned source can change after its first SHA check. Copy
+# into a private Root-only runtime directory, then hash the actual bytes that
+# will be interpreted. This bootstrap is never a permanent second install.
+GUARD_BOOTSTRAP_DIR="$(mktemp -d /run/directinternetmethod-guard-XXXXXXXX)"
+[ -d "$GUARD_BOOTSTRAP_DIR" ] && [ ! -L "$GUARD_BOOTSTRAP_DIR" ] &&
+[ "$(stat -c %u -- "$GUARD_BOOTSTRAP_DIR")" = 0 ] &&
+[ "$(stat -c %a -- "$GUARD_BOOTSTRAP_DIR")" = 700 ] || {
+    echo 'R779_ROOT_BOOTSTRAP_DIR_UNSAFE' >&2; exit 87;
+}
+cleanup_guard_bootstrap() {
+  rm -f -- "$GUARD_BOOTSTRAP_DIR/upgrade_guard.py"
+  rmdir -- "$GUARD_BOOTSTRAP_DIR"
+}
+trap cleanup_guard_bootstrap EXIT
+install -m 0500 -- "$SRC/system/upgrade_guard.py" "$GUARD_BOOTSTRAP_DIR/upgrade_guard.py"
+[ -f "$GUARD_BOOTSTRAP_DIR/upgrade_guard.py" ] &&
+[ ! -L "$GUARD_BOOTSTRAP_DIR/upgrade_guard.py" ] &&
+[ "$(stat -c %u -- "$GUARD_BOOTSTRAP_DIR/upgrade_guard.py")" = 0 ] &&
+[ "$(sha256sum "$GUARD_BOOTSTRAP_DIR/upgrade_guard.py" | cut -d' ' -f1)" = \
+  "$(printf '%s' "$GUARD_SHA" | tr '[:upper:]' '[:lower:]')" ] || {
+    echo 'R779_BOOTSTRAP_COPY_SHA_CHANGED' >&2; exit 87;
+}
+python3 -B "$GUARD_BOOTSTRAP_DIR/upgrade_guard.py" arm --source "$SRC" --uid "$REQ_UID"
 # R553: Do not touch root-owned binaries/metadata without a separately
 # activated, root-owned two-sided timed rollback guard. A user-scoped backup
 # from install.sh is reversible; it is NOT a protected autonomous watchdog.
@@ -113,8 +135,9 @@ except Exception as ex:
 print("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED")
 PY
 # Transactional stage + apply obtain native action lock; one rollback slot.
-python3 "$SRC/system/protected_upgrade_transaction.py" stage --source "$SRC"
-python3 "$SRC/system/protected_upgrade_transaction.py" apply
-python3 "$SRC/system/protected_upgrade_transaction.py" status |
+GUARD_ROOT_TX="/var/lib/directinternetmethod/upgrade-guard/root_tx.py"
+python3 -B "$GUARD_ROOT_TX" stage --source "$SRC"
+python3 -B "$GUARD_ROOT_TX" apply
+python3 -B "$GUARD_ROOT_TX" status |
   python3 -c 'import json,sys;j=json.load(sys.stdin);assert j["status"]=="APPLIED" and j["version"]=="1.5.5-rc1"'
 echo '{"status":"ROOT_R519_APPLIED_UNCOMMITTED","needsRealNativeAcceptance":true}'

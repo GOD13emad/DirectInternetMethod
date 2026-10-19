@@ -2,7 +2,7 @@ name: Source and Release Contracts
 
 on:
   push:
-    branches: [main, 'feature/**', 'hotfix/**']
+    branches: [main, 'feature/**', 'hotfix/**', 'security/r776-pinned-root-read-qa']
     tags: ['v*']
   pull_request:
     branches: [main]
@@ -39,8 +39,8 @@ jobs:
           python3 - <<'PY'
           import hashlib,json,pathlib,zipfile
           p=pathlib.Path("delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip")
-          expected="F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6"
-          assert p.is_file() and p.stat().st_size==8407422
+          expected="0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934"
+          assert p.is_file() and p.stat().st_size==8424218
           assert hashlib.sha256(p.read_bytes()).hexdigest().upper()==expected
           meta=json.loads(pathlib.Path("RELEASE.json").read_text())
           assert meta.get("version")=="1.5.4","PUBLISHED_RELEASE_METADATA_MUST_REMAIN_STABLE"
@@ -62,6 +62,7 @@ jobs:
           python3 -B tests/r664_direct_update_monotonicity_contract.py
           python3 -B tests/r519_versioned_package_contract.py
           python3 -B tests/protected_upgrade_transaction_contract.py
+          python3 -B tests/r789_receipt_replay_synthetic_probe.py
           python3 -B tests/r519_user_update_transaction_contract.py
       - name: R526 Linux installer metadata activation (hermetic fake Root)
         shell: bash
@@ -80,6 +81,17 @@ jobs:
           set -euo pipefail
           python3 -B tests/encrypted_selective_dns_policy_contract.py
           python3 -B tests/encrypted_selective_dns_controller_contract.py
+          python3 -B tests/r762_trusted_dns_system_binary_origin_contract.py
+          python3 -B tests/r764_parent_path_security_contract.py
+          python3 -B tests/r766_systemd_exec_origin_contract.py
+          python3 -B tests/r767_consent_parent_nofollow_contract.py
+          python3 -B tests/r769_root_file_descriptor_boundary_contract.py
+          python3 -B tests/r795_leaf_filename_contract.py
+          python3 -B tests/r771_fifo_special_file_failclosed_contract.py
+          python3 -B tests/r776_checked_fd_swap_regression.py
+          python3 -B tests/r778_stage_backup_snapshot_race_contract.py
+          python3 -B tests/r779_root_guard_source_copy_identity_contract.py
+          python3 -B tests/r781_privileged_entry_contract.py
           python3 -B tests/encrypted_selective_dns_fake_lifecycle.py
           python3 -B tests/encrypted_selective_dns_gui_consent_contract.py
           python3 -B tests/r537_gui_consent_status_contract.py
@@ -167,7 +179,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download and independently pin official Stable 1.5.4 package
         shell: bash
         run: |
@@ -196,7 +208,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: Download byte-pinned published Stable v1.5.4 archive
         shell: bash
         run: |
@@ -229,7 +241,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R554 download exact public v1.5.4 baseline
         shell: bash
         run: |
@@ -258,7 +270,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R555 pin the official stable baseline from its immutable release
         shell: bash
         run: |
@@ -287,7 +299,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R562 download exact official v1.5.4 installed baseline
         shell: bash
         run: |
@@ -317,7 +329,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
       - name: R565 download exact official v1.5.4 installed baseline
         shell: bash
         run: |
@@ -362,7 +374,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
           test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
           curl --fail --show-error --silent --location --retry 3 --max-time 120 \
             'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
@@ -388,7 +400,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 build_linux_package.py
-          printf '%s  %s\n' 'F10E23085D2677FA6522809C4DA3D41D3B8EBE930AEE3C6D4D3CBA0B8B0145C6' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
           test ! -e "$RUNNER_TEMP/DIM_R528_STABLE.zip"
           curl --fail --show-error --silent --location --retry 3 --max-time 120 \
             'https://github.com/GOD13emad/DirectInternetMethod/releases/download/v1.5.4/DirectInternetMethod_1.5.4_Linux_x86_64.zip' \
@@ -477,6 +489,24 @@ jobs:
         run: dotnet build windows/service/DirectInternetMethod.Service.csproj -c Release --nologo
       - name: Build GUI
         run: dotnet build windows/gui/DirectInternetMethod.csproj -c Release --nologo
+      - name: R057 Windows probe curl origin and argv hostile regression
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          dotnet run --project tests/probe_process_security/ProbeProcessSecurity.csproj -c Release --no-launch-profile
+          if($LASTEXITCODE -ne 0){throw 'R057_GUI_PROBE_SECURITY_REGRESSION_FAILED'}
+      - name: R061 Windows service system curl provenance negative fixtures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          python -B tests/r061_windows_service_curl_contract.py
+          if($LASTEXITCODE -ne 0){throw 'R061_SERVICE_SYSTEM_CURL_SECURITY_REGRESSION_FAILED'}
+      - name: R062 hosted Windows native service downloader loopback and PATH-poison guard
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/R062-NativeServiceCurl.ps1
+          if($LASTEXITCODE -ne 0){throw 'R062_NATIVE_SERVICE_CURL_LOOPBACK_TEST_FAILED'}
       - name: Restore pinned PowerShell runtime
         shell: pwsh
         run: pwsh.exe -NoProfile -ExecutionPolicy Bypass -File tests/prepare_powershell_runtime.ps1
@@ -537,7 +567,7 @@ jobs:
 
   windows-private-r535-native:
     name: windows-private-r535-native
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/r535-windows-155rc1' || github.ref == 'refs/heads/feature/r520-linux-155rc1-ci')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/r535-windows-155rc1' || github.ref == 'refs/heads/feature/r520-linux-155rc1-ci' || github.ref == 'refs/heads/security/r776-pinned-root-read-qa')
     needs: windows-source
     runs-on: windows-2025
     timeout-minutes: 35
@@ -570,7 +600,7 @@ jobs:
           $installer=Join-Path $root 'delivery\DirectInternetMethod_1.5.5-rc1_Windows_Setup.exe'
           if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or
              $env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
-             $env:GITHUB_REF -cne 'refs/heads/feature/r520-linux-155rc1-ci' -or
+             $env:GITHUB_REF -cnotin @('refs/heads/feature/r520-linux-155rc1-ci','refs/heads/security/r776-pinned-root-read-qa') -or
              (git -C $root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R600_HOST_AUTHORITY'}
           if($report.status -cne 'PASS_ISOLATED_HOSTED_RC1_BUILD' -or
              $native.status -cne 'PASS_HOSTED_NATIVE_154_TO_155RC1_AND_BACK_154' -or
@@ -601,6 +631,32 @@ jobs:
             ${{ runner.temp }}/DIM_R535_NATIVE/NATIVE_R535.json
           if-no-files-found: warn
           retention-days: 14
+
+  linux-r782-root-owned-bootstrap-ephemeral:
+    name: linux-r782-root-owned-bootstrap-ephemeral
+    # Actual UID 0 on a fresh original-repository GitHub VM ONLY.
+    # Never run this job on a user's machine, a fork, or a tag release.
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/security/r776-pinned-root-read-qa'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Rebuild frozen candidate and verify trusted manifest source bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B build_linux_package.py
+          printf '%s  %s\n' '0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' 'C8AE0759FDF3A5EE514B5457D05AF1BFEF0BB266E03244C7EF2F3F6EDB8994D1' 'tools/security/privileged_entry.py' | sha256sum --check --status
+      - name: Real root-owned bootstrap staged freeze and bad-manifest fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Test only; PKEXEC_UID is simulated, and no product install runs.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_SHA="$GITHUB_SHA" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r782_hosted_trusted_entry_ephemeral.py
 
   windows-release-contract:
     name: windows-release-contract-unsigned
