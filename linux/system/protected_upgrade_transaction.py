@@ -45,6 +45,28 @@ STATIC_ROOT={
  "usr/lib/directinternetmethod/licenses/LICENSE-ctrld.txt":"55D82D13FE55D4B2AEC42166FCCD3C16C267B7131ECF2FBD7C3C6C3463494501",
  "usr/lib/directinternetmethod/licenses/LICENSE-zapret.txt":"DCF5ABD3E5D876C1065982871C0CEC7368C0E61FC795C541798729516BB6B54F",
 }
+# Privileged file access is limited to these *literal* package/backend names.
+# The caller chooses which entry, not a free-form basename. Parent traversal
+# remains descriptor-pinned and rejects symlinks. Synthetic fixture names are
+# explicitly enumerated; no arbitrary test-mode bypass exists.
+APPROVED_FILE_LEAVES=(
+    "LICENSE-ctrld.txt", "LICENSE-zapret.txt", "acceptance.json",
+    "adult_hosts_fallback.txt", "control.sh", "ctrld", "direct_hosts.txt",
+    "direct_method_helper.sh", "directinternetmethod.uid",
+    "encrypted_controller", "encrypted_policy", "encrypted_selective_dns.py",
+    "encrypted_selective_policy.py", "helper", "install.json",
+    "manifest.json", "metadata", "nfqws", "selective_dns.py",
+    "strong_override_hosts.txt", "uninstall", "uninstall_system.sh",
+    "DIM_NATIVE_ROOT_ACCEPTANCE.json",
+    # Unprivileged and disposable-host QA receipts/member names:
+    "protected_install.json", "allowed_file", "payload", "large-static",
+    "regular-payload", "untrusted-package-member",
+    "first_attempt_receipt.json", "STALE_previous_attempt.json",
+    "current_attempt_receipt.json", "DIM_R562_TEST_ONLY_ACCEPTANCE.json",
+    "NO_SATISFACTORY_NATIVE_RUN.json", "r783_receipt_symlink.json",
+    "user-owned-test-receipt.json", "not-a-real-acceptance.json",
+    "NO_NATIVE_ACCEPTANCE_RECEIPT.json", "receipt.json",
+)
 SCHEMA=1
 
 def need(ok,why):
@@ -83,8 +105,17 @@ def verified_regular_fd(path, *, native_receipt=False):
         # No separators, controls, shell metacharacters or dot-prefixed
         # hidden names are allowed.  The pinned parent descriptor remains the
         # actual filesystem boundary, independent of this lexical check.
-        leaf = path.name
-        if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", leaf) is None:
+        requested = path.name
+        if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", requested) is None:
+            raise RuntimeError("FAIL_CLOSED_UNSAFE_FILE_COMPONENT")
+        # Choose the descriptor leaf from literal trusted names only; the
+        # untrusted filename never becomes the filesystem-open argument.
+        leaf = None
+        for approved in APPROVED_FILE_LEAVES:
+            if requested == approved:
+                leaf = approved
+                break
+        if leaf is None:
             raise RuntimeError("FAIL_CLOSED_UNSAFE_FILE_COMPONENT")
         try:
             opened=os.open(leaf,flags,dir_fd=parent)

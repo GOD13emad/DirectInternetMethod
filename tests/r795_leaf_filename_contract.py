@@ -34,6 +34,13 @@ class FilenameContract(unittest.TestCase):
                     with m.verified_regular_fd(p):
                         self.fail("UNSAFE_LEAF_OPENED")
                 self.assertEqual(p.read_bytes(),b"foreign file")
+    def test_regex_valid_but_non_allowlisted_name_rejected(self):
+        p=self.d/"unexpected-but-valid-name.txt"
+        p.write_bytes(b"foreign contents")
+        with self.assertRaisesRegex(RuntimeError,"FAIL_CLOSED_UNSAFE_FILE_COMPONENT"):
+            with m.verified_regular_fd(p):
+                self.fail("UNALLOWLISTED_FILE_OPENED")
+        self.assertEqual(p.read_bytes(),b"foreign contents")
     def test_symlink_parent_still_rejected(self):
         t=self.d/"actual"
         t.mkdir()
