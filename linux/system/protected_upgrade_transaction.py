@@ -51,7 +51,7 @@ def need(ok,why):
     if not ok:raise RuntimeError("FAIL_CLOSED_"+why)
 def sha(data):return hashlib.sha256(data).hexdigest().upper()
 @contextmanager
-def verified_regular_fd(path):
+def verified_regular_fd(path, *, native_receipt=False):
     """Pin a regular file by descriptor, never traversing a symlink parent.
 
     Unlike inspecting path.is_file() then opening later, both the metadata and
@@ -72,6 +72,13 @@ def verified_regular_fd(path):
                 raise RuntimeError("FAIL_CLOSED_UNSAFE_PARENT_COMPONENT") from exc
             os.close(parent)
             parent=child
+            if native_receipt:
+                entry=os.fstat(parent)
+                need(entry.st_uid==0 and
+                     (not entry.st_mode & 0o022 or
+                      (bool(entry.st_mode & stat.S_ISVTX) and
+                       stat.S_ISDIR(entry.st_mode))),
+                     "RECEIPT_PARENT_OWNER")
         try:
             opened=os.open(path.name,flags,dir_fd=parent)
         except OSError as exc:
@@ -107,57 +114,36 @@ def checked_regular_bytes(path, *, owner=False, mode=None, max_bytes=2**20):
 def canonical(doc):
     return (json.dumps(doc,sort_keys=True,indent=2,ensure_ascii=False)+"\n").encode("utf8")
 def no_symlink_regular(path,owner=True):
+    """Check the actual pinned descriptor, not a racy pathname preflight."""
     path=pathlib.Path(path)
-    need(not path.is_symlink(),"MISSING_OR_SYMLINK_"+path.name)
-    with verified_regular_fd(path) as (_,st):
-        if owner:need(st.st_uid==0 and st.st_gid==0,"OWNER_"+path.name)
-        return st
-def guarded_file_bytes(path, *, native_receipt=False, limit=2**21):
-    """Read a bounded file through dirfds, refusing symlinks in EVERY parent.
-
-    Package bytes may be user-owned; their exact SHA is separately pinned.
-    Final native acceptance is more privileged and must have an OS-owned,
-    non-group/world-writable file under safe OS-owned directories. A root-owned
-    sticky directory (for example /tmp) may contain a private root test slot.
-    """
-    path=pathlib.Path(path)
-    need(path.is_absolute() and ".." not in path.parts and
-         len(path.parts)>=2, "UNSAFE_ABSOLUTE_FILE_PATH")
-    # The source package is user-owned: never block on a FIFO before type check.
-    flags=os.O_RDONLY|os.O_CLOEXEC|os.O_NOFOLLOW|os.O_NONBLOCK
-    directory=os.open("/",flags|os.O_DIRECTORY)
-    opened=None
     try:
-        for part in path.parts[1:-1]:
-            try:
-                child=os.open(part,flags|os.O_DIRECTORY,dir_fd=directory)
-            except OSError as exc:
-                raise RuntimeError("FAIL_CLOSED_UNSAFE_PARENT_COMPONENT") from exc
-            os.close(directory);directory=child
-            if native_receipt:
-                entry=os.fstat(directory)
-                need(entry.st_uid==0 and
-                     (not entry.st_mode & 0o022 or
-                      (bool(entry.st_mode & stat.S_ISVTX) and
-                       stat.S_ISDIR(entry.st_mode))),
-                     "RECEIPT_PARENT_OWNER")
-        try:
-            opened=os.open(path.name,flags,dir_fd=directory)
-        except OSError as exc:
-            raise RuntimeError("FAIL_CLOSED_UNSAFE_FILE_COMPONENT") from exc
-        info=os.fstat(opened)
-        need(stat.S_ISREG(info.st_mode) and 0<=info.st_size<=limit,
-             "UNSAFE_FILE_TYPE_OR_SIZE")
+        with verified_regular_fd(path) as (_,st):
+            if owner:need(st.st_uid==0 and st.st_gid==0,"OWNER_"+path.name)
+            return st
+    except RuntimeError as exc:
+        # Preserve the existing precise leaf-symlink/missing rejection contract.
+        # A symlinked parent keeps the distinct UNSAFE_PARENT_COMPONENT error.
+        if str(exc)=="FAIL_CLOSED_UNSAFE_FILE_COMPONENT":
+            raise RuntimeError("FAIL_CLOSED_MISSING_OR_SYMLINK_"+path.name) from exc
+        raise
+
+def guarded_file_bytes(path, *, native_receipt=False, limit=2**21):
+    """Bounded source/receipt reader through the SAME pinned descriptor helper.
+
+    User-owned package members are admitted only after exact SHA validation.
+    Native receipts additionally require safe root-owned ancestry and leaf.
+    The descriptor never follows a symlink, opens a FIFO blocking, or changes
+    the identity between stat and read.
+    """
+    with verified_regular_fd(path,native_receipt=native_receipt) as (fd,info):
+        need(0<=info.st_size<=limit,"UNSAFE_FILE_TYPE_OR_SIZE")
         if native_receipt:
             need(info.st_uid==0 and info.st_gid==0 and
-                 not info.st_mode & 0o022, "UNTRUSTED_RECEIPT_OWNER")
-        with os.fdopen(os.dup(opened),"rb") as reader:
+                 not info.st_mode & 0o022,"UNTRUSTED_RECEIPT_OWNER")
+        with os.fdopen(os.dup(fd),"rb") as reader:
             content=reader.read(limit+1)
-        need(len(content)<=limit, "FILE_SIZE_CHANGED_DURING_READ")
+        need(len(content)<=limit,"FILE_SIZE_CHANGED_DURING_READ")
         return content
-    finally:
-        if opened is not None:os.close(opened)
-        os.close(directory)
 
 
 def flush_dir(directory):

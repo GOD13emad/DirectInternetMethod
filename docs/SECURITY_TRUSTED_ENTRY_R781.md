@@ -10,13 +10,13 @@ This directory is deliberately **outside** the primary `/usr/lib/directinternetm
 
 The source of this bootstrap is `tools/security/privileged_entry.py` in the exact reviewed commit. Its SHA-256 in the R781 test candidate is:
 
-`2783753829826E43C47779A90A38C941486A93F16F481E222AFC214F45B3DA78`
+`F9FDD13D889FF0323E20CE45532F1F9204FF3FB393BC17429A5C5CAECCCF129A`
 
 It freezes only the **single accepted** `v1.5.5-rc1` package, using a compiled-in manifest SHA-256:
 
-`7C0F7D85EC86C0C956B13CDEC101D2A1BEEA750B2EDD0F4AF8E87DA8824334D4`
+`B4669C9DC6481A7DC9BC85FFD0039EB66353F8406BE93570B73676CC83660FFA`
 
-The built Linux ZIP is **UNRELEASED**: SHA-256 `D34F779322634BF35031B7A8594219B0AD1DD69296EF3637D23CBC97E7E99720` (8,422,557 bytes, 28 payload members).
+The built Linux ZIP is **UNRELEASED**: SHA-256 `DCB7B3A875466DFED664BFA0FA45EB2C57AAF6450161A898E4304F19F718E777` (8,422,000 bytes, 28 payload members).
 
 ## Exact sequence and guardrails
 

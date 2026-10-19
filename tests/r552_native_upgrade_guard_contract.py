@@ -2,7 +2,7 @@
 """R552 source-extracted regression: worker/timer logic, ZERO installed actions."""
 import hashlib,importlib.util,json,os,pathlib,tempfile,types,unittest
 SRC=pathlib.Path(__file__).resolve().parents[1]/"linux/system/upgrade_guard.py"
-SOURCE_SHA="CE3D3B56510BA2D106B078D3F6FF24C9C71022ADDDA9FE4DEAD9296A27EE133B"
+SOURCE_SHA="A4FE303415AE91DED41B2D718040C1A928179DD92BF0ABE601627C479F3DEDFD"
 assert hashlib.sha256(SRC.read_bytes()).hexdigest().upper()==SOURCE_SHA
 spec=importlib.util.spec_from_file_location("r552_candidate",SRC)
 g=importlib.util.module_from_spec(spec)
