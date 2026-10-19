@@ -79,8 +79,15 @@ def verified_regular_fd(path, *, native_receipt=False):
                       (bool(entry.st_mode & stat.S_ISVTX) and
                        stat.S_ISDIR(entry.st_mode))),
                      "RECEIPT_PARENT_OWNER")
+        # Restrict the leaf to a single ASCII package/receipt filename.
+        # No separators, controls, shell metacharacters or dot-prefixed
+        # hidden names are allowed.  The pinned parent descriptor remains the
+        # actual filesystem boundary, independent of this lexical check.
+        leaf = path.name
+        if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", leaf) is None:
+            raise RuntimeError("FAIL_CLOSED_UNSAFE_FILE_COMPONENT")
         try:
-            opened=os.open(path.name,flags,dir_fd=parent)
+            opened=os.open(leaf,flags,dir_fd=parent)
         except OSError as exc:
             raise RuntimeError("FAIL_CLOSED_UNSAFE_FILE_COMPONENT") from exc
         st=os.fstat(opened)

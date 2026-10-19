@@ -6,7 +6,7 @@ set -Eeuo pipefail
 umask 077
 SRC="${1:-}"
 REQ_UID="${2:-}"
-TX_SHA="6ABD10A709F68F4330B97CF903CB13E231CEB1B763AD9A378F422EA4F6A1E9A0"
+TX_SHA="261EBB221B5957FCF236E8152930249FAA7F6F059CB178D648A86497614549E5"
 [ "$(id -u)" = 0 ] || { echo 'ROOT_REQUIRED' >&2; exit 77; }
 case "$REQ_UID" in ''|*[!0-9]*) echo 'UID_INVALID' >&2; exit 77;; esac
 [ "$REQ_UID" -gt 0 ] && [ "$REQ_UID" -lt 2147483648 ] || exit 77
@@ -40,7 +40,7 @@ PY
 # Arm the separately root-owned boot-persistent R553 guard BEFORE any
 # protected Root Stage/Apply. Source identity is a frozen independent SHA;
 # a signed-in OS administrator still authenticates through the installer.
-GUARD_SHA="A4FE303415AE91DED41B2D718040C1A928179DD92BF0ABE601627C479F3DEDFD"
+GUARD_SHA="4F55CA969E49295D643B9AC9FF6D616F4324BF9FDCD815ED6024C3810586A5C0"
 [ -f "$SRC/system/upgrade_guard.py" ] && [ ! -L "$SRC/system/upgrade_guard.py" ] || {
     echo "R553_GUARD_SOURCE_MISSING_OR_SYMLINK" >&2; exit 87;
 }
