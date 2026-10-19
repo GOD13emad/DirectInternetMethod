@@ -630,6 +630,32 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  linux-r782-root-owned-bootstrap-ephemeral:
+    name: linux-r782-root-owned-bootstrap-ephemeral
+    # Actual UID 0 on a fresh original-repository GitHub VM ONLY.
+    # Never run this job on a user's machine, a fork, or a tag release.
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/security/r776-pinned-root-read-qa'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Rebuild frozen candidate and verify trusted manifest source bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -B build_linux_package.py
+          printf '%s  %s\n' '15A88BCF4F1D8DCEC34B62D662041750DFC2A3ACCC1F1EFD554D92E0D6BEC1E3' 'delivery/DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip' | sha256sum --check --status
+          printf '%s  %s\n' '05B8AA5452CE0316CE4E815F268E06E223E3EAF7C825B27319268C9303E32620' 'tools/security/privileged_entry.py' | sha256sum --check --status
+      - name: Real root-owned bootstrap staged freeze and bad-manifest fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Test only; PKEXEC_UID is simulated, and no product install runs.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_SHA="$GITHUB_SHA" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r782_hosted_trusted_entry_ephemeral.py
+
   windows-release-contract:
     name: windows-release-contract-unsigned
     if: startsWith(github.ref, 'refs/tags/v')
