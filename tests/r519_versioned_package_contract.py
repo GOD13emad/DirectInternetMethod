@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":28,"sha256":"04061B34F45C7E667B54764982B60770AB585C78F3F7E12C8FA4410F01EB4386"}
+EXPECTED={"version":VERSION,"files":28,"sha256":"15A88BCF4F1D8DCEC34B62D662041750DFC2A3ACCC1F1EFD554D92E0D6BEC1E3"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -190,7 +190,10 @@ class Tests(unittest.TestCase):
         src=INSTALLER.read_text()
         self.assertIn("ROOT_UPGRADE_STAGED=1",src)
         self.assertIn('R519_CANDIDATE_PENDING_NATIVE_ROOT_USER_COMMIT',src)
-        self.assertIn('pkexec /bin/bash "$HERE/system/upgrade_system.sh"',src)
+        self.assertIn('pkexec /usr/bin/python3 -I "$TRUSTED_BOOTSTRAP" --action upgrade',src)
+        self.assertIn('pkexec /usr/bin/python3 -I "$TRUSTED_BOOTSTRAP" --action install',src)
+        self.assertNotIn('pkexec /bin/bash "$HERE/system/',src)
+        self.assertIn('R781_TRUSTED_BOOTSTRAP_NOT_PROVISIONED',src)
         self.assertIn('python3 "$USER_TRANSACTION" --rollback',src)
     def test_gui_and_user_metadata_pins(self):
         app=GUI.read_text()

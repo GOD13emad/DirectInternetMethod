@@ -101,17 +101,32 @@ $HERE/licenses/LICENSE-zapret.txt|/usr/lib/directinternetmethod/licenses/LICENSE
 EOF
 }
 
+# R781: A privileged entry must be an OS-provisioned, Root-owned fixed script.
+# Neither Root Bash nor Python may execute source from this user-owned package.
+TRUSTED_BOOTSTRAP="/usr/local/libexec/directinternetmethod/privileged_entry.py"
+trusted_bootstrap_ready() {
+  [ -f "$TRUSTED_BOOTSTRAP" ] &&
+  [ ! -L "$TRUSTED_BOOTSTRAP" ] &&
+  [ "$(stat -c %u -- "$TRUSTED_BOOTSTRAP")" = 0 ] &&
+  [ "$(stat -c %g -- "$TRUSTED_BOOTSTRAP")" = 0 ] &&
+  [ "$(stat -c %a -- "$TRUSTED_BOOTSTRAP")" = 500 ] &&
+  [ "$(stat -c %h -- "$TRUSTED_BOOTSTRAP")" = 1 ]
+}
 # Administrative authorization is required only when the protected backend is absent or differs.
 if backend_matches_current; then
   echo "Protected backend already matches current package; keeping root-owned code unchanged."
 else
+  if ! trusted_bootstrap_ready; then
+    echo "R781_TRUSTED_BOOTSTRAP_NOT_PROVISIONED: OS administrator must approve an independently verified, Root-owned bootstrap. No package code ran as Root." >&2
+    rollback_failed_install 87
+  fi
   if [ -f /var/lib/directinternetmethod/install.json ] &&
      [ -d /usr/lib/directinternetmethod ]; then
     ROOT_UPGRADE_STAGED=1
-    pkexec /bin/bash "$HERE/system/upgrade_system.sh" "$HERE" "$(id -u)"
+    pkexec /usr/bin/python3 -I "$TRUSTED_BOOTSTRAP" --action upgrade --source "$HERE"
   elif [ ! -e /var/lib/directinternetmethod/install.json ] &&
        [ ! -e /usr/lib/directinternetmethod ]; then
-    pkexec /bin/bash "$HERE/system/install_system.sh" "$HERE" "$(id -u)"
+    pkexec /usr/bin/python3 -I "$TRUSTED_BOOTSTRAP" --action install --source "$HERE"
   else
     echo 'Foreign/partial root backend; no mutation authorized.' >&2
     rollback_failed_install 25

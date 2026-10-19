@@ -18,7 +18,8 @@ assert installer.count(needle)==1,"USER_INSTALLER_BYTECODE_OPT_OUT_NOT_UNIQUE"
 prefix=installer.split('HERE="$(cd "$(dirname "$0")" && pwd)"',1)
 assert len(prefix)==2,"INSTALLER_SOURCE_PREFIX_CHANGED"
 assert needle in prefix[0] and prefix[0].index(needle)>prefix[0].index("umask 077")
-assert 'pkexec /bin/bash "$HERE/system/upgrade_system.sh"' in installer,"PROTECTED_ROOT_AUTH_REMOVED"
+assert 'pkexec /usr/bin/python3 -I "$TRUSTED_BOOTSTRAP" --action upgrade' in installer,"PROTECTED_ROOT_AUTH_REMOVED"
+assert 'pkexec /bin/bash "$HERE/system/' not in installer,"ROOT_ENTRYPOINT_MUST_NOT_BE_USER_WRITABLE"
 assert 'R519_CANDIDATE_PENDING_NATIVE_ROOT_USER_COMMIT' in installer,"UNCOMMITTED_SAFETY_SEMANTICS_CHANGED"
 assert 'python3 "$USER_TRANSACTION" --rollback' in installer,"USER_ROLLBACK_REMOVED"
 if sys.platform.startswith("linux"):
