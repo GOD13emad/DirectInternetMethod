@@ -24,6 +24,10 @@ ENTRY = Path("/usr/local/libexec/directinternetmethod/privileged_entry.py")
 SOURCE = BASE / "tools/security/privileged_entry.py"
 PKG = "DirectInternetMethod_1.5.5-rc1_Linux_x86_64"
 ARCHIVE = BASE / "delivery" / (PKG + ".zip")
+# This is a disposable original-repository GitHub VM, not an arbitrary path
+# derived from RUNNER_TEMP or another user-provided environment variable.
+EXPECTED_WORKSPACE = Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod")
+OWNED_SCRATCH = Path("/run/dim-r782-one-time-trusted-root-fixture")
 
 def need(yes: bool, code: str):
     if not yes:
@@ -41,14 +45,17 @@ def guard():
     need(e.get("GITHUB_REF") == "refs/heads/security/r776-pinned-root-read-qa" and
          e.get("GITHUB_SHA") and len(e["GITHUB_SHA"]) == 40,
          "REVIEW_ONLY_BRANCH_AND_EXACT_COMMIT")
-    work = e.get("GITHUB_WORKSPACE", "")
-    need(work and Path(work).resolve() == BASE.resolve(), "WORKSPACE_NOT_OWNED")
+    need(e.get("GITHUB_WORKSPACE") == str(EXPECTED_WORKSPACE) and
+         BASE == EXPECTED_WORKSPACE and BASE.is_dir(),
+         "WORKSPACE_NOT_OWNED")
     commit = subprocess.run(["/usr/bin/git", "-C", str(BASE), "rev-parse", "HEAD"],
                             check=True, capture_output=True, text=True).stdout.strip()
     need(commit == e["GITHUB_SHA"], "CHECKED_OUT_COMMIT_DIFFERENT")
-    temp = Path(e.get("RUNNER_TEMP", ""))
-    need(temp.is_absolute() and temp.is_dir() and
-         temp not in (Path("/"), Path("/tmp")), "RUNNER_TEMP_INVALID")
+    need(Path("/run").is_dir() and Path("/run").lstat().st_uid == 0 and
+         not (Path("/run").lstat().st_mode & 0o022), "ROOT_RUN_PARENT")
+    need(not OWNED_SCRATCH.exists() and not OWNED_SCRATCH.is_symlink(),
+         "NO_FOREIGN_SCRATCH")
+    temp = OWNED_SCRATCH
     runner = pwd.getpwnam("runner")
     need(runner.pw_uid > 0 and runner.pw_dir == "/home/runner", "REAL_HOSTED_RUNNER")
     need(not ENTRY.exists() and not ENTRY.is_symlink(), "FOREIGN_ENTRY_PRESENT")
@@ -147,7 +154,13 @@ def main():
     scratch = None
     created_upper = False
     parent_created = False
+    private_created = False
     try:
+        temp.mkdir(mode=0o700)
+        private_created = True
+        st = temp.lstat()
+        need(st.st_uid == 0 and stat.S_IMODE(st.st_mode) == 0o700 and
+             stat.S_ISDIR(st.st_mode), "OWNED_SCRATCH_IDENTITY")
         created_upper = trusted_provision()
         parent_created = True
         os.environ["PKEXEC_UID"] = str(uid)  # SIMULATION; no native auth conclusion
@@ -172,7 +185,13 @@ def main():
             ENTRY.parent.rmdir()
         if created_upper:
             ENTRY.parent.parent.rmdir()
-        need(not ENTRY.exists() and
+        if private_created:
+            st = temp.lstat()
+            need(temp == OWNED_SCRATCH and st.st_uid == 0 and
+                 stat.S_ISDIR(st.st_mode) and stat.S_IMODE(st.st_mode) == 0o700,
+                 "CLEANUP_EXACT_OWNED_SCRATCH")
+            temp.rmdir()
+        need(not ENTRY.exists() and not temp.exists() and
              not Path("/var/lib/directinternetmethod/install.json").exists(),
              "POST_CLEANUP_NO_PRODUCT_MUTATION")
 
