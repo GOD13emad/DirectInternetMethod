@@ -213,7 +213,12 @@ def run_native():
         t.commit(temp/"NO_NATIVE_ACCEPTANCE_RECEIPT.json")
         raise RuntimeError("R528_BAD_ACCEPTANCE_WAS_ALLOWED")
     except RuntimeError as exc:
-        need("FAIL_CLOSED_NATIVE_ACCEPTANCE_MISSING" in str(exc),
+        # R783: the disposable native runner puts its absent receipt under a
+        # runner-owned temporary ancestor. The single-descriptor receipt read
+        # must fail closed before opening that leaf; an untrusted parent and
+        # a missing trusted leaf are both narrowly acceptable reject causes.
+        need(("FAIL_CLOSED_NATIVE_ACCEPTANCE_MISSING" in str(exc) or
+              "FAIL_CLOSED_RECEIPT_PARENT_OWNER" in str(exc)),
              "UNEXPECTED_ACCEPTANCE_REJECTION")
     need(t.rollback()["status"]=="ROLLED_BACK","ROOT_ROLLBACK")
     need(t.status()["status"]=="ROLLED_BACK","ROOT_ROLLBACK_STATE")
