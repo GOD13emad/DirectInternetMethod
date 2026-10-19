@@ -185,7 +185,12 @@ class PrivilegedRootFileTransaction(unittest.TestCase):
     def test_12_commit_without_live_acceptance_forbidden(self):
         self.tx.stage(self.fx.pkg)
         self.tx.apply()
-        with self.assertRaisesRegex(RuntimeError, "NATIVE_ACCEPTANCE_MISSING"):
+        # The fake Root fixture lives under runner-owned GITHUB_WORKSPACE.
+        # R783's single-descriptor reader rejects its untrusted ancestor
+        # before it would check the missing receipt leaf. Both are narrowly
+        # valid fail-closed causes; neither may commit or mutate the baseline.
+        with self.assertRaisesRegex(RuntimeError,
+                                    "NATIVE_ACCEPTANCE_MISSING|RECEIPT_PARENT_OWNER"):
             self.tx.commit(self.root / "not-a-real-acceptance.json")
         self.assertEqual(self.tx.status()["status"], "APPLIED")
         self.assertEqual(self.tx.rollback()["status"], "ROLLED_BACK")
