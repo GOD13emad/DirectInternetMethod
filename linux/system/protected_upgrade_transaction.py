@@ -90,6 +90,20 @@ def hash_file(path):
             for block in iter(lambda:stream.read(1048576),b""):
                 h.update(block)
     return h.hexdigest().upper()
+def checked_regular_bytes(path, *, owner=False, mode=None, max_bytes=2**20):
+    """Check identity, ownership, type and read from ONE pinned regular inode."""
+    with verified_regular_fd(path) as (fd, st):
+        if owner:
+            need(st.st_uid==0 and st.st_gid==0,
+                 "CHECKED_FILE_FOREIGN_OWNER")
+        if mode is not None:
+            need(stat.S_IMODE(st.st_mode)==mode, "CHECKED_FILE_MODE")
+        need(0<=st.st_size<=max_bytes, "CHECKED_FILE_TOO_LARGE")
+        with os.fdopen(os.dup(fd),"rb") as stream:
+            data=stream.read(max_bytes+1)
+        need(len(data)<=max_bytes, "CHECKED_FILE_SIZE_DRIFT")
+        return data
+
 def canonical(doc):
     return (json.dumps(doc,sort_keys=True,indent=2,ensure_ascii=False)+"\n").encode("utf8")
 def no_symlink_regular(path,owner=True):
@@ -177,9 +191,8 @@ class RootTransaction:
              ".." not in pathlib.PurePosixPath(relative).parts,"PATH_TRAVERSAL")
         return self.root/relative
     def original_metadata(self):
-        s=no_symlink_regular(self.meta,self.native)
-        need(stat.S_IMODE(s.st_mode)==0o644,"METADATA_MODE")
-        d=json.loads(self.meta.read_text("utf8"))
+        d=json.loads(checked_regular_bytes(
+            self.meta,owner=self.native,mode=0o644,max_bytes=65536).decode("utf8"))
         need(type(d)==dict and d.get("schema")==1 and
              d.get("version")==CURRENT_BACKEND_VERSION,"OLD_ROOT_VERSION")
         uid=d.get("uid")
@@ -189,8 +202,8 @@ class RootTransaction:
         need(isinstance(home,str) and home.startswith("/home/") and
              ".." not in pathlib.PurePosixPath(home).parts,"OWNER_HOME")
         idfile=self.p("etc/directinternetmethod.uid")
-        need(no_symlink_regular(idfile,self.native) and idfile.read_text().strip()==str(uid),
-             "UID_MARKER_CHANGED")
+        uid_marker=checked_regular_bytes(idfile,owner=self.native,max_bytes=128)
+        need(uid_marker.decode("utf8").strip()==str(uid),"UID_MARKER_CHANGED")
         return d
     def _baseline(self):
         before=self.original_metadata()
@@ -248,8 +261,8 @@ class RootTransaction:
             s=self.pending.stat()
             need(s.st_uid==0 and stat.S_IMODE(s.st_mode)==0o700,"SLOT_UNOWNED")
         p=self.pending/"manifest.json"
-        no_symlink_regular(p,self.native)
-        data=json.loads(p.read_text("utf8"))
+        data=json.loads(checked_regular_bytes(
+            p,owner=self.native,max_bytes=131072).decode("utf8"))
         need(data.get("schema")==SCHEMA and data.get("revision")=="R519" and
              data.get("fromVersion")==CURRENT_BACKEND_VERSION and
              data.get("toVersion")==TARGET_VERSION,"MANIFEST_VERSION")

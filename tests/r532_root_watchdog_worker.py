@@ -25,7 +25,7 @@ MANIFEST = GUARD / "baseline.json"
 RESULT = GUARD / "timer-return.json"
 ROOT_HELPER = GUARD / "root_tx.py"
 USER_HELPER = GUARD / "user_tx.py"
-PIN_ROOT = "a4261e4afd63019bfc953030496bcb0b60949ecc5516c2cc639e081de91641ae"
+PIN_ROOT = "8a051957350e68e1938604bfa286fa4f528d8930798d385b0b1fb49fc6751682"
 PIN_USER = "c1bbf62d99e46cb8e349a38e60891027ff7276f85caceb597548c269203f28bf"
 
 def digest(path:Path):
