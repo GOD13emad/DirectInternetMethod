@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":28,"sha256":"79A8F080BDFD4545FD75ED1EEBE5FF588718B4966632A7212861F2B786CFF9D4"}
+EXPECTED={"version":VERSION,"files":28,"sha256":"04061B34F45C7E667B54764982B60770AB585C78F3F7E12C8FA4410F01EB4386"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -142,9 +142,11 @@ class Tests(unittest.TestCase):
         self.assertIn("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED",src)
         self.assertIn("GUARD_SHA=",src)
         self.assertLess(src.index("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED"),
-                        src.index('python3 "$SRC/system/protected_upgrade_transaction.py" stage'))
-        self.assertIn('python3 "$SRC/system/protected_upgrade_transaction.py" stage',src)
-        self.assertIn('python3 "$SRC/system/protected_upgrade_transaction.py" apply',src)
+                        src.index('python3 -B "$GUARD_ROOT_TX" stage'))
+        self.assertIn('python3 -B "$GUARD_ROOT_TX" stage',src)
+        self.assertIn('python3 -B "$GUARD_ROOT_TX" apply',src)
+        self.assertIn('R779_BOOTSTRAP_COPY_SHA_CHANGED',src)
+        self.assertNotIn('python3 "$SRC/system/upgrade_guard.py" arm',src)
         self.assertNotIn(' commit',src)
     def test_guard_and_hosted_root_zip_inventory_track_live_manifest(self):
         # R748 negative-first: source/unit guards must accept the same exact

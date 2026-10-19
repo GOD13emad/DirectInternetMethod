@@ -59,6 +59,40 @@ def regular(path:Path,uid=None,mode=None):
 
 def canonical(obj):return (json.dumps(obj,indent=2,sort_keys=True)+"\n").encode()
 
+def pinned_package_bytes(source:Path,relative:str,want:str,limit:int=4*1024*1024)->bytes:
+    """Pin and SHA-verify package bytes from one opened regular inode.
+
+    Both the user-owned package and its ancestor directories may change between
+    the initial guard preflight and the Root operation. No path-based reopen,
+    no symlink parent and no blocking open of FIFO/special source nodes.
+    """
+    path=source/relative
+    need(path.is_absolute() and ".." not in path.parts and len(path.parts)>1,
+         "PINNED_PACKAGE_PATH")
+    flags=os.O_RDONLY|os.O_CLOEXEC|os.O_NOFOLLOW|os.O_NONBLOCK
+    directory=os.open("/",flags|os.O_DIRECTORY)
+    opened=None
+    try:
+        try:
+            for name in path.parts[1:-1]:
+                child=os.open(name,flags|os.O_DIRECTORY,dir_fd=directory)
+                os.close(directory);directory=child
+            opened=os.open(path.name,flags,dir_fd=directory)
+        except OSError as exc:
+            raise RuntimeError("R552_GUARD_FAIL_CLOSED_PINNED_SOURCE_OPEN") from exc
+        info=os.fstat(opened)
+        need(stat.S_ISREG(info.st_mode) and 0<=info.st_size<=limit,
+             "PINNED_SOURCE_REGULAR_AND_SIZE")
+        with os.fdopen(os.dup(opened),"rb") as reader:
+            payload=reader.read(limit+1)
+        need(len(payload)<=limit and
+             hashlib.sha256(payload).hexdigest().upper()==want.upper(),
+             "PINNED_SOURCE_SHA_CHANGED")
+        return payload
+    finally:
+        if opened is not None:os.close(opened)
+        os.close(directory)
+
 def command(args,timeout=15):
     return subprocess.run(args,text=True,capture_output=True,timeout=timeout,check=False)
 
@@ -124,10 +158,8 @@ def validate_source(source:Path):
     for label,relative,want in (
         ("ROOT_TX","system/protected_upgrade_transaction.py",PIN_ROOT),
         ("USER_TX","app/user_update_transaction.py",PIN_USER)):
-        candidate=source/relative
-        regular(candidate)
-        need(sha_file(candidate)==want and str(pin.get(relative,"")).upper()==want,
-             "PACKAGE_"+label)
+        pinned_package_bytes(source,relative,want)
+        need(str(pin.get(relative,"")).upper()==want,"PACKAGE_"+label)
     return True
 
 def preflight(source:Path):
@@ -145,10 +177,18 @@ def preflight(source:Path):
             "guardArmed":False,"networkUntouched":True}
 
 def guard_files(source:Path,uid:int,user:str,home:Path,um:Path,rm:Path):
+    # R779: re-open/verify the exact source bytes before any protected output.
+    # The initial preflight is not sufficient against a user-owned source race.
+    root_payload=pinned_package_bytes(
+        source,"system/protected_upgrade_transaction.py",PIN_ROOT)
+    user_payload=pinned_package_bytes(
+        source,"app/user_update_transaction.py",PIN_USER)
     GUARD.mkdir(mode=0o711)
     os.chown(GUARD,0,0);os.chmod(GUARD,0o711)
-    write_new(ROOT_TX,(source/"system/protected_upgrade_transaction.py").read_bytes(),0o500)
-    write_new(USER_TX,(source/"app/user_update_transaction.py").read_bytes(),0o644)
+    write_new(ROOT_TX,root_payload,0o500)
+    write_new(USER_TX,user_payload,0o644)
+    need(sha_file(ROOT_TX)==PIN_ROOT and sha_file(USER_TX)==PIN_USER,
+         "PINNED_GUARD_ROOT_USER_COPY_SHA")
     write_new(WORKER,Path(__file__).read_bytes(),0o500)
     dns=Path("/etc/resolv.conf")
     baseline={"schema":1,"revision":"R552","uid":uid,"user":user,

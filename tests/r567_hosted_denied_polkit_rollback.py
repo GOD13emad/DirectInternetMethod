@@ -23,7 +23,7 @@ import textwrap
 BASE=Path(__file__).resolve().parents[1]
 R528=BASE/"tests/r528_ephemeral_native_root_cli_contract.py"
 R529=BASE/"tests/r529_ephemeral_root_user_transaction.py"
-ARCHIVE="79A8F080BDFD4545FD75ED1EEBE5FF588718B4966632A7212861F2B786CFF9D4"
+ARCHIVE="04061B34F45C7E667B54764982B60770AB585C78F3F7E12C8FA4410F01EB4386"
 
 def require(v,code):
     if not v: raise RuntimeError("R567_DENIED_AUTH_FAIL_CLOSED_"+code)
@@ -105,7 +105,7 @@ def main():
       "set -euo pipefail\n"
       "HERE="+subprocess.list2cmdline([str(extracted)])+"\n"
       "USER_TRANSACTION="+subprocess.list2cmdline([str(user_tx)])+"\n"
-      "ROOT_TRANSACTION="+subprocess.list2cmdline([str(extracted/"system/protected_upgrade_transaction.py")])+"\n"
+      "ROOT_TRANSACTION="+subprocess.list2cmdline(["/var/lib/directinternetmethod/upgrade-guard/root_tx.py"])+"\n"
       "ROOT_UPGRADE_STAGED=0\nTRANSACTION_ACTIVE=1\n"
       "pkexec() { printf 'R567_POLKIT_DENIED_BY_OWNER\\n' >&2; return 126; }\n"
       +rollback+"\n\n"+backend+"\n\n"

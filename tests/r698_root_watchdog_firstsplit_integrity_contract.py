@@ -67,7 +67,7 @@ for t in ("tests/r552_native_upgrade_guard_contract.py",
     need(guard_sha in src(t),"INDEPENDENT_WATCHDOG_CONTRACT_PIN_STALE_"+pathlib.Path(t).stem)
 need('R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED' in wrapper,"INDEPENDENT_GUARD_REMOVED")
 need(wrapper.index('R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED')<
-     wrapper.index('python3 "$SRC/system/protected_upgrade_transaction.py" stage'),
+     wrapper.index('python3 -B "$GUARD_ROOT_TX" stage'),
      "ROOT_MUTATES_BEFORE_GUARD_ARMED")
 need('"$NFQWS" --dry-run "${NFQWS_ARGS[@]}"' in helper,"ENGINE_PARSER_VERIFICATION_REMOVED")
 

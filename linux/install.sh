@@ -12,7 +12,8 @@ ICONS="$HOME/.local/share/icons/hicolor/scalable/apps"
 USER_TRANSACTION="$HERE/app/user_update_transaction.py"
 TRANSACTION_ACTIVE=0
 ROOT_UPGRADE_STAGED=0
-ROOT_TRANSACTION="$HERE/system/protected_upgrade_transaction.py"
+# R779: a rollback must never execute user-writable package code as Root.
+ROOT_TRANSACTION="/var/lib/directinternetmethod/upgrade-guard/root_tx.py"
 rollback_failed_install() {
   local code="$1"
   trap - ERR HUP INT TERM
