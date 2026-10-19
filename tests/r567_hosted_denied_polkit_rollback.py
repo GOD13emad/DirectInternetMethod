@@ -84,7 +84,7 @@ def main():
             "INSTALLER_IDENTITY")
     rollback=excerpt(source,"rollback_failed_install() {","\n\nfor c in ")
     backend=excerpt(source,"backend_matches_current() {",
-                    "\n\n# Administrative authorization is required only")
+                    "\n\n# R781: A privileged entry must be")
     auth=excerpt(source,"# Administrative authorization is required only",
                  "\nbackend_matches_current || ")
     require(auth.count('pkexec /usr/bin/python3 -I "$TRUSTED_BOOTSTRAP"')==2
