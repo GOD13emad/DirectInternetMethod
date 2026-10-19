@@ -68,6 +68,10 @@ class SwappedPathAfterCheck(unittest.TestCase):
         mod.no_symlink_regular = check_and_swap
         return original, called
 
+    def test_legacy_metadata_mode_error_is_preserved(self):
+        self.meta.chmod(0o600)
+        with self.assertRaisesRegex(RuntimeError, "METADATA_MODE"):
+            self.tx.original_metadata()
     def test_valid_unmodified_metadata(self):
         self.assertEqual(self.tx.original_metadata(), self.good)
 

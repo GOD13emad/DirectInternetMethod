@@ -97,7 +97,7 @@ def checked_regular_bytes(path, *, owner=False, mode=None, max_bytes=2**20):
             need(st.st_uid==0 and st.st_gid==0,
                  "CHECKED_FILE_FOREIGN_OWNER")
         if mode is not None:
-            need(stat.S_IMODE(st.st_mode)==mode, "CHECKED_FILE_MODE")
+            need(stat.S_IMODE(st.st_mode)==mode, "METADATA_MODE")
         need(0<=st.st_size<=max_bytes, "CHECKED_FILE_TOO_LARGE")
         with os.fdopen(os.dup(fd),"rb") as stream:
             data=stream.read(max_bytes+1)
