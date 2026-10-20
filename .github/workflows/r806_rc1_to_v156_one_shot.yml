@@ -1,0 +1,33 @@
+name: R806 One-Shot Private RC1 to v1.5.6 Native Proof
+on:
+  push:
+    branches: ['prep/r805-windows-156']
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  r806-private-rc1-to-v156:
+    name: r806-hosted-native-rc1-to-v156
+    if: github.repository == 'GOD13emad/DirectInternetMethod' && github.event_name == 'push' && github.ref == 'refs/heads/prep/r805-windows-156'
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test exact private RC1 to v1.5.6 to RC1 with protected user data
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r806_private_rc1_to_v156_one_shot.ps1
+          if($LASTEXITCODE -ne 0){throw 'R806_HOSTED_NATIVE_PRIVATE_RC1_UPGRADE_NOT_ACCEPTED'}
+      - name: Retain only R806 private QA receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: r806-private-native-receipt-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIM_R806_NATIVE/NATIVE_R806.json
+          if-no-files-found: warn
+          retention-days: 14
