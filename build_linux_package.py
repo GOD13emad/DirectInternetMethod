@@ -2,10 +2,10 @@
 from __future__ import annotations
 import hashlib,json,pathlib,zipfile,tempfile,os
 R=pathlib.Path(__file__).resolve().parent
-OUT=R/"delivery"/"DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip"
-ROOT="DirectInternetMethod_1.5.5-rc1_Linux_x86_64"
+OUT=R/"delivery"/"DirectInternetMethod_1.5.6_Linux_x86_64.zip"
+ROOT="DirectInternetMethod_1.5.6_Linux_x86_64"
 FILES=[
- ("docs/README_PACKAGE_155_RC1.md","README.md"),
+ ("docs/README_PACKAGE_156.md","README.md"),
  ("linux/install.sh","install.sh"),
  ("linux/uninstall.sh","uninstall.sh"),
  ("linux/system/install_system.sh","system/install_system.sh"),
@@ -42,7 +42,7 @@ def payload_bytes(src:str,dst:str)->bytes:
   data=data.replace(b"\r\n",b"\n").replace(b"\r",b"\n")
  return data
 # Frozen originally shipped documentation; root README may describe current publication.
-if sha_bytes(payload_bytes("docs/README_PACKAGE_155_RC1.md","README.md"))!="2E2D817FD4728903E7085C4D7D02786107206881DA47FE4DFA6AA3C6F4E4AF76":
+if sha_bytes(payload_bytes("docs/README_PACKAGE_156.md","README.md"))!="C836C617B05FCC01FD384BDF8A31BE5F51DF0335734A22C3953BEF8D594299D5":
  raise SystemExit("R519_PACKAGE_README_SHA_CHANGED")
 rows=[]
 for src,dst in FILES:
@@ -50,7 +50,7 @@ for src,dst in FILES:
  if not p.is_file(): raise SystemExit("MISSING:"+src)
  data=payload_bytes(src,dst)
  rows.append({"file":dst,"bytes":len(data),"sha256":sha_bytes(data)})
-manifest={"schema":1,"product":"Direct Internet Method","version":"1.5.5-rc1","platform":"linux-x86_64","files":rows}
+manifest={"schema":1,"product":"Direct Internet Method","version":"1.5.6","platform":"linux-x86_64","files":rows}
 OUT.parent.mkdir(parents=True,exist_ok=True)
 fd,tmp_name=tempfile.mkstemp(prefix="dim-build-",suffix=".zip",dir=OUT.parent)
 os.close(fd)

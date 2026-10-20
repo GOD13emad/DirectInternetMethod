@@ -51,7 +51,7 @@ def load_owned():
     meta = app / "INSTALL.json"
     ensure(meta.is_file() and not meta.is_symlink(), "UNINSTALL_INSTALL_METADATA_MISSING")
     doc = json.loads(meta.read_text(encoding="utf8"))
-    ensure(doc.get("schema") == 2 and doc.get("version") == "1.5.5-rc1",
+    ensure(doc.get("schema") == 2 and doc.get("version") == "1.5.6",
            "UNINSTALL_MANIFEST_OWNER_VERSION_UNVERIFIED")
     codes = doc.get("managedCodeSha256")
     launchers = doc.get("managedLaunchersSha256")

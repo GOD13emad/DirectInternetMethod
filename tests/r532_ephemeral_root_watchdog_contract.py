@@ -3,7 +3,7 @@
 
 Both invocations are separate CI steps on an ephemeral GitHub-hosted Ubuntu VM.
 The first starts a detached systemd monotonic timer BEFORE any candidate file
-mutation, leaves actual protected Root+unprivileged User 1.5.5-rc1 staged and
+mutation, leaves actual protected Root+unprivileged User 1.5.6 staged and
 applied, and EXITs. The second waits for the independent timer and verifies
 byte-exact restoration to 1.5.2 Root / 1.5.4 User, without running rollback.
 All installed products on physical hosts and network services are untouched.
@@ -36,8 +36,8 @@ WORKER_RETURN = GUARD / "timer-return.json"
 UNIT = "dim-r532-watchdog"
 TIMER = UNIT + ".timer"
 SERVICE = UNIT + ".service"
-ROOT_SHA = "94c7d314809f582f437847c3b4f32f9fa8388e14526c138373974a70dea0afc8"
-USER_SHA = "c1bbf62d99e46cb8e349a38e60891027ff7276f85caceb597548c269203f28bf"
+ROOT_SHA = "7147af90e6dc0b29a6ce15a84656ce9587060a7f5f343e7b16281c5602fc693c"
+USER_SHA = "5077ace07b27ddbcbeaa4de56ed718f7fd26934ff65a13251cceafa9dd2feb50"
 
 def sha(p:Path)->str:
     h=hashlib.sha256()
@@ -180,9 +180,9 @@ def arm():
     r529.as_runner(user,user_script,"--apply","--source",extracted)
     r529.as_runner_inline(user,exact_inline(r526,extracted),
                           app/"INSTALL.json",user_script)
-    need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.5-rc1",
+    need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.6",
          "NEW_USER_METADATA")
-    need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.5-rc1",
+    need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.6",
          "NEW_ROOT_METADATA")
     need(root_tx.status()["status"]=="APPLIED","ROOT_APPLIED_PENDING")
     need((Path("/home/runner/.local/state/DirectInternetMethod/update-pending/manifest.json")).is_file(),
@@ -192,7 +192,7 @@ def arm():
     print("PASS_R532_WATCHDOG_ARMED_BEFORE_MUTATION_THEN_MAIN_EXIT")
     print("WORKER_ROOT_OWNED_SHA",doc["workerSHA256"])
     print("TIMER_UNIT",TIMER,"SERVICE_UNIT",SERVICE)
-    print("PRE_TIMER_VERSIONS", "root=1.5.5-rc1","user=1.5.5-rc1")
+    print("PRE_TIMER_VERSIONS", "root=1.5.6","user=1.5.6")
 
 def verify():
     need(GUARD.is_dir() and GUARD.stat().st_uid==0,"EXPECTED_GUARD_NOT_FOUND")

@@ -27,7 +27,7 @@ class GuardSourceIdentity(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory(prefix="r779-owned-",dir=str(ROOT))
         self.base=pathlib.Path(self.tmp.name)
-        self.src=self.base/"DirectInternetMethod_1.5.5-rc1_Linux_x86_64"
+        self.src=self.base/"DirectInternetMethod_1.5.6_Linux_x86_64"
         (self.src/"system").mkdir(parents=True)
         (self.src/"app").mkdir()
         self.root_tx=self.src/"system/protected_upgrade_transaction.py"

@@ -11,8 +11,16 @@ from __future__ import annotations
 import argparse,fcntl,hashlib,json,os,pathlib,re,shutil,stat,sys,tempfile
 from contextlib import contextmanager
 
-TARGET_VERSION="1.5.5-rc1"
+TARGET_VERSION="1.5.6"
 CURRENT_BACKEND_VERSION="1.5.2"
+# Accept exactly the two separately pinned previously installed Root baselines.
+# This is not an arbitrary fromVersion bypass; the old file SHA depends on the
+# verified installed metadata version, and is checked before any mutation.
+SUPPORTED_BASELINE_VERSIONS=("1.5.2","1.5.5-rc1")
+
+def baseline_old_sha(version, old, new):
+    need(version in SUPPORTED_BASELINE_VERSIONS,"OLD_ROOT_VERSION")
+    return old if version==CURRENT_BACKEND_VERSION else new
 SLOT="var/lib/directinternetmethod/upgrade-pending"
 GUARD="var/lib/directinternetmethod/upgrade.lock"
 ACTION_LOCK="run/directinternetmethod-action.lock"
@@ -218,7 +226,7 @@ class RootTransaction:
         d=json.loads(checked_regular_bytes(
             self.meta,owner=self.native,mode=0o644,max_bytes=65536).decode("utf8"))
         need(type(d)==dict and d.get("schema")==1 and
-             d.get("version")==CURRENT_BACKEND_VERSION,"OLD_ROOT_VERSION")
+             d.get("version") in SUPPORTED_BASELINE_VERSIONS,"OLD_ROOT_VERSION")
         uid=d.get("uid")
         need(type(uid) is int and uid>0 and uid<2**31,"OWNER_UID")
         need(re.fullmatch(r"[a-z_][a-z0-9_-]*[$]?",str(d.get("user",""))),"OWNER_USER")
@@ -247,10 +255,11 @@ class RootTransaction:
             need(hash_file(p)==want,"BASELINE_STATIC_SHA_"+pathlib.Path(rel).name)
         for name,src,target,old,new,mode in FILES:
             p=self.p(target)
-            if old:
+            want=baseline_old_sha(before["version"],old,new)
+            if want:
                 s=no_symlink_regular(p,self.native)
                 need(stat.S_IMODE(s.st_mode)==mode,"OLD_FILE_MODE_"+name)
-                need(hash_file(p)==old,"OLD_FILE_SHA_"+name)
+                need(hash_file(p)==want,"OLD_FILE_SHA_"+name)
             else:
                 need(not p.exists() and not p.is_symlink(),"NEW_TARGET_NOT_EMPTY_"+name)
         return before
@@ -288,7 +297,7 @@ class RootTransaction:
         data=json.loads(checked_regular_bytes(
             p,owner=self.native,max_bytes=131072).decode("utf8"))
         need(data.get("schema")==SCHEMA and data.get("revision")=="R519" and
-             data.get("fromVersion")==CURRENT_BACKEND_VERSION and
+             data.get("fromVersion") in SUPPORTED_BASELINE_VERSIONS and
              data.get("toVersion")==TARGET_VERSION,"MANIFEST_VERSION")
         need(data.get("phase") in ("STAGED","APPLIED","ROLLED_BACK","DEGRADED","COMMITTED"),
              "MANIFEST_PHASE")
@@ -327,11 +336,12 @@ class RootTransaction:
             # _baseline(), rather than retaining an untrusted backup.
             originals={}
             for name,rel,target,old,new,mode in FILES:
-                if old:
+                want=baseline_old_sha(before["version"],old,new)
+                if want:
                     old_blob=checked_regular_bytes(
                         self.p(target),owner=self.native,mode=mode,
                         max_bytes=1048576)
-                    need(sha(old_blob)==old,"BASELINE_BACKUP_CHANGED_"+name)
+                    need(sha(old_blob)==want,"BASELINE_BACKUP_CHANGED_"+name)
                     originals[name]=old_blob
             orig=checked_regular_bytes(
                 self.meta,owner=self.native,mode=0o644,max_bytes=65536)
@@ -343,16 +353,17 @@ class RootTransaction:
             try:
                 entries={}
                 for name,rel,target,old,new,mode in FILES:
+                    want=baseline_old_sha(before["version"],old,new)
                     atomic_bytes(self.pending/"new"/name,data[name],0o600,self.native)
-                    if old:
+                    if want:
                         atomic_bytes(self.pending/"old"/name,originals[name],0o600,self.native)
-                    entries[name]={"target":target,"old":old,"new":new,"mode":mode}
+                    entries[name]={"target":target,"old":want,"new":new,"mode":mode}
                 atomic_bytes(self.pending/"old"/"metadata",orig,0o600,self.native)
                 new_meta=dict(before,version=TARGET_VERSION)
                 new_blob=canonical(new_meta)
                 atomic_bytes(self.pending/"new"/"metadata",new_blob,0o600,self.native)
                 payload={"schema":SCHEMA,"revision":"R519","phase":"STAGED",
-                         "fromVersion":CURRENT_BACKEND_VERSION,"toVersion":TARGET_VERSION,
+                         "fromVersion":before["version"],"toVersion":TARGET_VERSION,
                          "files":entries,"oldMetadataSHA":sha(orig),"newMetadataSHA":sha(new_blob),
                          "uid":before["uid"],"home":before["home"],"user":before["user"],
                          "transactionNonce":os.urandom(32).hex()}
@@ -364,14 +375,15 @@ class RootTransaction:
     def _validate_slot(self,m):
         need(self.pending.is_dir() and not self.pending.is_symlink(),"SLOT_UNSAFE")
         for name,rel,target,old,new,mode in FILES:
+            want=baseline_old_sha(m["fromVersion"],old,new)
             x=m["files"][name]
-            need(x=={"target":target,"old":old,"new":new,"mode":mode},"MANIFEST_FILE_TAMPER_"+name)
+            need(x=={"target":target,"old":want,"new":new,"mode":mode},"MANIFEST_FILE_TAMPER_"+name)
             nf=self.pending/"new"/name
             need(no_symlink_regular(nf,self.native) and hash_file(nf)==new,
                  "PENDING_NEW_SHA_"+name)
-            if old:
+            if want:
                 backup=self.pending/"old"/name
-                need(no_symlink_regular(backup,self.native) and hash_file(backup)==old,
+                need(no_symlink_regular(backup,self.native) and hash_file(backup)==want,
                      "PENDING_OLD_SHA_"+name)
         for key,dir,want in (("metadata","old",m["oldMetadataSHA"]),
                               ("metadata","new",m["newMetadataSHA"])):
@@ -388,7 +400,7 @@ class RootTransaction:
             else:
                 no_symlink_regular(file,self.native)
                 digest=hash_file(file)
-            need(digest in (old,new),"FOREIGN_TARGET_MODIFICATION_"+name)
+            need(digest in (baseline_old_sha(m["fromVersion"],old,new),new),"FOREIGN_TARGET_MODIFICATION_"+name)
             result[name]=digest
         no_symlink_regular(self.meta,self.native)
         meta_sha=hash_file(self.meta)
@@ -402,11 +414,16 @@ class RootTransaction:
             self._validate_slot(m)
             before,meta=self._target_states(m)
             for name,rel,target,old,new,mode in FILES:
-                need(before[name]==old,"BASELINE_CHANGED_"+name)
+                need(before[name]==baseline_old_sha(m["fromVersion"],old,new),
+                     "BASELINE_CHANGED_"+name)
             need(meta==m["oldMetadataSHA"],"OLD_META_CHANGED")
             changed=0
             try:
                 for name,rel,target,old,new,mode in FILES:
+                    # A verified RC1 backend is already byte-identical. Only
+                    # metadata advances, without rewriting active program inodes.
+                    if before[name]==new:
+                        continue
                     atomic_bytes(self.p(target),(self.pending/"new"/name).read_bytes(),
                                  mode,self.native)
                     changed+=1
@@ -432,9 +449,11 @@ class RootTransaction:
         states,metadata=self._target_states(m)
         # Verify ALL targets before a single mutation.
         for name,rel,target,old,new,mode in FILES:
+            old=baseline_old_sha(m["fromVersion"],old,new)
             need(states[name] in (old,new),"FOREIGN_TARGET_"+name)
         for name,rel,target,old,new,mode in FILES:
-            if states[name]==new:
+            old=baseline_old_sha(m["fromVersion"],old,new)
+            if states[name]==new and old!=new:
                 p=self.p(target)
                 if old is None:
                     need(not p.is_symlink() and hash_file(p)==new,"FOREIGN_NEW_"+name)
@@ -447,6 +466,7 @@ class RootTransaction:
                          0o644,self.native)
         for name,rel,target,old,new,mode in FILES:
             p=self.p(target)
+            old=baseline_old_sha(m["fromVersion"],old,new)
             if old:need(hash_file(p)==old,"ROLLBACK_SHA_"+name)
             else:need(not p.exists(),"ROLLBACK_NEW_REMAINS_"+name)
         need(hash_file(self.meta)==m["oldMetadataSHA"],"ROLLBACK_METADATA_SHA")

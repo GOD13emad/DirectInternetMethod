@@ -106,7 +106,7 @@ class Contract(unittest.TestCase):
                'NATIVE_NFQWS_PID_MISMATCH','NATIVE_NFQWS_PROCESS_FOREIGN'):
    self.assertIn(text,CONTROLLER)
  def test_r519_candidate_is_explicit_unreleased_versioned_bundle(self):
-  self.assertIn('DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip',B)
+  self.assertIn('DirectInternetMethod_1.5.6_Linux_x86_64.zip',B)
   self.assertIn('linux/system/encrypted_selective_dns.py',B)
   self.assertIn('linux/system/encrypted_selective_policy.py',B)
   self.assertIn('linux/system/protected_upgrade_transaction.py',B)

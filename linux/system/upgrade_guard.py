@@ -23,11 +23,12 @@ import subprocess
 import sys
 import time
 
-VERSION="1.5.5-rc1"
-BASELINE="1.5.2"
-OLD_USER="1.5.4"
-PIN_ROOT="94C7D314809F582F437847C3B4F32F9FA8388E14526C138373974A70DEA0AFC8"
-PIN_USER="C1BBF62D99E46CB8E349A38E60891027FF7276F85CACEB597548C269203F28BF"
+VERSION="1.5.6"
+BASELINE="1.5.2"  # legacy accepted baseline
+OLD_USER="1.5.4"  # legacy accepted baseline
+ALLOWED_BASELINE_PAIRS=(("1.5.2","1.5.4"),("1.5.5-rc1","1.5.5-rc1"))
+PIN_ROOT="7147AF90E6DC0B29A6CE15A84656CE9587060A7F5F343E7B16281C5602FC693C"
+PIN_USER="5077ACE07B27DDBCBEAA4DE56ED718F7FD26934FF65A13251CCEAFA9DD2FEB50"
 GUARD=Path("/var/lib/directinternetmethod/upgrade-guard")
 BASELINE_FILE=GUARD/"baseline.json"
 RESULT=GUARD/"rollback-result.json"
@@ -118,7 +119,9 @@ def checked_owner():
     p=Path("/var/lib/directinternetmethod/install.json")
     regular(p,0,0o644)
     obj=json.loads(p.read_text(encoding="utf8"))
-    need(obj.get("schema")==1 and obj.get("version")==BASELINE,"PROTECTED_BASELINE")
+    need(obj.get("schema")==1 and
+         obj.get("version") in (v[0] for v in ALLOWED_BASELINE_PAIRS),
+         "PROTECTED_BASELINE")
     uid=obj.get("uid");user=obj.get("user");home=obj.get("home")
     need(type(uid) is int and 0<uid<2**31,"UID")
     need(isinstance(user,str) and re.fullmatch(r"[a-z_][a-z0-9_-]*[$]?",user),"USER")
@@ -132,7 +135,9 @@ def checked_owner():
     usermeta=root/USER_REL/"INSTALL.json"
     regular(usermeta,uid)
     meta=json.loads(usermeta.read_text("utf8"))
-    need(meta.get("version")==OLD_USER and meta.get("schema")==2,"USER_VERSION")
+    need(meta.get("schema")==2 and
+         (obj["version"],meta.get("version")) in ALLOWED_BASELINE_PAIRS,
+         "USER_ROOT_BASELINE_PAIR")
     return uid,user,root,usermeta,p,meta
 
 def state_is_off(home:Path):
@@ -147,7 +152,7 @@ def state_is_off(home:Path):
 
 def validate_source(source:Path):
     need(source.is_absolute() and source.is_dir() and not source.is_symlink() and
-         source.name=="DirectInternetMethod_1.5.5-rc1_Linux_x86_64","SOURCE_LAYOUT")
+         source.name=="DirectInternetMethod_1.5.6_Linux_x86_64","SOURCE_LAYOUT")
     manifest=source/"PACKAGE_MANIFEST.json"
     regular(manifest)
     data=json.loads(manifest.read_text("utf8"))
@@ -171,9 +176,13 @@ def preflight(source:Path):
         need(not p.exists() and not p.is_symlink(),"UNIT_EXISTS_"+p.name)
     pending=home/PENDING_REL
     need(not pending.is_symlink(),"USER_PENDING_SYMLINK")
+    rootVersion=json.loads(rm.read_text("utf8"))["version"]
+    userVersion=json.loads(um.read_text("utf8"))["version"]
+    need((rootVersion,userVersion) in ALLOWED_BASELINE_PAIRS,
+         "PREFLIGHT_VERSION_PAIR_CHANGED")
     return {"status":"SAFE_SOURCE_AND_INSTALLED_BASELINE_ONLY",
-            "needsRootAuthorization":True,"rootVersion":BASELINE,
-            "userVersion":OLD_USER,"uid":uid,"packageVersion":VERSION,
+            "needsRootAuthorization":True,"rootVersion":rootVersion,
+            "userVersion":userVersion,"uid":uid,"packageVersion":VERSION,
             "guardArmed":False,"networkUntouched":True}
 
 def guard_files(source:Path,uid:int,user:str,home:Path,um:Path,rm:Path):
@@ -191,9 +200,13 @@ def guard_files(source:Path,uid:int,user:str,home:Path,um:Path,rm:Path):
          "PINNED_GUARD_ROOT_USER_COPY_SHA")
     write_new(WORKER,Path(__file__).read_bytes(),0o500)
     dns=Path("/etc/resolv.conf")
+    oldRootVersion=json.loads(rm.read_text("utf8"))["version"]
+    oldUserVersion=json.loads(um.read_text("utf8"))["version"]
+    need((oldRootVersion,oldUserVersion) in ALLOWED_BASELINE_PAIRS,
+         "GUARD_BASELINE_PAIR_DRIFT")
     baseline={"schema":1,"revision":"R552","uid":uid,"user":user,
-              "home":str(home),"versionFromRoot":BASELINE,
-              "versionFromUser":OLD_USER,"versionTo":VERSION,
+              "home":str(home),"versionFromRoot":oldRootVersion,
+              "versionFromUser":oldUserVersion,"versionTo":VERSION,
               "rootTransactionSha":PIN_ROOT,"userTransactionSha":PIN_USER,
               "workerSha":sha_file(WORKER),"oldRootMetaSha":sha_file(rm),
               "oldUserMetaSha":sha_file(um),"oldResolverSha":sha_file(dns),
@@ -218,7 +231,7 @@ def unit_templates(deadline_unix:int):
            "[Install]\nWantedBy=timers.target\n")
     return service.encode(),timer.encode()
 
-def staged_user_manifest(home:Path,uid:int,installed:Path):
+def staged_user_manifest(home:Path,uid:int,installed:Path,previous_version:str=OLD_USER):
     """Attest the ACTUAL v1.5.5 User stage schema; no invented phase field."""
     pending=home/PENDING_REL
     need(pending.is_dir() and not pending.is_symlink(),"STAGED_USER_PENDING_REQUIRED")
@@ -228,7 +241,7 @@ def staged_user_manifest(home:Path,uid:int,installed:Path):
     regular(manifest,uid,0o600)
     j=json.loads(manifest.read_text("utf8"))
     need(isinstance(j,dict) and j.get("schema")==1 and
-         j.get("version")==VERSION and j.get("previousVersion")==OLD_USER,
+         j.get("version")==VERSION and j.get("previousVersion")==previous_version,
          "USER_STAGE_IDENTITY")
     managed=j.get("managed");prior=j.get("old");mutable=j.get("mutable")
     # Exact package user-code file set; providers.json is managed only when
@@ -268,7 +281,7 @@ def arm(source:Path,expected_uid:int):
     status=preflight(source)
     uid,user,home,um,rm,meta=checked_owner()
     need(uid==expected_uid,"USER_IDENTITY_CHANGED")
-    staged_user_manifest(home,uid,um)
+    staged_user_manifest(home,uid,um,meta["version"])
     baseline=guard_files(source,uid,user,home,um,rm)
     s,t=unit_templates(baseline["deadlineUnix"])
     write_new(SERVICE,s,0o644)
@@ -293,6 +306,9 @@ def verify_guard_files():
          and sha_file(ROOT_TX)==PIN_ROOT and sha_file(USER_TX)==PIN_USER,
          "GUARD_SOURCE_SHA")
     for p in (SERVICE,TIMER):regular(p,0,0o644)
+    need((j.get("versionFromRoot"),j.get("versionFromUser"))
+         in ALLOWED_BASELINE_PAIRS and j.get("versionTo")==VERSION,
+         "GUARD_ACCEPTED_PREDECESSOR_PAIR")
     need(j.get("timerSeconds")==480 and
          type(j.get("deadlineUnix")) is int and
          j["deadlineUnix"]>0,"BASELINE_DEADLINE")
@@ -339,7 +355,7 @@ def finish_accepted_pair(j,tx,home:Path,pending:Path):
     """
     m=tx.manifest()
     need(m.get("phase")=="COMMITTED" and m.get("toVersion")==VERSION and
-         m.get("fromVersion")==BASELINE and m.get("uid")==j["uid"] and
+         m.get("fromVersion")==j["versionFromRoot"] and m.get("uid")==j["uid"] and
          m.get("home")==str(home),"ROOT_ACCEPTANCE_MANIFEST")
     tx._validate_slot(m)
     states,meta=tx._target_states(m)
@@ -428,7 +444,7 @@ def rollback_worker():
                      "ROLLEDBACK_PRIOR_RECEIPT_NOT_SUCCESSFUL")
                 m=tx.manifest()
                 need(m.get("phase")=="ROLLED_BACK" and
-                     m.get("fromVersion")==BASELINE and
+                     m.get("fromVersion")==j["versionFromRoot"] and
                      m.get("toVersion")==VERSION and
                      m.get("uid")==j["uid"] and
                      m.get("home")==j["home"] and
@@ -527,7 +543,7 @@ def retire_rolledback(receipt_sha256:str):
          "RETIRE_NONTERMINAL_ROOT")
     m=tx.manifest()
     need(m.get("phase")=="ROLLED_BACK" and m.get("uid")==j["uid"] and
-         m.get("home")==j["home"] and m.get("fromVersion")==BASELINE and
+         m.get("home")==j["home"] and m.get("fromVersion")==j["versionFromRoot"] and
          m.get("toVersion")==VERSION,"RETIRE_FOREIGN_ROOT_TRANSACTION")
     tx._validate_slot(m)
     states,metadata=tx._target_states(m)
@@ -601,7 +617,7 @@ def retire_rolledback(receipt_sha256:str):
          "RETIRE_DNS_CHANGED")
     return {"status":"PASS_AUTHORIZED_BOUNDED_ROLLBACK_RETIRE",
             "receiptSha256":digest,
-            "oldRootVersion":BASELINE,"oldUserVersion":OLD_USER,
+            "oldRootVersion":j["versionFromRoot"],"oldUserVersion":j["versionFromUser"],
             "fileScopesExact":True,"networkMutationAttempted":False,
             "timerDisarmed":True,"repeatUpgradeUnblocked":True}
 

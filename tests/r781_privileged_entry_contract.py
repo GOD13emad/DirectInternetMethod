@@ -18,7 +18,7 @@ SRC=ROOT/"tools/security/privileged_entry.py"
 SPEC=importlib.util.spec_from_file_location("dim_r781",SRC)
 m=importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(m)
-PKG="DirectInternetMethod_1.5.5-rc1_Linux_x86_64"
+PKG="DirectInternetMethod_1.5.6_Linux_x86_64"
 
 class RootlessTrustedEntry(unittest.TestCase):
     def setUp(self):
