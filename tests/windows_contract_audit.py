@@ -284,6 +284,7 @@ release_meta=json.loads(txt("RELEASE.json"))
 allowed_status={
   "1.5.4":("CANDIDATE_V154_UNPUBLISHED","1.5.3"),
   "1.5.5-rc1":("PRIVATE_WINDOWS_RC1_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN","1.5.4"),
+  "1.5.6":("PRIVATE_WINDOWS_V156_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN","1.5.4"),
 }
 current=release_meta.get("version")
 check("manifest_version", current in allowed_status

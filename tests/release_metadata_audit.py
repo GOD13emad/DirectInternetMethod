@@ -167,8 +167,20 @@ private_win_rc1 = (
                     'refs/heads/feature/r520-linux-155rc1-ci',
                     'refs/heads/security/r776-pinned-root-read-qa'))
 )
-if win_version != version and not private_win_rc1:
-    raise SystemExit('WINDOWS_PRIVATE_RC1_IDENTITY_NOT_AUTHORIZED')
+# R805 is a strictly unpublished cross-platform v1.5.6 source candidate.
+# It may retain the immutable public v1.5.4 RELEASE.json only on its exact
+# private prep branch. It is NOT accepted as a public v1.5.6 publication.
+private_win_v156 = (
+    version == '1.5.4' and win_version == '1.5.6'
+    and win_release.get('status') == 'PRIVATE_WINDOWS_V156_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN'
+    and win_release.get('previousAccepted',{}).get('version') == '1.5.4'
+    and win_release.get('previousAccepted',{}).get('tag') == 'v1.5.4'
+    and win_release.get('publication',{}).get('publishedAt') is None
+    and (branch == 'prep/r805-windows-156'
+         or ref == 'refs/heads/prep/r805-windows-156')
+)
+if win_version != version and not (private_win_rc1 or private_win_v156):
+    raise SystemExit('WINDOWS_PRIVATE_CANDIDATE_IDENTITY_NOT_AUTHORIZED')
 if str(win_manifest.get('version')) != win_version:
     raise SystemExit('WINDOWS_MANIFEST_NOT_MATCHING_PLATFORM_VERSION')
 
@@ -176,7 +188,8 @@ linux_ui = (ROOT / 'linux' / 'app' / 'direct_internet_method.py').read_text(enco
 # The Linux 1.5.5-rc1 source was already present on this private draft branch.
 # Its published metadata remains anchored to v1.5.4 until native acceptance.
 # Require exact RC1 UI bytes for private candidate and exact stable otherwise.
-linux_source_expected = '1.5.5-rc1' if private_win_rc1 else version
+linux_source_expected = ('1.5.5-rc1' if private_win_rc1 else
+                         '1.5.6' if private_win_v156 else version)
 if ('VERSION="' + linux_source_expected + '"') not in linux_ui and ('VERSION = "' + linux_source_expected + '"') not in linux_ui:
     raise SystemExit('Linux UI version is inconsistent with authorized source state')
 
