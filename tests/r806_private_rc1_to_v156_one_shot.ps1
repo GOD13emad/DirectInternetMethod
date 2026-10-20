@@ -4,14 +4,20 @@ $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 
 $Repo='GOD13emad/DirectInternetMethod'
-$ExpectedParent='2ff2d4db27a4f7c125ad9099157aa0d29af9b568'
+$ExpectedParent='f54c726f7ec461f7f1d127ae1384d7705f2591ad'
+$ExpectedGrandparent='2ff2d4db27a4f7c125ad9099157aa0d29af9b568'
 if($env:CI -cne 'true' -or $env:GITHUB_ACTIONS -cne 'true' -or
    $env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
    $env:GITHUB_REPOSITORY -cne $Repo -or
    $env:GITHUB_REF -cne 'refs/heads/prep/r805-windows-156' -or
    [string]::IsNullOrEmpty($env:GH_TOKEN)){throw 'R806_UNTRUSTED_RUNNER_CONTEXT'}
-if((git rev-parse HEAD).Trim() -cne $env:GITHUB_SHA -or
-   (git rev-parse HEAD^).Trim() -cne $ExpectedParent){throw 'R806_ONE_SHOT_PARENT_OR_HEAD_MISMATCH'}
+$Actual=(git rev-parse HEAD).Trim()
+$Parent=(git rev-parse 'HEAD^').Trim()
+$Grandparent=(git rev-parse 'HEAD^^').Trim()
+if($LASTEXITCODE -ne 0 -or $Actual -cne $env:GITHUB_SHA -or
+   $Parent -cne $ExpectedParent -or $Grandparent -cne $ExpectedGrandparent){
+    throw 'R806_ONE_SHOT_HEAD_PARENT_GRANDPARENT_MISMATCH'
+}
 $identity=[Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if(!$identity.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'R806_ADMINISTRATOR_VM_REQUIRED'}
 if(!(Get-Command gh -ErrorAction SilentlyContinue)){throw 'R806_GH_CLI_MISSING'}

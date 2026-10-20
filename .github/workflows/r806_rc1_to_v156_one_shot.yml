@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 3
       - name: Test exact private RC1 to v1.5.6 to RC1 with protected user data
         shell: pwsh
         env:
