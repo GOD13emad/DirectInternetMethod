@@ -42,7 +42,7 @@ def guard():
     need(e.get("CI") == "true" and e.get("GITHUB_ACTIONS") == "true" and
          e.get("GITHUB_REPOSITORY") == "GOD13emad/DirectInternetMethod" and
          e.get("RUNNER_ENVIRONMENT") == "github-hosted", "ORIGINAL_HOSTED_ONLY")
-    need(e.get("GITHUB_REF") == "refs/heads/security/r776-pinned-root-read-qa" and
+    need(e.get("GITHUB_REF") == "refs/heads/prep/r803-forward-156-native-gates" and
          e.get("GITHUB_SHA") and len(e["GITHUB_SHA"]) == 40,
          "REVIEW_ONLY_BRANCH_AND_EXACT_COMMIT")
     need(e.get("GITHUB_WORKSPACE") == str(EXPECTED_WORKSPACE) and
