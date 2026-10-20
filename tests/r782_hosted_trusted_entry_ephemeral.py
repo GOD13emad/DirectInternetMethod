@@ -18,11 +18,11 @@ import sys
 import zipfile
 
 BASE = Path(__file__).resolve().parents[1]
-PIN_ENTRY = "C8AE0759FDF3A5EE514B5457D05AF1BFEF0BB266E03244C7EF2F3F6EDB8994D1"
-PIN_ZIP = "0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934"
+PIN_ENTRY = "D0181C15C54B90A3B6E03FBFBE32148341037AB60CF4D6788B6A72140304340F"
+PIN_ZIP = "A8356107C5DE6529E8270D1EE404A7D8A629040BD0D17F3F83C61C390790655D"
 ENTRY = Path("/usr/local/libexec/directinternetmethod/privileged_entry.py")
 SOURCE = BASE / "tools/security/privileged_entry.py"
-PKG = "DirectInternetMethod_1.5.5-rc1_Linux_x86_64"
+PKG = "DirectInternetMethod_1.5.6_Linux_x86_64"
 ARCHIVE = BASE / "delivery" / (PKG + ".zip")
 # This is a disposable original-repository GitHub VM, not an arbitrary path
 # derived from RUNNER_TEMP or another user-provided environment variable.
@@ -42,7 +42,7 @@ def guard():
     need(e.get("CI") == "true" and e.get("GITHUB_ACTIONS") == "true" and
          e.get("GITHUB_REPOSITORY") == "GOD13emad/DirectInternetMethod" and
          e.get("RUNNER_ENVIRONMENT") == "github-hosted", "ORIGINAL_HOSTED_ONLY")
-    need(e.get("GITHUB_REF") == "refs/heads/security/r776-pinned-root-read-qa" and
+    need(e.get("GITHUB_REF") == "refs/heads/prep/r803-forward-156-native-gates" and
          e.get("GITHUB_SHA") and len(e["GITHUB_SHA"]) == 40,
          "REVIEW_ONLY_BRANCH_AND_EXACT_COMMIT")
     need(e.get("GITHUB_WORKSPACE") == str(EXPECTED_WORKSPACE) and

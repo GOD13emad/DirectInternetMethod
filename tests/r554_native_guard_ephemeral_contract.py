@@ -29,10 +29,10 @@ R529=R/"tests/r529_ephemeral_root_user_transaction.py"
 R526=R/"tests/r526_installer_metadata_contract.py"
 ROOT=R/"linux/system/protected_upgrade_transaction.py"
 GUARD=R/"linux/system/upgrade_guard.py"
-PIN_PACKAGE="0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934"
-PIN_ROOT="94C7D314809F582F437847C3B4F32F9FA8388E14526C138373974A70DEA0AFC8"
-PIN_GUARD="F8CADEC8F1387C7A3CB5F1BC59FDCB17298869A2B2856FF937A14660977FFE10"
-PIN_USER="C1BBF62D99E46CB8E349A38E60891027FF7276F85CACEB597548C269203F28BF"
+PIN_PACKAGE="A8356107C5DE6529E8270D1EE404A7D8A629040BD0D17F3F83C61C390790655D"
+PIN_ROOT="7147AF90E6DC0B29A6CE15A84656CE9587060A7F5F343E7B16281C5602FC693C"
+PIN_GUARD="3A8E5C655A841D7614477E7D44FC74A9DAD1CAAB89462092C8FBF235AB126A83"
+PIN_USER="5077ACE07B27DDBCBEAA4DE56ED718F7FD26934FF65A13251CCEAFA9DD2FEB50"
 NAME="directinternetmethod-upgrade-rollback"
 SEEN=Path("/var/lib/directinternetmethod/upgrade-guard/rollback-result.json")
 
@@ -174,9 +174,9 @@ def run():
     need("transaction_helper.atomic_bytes(" in inline
          and len(inline.splitlines())==64,"INSTALL_INLINE_IDENTITY")
     r529.as_runner_inline(user,inline,app/"INSTALL.json",tx_user)
-    need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.5-rc1",
+    need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.6",
          "UPGRADED_USER_VERSION")
-    need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.5-rc1",
+    need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.6",
          "UPGRADED_ROOT_VERSION")
     need(root_tx.status()["status"]=="APPLIED","ROOT_STILL_PENDING")
     # R562 tests interruption AFTER a deliberately simulated protected Root
@@ -254,8 +254,8 @@ def run():
         need(root_tx.status()["status"]=="COMMITTED"
              and root_tx.pending.is_dir() and pending.is_dir(),
              "ACCEPTED_ROOT_OR_USER_BACKUP_WAS_REVERTED")
-        need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.5-rc1"
-             and json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.5-rc1",
+        need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.6"
+             and json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.6",
              "COMMITTED_VERSION_CHANGED_ON_FAILED_FINALIZATION")
         for rel,row in manifest["managed"].items():
             dest=app/rel
@@ -283,9 +283,9 @@ def run():
              "ACCEPTED_ROOT_USER_COMMIT_NOT_RECONCILED")
         need(root_tx.status()["status"]=="COMMITTED","ACCEPTED_ROOT_PHASE_LOST")
         need(not pending.exists(),"USER_BACKUP_NOT_RELEASED")
-        need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.5-rc1",
+        need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.6",
              "COMMITTED_USER_VERSION")
-        need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.5-rc1",
+        need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.6",
              "COMMITTED_ROOT_VERSION")
         installed_manifest=json.loads((app/"INSTALL.json").read_text())
         for rel,row in manifest["managed"].items():

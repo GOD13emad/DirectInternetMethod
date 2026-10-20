@@ -2,7 +2,7 @@
 """R552 source-extracted regression: worker/timer logic, ZERO installed actions."""
 import hashlib,importlib.util,json,os,pathlib,tempfile,types,unittest
 SRC=pathlib.Path(__file__).resolve().parents[1]/"linux/system/upgrade_guard.py"
-SOURCE_SHA="F8CADEC8F1387C7A3CB5F1BC59FDCB17298869A2B2856FF937A14660977FFE10"
+SOURCE_SHA="3A8E5C655A841D7614477E7D44FC74A9DAD1CAAB89462092C8FBF235AB126A83"
 assert hashlib.sha256(SRC.read_bytes()).hexdigest().upper()==SOURCE_SHA
 spec=importlib.util.spec_from_file_location("r552_candidate",SRC)
 g=importlib.util.module_from_spec(spec)
@@ -33,7 +33,9 @@ class Cases(unittest.TestCase):
             target.chmod(0o600)
         g.write_new=synthetic_receipt
         g.SERVICE=p/"unit.service";g.TIMER=p/"unit.timer"
-        self.fake={"user":"runner","home":str(self.home),"uid":os.getuid()}
+        self.fake={"user":"runner","home":str(self.home),"uid":os.getuid(),
+                   "versionFromRoot":g.BASELINE,"versionFromUser":g.OLD_USER,
+                   "versionTo":g.VERSION}
         g.verify_guard_files=lambda:self.fake
         self.events=[]
         g.verify_installed_after_restore=lambda j:self.events.append("validate_restored")
@@ -316,7 +318,7 @@ class Cases(unittest.TestCase):
         mutable=("settings.json","strategy.txt","scope.txt","custom-hosts.txt",
                  "adult-enabled.txt","adult-hosts.txt","adult-hosts.meta.json",
                  "encrypted-dns-optin.txt","selective-dns-optin.txt")
-        row={"schema":1,"version":"1.5.5-rc1","previousVersion":"1.5.4",
+        row={"schema":1,"version":g.VERSION,"previousVersion":g.OLD_USER,
              "managed":managed,"old":prior,
              "providerManaged":False,"providerSha":None,
              "mutable":{k:None for k in mutable}}
@@ -328,7 +330,7 @@ class Cases(unittest.TestCase):
         installed,manifest,row=self._stage_fixture()
         self.assertNotIn("phase",row)
         accepted=g.staged_user_manifest(self.home,os.getuid(),installed)
-        self.assertEqual(accepted["version"],"1.5.5-rc1")
+        self.assertEqual(accepted["version"],g.VERSION)
         self.assertEqual(len(accepted["managed"]),8)
 
     def test_25_real_managed_provider_nine_members_accepted(self):
@@ -384,6 +386,29 @@ class Cases(unittest.TestCase):
         reject({**row,"managed":{}})
         reject({**row,"old":{**row["old"],"INSTALL.json":{"exists":True,"sha":"0"*64}}})
         reject({**row,"mutable":{}})
+
+    def test_28_rc1_previous_stage_must_use_exact_declared_pair(self):
+        installed,manifest,row=self._stage_fixture()
+        installed.write_text('{"version":"1.5.5-rc1"}')
+        row["old"]["INSTALL.json"]["sha"]=g.sha_file(installed).lower()
+        row["previousVersion"]="1.5.5-rc1"
+        manifest.write_text(json.dumps(row))
+        with self.assertRaisesRegex(RuntimeError,"USER_STAGE_IDENTITY"):
+            g.staged_user_manifest(self.home,os.getuid(),installed)
+        accepted=g.staged_user_manifest(
+            self.home,os.getuid(),installed,"1.5.5-rc1")
+        self.assertEqual(accepted["version"],"1.5.6")
+        self.assertEqual(accepted["previousVersion"],"1.5.5-rc1")
+
+    def test_29_only_correlated_root_and_user_versions_allowed(self):
+        self.assertEqual(
+            g.ALLOWED_BASELINE_PAIRS,
+            (("1.5.2","1.5.4"),("1.5.5-rc1","1.5.5-rc1")))
+        for mixed in (("1.5.2","1.5.5-rc1"),
+                      ("1.5.5-rc1","1.5.4"),
+                      ("1.5.3","1.5.4"),
+                      ("1.5.5-rc1","1.5.6")):
+            self.assertNotIn(mixed,g.ALLOWED_BASELINE_PAIRS)
 
     def test_10_readiness_worker_does_not_query_elapsed_active_timer(self):
         txt=SRC.read_text()

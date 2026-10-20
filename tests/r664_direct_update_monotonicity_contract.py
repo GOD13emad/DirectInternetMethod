@@ -34,11 +34,14 @@ for version in ("1.5.5", "1.5.5-rc1", "v1.5.5", "1.5.5.0", "1.5.5junk"):
         raise AssertionError("UNSAFE_VERSION_WAS_NOT_REJECTED:" + version)
 
 win_release = json.loads((ROOT / "windows/RELEASE.json").read_text("utf-8-sig"))
-if win_release.get("version") == "1.5.5-rc1":
+if win_release.get("version") in ("1.5.5-rc1","1.5.6"):
+    expected_assembly = ("1.5.5.0" if win_release["version"]=="1.5.5-rc1"
+                         else "1.5.6.0")
     for rel in ("windows/gui/DirectInternetMethod.csproj",
                 "windows/service/DirectInternetMethod.Service.csproj"):
         source = (ROOT / rel).read_text("utf-8-sig")
-        assert "<AssemblyVersion>1.5.5.0</AssemblyVersion>" in source, rel
+        assert "<AssemblyVersion>"+expected_assembly+"</AssemblyVersion>" in source, rel
+        assert "<FileVersion>"+expected_assembly+"</FileVersion>" in source, rel
     gui = (ROOT / "windows/gui/UpdateClient.cs").read_text("utf-8-sig")
     service = (ROOT / "windows/service/Program.cs").read_text("utf-8-sig")
     assert "latest <= current" in gui, "GUI_UPDATER_COMPARISON_CHANGED_REVALIDATE_GUARD"
