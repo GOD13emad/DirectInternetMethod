@@ -1,5 +1,9 @@
 # Direct Internet Method
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/TandemVector-Labs/.github/main/brand/social/DirectInternetMethod.png" alt="Direct Internet Method visual project card" width="720">
+</p>
+
 ## Current public release: v1.5.4 Stable (.NET 10 LTS)
 
 Published 13 October 2026, official release: https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.4 .
