@@ -571,7 +571,7 @@ jobs:
 
   windows-private-r535-native:
     name: windows-private-r535-native
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/r535-windows-155rc1' || github.ref == 'refs/heads/feature/r520-linux-155rc1-ci' || github.ref == 'refs/heads/security/r776-pinned-root-read-qa' || github.ref == 'refs/heads/prep/r805-windows-156')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/r535-windows-155rc1' || github.ref == 'refs/heads/feature/r520-linux-155rc1-ci' || github.ref == 'refs/heads/security/r776-pinned-root-read-qa' || github.ref == 'refs/heads/prep/r805-windows-156' || github.ref == 'refs/heads/prep/r803-forward-156-native-gates')
     needs: windows-source
     runs-on: windows-2025
     timeout-minutes: 35
