@@ -524,7 +524,9 @@ internal static class Program
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
-                WorkingDirectory = AppContext.BaseDirectory
+                WorkingDirectory = AppContext.BaseDirectory,
+                // Fail-closed service errors are read, but raw output is never exposed.
+                RedirectStandardError = true
             };
 
             Log($"action-begin:{actionName}");
@@ -537,6 +539,8 @@ internal static class Program
                 return;
             }
 
+            // Drain stderr concurrently; retain at most 8 KiB and never persist it.
+            var stderrTask = ReadActionErrorTailAsync(p.StandardError);
             if (!p.WaitForExit(120000))
             {
                 try { p.Kill(entireProcessTree: true); } catch { }
@@ -545,10 +549,11 @@ internal static class Program
                 WriteActionStatus(actionName, "error", -2, "Privileged action exceeded the 120 second safety timeout and was terminated.");
                 return;
             }
+            var stderr = await stderrTask.WaitAsync(TimeSpan.FromSeconds(3));
             Log($"action-end:{actionName}:exit={p.ExitCode}");
             var message = p.ExitCode == 0
                 ? "Action completed."
-                : $"Privileged action failed with exit code {p.ExitCode}. See lifecycle evidence/service log.";
+                : DescribeActionFailure(p.ExitCode, stderr);
             WriteActionStatus(actionName, p.ExitCode == 0 ? "done" : "error", p.ExitCode, message);
         }
         catch (Exception ex)
@@ -560,6 +565,32 @@ internal static class Program
         {
             ActionGate.Release();
         }
+    }
+
+    static async Task<string> ReadActionErrorTailAsync(StreamReader reader)
+    {
+        var tail = new StringBuilder();
+        var buffer = new char[2048];
+        int count;
+        while ((count = await reader.ReadAsync(buffer.AsMemory())) != 0)
+        {
+            tail.Append(buffer, 0, count);
+            if (tail.Length > 8192)
+                tail.Remove(0, tail.Length - 8192);
+        }
+        return tail.ToString();
+    }
+
+    static string DescribeActionFailure(int exitCode, string standardError)
+    {
+        // Never disclose arbitrary stderr: it can include paths, hosts or secrets.
+        if (standardError.Contains("DEFAULT_ROUTE_NOT_PHYSICAL", StringComparison.Ordinal))
+            return "A VPN or virtual adapter is the preferred default route. Direct Internet Method kept the routes unchanged. Select a physical default route before starting.";
+        if (standardError.Contains("REFUSE_BROAD_TUNNEL_ROUTE", StringComparison.Ordinal))
+            return "A broad VPN route is active. Direct Internet Method refused to change the current network configuration.";
+        if (standardError.Contains("HASH_MISMATCH_", StringComparison.Ordinal))
+            return "Privileged runtime integrity check failed. Repair the verified installation before starting.";
+        return $"Privileged action failed with exit code {exitCode}. See lifecycle evidence/service log.";
     }
 
     static void WriteActionStatus(string action, string phase, int? exitCode, string message)
@@ -622,6 +653,15 @@ internal static class Program
     {
         var required = new[] { "Start-Direct.ps1", "Stop-Direct.ps1", "Recovery.ps1" };
         var missing = required.Where(x => !File.Exists(Path.Combine(AppContext.BaseDirectory, x))).ToArray();
-        return missing.Length == 0 ? "PASS" : "MISSING:" + string.Join(",", missing);
+        if (missing.Length != 0) return "MISSING:" + string.Join(",", missing);
+        if (!DescribeActionFailure(1, "START_FAIL_DEFAULT_ROUTE_NOT_PHYSICAL").Contains("VPN or virtual adapter", StringComparison.Ordinal))
+            return "MISSING_ROUTE_GUARD_MESSAGE";
+        if (!DescribeActionFailure(1, "REFUSE_BROAD_TUNNEL_ROUTE").Contains("broad VPN route", StringComparison.Ordinal))
+            return "MISSING_BROAD_ROUTE_GUARD_MESSAGE";
+        if (!DescribeActionFailure(1, "HASH_MISMATCH_ctrld.exe").Contains("integrity check failed", StringComparison.Ordinal))
+            return "MISSING_RUNTIME_INTEGRITY_MESSAGE";
+        if (DescribeActionFailure(1, "SECRET_SAMPLE private path").Contains("SECRET_SAMPLE", StringComparison.Ordinal))
+            return "RAW_STDERR_LEAK";
+        return "PASS";
     }
 }
