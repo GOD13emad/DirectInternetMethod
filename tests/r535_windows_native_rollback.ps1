@@ -20,7 +20,7 @@ $PublicSha='FFB9A2AE19C2E89338EE12EE8DA133F5A16DBF4DCF961678C33D77D0C3843133'
 $PublicGui='BE9C78C0B5C007B4A46480D423079C219006B730D9589279AA466B0F14BCF00F'
 $PublicSvc='2AE7EA11A94BFA3187BC7CDF63A37CB5CD5B55C313C3966330FD280ECC9ECE41'
 if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:GITHUB_REPOSITORY -cne 'GOD13emad/DirectInternetMethod'){throw 'R535_HOSTED_VM_ONLY'}
-if($env:GITHUB_REF -cnotin @('refs/heads/feature/r535-windows-155rc1','refs/heads/feature/r520-linux-155rc1-ci','refs/heads/security/r776-pinned-root-read-qa','refs/heads/prep/r805-windows-156') -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R535_BRANCH_HEAD_DRIFT'}
+if($env:GITHUB_REF -cnotin @('refs/heads/feature/r535-windows-155rc1','refs/heads/feature/r520-linux-155rc1-ci','refs/heads/security/r776-pinned-root-read-qa','refs/heads/prep/r805-windows-156','refs/heads/prep/r803-forward-156-native-gates') -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R535_BRANCH_HEAD_DRIFT'}
 $admin=[Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if(!$admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'R535_ADMIN_TOKEN_REQUIRED'}
 if(!(Test-Path $Build) -or (Test-Path $Result) -or (Test-Path $Old)){throw 'R535_UNSAFE_REPLAY_OR_MISSING_BUILD'}
