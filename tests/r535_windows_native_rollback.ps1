@@ -7,7 +7,7 @@ $Dir=Join-Path $env:RUNNER_TEMP 'DIM_R535_NATIVE'
 $Build=Join-Path $Dir 'BUILD_R535.json'
 $Result=Join-Path $Dir 'NATIVE_R535.json'
 $Old=Join-Path $Dir 'DirectInternetMethod_1.5.4_Windows_Setup.exe'
-$New=Join-Path $Root 'delivery\DirectInternetMethod_1.5.5-rc1_Windows_Setup.exe'
+$New=Join-Path $Root 'delivery\DirectInternetMethod_1.5.6_Windows_Setup.exe'
 $App=Join-Path $env:LOCALAPPDATA 'Programs\DirectInternetMethod'
 $Priv=Join-Path $env:ProgramFiles 'DirectInternetMethod\Privileged'
 $Config=Join-Path $env:ProgramData 'DirectInternetMethod\UserConfig\custom-hosts.txt'
@@ -20,12 +20,12 @@ $PublicSha='FFB9A2AE19C2E89338EE12EE8DA133F5A16DBF4DCF961678C33D77D0C3843133'
 $PublicGui='BE9C78C0B5C007B4A46480D423079C219006B730D9589279AA466B0F14BCF00F'
 $PublicSvc='2AE7EA11A94BFA3187BC7CDF63A37CB5CD5B55C313C3966330FD280ECC9ECE41'
 if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:GITHUB_REPOSITORY -cne 'GOD13emad/DirectInternetMethod'){throw 'R535_HOSTED_VM_ONLY'}
-if($env:GITHUB_REF -cnotin @('refs/heads/feature/r535-windows-155rc1','refs/heads/feature/r520-linux-155rc1-ci','refs/heads/security/r776-pinned-root-read-qa') -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R535_BRANCH_HEAD_DRIFT'}
+if($env:GITHUB_REF -cnotin @('refs/heads/feature/r535-windows-155rc1','refs/heads/feature/r520-linux-155rc1-ci','refs/heads/security/r776-pinned-root-read-qa','refs/heads/prep/r805-windows-156','refs/heads/prep/r803-forward-156-native-gates') -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R535_BRANCH_HEAD_DRIFT'}
 $admin=[Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if(!$admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'R535_ADMIN_TOKEN_REQUIRED'}
 if(!(Test-Path $Build) -or (Test-Path $Result) -or (Test-Path $Old)){throw 'R535_UNSAFE_REPLAY_OR_MISSING_BUILD'}
 $build=Get-Content $Build -Raw |ConvertFrom-Json
-if($build.status -cne 'PASS_ISOLATED_HOSTED_RC1_BUILD' -or $build.head -cne $env:GITHUB_SHA){throw 'R535_BUILD_AUTHORITY'}
+if($build.status -cne 'PASS_ISOLATED_HOSTED_V156_BUILD' -or $build.head -cne $env:GITHUB_SHA){throw 'R535_BUILD_AUTHORITY'}
 if((Get-FileHash $New -Algorithm SHA256).Hash -cne $build.installerSha){throw 'R535_RC1_INSTALLER_SHA'}
 $report=[ordered]@{schema=1;revision='R535';status='FAIL_UNPROVEN';source=$env:GITHUB_SHA;
  runner='github-hosted-windows-2025';privateInstallerSha=$build.installerSha;
@@ -95,12 +95,12 @@ try {
  [IO.File]::WriteAllText($Evidence,'R535_USER_UNKNOWN_EVIDENCE_KEEP')
  $evidenceSha=FileSha $Evidence
  Install $New 'RC1_IN_PLACE'
- [void](Registered '1.5.5-rc1')
+ [void](Registered '1.5.6')
  Require ((FileSha $Gui) -ceq $build.guiSha -and (FileSha $Svc) -ceq $build.serviceSha) 'RC1_GUI_SERVICE_PIN'
  Require ((FileSha (Join-Path $App 'manifest.json')) -ceq $build.manifestSha) 'RC1_MANIFEST_PIN'
- Require ((Get-Content (Join-Path $App 'RELEASE.json') -Raw|ConvertFrom-Json).version -ceq '1.5.5-rc1') 'RC1_INSTALLED_VERSION'
+ Require ((Get-Content (Join-Path $App 'RELEASE.json') -Raw|ConvertFrom-Json).version -ceq '1.5.6') 'RC1_INSTALLED_VERSION'
  Require ((FileSha $Config) -ceq $configSha -and (FileSha $Provider) -ceq $providerSha -and (FileSha $Evidence) -ceq $evidenceSha) 'IN_PLACE_USER_DATA_PRESERVED'
- $d=Registered '1.5.5-rc1'
+ $d=Registered '1.5.6'
  $uninstaller=ExactRegisteredUninstaller $d
  $u=Start-Process $uninstaller -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru -NoNewWindow
  Require ($u.ExitCode -eq 0) 'RC1_UNINSTALL_ZERO'
@@ -112,7 +112,7 @@ try {
  Require ((FileSha $Config) -ceq $configSha -and (FileSha $Evidence) -ceq $evidenceSha) 'PRIVATE_CONFIG_PRESERVED_ROLLBACK'
  $after=Network;$report.networkAfter=$after
  Require ($before.defaultRoutes -ceq $after.defaultRoutes -and $before.dns -ceq $after.dns) 'NETWORK_BASELINE_EXACT'
- $report.status='PASS_HOSTED_NATIVE_154_TO_155RC1_AND_BACK_154'
+ $report.status='PASS_HOSTED_NATIVE_154_TO_156_AND_BACK_154'
  $report.singleUninstaller=$true;$report.customProviderUpgradePreserved=$true;$report.dataPreserved=$true
 } catch {
  $report.status='DEGRADED_UNRESOLVED'
@@ -122,4 +122,4 @@ try {
  Write-Output ('R535_NATIVE_STATUS='+$report.status)
  Write-Output ('R535_RECEIPT_SHA256='+((Get-FileHash $Result -Algorithm SHA256).Hash))
 }
-if($report.status -ne 'PASS_HOSTED_NATIVE_154_TO_155RC1_AND_BACK_154'){throw ('R535_NATIVE_NOT_ACCEPTED_'+($report.errors -join ';'))}
+if($report.status -ne 'PASS_HOSTED_NATIVE_154_TO_156_AND_BACK_154'){throw ('R535_NATIVE_NOT_ACCEPTED_'+($report.errors -join ';'))}

@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "product": "Direct Internet Method",
-  "version": "1.5.5-rc1",
+  "version": "1.5.6",
   "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + accepted zapret/winws/WinDivert multiprotocol engine with Targeted/All Sites scope control",
   "offlineRuntime": true,
   "normalRunRequiresAdmin": false,

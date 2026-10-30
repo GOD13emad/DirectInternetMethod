@@ -4,15 +4,15 @@ $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 $Root=$env:GITHUB_WORKSPACE
 if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:GITHUB_REPOSITORY -cne 'GOD13emad/DirectInternetMethod'){throw 'R535_GITHUB_HOST_ONLY'}
-if($env:GITHUB_REF -cnotin @('refs/heads/feature/r535-windows-155rc1','refs/heads/feature/r520-linux-155rc1-ci','refs/heads/security/r776-pinned-root-read-qa') -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R535_BRANCH_HEAD_AUTHORITY'}
+if($env:GITHUB_REF -cnotin @('refs/heads/feature/r535-windows-155rc1','refs/heads/feature/r520-linux-155rc1-ci','refs/heads/security/r776-pinned-root-read-qa','refs/heads/prep/r805-windows-156','refs/heads/prep/r803-forward-156-native-gates') -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R535_BRANCH_HEAD_AUTHORITY'}
 $r=Get-Content (Join-Path $Root 'windows\RELEASE.json') -Raw|ConvertFrom-Json
-if($r.version -cne '1.5.5-rc1' -or $r.status -cne 'PRIVATE_WINDOWS_RC1_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN'){throw 'R535_RC1_DECLARATION'}
+if($r.version -cne '1.5.6' -or $r.status -cne 'PRIVATE_WINDOWS_V156_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN'){throw 'R535_RC1_DECLARATION'}
 $qa=Join-Path $env:RUNNER_TEMP 'DIM_R535_NATIVE'
 $gstage=Join-Path $qa 'gui'
 $sstage=Join-Path $qa 'service'
 $gt=Join-Path $Root 'windows\app\DirectInternetMethod.exe'
 $st=Join-Path $Root 'windows\app\DirectInternetMethod.Service.exe'
-$installer=Join-Path $Root 'delivery\DirectInternetMethod_1.5.5-rc1_Windows_Setup.exe'
+$installer=Join-Path $Root 'delivery\DirectInternetMethod_1.5.6_Windows_Setup.exe'
 foreach($p in @($qa,$gt,$st,$installer)){if(Test-Path $p){throw ('R535_UNSAFE_RERUN_'+$p)}}
 New-Item -ItemType Directory -Path $qa|Out-Null
 $iscc=Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Inno Setup 6\ISCC.exe'
@@ -40,14 +40,14 @@ if($LASTEXITCODE -ne 0){throw 'NET10_CONTRACT_FAILED'}
 & python -B tests/windows_contract_audit.py | Out-Null
 if($LASTEXITCODE -ne 0){throw 'WINDOWS_AUDIT_FAILED'}
 $m=Get-Content (Join-Path $Root 'windows\manifest.json') -Raw|ConvertFrom-Json
-if($m.version -cne '1.5.5-rc1' -or @($m.files).Count -ne 681){throw 'RC1_MANIFEST_IDENTITY'}
+if($m.version -cne '1.5.6' -or @($m.files).Count -ne 681){throw 'RC1_MANIFEST_IDENTITY'}
 & $iscc /Qp (Join-Path $Root 'windows\installer\DirectInternetMethod.iss')
 if($LASTEXITCODE -ne 0){throw 'INNO_COMPILATION_FAILED'}
 if(!(Test-Path $installer) -or (Get-Item $installer).Length -lt 50000000){throw 'R535_INSTALLER_MISSING'}
 if([string](Get-AuthenticodeSignature $installer).Status -ne 'NotSigned'){throw 'R535_SIGNATURE_POLICY_CHANGED'}
 $report=[ordered]@{
- revision='R535';stage='BUILD';status='PASS_ISOLATED_HOSTED_RC1_BUILD'
- head=$env:GITHUB_SHA;version='1.5.5-rc1';stable='v1.5.4'
+ revision='R535';stage='BUILD';status='PASS_ISOLATED_HOSTED_V156_BUILD'
+ head=$env:GITHUB_SHA;version='1.5.6';stable='v1.5.4'
  manifestCount=@($m.files).Count;manifestSha=(Get-FileHash (Join-Path $Root 'windows\manifest.json') -Algorithm SHA256).Hash
  guiSha=(Get-FileHash $gt -Algorithm SHA256).Hash
  serviceSha=(Get-FileHash $st -Algorithm SHA256).Hash

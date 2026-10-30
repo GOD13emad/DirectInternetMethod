@@ -157,7 +157,30 @@ check("service_fixed_scripts", all(x in svc for x in ('RunActionAsync("Start-Dir
 check("service_hidden_backend", "CreateNoWindow = true" in svc and "WindowStyle = ProcessWindowStyle.Hidden" in svc)
 check("service_bundled_pwsh_only", '"runtime", "pwsh", "pwsh.exe"' in svc and 'return File.Exists(p) ? p : "pwsh.exe"' not in svc)
 check("service_action_timeout_guard", "WaitForExit(120000)" in svc and "Kill(entireProcessTree: true)" in svc and "exceeded the 120 second safety timeout" in svc)
-check("service_action_completion_no_inherited_pipe_deadlock", "RedirectStandardOutput = true" not in svc and "RedirectStandardError = true" not in svc and "ReadToEndAsync" not in svc and 'Log($"action-end:{actionName}:exit={p.ExitCode}")' in svc)
+check("service_action_completion_no_inherited_pipe_deadlock",
+    "RedirectStandardOutput = true" not in svc
+    and "ReadToEndAsync" not in svc
+    and 'Log($"action-end:{actionName}:exit={p.ExitCode}")' in svc
+    and (
+        ("RedirectStandardError = true" not in svc and "ReadActionErrorTailAsync" not in svc)
+        or (
+            "RedirectStandardError = true" in svc
+            and "var stderrTask = ReadActionErrorTailAsync(p.StandardError);" in svc
+            and "while ((count = await reader.ReadAsync(buffer.AsMemory())) != 0)" in svc
+            and "tail.Length > 8192" in svc
+            and "await stderrTask.WaitAsync(TimeSpan.FromSeconds(3))" in svc
+        )
+    ))
+check("service_safe_action_errors_do_not_leak_backend_output",
+    "RedirectStandardError = true" not in svc
+    or (
+        "DescribeActionFailure(p.ExitCode, stderr)" in svc
+        and 'standardError.Contains("DEFAULT_ROUTE_NOT_PHYSICAL"' in svc
+        and 'standardError.Contains("REFUSE_BROAD_TUNNEL_ROUTE"' in svc
+        and 'standardError.Contains("HASH_MISMATCH_"' in svc
+        and "WriteActionStatus(actionName, p.ExitCode == 0 ? \"done\" : \"error\", p.ExitCode, message)" in svc
+        and "RAW_STDERR_LEAK" in svc
+    ))
 check("ui_wait_timeout_exceeds_service_timeout", "int timeoutMs = 130000" in gui)
 check("client_minimum_access", "SERVICE_QUERY_STATUS | SERVICE_USER_DEFINED_CONTROL" in client and "SERVICE_CHANGE_CONFIG" not in client and "SERVICE_START" not in client and "SERVICE_STOP" not in client)
 check("installer_service_acl_interactive_users_minimum", "(A;;LCCR;;;IU)" in iss and "sdset" in iss and "(A;;LCCR;;;AU)" not in iss)
@@ -284,6 +307,7 @@ release_meta=json.loads(txt("RELEASE.json"))
 allowed_status={
   "1.5.4":("CANDIDATE_V154_UNPUBLISHED","1.5.3"),
   "1.5.5-rc1":("PRIVATE_WINDOWS_RC1_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN","1.5.4"),
+  "1.5.6":("PRIVATE_WINDOWS_V156_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN","1.5.4"),
 }
 current=release_meta.get("version")
 check("manifest_version", current in allowed_status

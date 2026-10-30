@@ -7,15 +7,15 @@ directory and compared to its original exact-SHA baseline.
 from __future__ import annotations
 import ast,hashlib,importlib.util,json,pathlib,re,tempfile,unittest,zipfile
 R=pathlib.Path(__file__).resolve().parents[1]
-VERSION="1.5.5-rc1"
+VERSION="1.5.6"
 PACKAGE=R/"delivery"/f"DirectInternetMethod_{VERSION}_Linux_x86_64.zip"
 GUI=R/"linux/app/direct_internet_method.py"
 HELPER=R/"linux/app/direct_method_helper.sh"
 ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
-PKG_DOC=R/"docs/README_PACKAGE_155_RC1.md"
-EXPECTED={"version":VERSION,"files":28,"sha256":"0C4D22F98C7C4ECEA2CDE1C0232B3C3928C022779BA8A644CD3DC46FF13CE934"}
+PKG_DOC=R/"docs/README_PACKAGE_156.md"
+EXPECTED={"version":VERSION,"files":28,"sha256":"A8356107C5DE6529E8270D1EE404A7D8A629040BD0D17F3F83C61C390790655D"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -61,9 +61,9 @@ class Tests(unittest.TestCase):
         got=self.info.read(self.prefix+rel)
         declared=next(row for row in self.rows if row["file"]==rel)
         self.assertEqual(digest(got),declared["sha256"])
-        self.assertEqual(declared["sha256"],"06825BCD25B237625DBC4FF60250763C38A27238A6273E0C97E847EAD385E64F")
+        self.assertEqual(declared["sha256"],"6BFD45BA87CE052D020D26BE5B6E0F589DF1B848D202D716AFD8FB87FD1FDE9A")
         self.assertIn('"socket_fallback.py"', got.decode())
-        self.assertIn('doc.get("version") == "1.5.5-rc1"',got.decode())
+        self.assertIn('doc.get("version") == "1.5.6"',got.decode())
         self.assertNotIn('doc.get("version") == "1.5.4"',got.decode())
         self.assertEqual(digest((R/"linux/app/user_uninstall_preserve.py").read_bytes()),declared["sha256"])
     def test_original_unreleased_candidate_preserved_and_current_source_delta(self):
@@ -80,7 +80,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(digest(old_source.read_bytes()),
                          "9A4A4C37E3F63F1602E15454100150D209E3CD099DE80504B560F31D42D3C0EF")
         prev=json.loads(old_manifest_bytes)
-        self.assertEqual((prev["schema"],prev["version"],prev["platform"]),(1,VERSION,"linux-x86_64"))
+        self.assertEqual((prev["schema"],prev["version"],prev["platform"]),(1,"1.5.5-rc1","linux-x86_64"))
         before={row["file"]:row for row in prev["files"]}
         after={row["file"]:row for row in self.rows}
         self.assertEqual(set(after),set(before)|{"system/upgrade_guard.py","app/socket_fallback.py"})
@@ -88,13 +88,15 @@ class Tests(unittest.TestCase):
         changed={name for name in before if before[name]!=after[name]}
         # Preserve the immutable historical manifest and explicitly recognize
         # the new R762 controller hardening in the current unreleased package.
-        self.assertEqual(changed,{"app/user_uninstall_preserve.py","app/direct_internet_method.py",
-                                 "app/direct_method_helper.sh","app/user_update_transaction.py","system/protected_upgrade_transaction.py",
-                                 "system/upgrade_system.sh","install.sh","system/encrypted_selective_dns.py"})
+        self.assertEqual(changed,{"README.md","app/user_uninstall_preserve.py",
+                                 "app/direct_internet_method.py","app/direct_method_helper.sh",
+                                 "app/user_update_transaction.py","system/protected_upgrade_transaction.py",
+                                 "system/upgrade_system.sh","system/install_system.sh",
+                                 "install.sh","system/encrypted_selective_dns.py"})
         self.assertEqual(after["system/encrypted_selective_dns.py"]["sha256"],
                          "A8A8DD6155DDC4E2C5295A6CAA7B8809144C43985B47FD4664501ED683DB0AAE")
         self.assertEqual(after["app/direct_internet_method.py"]["sha256"],
-                         "6CF031D2C7F18D7E7E4F1F9A37A1A0EBD3CA589F16F7E26274496F1F53E9317B")
+                         "AC4EF0EBD88B62B730B1309AD25B04876DED2E00AF429C369E02EE087F7F377B")
         self.assertIn("encrypted=encrypted_dns_optin_state()",
                       self.info.read(self.prefix+"app/direct_internet_method.py").decode())
         self.assertIn('s.get("selectiveDnsEncrypted")',
@@ -124,12 +126,12 @@ class Tests(unittest.TestCase):
         self.assertFalse(any("1.5.5-rc1" in x["file"] for x in self.rows))
     def test_fresh_root_contract_version(self):
         root=(R/"linux/system/install_system.sh").read_text()
-        self.assertIn('{"schema":1,"version":"1.5.5-rc1"',root)
+        self.assertIn('{"schema":1,"version":"1.5.6"',root)
         self.assertIn('encrypted_selective_dns.py',root)
         self.assertIn('encrypted_selective_policy.py',root)
     def test_protected_upgrade_exact_sha(self):
         text=ROOT_TXN.read_text()
-        self.assertIn('TARGET_VERSION="1.5.5-rc1"',text)
+        self.assertIn('TARGET_VERSION="1.5.6"',text)
         self.assertIn('CURRENT_BACKEND_VERSION="1.5.2"',text)
         self.assertIn('data.get("revision")=="R519"',text)
         self.assertIn('receipt.get("revision")=="R519"',text)
@@ -138,7 +140,7 @@ class Tests(unittest.TestCase):
     def test_root_wrapper_pinned_identity(self):
         src=(R/"linux/system/upgrade_system.sh").read_text()
         self.assertIn(digest(ROOT_TXN.read_bytes()),src)
-        self.assertIn('DirectInternetMethod_1.5.5-rc1_Linux_x86_64',src)
+        self.assertIn('DirectInternetMethod_1.5.6_Linux_x86_64',src)
         self.assertIn("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED",src)
         self.assertIn("GUARD_SHA=",src)
         self.assertLess(src.index("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED"),
@@ -197,12 +199,12 @@ class Tests(unittest.TestCase):
         self.assertIn('python3 "$USER_TRANSACTION" --rollback',src)
     def test_gui_and_user_metadata_pins(self):
         app=GUI.read_text()
-        self.assertIn('VERSION="1.5.5-rc1"',app)
+        self.assertIn('VERSION="1.5.6"',app)
         self.assertIn('COEXIST_HELPER_SHA256="'+digest(HELPER.read_bytes()).lower()+'"',app)
-        self.assertIn('installed.get("version") == "1.5.5-rc1"',app)
+        self.assertIn('installed.get("version") == "1.5.6"',app)
         updater=USER_TXN.read_text()
         self.assertIn('len(package_doc["files"]) == 28',updater)
-        self.assertIn('data.get("version") == "1.5.5-rc1"',updater)
+        self.assertIn('data.get("version") == "1.5.6"',updater)
         self.assertIn('"encrypted-dns-optin.txt"',updater)
     def test_rc_semver_prevents_implicit_downgrade(self):
         code=ast.parse(GUI.read_text())
@@ -225,8 +227,8 @@ class Tests(unittest.TestCase):
                 module.source_files(target)
     def test_readme_is_explicitly_unreleased(self):
         s=PKG_DOC.read_text()
-        self.assertIn("NOT RELEASED",s)
-        self.assertIn("1.5.5-rc1",s)
+        self.assertIn("NOT PUBLISHED",s)
+        self.assertIn("1.5.6",s)
         self.assertIn("v1.5.4",s)
 if __name__=="__main__":
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Tests))

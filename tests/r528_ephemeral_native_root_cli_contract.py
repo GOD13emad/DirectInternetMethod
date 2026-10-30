@@ -23,11 +23,11 @@ import zipfile
 
 BASE=Path(__file__).resolve().parents[1]
 STABLE_SHA="4784fcd44ed3d1b40103bca140b2c0066784f794d07c3ae1f525334766a553c7"
-CANDIDATE_SHA="0c4d22f98c7c4ecea2cde1c0232b3c3928c022779ba8a644cd3dc46ff13ce934"
+CANDIDATE_SHA="a8356107c5de6529e8270d1ee404a7d8a629040bd0d17f3f83c61c390790655d"
 STABLE_ARCHIVE="DirectInternetMethod_1.5.4_Linux_x86_64.zip"
-CANDIDATE_ARCHIVE="DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip"
+CANDIDATE_ARCHIVE="DirectInternetMethod_1.5.6_Linux_x86_64.zip"
 STABLE_PREFIX="DirectInternetMethod_1.5.4_Linux_x86_64/"
-CANDIDATE_PREFIX="DirectInternetMethod_1.5.5-rc1_Linux_x86_64/"
+CANDIDATE_PREFIX="DirectInternetMethod_1.5.6_Linux_x86_64/"
 SOURCE=BASE/"linux/system/protected_upgrade_transaction.py"
 HOSTED_WORKSPACE=Path("/home/runner/work/DirectInternetMethod/DirectInternetMethod")
 HOSTED_TEMP=Path("/home/runner/work/_temp")
@@ -127,7 +127,7 @@ def stage_exact_candidate(candidate_zip:Path,temp:Path)->Path:
     with zipfile.ZipFile(candidate_zip) as z:
         archive_verify(z,CANDIDATE_PREFIX,30)
         manifest=json.loads(z.read(CANDIDATE_PREFIX+"PACKAGE_MANIFEST.json"))
-        need(manifest.get("version")=="1.5.5-rc1" and len(manifest.get("files",[]))==28,
+        need(manifest.get("version")=="1.5.6" and len(manifest.get("files",[]))==28,
              "RC1_PACKAGE_VERSION_MANIFEST")
         for f in manifest["files"]:
             relative=f["file"]
@@ -189,7 +189,7 @@ def run_native():
         "hosts":fsha(Path("/etc/hosts")),
     }
     m=module()
-    need(m.TARGET_VERSION=="1.5.5-rc1" and
+    need(m.TARGET_VERSION=="1.5.6" and
          m.CURRENT_BACKEND_VERSION=="1.5.2","NATIVE_PRODUCT_VERSION")
     source=stage_exact_candidate(candidate,temp)
     baseline=seed_real_protected_root(stable,user,m)
@@ -212,7 +212,7 @@ def run_native():
              stat.S_IMODE(file.stat().st_mode)==mode,
              "REAL_ROOT_UPGRADED_FILE_"+name)
     current=json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())
-    need(current["version"]=="1.5.5-rc1","REAL_ROOT_METADATA_NOT_ACTIVATED")
+    need(current["version"]=="1.5.6","REAL_ROOT_METADATA_NOT_ACTIVATED")
     try:
         t.commit(temp/"NO_NATIVE_ACCEPTANCE_RECEIPT.json")
         raise RuntimeError("R528_BAD_ACCEPTANCE_WAS_ALLOWED")
@@ -246,7 +246,7 @@ def run_native():
         "productionMachineTouched":False,
         "nativeRoot":True,"effectiveUid":os.geteuid(),"protectedPreVersion":"1.5.2",
         "protectedPostRollbackVersion":"1.5.2",
-        "protectedCandidateAppliedBeforeRollback":"1.5.5-rc1",
+        "protectedCandidateAppliedBeforeRollback":"1.5.6",
         "publicStablePreserved":"v1.5.4","pinnedSource":CANDIDATE_SHA,
         "pinnedPublishedStable":STABLE_SHA,
         "rootOwnedFilesRestored":len(baseline),
