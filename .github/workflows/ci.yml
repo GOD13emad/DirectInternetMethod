@@ -604,7 +604,7 @@ jobs:
           $installer=Join-Path $root 'delivery\DirectInternetMethod_1.5.6_Windows_Setup.exe'
           if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or
              $env:RUNNER_ENVIRONMENT -cne 'github-hosted' -or
-             $env:GITHUB_REF -cnotin @('refs/heads/feature/r520-linux-155rc1-ci','refs/heads/security/r776-pinned-root-read-qa','refs/heads/prep/r805-windows-156') -or
+             $env:GITHUB_REF -cnotin @('refs/heads/feature/r520-linux-155rc1-ci','refs/heads/security/r776-pinned-root-read-qa','refs/heads/prep/r805-windows-156','refs/heads/prep/r803-forward-156-native-gates') -or
              (git -C $root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R600_HOST_AUTHORITY'}
           if($report.status -cne 'PASS_ISOLATED_HOSTED_V156_BUILD' -or
              $native.status -cne 'PASS_HOSTED_NATIVE_154_TO_156_AND_BACK_154' -or
