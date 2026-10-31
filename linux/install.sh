@@ -75,7 +75,7 @@ backend_matches_current() {
   python3 - /var/lib/directinternetmethod/install.json "$uid" <<'PY' >/dev/null 2>&1 || return 1
 import json,sys
 d=json.load(open(sys.argv[1],encoding="utf-8"))
-raise SystemExit(0 if d.get("version")=="1.5.6" and str(d.get("uid"))==sys.argv[2] else 1)
+raise SystemExit(0 if d.get("version")=="1.5.7" and str(d.get("uid"))==sys.argv[2] else 1)
 PY
   [ "$(cat /etc/directinternetmethod.uid 2>/dev/null || true)" = "$uid" ] || return 1
   for action in start stop recovery; do
@@ -229,11 +229,11 @@ for name, expected in expected_launchers.items():
         launchers[name]=hashlib.sha256(expected).hexdigest()
 transaction=json.loads((pathlib.Path.home()/".local/state/DirectInternetMethod/update-pending/manifest.json").read_text(encoding="utf8"))
 protected=json.loads(pathlib.Path("/var/lib/directinternetmethod/install.json").read_text(encoding="utf-8"))
-assert protected.get("version") == "1.5.6"
+assert protected.get("version") == "1.5.7"
 metadata=json.dumps({
   "schema":2,
   "product":"Direct Internet Method",
-  "version":"1.5.6",
+  "version":"1.5.7",
   "platform":"linux-x86_64",
   "installedUtc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
   "networkMutationOnInstall":False,

@@ -34,9 +34,9 @@ for version in ("1.5.5", "1.5.5-rc1", "v1.5.5", "1.5.5.0", "1.5.5junk"):
         raise AssertionError("UNSAFE_VERSION_WAS_NOT_REJECTED:" + version)
 
 win_release = json.loads((ROOT / "windows/RELEASE.json").read_text("utf-8-sig"))
-if win_release.get("version") in ("1.5.5-rc1","1.5.6"):
+if win_release.get("version") in ("1.5.5-rc1","1.5.6","1.5.7"):
     expected_assembly = ("1.5.5.0" if win_release["version"]=="1.5.5-rc1"
-                         else "1.5.6.0")
+                         else "1.5.7.0" if win_release["version"]=="1.5.7" else "1.5.6.0")
     for rel in ("windows/gui/DirectInternetMethod.csproj",
                 "windows/service/DirectInternetMethod.Service.csproj"):
         source = (ROOT / rel).read_text("utf-8-sig")

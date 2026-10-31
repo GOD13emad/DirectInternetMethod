@@ -23,8 +23,8 @@ import subprocess
 import sys
 import tempfile
 
-VERSION = "1.5.6"
-PACKAGE = "DirectInternetMethod_1.5.6_Linux_x86_64"
+VERSION = "1.5.7"
+PACKAGE = "DirectInternetMethod_1.5.7_Linux_x86_64"
 MANIFEST_SHA256 = "1BDF1EE5C6C3A7C18623C31D16496C077022EDFB16A68163FD885F5D909DAF9A"
 TRUSTED_ENTRY = Path("/usr/local/libexec/directinternetmethod/privileged_entry.py")
 MAX_ITEM = 16 * 1024 * 1024

@@ -15,9 +15,10 @@ REL=json.loads((ROOT/"windows/RELEASE.json").read_text(encoding="utf-8-sig"))
 CURRENT=REL.get("version")
 if CURRENT=="1.5.4":
     assert REL.get("status")=="CANDIDATE_V154_UNPUBLISHED" and REL.get("previousAccepted",{}).get("version")=="1.5.3"
-elif CURRENT in ("1.5.5-rc1","1.5.6"):
+elif CURRENT in ("1.5.5-rc1","1.5.6","1.5.7"):
     accepted={"1.5.5-rc1":"PRIVATE_WINDOWS_RC1_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN",
-              "1.5.6":"PRIVATE_WINDOWS_V156_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN"}
+              "1.5.6":"PRIVATE_WINDOWS_V156_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN",
+               "1.5.7":"PRIVATE_WINDOWS_V157_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN"}
     assert REL.get("status")==accepted[CURRENT]
     assert REL.get("previousAccepted",{}).get("version")=="1.5.4" and REL.get("previousAccepted",{}).get("tag")=="v1.5.4"
     assert REL.get("publication",{}).get("publishedAt") is None
@@ -62,9 +63,9 @@ def negative_first():
 def main():
     negative_first()
     ci=CI.read_text("utf-8")
-    expected_dotnet_jobs = 2 if CURRENT in ("1.5.5-rc1","1.5.6") else 1
+    expected_dotnet_jobs = 3 if CURRENT=="1.5.7" else (2 if CURRENT in ("1.5.5-rc1","1.5.6") else 1)
     assert ci.count("dotnet-version: '10.0.x'")==expected_dotnet_jobs,"SDK_10_JOB_PIN_COUNT"
-    if CURRENT in ("1.5.5-rc1","1.5.6"):
+    if CURRENT in ("1.5.5-rc1","1.5.6","1.5.7"):
         assert ci.count("  windows-private-r535-native:")==1
         assert "runs-on: windows-2025" in ci and "tests/r535_windows_native_rollback.ps1" in ci
     assert "dotnet-version: '8.0.x'" not in ci

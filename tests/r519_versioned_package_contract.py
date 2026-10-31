@@ -7,7 +7,7 @@ directory and compared to its original exact-SHA baseline.
 from __future__ import annotations
 import ast,hashlib,importlib.util,json,pathlib,re,tempfile,unittest,zipfile
 R=pathlib.Path(__file__).resolve().parents[1]
-VERSION="1.5.6"
+VERSION="1.5.7"
 PACKAGE=R/"delivery"/f"DirectInternetMethod_{VERSION}_Linux_x86_64.zip"
 GUI=R/"linux/app/direct_internet_method.py"
 HELPER=R/"linux/app/direct_method_helper.sh"
@@ -63,7 +63,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(digest(got),declared["sha256"])
         self.assertEqual(declared["sha256"],"6BFD45BA87CE052D020D26BE5B6E0F589DF1B848D202D716AFD8FB87FD1FDE9A")
         self.assertIn('"socket_fallback.py"', got.decode())
-        self.assertIn('doc.get("version") == "1.5.6"',got.decode())
+        self.assertIn('doc.get("version") == "1.5.7"',got.decode())
         self.assertNotIn('doc.get("version") == "1.5.4"',got.decode())
         self.assertEqual(digest((R/"linux/app/user_uninstall_preserve.py").read_bytes()),declared["sha256"])
     def test_original_unreleased_candidate_preserved_and_current_source_delta(self):
@@ -126,12 +126,12 @@ class Tests(unittest.TestCase):
         self.assertFalse(any("1.5.5-rc1" in x["file"] for x in self.rows))
     def test_fresh_root_contract_version(self):
         root=(R/"linux/system/install_system.sh").read_text()
-        self.assertIn('{"schema":1,"version":"1.5.6"',root)
+        self.assertIn('{"schema":1,"version":"1.5.7"',root)
         self.assertIn('encrypted_selective_dns.py',root)
         self.assertIn('encrypted_selective_policy.py',root)
     def test_protected_upgrade_exact_sha(self):
         text=ROOT_TXN.read_text()
-        self.assertIn('TARGET_VERSION="1.5.6"',text)
+        self.assertIn('TARGET_VERSION="1.5.7"',text)
         self.assertIn('CURRENT_BACKEND_VERSION="1.5.2"',text)
         self.assertIn('data.get("revision")=="R519"',text)
         self.assertIn('receipt.get("revision")=="R519"',text)
@@ -140,7 +140,7 @@ class Tests(unittest.TestCase):
     def test_root_wrapper_pinned_identity(self):
         src=(R/"linux/system/upgrade_system.sh").read_text()
         self.assertIn(digest(ROOT_TXN.read_bytes()),src)
-        self.assertIn('DirectInternetMethod_1.5.6_Linux_x86_64',src)
+        self.assertIn('DirectInternetMethod_1.5.7_Linux_x86_64',src)
         self.assertIn("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED",src)
         self.assertIn("GUARD_SHA=",src)
         self.assertLess(src.index("R553_ROOT_GUARD_ACTIVE_PRESTAGE_VERIFIED"),
@@ -199,12 +199,12 @@ class Tests(unittest.TestCase):
         self.assertIn('python3 "$USER_TRANSACTION" --rollback',src)
     def test_gui_and_user_metadata_pins(self):
         app=GUI.read_text()
-        self.assertIn('VERSION="1.5.6"',app)
+        self.assertIn('VERSION="1.5.7"',app)
         self.assertIn('COEXIST_HELPER_SHA256="'+digest(HELPER.read_bytes()).lower()+'"',app)
-        self.assertIn('installed.get("version") == "1.5.6"',app)
+        self.assertIn('installed.get("version") == "1.5.7"',app)
         updater=USER_TXN.read_text()
         self.assertIn('len(package_doc["files"]) == 28',updater)
-        self.assertIn('data.get("version") == "1.5.6"',updater)
+        self.assertIn('data.get("version") == "1.5.7"',updater)
         self.assertIn('"encrypted-dns-optin.txt"',updater)
     def test_rc_semver_prevents_implicit_downgrade(self):
         code=ast.parse(GUI.read_text())
@@ -228,7 +228,7 @@ class Tests(unittest.TestCase):
     def test_readme_is_explicitly_unreleased(self):
         s=PKG_DOC.read_text()
         self.assertIn("NOT PUBLISHED",s)
-        self.assertIn("1.5.6",s)
+        self.assertIn("1.5.7",s)
         self.assertIn("v1.5.4",s)
 if __name__=="__main__":
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(Tests))

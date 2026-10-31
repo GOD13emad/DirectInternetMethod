@@ -23,10 +23,10 @@ import subprocess
 import sys
 import time
 
-VERSION="1.5.6"
+VERSION="1.5.7"
 BASELINE="1.5.2"  # legacy accepted baseline
 OLD_USER="1.5.4"  # legacy accepted baseline
-ALLOWED_BASELINE_PAIRS=(("1.5.2","1.5.4"),("1.5.5-rc1","1.5.5-rc1"))
+ALLOWED_BASELINE_PAIRS=(("1.5.2","1.5.4"),("1.5.5-rc1","1.5.5-rc1"),("1.5.6","1.5.6"))
 PIN_ROOT="7147AF90E6DC0B29A6CE15A84656CE9587060A7F5F343E7B16281C5602FC693C"
 PIN_USER="5077ACE07B27DDBCBEAA4DE56ED718F7FD26934FF65A13251CCEAFA9DD2FEB50"
 GUARD=Path("/var/lib/directinternetmethod/upgrade-guard")
@@ -152,7 +152,7 @@ def state_is_off(home:Path):
 
 def validate_source(source:Path):
     need(source.is_absolute() and source.is_dir() and not source.is_symlink() and
-         source.name=="DirectInternetMethod_1.5.6_Linux_x86_64","SOURCE_LAYOUT")
+         source.name=="DirectInternetMethod_1.5.7_Linux_x86_64","SOURCE_LAYOUT")
     manifest=source/"PACKAGE_MANIFEST.json"
     regular(manifest)
     data=json.loads(manifest.read_text("utf8"))

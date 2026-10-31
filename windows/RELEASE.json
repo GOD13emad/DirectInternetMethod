@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.5.6",
-  "status": "PRIVATE_WINDOWS_V156_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN",
-  "date": "2026-10-20",
+  "version": "1.5.7",
+  "status": "PRIVATE_WINDOWS_V157_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN",
+  "date": "2026-10-31",
   "previousAccepted": {
     "version": "1.5.4",
     "tag": "v1.5.4",
@@ -137,7 +137,7 @@
     "Targeted remains the default scope; All Sites is explicit opt-in.",
     "Windows installer remains not Authenticode-signed."
   ],
-  "exactNextAction": "Windows 1.5.6 isolated build and staged-hosted install/upgrade rollback with byte-pinned public v1.5.4; no public promotion before native acceptance.",
+  "exactNextAction": "Build and validate candidate v1.5.7 Windows in isolated hosted CI; verify monotonic upgrade from private 1.5.6.0, in-place data preservation and rollback against public v1.5.4 without promoting publication before native acceptance and independent review.",
   "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
   "publication": {
     "tag": null,

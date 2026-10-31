@@ -1,5 +1,5 @@
 #define MyAppName "Direct Internet Method"
-#define MyAppVersion "1.5.6"
+#define MyAppVersion "1.5.7"
 #define MyAppPublisher "Direct Internet Method"
 #define MyAppExeName "DirectInternetMethod.exe"
 
@@ -7,7 +7,7 @@
 AppId={{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-VersionInfoVersion=1.5.6.0
+VersionInfoVersion=1.5.7.0
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\DirectInternetMethod
 UsePreviousAppDir=yes
@@ -19,7 +19,7 @@ UninstallLogMode=overwrite
 DefaultGroupName=Direct Internet Method
 DisableProgramGroupPage=yes
 OutputDir=..\..\delivery
-OutputBaseFilename=DirectInternetMethod_1.5.6_Windows_Setup
+OutputBaseFilename=DirectInternetMethod_1.5.7_Windows_Setup
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
