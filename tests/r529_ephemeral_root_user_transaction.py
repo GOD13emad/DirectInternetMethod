@@ -2,7 +2,7 @@
 """R529: native Root + unprivileged User transaction across one disposable VM.
 
 Not a physical network/GUI acceptance. Use exact v1.5.4 published ZIP user and
-protected Root code, exact 1.5.6 candidate ZIP, unmodified RootTransaction("/")
+protected Root code, exact 1.5.7 candidate ZIP, unmodified RootTransaction("/")
 and real subprocess-driven user transaction / inline INSTALL.json production
 fragment. Both transactions must rollback byte-for-byte. NO live network or
 systemd, No Tailscale changes, no installation onto a user's physical computer.
@@ -228,7 +228,7 @@ def execute():
     as_runner(user, tx_script, "--stage", "--source", extracted)
     require((pending / "manifest.json").is_file(), "USER_PENDING_STAGE")
     manifest=json.loads((pending / "manifest.json").read_text())
-    require(manifest["version"]=="1.5.6" and
+    require(manifest["version"]=="1.5.7" and
             manifest["providerManaged"] is False and
             manifest["providerSha"] is None,
             "CUSTOM_USER_PROVIDER_OWNERSHIP")
@@ -237,7 +237,7 @@ def execute():
     # Protected absolute-root stage/apply with actual root-owned files.
     require(root_tx.stage(extracted)["status"]=="STAGED", "ROOT_STAGE")
     require(root_tx.apply()["status"]=="APPLIED", "ROOT_APPLY")
-    require(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.6", "ROOT_NEW_METADATA")
+    require(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.7", "ROOT_NEW_METADATA")
     # Real unprivileged User transaction CLI replaces managed code only.
     as_runner(user, tx_script, "--apply", "--source", extracted)
     for rel,row in manifest["managed"].items():
@@ -262,12 +262,12 @@ def execute():
     inline=tail.split(end,1)[0]
     require(len(inline.splitlines())==64 and
             'transaction_helper.atomic_bytes(' in inline and
-            'assert protected.get("version") == "1.5.6"' in inline,
+            'assert protected.get("version") == "1.5.7"' in inline,
             "INSTALLER_METADATA_PROVENANCE_CHANGED")
     as_runner_inline(user,inline,app/"INSTALL.json",tx_script)
     record=json.loads((app/"INSTALL.json").read_text())
-    require(record["version"]=="1.5.6" and
-            record["protectedBackendVersion"]=="1.5.6",
+    require(record["version"]=="1.5.7" and
+            record["protectedBackendVersion"]=="1.5.7",
             "TWO_SIDED_VERSION_METADATA")
     require(record["managedProviderSha256"] is None and
             record["preservedCustomProviderData"] is True and
@@ -299,11 +299,11 @@ def execute():
     print(json.dumps({
       "revision":"R529", "status":"PASS_HOSTED_ROOT_USER_ACTUAL_TRANSACTION",
       "productionMachineTouched":False,"hostedRunner":True,
-      "publicStable":"v1.5.4","candidate":"1.5.6",
+      "publicStable":"v1.5.4","candidate":"1.5.7",
       "userTransaction":"STAGE_APPLY_INLINE_ATOMIC_METADATA_ROLLBACK",
       "protectedRoot":"ABSOLUTE_ROOT_STAGE_APPLY_ROLLBACK",
       "preVersions":"user1.5.4/root1.5.2",
-      "appliedVersion":"both1.5.6",
+      "appliedVersion":"both1.5.7",
       "postRollbackVersions":"user1.5.4/root1.5.2",
       "oldUserCodeFilesVerified":len(old_user),
       "protectedRootFilesVerified":len(root_before),

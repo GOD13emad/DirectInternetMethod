@@ -3,7 +3,7 @@
 
 Both invocations are separate CI steps on an ephemeral GitHub-hosted Ubuntu VM.
 The first starts a detached systemd monotonic timer BEFORE any candidate file
-mutation, leaves actual protected Root+unprivileged User 1.5.6 staged and
+mutation, leaves actual protected Root+unprivileged User 1.5.7 staged and
 applied, and EXITs. The second waits for the independent timer and verifies
 byte-exact restoration to 1.5.2 Root / 1.5.4 User, without running rollback.
 All installed products on physical hosts and network services are untouched.
@@ -180,9 +180,9 @@ def arm():
     r529.as_runner(user,user_script,"--apply","--source",extracted)
     r529.as_runner_inline(user,exact_inline(r526,extracted),
                           app/"INSTALL.json",user_script)
-    need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.6",
+    need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.7",
          "NEW_USER_METADATA")
-    need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.6",
+    need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.7",
          "NEW_ROOT_METADATA")
     need(root_tx.status()["status"]=="APPLIED","ROOT_APPLIED_PENDING")
     need((Path("/home/runner/.local/state/DirectInternetMethod/update-pending/manifest.json")).is_file(),
@@ -192,7 +192,7 @@ def arm():
     print("PASS_R532_WATCHDOG_ARMED_BEFORE_MUTATION_THEN_MAIN_EXIT")
     print("WORKER_ROOT_OWNED_SHA",doc["workerSHA256"])
     print("TIMER_UNIT",TIMER,"SERVICE_UNIT",SERVICE)
-    print("PRE_TIMER_VERSIONS", "root=1.5.6","user=1.5.6")
+    print("PRE_TIMER_VERSIONS", "root=1.5.7","user=1.5.7")
 
 def verify():
     need(GUARD.is_dir() and GUARD.stat().st_uid==0,"EXPECTED_GUARD_NOT_FOUND")
