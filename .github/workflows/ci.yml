@@ -711,7 +711,7 @@ jobs:
     name: windows-private-r848-v156-forward-one-time
     # Historical original v1.5.6 artifact expires 2026-11-01.
     # Only the one-time R848 commit runs this; later pushes skip safely.
-    if: github.event_name == 'push' && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/prep/r846-forward-157-native-gates' && contains(github.event.head_commit.message, 'r848-hosted-156-to-157-once')
+    if: github.event_name == 'push' && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/prep/r846-forward-157-native-gates' && (contains(github.event.head_commit.message, 'r848-hosted-156-to-157-once') || contains(github.event.head_commit.message, 'r850-hosted-integrity-once'))
     needs: windows-source
     runs-on: windows-2025
     timeout-minutes: 75

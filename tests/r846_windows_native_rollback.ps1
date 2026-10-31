@@ -98,6 +98,8 @@ try {
  [void](Registered '1.5.7')
  Require ((FileSha $Gui) -ceq $build.guiSha -and (FileSha $Svc) -ceq $build.serviceSha) 'RC1_GUI_SERVICE_PIN'
  Require ((FileSha (Join-Path $App 'manifest.json')) -ceq $build.manifestSha) 'RC1_MANIFEST_PIN'
+ & pwsh -NoProfile -NonInteractive -File (Join-Path $Root 'tests/r850_windows_privileged_manifest_attestation.ps1') -UserRoot $App -PrivilegedRoot $Priv -ExpectedVersion '1.5.7' -ExpectedManifestSha256 $build.manifestSha -ExpectedManagedFiles 681 -ExpectedPrivilegedFiles 674
+ Require ($LASTEXITCODE -eq 0) 'R850_INSTALLED_PRIVILEGED_674_SHA_MATCH'
  Require ((Get-Content (Join-Path $App 'RELEASE.json') -Raw|ConvertFrom-Json).version -ceq '1.5.7') 'RC1_INSTALLED_VERSION'
  Require ((FileSha $Config) -ceq $configSha -and (FileSha $Provider) -ceq $providerSha -and (FileSha $Evidence) -ceq $evidenceSha) 'IN_PLACE_USER_DATA_PRESERVED'
  $d=Registered '1.5.7'
