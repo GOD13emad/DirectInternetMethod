@@ -707,6 +707,47 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  windows-private-r848-v156-forward:
+    name: windows-private-r848-v156-forward-one-time
+    # Historical original v1.5.6 artifact expires 2026-11-01.
+    # Only the one-time R848 commit runs this; later pushes skip safely.
+    if: github.event_name == 'push' && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/prep/r846-forward-157-native-gates' && contains(github.event.head_commit.message, 'r848-hosted-156-to-157-once')
+    needs: windows-source
+    runs-on: windows-2025
+    timeout-minutes: 75
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: R848 build verified private v1.5.7 from current exact SHA
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r846_windows_candidate_hosted_build.ps1
+          if($LASTEXITCODE -ne 0){throw 'R848_BUILD_FAILED'}
+      - name: R848 original private 1.5.6 to 1.5.7 native and back
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r848_windows_private156_forward_native.ps1
+          if($LASTEXITCODE -ne 0){throw 'R848_PRIVATE_NATIVE_FAILED'}
+      - name: Retain R848 one-time Windows native private upgrade evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: r848-private156-to-157-native-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/DIM_R846_NATIVE/BUILD_R846.json
+            ${{ runner.temp }}/DIM_R848_NATIVE/NATIVE_R848.json
+          if-no-files-found: warn
+          retention-days: 7
+
   windows-release-contract:
     name: windows-release-contract-unsigned
     if: startsWith(github.ref, 'refs/tags/v')

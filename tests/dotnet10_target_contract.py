@@ -63,7 +63,7 @@ def negative_first():
 def main():
     negative_first()
     ci=CI.read_text("utf-8")
-    expected_dotnet_jobs = 3 if CURRENT=="1.5.7" else (2 if CURRENT in ("1.5.5-rc1","1.5.6") else 1)
+    expected_dotnet_jobs = 4 if CURRENT=="1.5.7" else (2 if CURRENT in ("1.5.5-rc1","1.5.6") else 1)
     assert ci.count("dotnet-version: '10.0.x'")==expected_dotnet_jobs,"SDK_10_JOB_PIN_COUNT"
     if CURRENT in ("1.5.5-rc1","1.5.6","1.5.7"):
         assert ci.count("  windows-private-r535-native:")==1
