@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""R526: hermetic Linux 1.5.6 INSTALL.json activation regression gate.
+"""R526: hermetic Linux 1.5.7 INSTALL.json activation regression gate.
 
 Run the exact inline metadata program from linux/install.sh against a disposable
 HOME and a fake protected Root metadata file. No real installer, sudo, systemd,
@@ -23,7 +23,7 @@ USER_TX = BASE / "linux/app/user_update_transaction.py"
 BEGIN = """python3 - "$APP/INSTALL.json" "$USER_TRANSACTION" <<'PY'\n"""
 END = "\nPY\n"
 PROTECTED = 'pathlib.Path("/var/lib/directinternetmethod/install.json")'
-VERSION = "1.5.6"
+VERSION = "1.5.7"
 
 
 def exact_inline_program() -> str:
@@ -98,7 +98,7 @@ class InstallerMetadata(unittest.TestCase):
         self.assertTrue(INSTALL.is_file() and USER_TX.is_file())
         self.assertEqual(len(self.program.splitlines()), 64)
         self.assertEqual(self.program.count(PROTECTED), 1)
-        self.assertIn('assert protected.get("version") == "1.5.6"', self.program)
+        self.assertIn('assert protected.get("version") == "1.5.7"', self.program)
         self.assertIn('transaction_helper.atomic_bytes(', self.program)
 
     def test_02_in_place_metadata_and_mutable_preservation(self) -> None:

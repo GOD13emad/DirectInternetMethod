@@ -6,14 +6,14 @@ set -Eeuo pipefail
 umask 077
 SRC="${1:-}"
 REQ_UID="${2:-}"
-TX_SHA="7147AF90E6DC0B29A6CE15A84656CE9587060A7F5F343E7B16281C5602FC693C"
+TX_SHA="239A0C21EB4A9564799A97AFE440C120668CEDCD49412E33D0AC78C8866820E7"
 [ "$(id -u)" = 0 ] || { echo 'ROOT_REQUIRED' >&2; exit 77; }
 case "$REQ_UID" in ''|*[!0-9]*) echo 'UID_INVALID' >&2; exit 77;; esac
 [ "$REQ_UID" -gt 0 ] && [ "$REQ_UID" -lt 2147483648 ] || exit 77
 [ -d "$SRC" ] && [ ! -L "$SRC" ] && [ -f "$SRC/system/protected_upgrade_transaction.py" ] || {
     echo "UPGRADE_SOURCE_MISSING_OR_SYMLINK" >&2; exit 77;
 }
-[ "$(basename "$SRC")" = "DirectInternetMethod_1.5.6_Linux_x86_64" ] || {
+[ "$(basename "$SRC")" = "DirectInternetMethod_1.5.7_Linux_x86_64" ] || {
     echo "WRONG_PACKAGE_LAYOUT" >&2; exit 77;
 }
 owner_uid="$(stat -c %u -- "$SRC")"
@@ -34,13 +34,13 @@ assert p.is_file() and not p.is_symlink()
 s=p.stat()
 assert s.st_uid==0 and stat.S_IMODE(s.st_mode)==0o644
 m=json.loads(p.read_text('utf8'))
-assert m['schema']==1 and m['version'] in ('1.5.2','1.5.5-rc1') and m['uid']==expected
+assert m['schema']==1 and m['version'] in ('1.5.2','1.5.5-rc1','1.5.6') and m['uid']==expected
 assert m['home'].startswith('/home/')
 PY
 # Arm the separately root-owned boot-persistent R553 guard BEFORE any
 # protected Root Stage/Apply. Source identity is a frozen independent SHA;
 # a signed-in OS administrator still authenticates through the installer.
-GUARD_SHA="3A8E5C655A841D7614477E7D44FC74A9DAD1CAAB89462092C8FBF235AB126A83"
+GUARD_SHA="66B683E14FCDEC8D62CDFD2879AAB29D9DE0FD778DD67E0522BFB1218DC122D0"
 [ -f "$SRC/system/upgrade_guard.py" ] && [ ! -L "$SRC/system/upgrade_guard.py" ] || {
     echo "R553_GUARD_SOURCE_MISSING_OR_SYMLINK" >&2; exit 87;
 }
@@ -101,14 +101,14 @@ try:
     assert data["schema"]==1 and data["revision"]=="R552"
     assert data["uid"]==uid and metadata["uid"]==uid and data["home"]==str(home)
     assert (data["versionFromRoot"],data["versionFromUser"]) in (
-        ("1.5.2","1.5.4"),("1.5.5-rc1","1.5.5-rc1"))
+        ("1.5.2","1.5.4"),("1.5.5-rc1","1.5.5-rc1"),("1.5.6","1.5.6"))
     assert metadata["version"]==data["versionFromRoot"]
-    assert data["versionTo"]=="1.5.6"
+    assert data["versionTo"]=="1.5.7"
     assert data["oldRootMetaSha"]==sha(root)
     assert data["oldUserMetaSha"]==sha(home/".local/share/DirectInternetMethod/INSTALL.json")
     assert data["rootTransactionSha"]==root_sha
     assert sha(guard/"root_tx.py")==root_sha
-    assert sha(guard/"user_tx.py")=="5077ACE07B27DDBCBEAA4DE56ED718F7FD26934FF65A13251CCEAFA9DD2FEB50"
+    assert sha(guard/"user_tx.py")=="69AE3A76CFCD3BB251546CCD5237F3AF081ED0477323A8F95737C8A4BC87B6F8"
     assert data["userTransactionSha"]==sha(guard/"user_tx.py")
     assert data["workerSha"]==sha(guard/"worker.py")
     pending=home/".local/state/DirectInternetMethod/update-pending"
@@ -116,7 +116,7 @@ try:
     pm=pending/"manifest.json"
     assert pm.is_file() and not pm.is_symlink() and pm.stat().st_uid==uid
     stage=json.loads(pm.read_text("utf8"))
-    assert stage["schema"]==1 and stage["version"]=="1.5.6"
+    assert stage["schema"]==1 and stage["version"]=="1.5.7"
     assert stage["previousVersion"]==data["versionFromUser"]
     old=stage["old"]["INSTALL.json"]
     assert old["exists"] is True and str(old["sha"]).upper()==data["oldUserMetaSha"]
@@ -141,5 +141,5 @@ GUARD_ROOT_TX="/var/lib/directinternetmethod/upgrade-guard/root_tx.py"
 python3 -B "$GUARD_ROOT_TX" stage --source "$SRC"
 python3 -B "$GUARD_ROOT_TX" apply
 python3 -B "$GUARD_ROOT_TX" status |
-  python3 -c 'import json,sys;j=json.load(sys.stdin);assert j["status"]=="APPLIED" and j["version"]=="1.5.6"'
+  python3 -c 'import json,sys;j=json.load(sys.stdin);assert j["status"]=="APPLIED" and j["version"]=="1.5.7"'
 echo '{"status":"ROOT_R519_APPLIED_UNCOMMITTED","needsRealNativeAcceptance":true}'

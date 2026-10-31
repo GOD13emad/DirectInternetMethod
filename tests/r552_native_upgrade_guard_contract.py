@@ -2,7 +2,7 @@
 """R552 source-extracted regression: worker/timer logic, ZERO installed actions."""
 import hashlib,importlib.util,json,os,pathlib,tempfile,types,unittest
 SRC=pathlib.Path(__file__).resolve().parents[1]/"linux/system/upgrade_guard.py"
-SOURCE_SHA="3A8E5C655A841D7614477E7D44FC74A9DAD1CAAB89462092C8FBF235AB126A83"
+SOURCE_SHA="66B683E14FCDEC8D62CDFD2879AAB29D9DE0FD778DD67E0522BFB1218DC122D0"
 assert hashlib.sha256(SRC.read_bytes()).hexdigest().upper()==SOURCE_SHA
 spec=importlib.util.spec_from_file_location("r552_candidate",SRC)
 g=importlib.util.module_from_spec(spec)
@@ -397,17 +397,20 @@ class Cases(unittest.TestCase):
             g.staged_user_manifest(self.home,os.getuid(),installed)
         accepted=g.staged_user_manifest(
             self.home,os.getuid(),installed,"1.5.5-rc1")
-        self.assertEqual(accepted["version"],"1.5.6")
+        self.assertEqual(accepted["version"],"1.5.7")
         self.assertEqual(accepted["previousVersion"],"1.5.5-rc1")
 
     def test_29_only_correlated_root_and_user_versions_allowed(self):
         self.assertEqual(
             g.ALLOWED_BASELINE_PAIRS,
-            (("1.5.2","1.5.4"),("1.5.5-rc1","1.5.5-rc1")))
+            (("1.5.2","1.5.4"),("1.5.5-rc1","1.5.5-rc1"),("1.5.6","1.5.6")))
         for mixed in (("1.5.2","1.5.5-rc1"),
                       ("1.5.5-rc1","1.5.4"),
                       ("1.5.3","1.5.4"),
-                      ("1.5.5-rc1","1.5.6")):
+                      ("1.5.5-rc1","1.5.6"),
+                       ("1.5.6","1.5.5-rc1"),
+                       ("1.5.6","1.5.4"),
+                       ("1.5.7","1.5.7")):
             self.assertNotIn(mixed,g.ALLOWED_BASELINE_PAIRS)
 
     def test_10_readiness_worker_does_not_query_elapsed_active_timer(self):
