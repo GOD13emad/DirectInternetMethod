@@ -397,17 +397,20 @@ class Cases(unittest.TestCase):
             g.staged_user_manifest(self.home,os.getuid(),installed)
         accepted=g.staged_user_manifest(
             self.home,os.getuid(),installed,"1.5.5-rc1")
-        self.assertEqual(accepted["version"],"1.5.6")
+        self.assertEqual(accepted["version"],"1.5.7")
         self.assertEqual(accepted["previousVersion"],"1.5.5-rc1")
 
     def test_29_only_correlated_root_and_user_versions_allowed(self):
         self.assertEqual(
             g.ALLOWED_BASELINE_PAIRS,
-            (("1.5.2","1.5.4"),("1.5.5-rc1","1.5.5-rc1")))
+            (("1.5.2","1.5.4"),("1.5.5-rc1","1.5.5-rc1"),("1.5.6","1.5.6")))
         for mixed in (("1.5.2","1.5.5-rc1"),
                       ("1.5.5-rc1","1.5.4"),
                       ("1.5.3","1.5.4"),
-                      ("1.5.5-rc1","1.5.6")):
+                      ("1.5.5-rc1","1.5.6"),
+                       ("1.5.6","1.5.5-rc1"),
+                       ("1.5.6","1.5.4"),
+                       ("1.5.7","1.5.7")):
             self.assertNotIn(mixed,g.ALLOWED_BASELINE_PAIRS)
 
     def test_10_readiness_worker_does_not_query_elapsed_active_timer(self):
