@@ -25,7 +25,7 @@ $admin=[Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]
 if(!$admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'R846_ADMIN_TOKEN_REQUIRED'}
 if(!(Test-Path $Build) -or (Test-Path $Result) -or (Test-Path $Old)){throw 'R846_UNSAFE_REPLAY_OR_MISSING_BUILD'}
 $build=Get-Content $Build -Raw |ConvertFrom-Json
-if($build.status -cne 'PASS_ISOLATED_HOSTED_V156_BUILD' -or $build.head -cne $env:GITHUB_SHA){throw 'R846_BUILD_AUTHORITY'}
+if($build.status -cne 'PASS_ISOLATED_HOSTED_V157_BUILD' -or $build.head -cne $env:GITHUB_SHA){throw 'R846_BUILD_AUTHORITY'}
 if((Get-FileHash $New -Algorithm SHA256).Hash -cne $build.installerSha){throw 'R846_RC1_INSTALLER_SHA'}
 $report=[ordered]@{schema=1;revision='R846';status='FAIL_UNPROVEN';source=$env:GITHUB_SHA;
  runner='github-hosted-windows-2025';privateInstallerSha=$build.installerSha;
@@ -112,7 +112,7 @@ try {
  Require ((FileSha $Config) -ceq $configSha -and (FileSha $Evidence) -ceq $evidenceSha) 'PRIVATE_CONFIG_PRESERVED_ROLLBACK'
  $after=Network;$report.networkAfter=$after
  Require ($before.defaultRoutes -ceq $after.defaultRoutes -and $before.dns -ceq $after.dns) 'NETWORK_BASELINE_EXACT'
- $report.status='PASS_HOSTED_NATIVE_154_TO_156_AND_BACK_154'
+ $report.status='PASS_HOSTED_NATIVE_154_TO_157_AND_BACK_154'
  $report.singleUninstaller=$true;$report.customProviderUpgradePreserved=$true;$report.dataPreserved=$true
 } catch {
  $report.status='DEGRADED_UNRESOLVED'
@@ -122,4 +122,4 @@ try {
  Write-Output ('R846_NATIVE_STATUS='+$report.status)
  Write-Output ('R846_RECEIPT_SHA256='+((Get-FileHash $Result -Algorithm SHA256).Hash))
 }
-if($report.status -ne 'PASS_HOSTED_NATIVE_154_TO_156_AND_BACK_154'){throw ('R846_NATIVE_NOT_ACCEPTED_'+($report.errors -join ';'))}
+if($report.status -ne 'PASS_HOSTED_NATIVE_154_TO_157_AND_BACK_154'){throw ('R846_NATIVE_NOT_ACCEPTED_'+($report.errors -join ';'))}

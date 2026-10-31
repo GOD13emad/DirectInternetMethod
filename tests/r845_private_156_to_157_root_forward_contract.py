@@ -52,6 +52,9 @@ class Private156To157(base.FakeFixture):
     def test_version_pair_whitelist(self):
         s=(R/"linux/system/upgrade_guard.py").read_text()
         self.assertIn('("1.5.6","1.5.6")',s)
+        sh=(R/"linux/system/upgrade_system.sh").read_text()
+        self.assertIn('("1.5.6","1.5.6")',sh)
+        self.assertNotIn('("1.5.7","1.5.7")',sh)
         self.assertNotIn('("1.5.6","1.5.5-rc1")',s)
 if __name__=="__main__":
     tests=("test_forward_and_rollback","test_tampered_root_denied","test_unknown_version_denied","test_version_pair_whitelist")

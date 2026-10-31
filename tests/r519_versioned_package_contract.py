@@ -14,8 +14,8 @@ HELPER=R/"linux/app/direct_method_helper.sh"
 ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
-PKG_DOC=R/"docs/README_PACKAGE_156.md"
-EXPECTED={"version":VERSION,"files":28,"sha256":"A8356107C5DE6529E8270D1EE404A7D8A629040BD0D17F3F83C61C390790655D"}
+PKG_DOC=R/"docs/README_PACKAGE_157.md"
+EXPECTED={"version":VERSION,"files":28,"sha256":"F5506E1AE0092A20071B8D63E770ADBF6CDE3AA0701CC6A1B4F1E925C74CAFB6"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod
@@ -61,7 +61,7 @@ class Tests(unittest.TestCase):
         got=self.info.read(self.prefix+rel)
         declared=next(row for row in self.rows if row["file"]==rel)
         self.assertEqual(digest(got),declared["sha256"])
-        self.assertEqual(declared["sha256"],"6BFD45BA87CE052D020D26BE5B6E0F589DF1B848D202D716AFD8FB87FD1FDE9A")
+        self.assertEqual(declared["sha256"],"869EA1CABA79D36A4987BE97868A4A7378B64987F5CC192255BECDB751020E62")
         self.assertIn('"socket_fallback.py"', got.decode())
         self.assertIn('doc.get("version") == "1.5.7"',got.decode())
         self.assertNotIn('doc.get("version") == "1.5.4"',got.decode())
@@ -96,7 +96,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(after["system/encrypted_selective_dns.py"]["sha256"],
                          "A8A8DD6155DDC4E2C5295A6CAA7B8809144C43985B47FD4664501ED683DB0AAE")
         self.assertEqual(after["app/direct_internet_method.py"]["sha256"],
-                         "AC4EF0EBD88B62B730B1309AD25B04876DED2E00AF429C369E02EE087F7F377B")
+                         "6D60986F06D6239FB03CE58B4CA496463D77D40B89938F2932F1C52834475D71")
         self.assertIn("encrypted=encrypted_dns_optin_state()",
                       self.info.read(self.prefix+"app/direct_internet_method.py").decode())
         self.assertIn('s.get("selectiveDnsEncrypted")',

@@ -6,7 +6,7 @@ $Root=$env:GITHUB_WORKSPACE
 if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:GITHUB_REPOSITORY -cne 'GOD13emad/DirectInternetMethod'){throw 'R846_GITHUB_HOST_ONLY'}
 if($env:GITHUB_REF -cnotin @('refs/heads/prep/r846-forward-157-native-gates') -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R846_BRANCH_HEAD_AUTHORITY'}
 $r=Get-Content (Join-Path $Root 'windows\RELEASE.json') -Raw|ConvertFrom-Json
-if($r.version -cne '1.5.7' -or $r.status -cne 'PRIVATE_WINDOWS_V156_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN'){throw 'R846_RC1_DECLARATION'}
+if($r.version -cne '1.5.7' -or $r.status -cne 'PRIVATE_WINDOWS_V157_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN'){throw 'R846_RC1_DECLARATION'}
 $qa=Join-Path $env:RUNNER_TEMP 'DIM_R846_NATIVE'
 $gstage=Join-Path $qa 'gui'
 $sstage=Join-Path $qa 'service'
@@ -46,7 +46,7 @@ if($LASTEXITCODE -ne 0){throw 'INNO_COMPILATION_FAILED'}
 if(!(Test-Path $installer) -or (Get-Item $installer).Length -lt 50000000){throw 'R846_INSTALLER_MISSING'}
 if([string](Get-AuthenticodeSignature $installer).Status -ne 'NotSigned'){throw 'R846_SIGNATURE_POLICY_CHANGED'}
 $report=[ordered]@{
- revision='R846';stage='BUILD';status='PASS_ISOLATED_HOSTED_V156_BUILD'
+ revision='R846';stage='BUILD';status='PASS_ISOLATED_HOSTED_V157_BUILD'
  head=$env:GITHUB_SHA;version='1.5.7';stable='v1.5.4'
  manifestCount=@($m.files).Count;manifestSha=(Get-FileHash (Join-Path $Root 'windows\manifest.json') -Algorithm SHA256).Hash
  guiSha=(Get-FileHash $gt -Algorithm SHA256).Hash
