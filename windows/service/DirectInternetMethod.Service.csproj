@@ -7,9 +7,10 @@
     <AssemblyName>DirectInternetMethod.Service</AssemblyName>
     <RootNamespace>DirectInternetMethod.Service</RootNamespace>
     <ApplicationIcon>..\app\DirectInternetMethod.ico</ApplicationIcon>
-    <Version>1.5.4</Version>
-    <FileVersion>1.5.4.0</FileVersion>
-    <AssemblyVersion>1.5.4.0</AssemblyVersion>
+    <Version>1.5.5-rc1</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <FileVersion>1.5.5.0</FileVersion>
+    <AssemblyVersion>1.5.5.0</AssemblyVersion>
     <Product>Direct Internet Method Service</Product>
   </PropertyGroup>
 </Project>

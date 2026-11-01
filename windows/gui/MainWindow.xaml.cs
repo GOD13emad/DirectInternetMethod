@@ -132,7 +132,7 @@ public partial class MainWindow : Window
         }
 
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("DirectInternetMethod/1.5.4");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("DirectInternetMethod/1.5.5-rc1");
         Exception? lastError = null;
         foreach (var sourceUrl in AdultCatalogUrls)
         {
@@ -237,6 +237,12 @@ public partial class MainWindow : Window
         }
     }
 
+    // Engine ACTIVE can be PARTIAL. A lightweight HTTP 204 does not prove
+    // YouTube's real HTTPS homepage loads; R674-R677 observed this mismatch.
+    // Never mark the whole core-site set healthy unless both probes succeed.
+    static bool FullCoreReachability(ProbeResult youtubePage, ProbeResult youtube204, ProbeResult openai, ProbeResult github) =>
+        youtubePage.Ok && youtube204.Ok && openai.Ok && github.Ok;
+
     static string FmtHttp(ProbeResult p) =>
         p.Ok ? $"PASS · HTTP {p.Code} · {p.Ms} ms" :
         p.Reached ? $"FAIL · HTTP {p.Code} · {p.Ms} ms" :
@@ -308,9 +314,12 @@ public partial class MainWindow : Window
             bool ownedHealthy = r.TryGetProperty("ownedResourcesHealthy", out var oh) && oh.GetBoolean();
             YoutubeText.Text = OpenAiText.Text = GithubText.Text = GeminiText.Text = mode == "CONFLICT" ? "Suspended by external tunnel" : ownedHealthy ? "Checking…" : "Available when Direct Method is healthy";
             AdultSiteText.Text = adultCheckEnabled ? (mode == "CONFLICT" ? "Suspended by external tunnel" : ownedHealthy ? "Checking…" : "Available when Direct Method is healthy") : "Disabled";
+            // Engine ownership is not proof that target sites are reachable.
+            bool coreReachabilityProven = false;
             if (ownedHealthy && mode == "ACTIVE" && !string.IsNullOrWhiteSpace(IpText.Text) && IpText.Text != "—")
             {
-                var ytTask = ProbeAsync("https://www.youtube.com/generate_204", IpText.Text, new[] { "200", "204" });
+                var ytTask = ProbeAsync("https://www.youtube.com/", IpText.Text, new[] { "200" });
+                var yt204Task = ProbeAsync("https://www.youtube.com/generate_204", IpText.Text, new[] { "204" });
                 var oaTask = ProbeAsync("https://api.openai.com/v1/models", IpText.Text, new[] { "200", "401" });
                 var ghTask = ProbeAsync("https://github.com/", IpText.Text, new[] { "200", "301", "302" });
                 var geminiTask = ProbeAsync("https://gemini.google.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" });
@@ -323,12 +332,17 @@ public partial class MainWindow : Window
                         ProbeAsync("https://xhamster.com/", IpText.Text, new[] { "200", "301", "302", "303", "307", "308" })
                     }
                     : null;
-                var tasks = new List<Task> { ytTask, oaTask, ghTask, geminiTask };
+                var tasks = new List<Task> { ytTask, yt204Task, oaTask, ghTask, geminiTask };
                 if (adultTasks is not null) tasks.AddRange(adultTasks);
                 await Task.WhenAll(tasks);
-                YoutubeText.Text = FmtHttp(await ytTask);
-                OpenAiText.Text = FmtOpenAiApiProbe(await oaTask);
-                GithubText.Text = FmtHttp(await ghTask);
+                var youtubeProbe = await ytTask;
+                var youtube204Probe = await yt204Task;
+                var openAiProbe = await oaTask;
+                var githubProbe = await ghTask;
+                coreReachabilityProven = FullCoreReachability(youtubeProbe, youtube204Probe, openAiProbe, githubProbe);
+                YoutubeText.Text = $"Page {FmtHttp(youtubeProbe)} | 204 {FmtHttp(youtube204Probe)}";
+                OpenAiText.Text = FmtOpenAiApiProbe(openAiProbe);
+                GithubText.Text = FmtHttp(githubProbe);
                 GeminiText.Text = FmtHttp(await geminiTask);
                 AdultSiteText.Text = adultTasks is null ? "Disabled" : FmtAdult(await Task.WhenAll(adultTasks));
             }
@@ -342,6 +356,16 @@ public partial class MainWindow : Window
                 "OFF" => "Ready",
                 _ => "Unknown state"
             };
+            if (mode == "ACTIVE" && (!ownedHealthy || !coreReachabilityProven))
+            {
+                // Stay ACTIVE internally so Stop works; never claim full health
+                // just because two of three startup endpoints passed quorum.
+                StatusBadge.Text = "PARTIAL";
+                StatusBadge.Foreground = warn;
+                HealthText.Text = ownedHealthy
+                    ? "Direct path active · at least one core site unreachable"
+                    : "Direct path active · owned resource validation failed";
+            }
             if (!string.IsNullOrWhiteSpace(reason)) ToolTip = reason;
 
             StartButton.IsEnabled = mode == "OFF";

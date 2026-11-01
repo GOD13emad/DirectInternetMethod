@@ -30,8 +30,10 @@ env={"STATE":FakePath("mock-state.json"),"SCOPE_FILE":FakePath("mock-scope.txt")
      "_systemd_unit_matches":lambda u,p,w:bool(p) and int(p)==400 and u==w,
      "_external_tunnel_active":lambda:False,
      "_tailscale_split_safe":lambda:True,
+     "_top_default_iface":lambda:"enp1s0",
      "_coexistence_backend_ready":lambda:True,
-     "selective_dns_optin_state":lambda:"OFF"}
+     "selective_dns_optin_state":lambda:"OFF",
+     "encrypted_dns_optin_state":lambda:"OFF"}
 exec(code,env)
 state=env["load_state"]()
 assert state["mode"]=="OFF" and "Tailscale split" in state["detail"],state

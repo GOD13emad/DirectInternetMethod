@@ -2,17 +2,23 @@
 from __future__ import annotations
 import hashlib,json,pathlib,zipfile,tempfile,os
 R=pathlib.Path(__file__).resolve().parent
-OUT=R/"delivery"/"DirectInternetMethod_1.5.4_Linux_x86_64.zip"
-ROOT="DirectInternetMethod_1.5.4_Linux_x86_64"
+OUT=R/"delivery"/"DirectInternetMethod_1.5.5-rc1_Linux_x86_64.zip"
+ROOT="DirectInternetMethod_1.5.5-rc1_Linux_x86_64"
 FILES=[
- ("docs/README_PACKAGE_154.md","README.md"),
+ ("docs/README_PACKAGE_155_RC1.md","README.md"),
  ("linux/install.sh","install.sh"),
  ("linux/uninstall.sh","uninstall.sh"),
  ("linux/system/install_system.sh","system/install_system.sh"),
  ("linux/system/control.sh","system/control.sh"),
  ("linux/system/selective_dns.py","system/selective_dns.py"),
+ ("linux/system/encrypted_selective_dns.py","system/encrypted_selective_dns.py"),
+ ("linux/system/encrypted_selective_policy.py","system/encrypted_selective_policy.py"),
+ ("linux/system/protected_upgrade_transaction.py","system/protected_upgrade_transaction.py"),
+ ("linux/system/upgrade_guard.py","system/upgrade_guard.py"),
+ ("linux/system/upgrade_system.sh","system/upgrade_system.sh"),
  ("linux/system/uninstall_system.sh","system/uninstall_system.sh"),
  ("linux/app/direct_internet_method.py","app/direct_internet_method.py"),
+ ("linux/app/socket_fallback.py","app/socket_fallback.py"),
  ("linux/app/router_gateway.py","app/router_gateway.py"),
  ("linux/app/router_gateway_core.py","app/router_gateway_core.py"),
  ("linux/app/user_update_transaction.py","app/user_update_transaction.py"),
@@ -36,15 +42,15 @@ def payload_bytes(src:str,dst:str)->bytes:
   data=data.replace(b"\r\n",b"\n").replace(b"\r",b"\n")
  return data
 # Frozen originally shipped documentation; root README may describe current publication.
-if sha_bytes(payload_bytes("docs/README_PACKAGE_154.md","README.md"))!="4E17DB910024D0D5841857928C45AD0EC2C5D65D30B3311FBE1864F1885AC84F":
- raise SystemExit("V154_PACKAGE_README_SHA_CHANGED")
+if sha_bytes(payload_bytes("docs/README_PACKAGE_155_RC1.md","README.md"))!="2E2D817FD4728903E7085C4D7D02786107206881DA47FE4DFA6AA3C6F4E4AF76":
+ raise SystemExit("R519_PACKAGE_README_SHA_CHANGED")
 rows=[]
 for src,dst in FILES:
  p=R/src
  if not p.is_file(): raise SystemExit("MISSING:"+src)
  data=payload_bytes(src,dst)
  rows.append({"file":dst,"bytes":len(data),"sha256":sha_bytes(data)})
-manifest={"schema":1,"product":"Direct Internet Method","version":"1.5.4","platform":"linux-x86_64","files":rows}
+manifest={"schema":1,"product":"Direct Internet Method","version":"1.5.5-rc1","platform":"linux-x86_64","files":rows}
 OUT.parent.mkdir(parents=True,exist_ok=True)
 fd,tmp_name=tempfile.mkstemp(prefix="dim-build-",suffix=".zip",dir=OUT.parent)
 os.close(fd)
@@ -53,7 +59,7 @@ try:
  with zipfile.ZipFile(tmp,"w",compression=zipfile.ZIP_STORED) as z:
   for src,dst in sorted(FILES,key=lambda x:x[1]):
    data=payload_bytes(src,dst)
-   zi=zipfile.ZipInfo(f"{ROOT}/{dst}",date_time=(2026,10,1,0,0,0))
+   zi=zipfile.ZipInfo(f"{ROOT}/{dst}",date_time=(2026,10,14,0,0,0))
    zi.create_system=3
    zi.external_attr=((0o755 if dst.endswith((".sh",".py")) or dst in ("runtime/ctrld","runtime/nfqws") else 0o644)&0xFFFF)<<16
    zi.compress_type=zipfile.ZIP_STORED
@@ -63,7 +69,7 @@ try:
    ("SHA256SUMS.txt","".join(f'{x["sha256"]}  {x["file"]}\n' for x in rows))
   ]:
    data=(json.dumps(obj,ensure_ascii=False,indent=2)+"\n").encode() if isinstance(obj,dict) else obj.encode()
-   zi=zipfile.ZipInfo(f"{ROOT}/{name}",date_time=(2026,10,1,0,0,0))
+   zi=zipfile.ZipInfo(f"{ROOT}/{name}",date_time=(2026,10,14,0,0,0))
    zi.create_system=3
    zi.external_attr=(0o644&0xFFFF)<<16;zi.compress_type=zipfile.ZIP_STORED
    z.writestr(zi,data)

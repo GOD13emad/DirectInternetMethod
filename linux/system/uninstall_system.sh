@@ -6,6 +6,17 @@ if [ -e /run/directinternetmethod-selective/session.json ]; then
   /usr/bin/python3 /usr/lib/directinternetmethod/selective_dns.py restore || exit 88
   [ ! -e /run/directinternetmethod-selective/session.json ] || exit 88
 fi
+# Fail closed on encrypted-DNS ownership ambiguity before uninstalling binaries.
+if [ -e /run/directinternetmethod-encrypted/session.json ]; then
+  [ -x /usr/lib/directinternetmethod/encrypted_selective_dns.py ] || exit 88
+  /usr/bin/python3 /usr/lib/directinternetmethod/encrypted_selective_dns.py restore || exit 88
+fi
+for owned in /run/directinternetmethod-encrypted /run/directinternetmethod-encrypted-ctrld.toml /sys/class/net/dimesd0; do
+  [ ! -e "$owned" ] && [ ! -L "$owned" ] || {
+    echo "Encrypted DNS resource remains; do not remove protected backend." >&2
+    exit 88
+  }
+done
 for action in start stop recovery; do
   rm -f "/etc/systemd/system/directinternetmethod-$action.service"
 done

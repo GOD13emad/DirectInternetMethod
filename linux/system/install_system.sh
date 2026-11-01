@@ -19,9 +19,26 @@ ROOT=/usr/lib/directinternetmethod
   echo "Stop/Recovery selective DNS before protected installation." >&2
   exit 88
 }
+# R517 protected backend may only be staged with all network owners OFF.
+[ ! -e "$HOME_DIR/.local/share/DirectInternetMethod/directmethod/state.json" ] || {
+  echo "Stop Direct Internet Method before protected backend update." >&2
+  exit 88
+}
+for owned in /run/directinternetmethod-encrypted /run/directinternetmethod-encrypted-ctrld.toml /sys/class/net/dimesd0; do
+  [ ! -e "$owned" ] && [ ! -L "$owned" ] || {
+    echo "Stop/Recovery encrypted selective DNS before protected backend update." >&2
+    exit 88
+  }
+done
+for source in "$SRC/system/encrypted_selective_dns.py" "$SRC/system/encrypted_selective_policy.py"; do
+  [ -f "$source" ] && [ ! -L "$source" ] && [ -s "$source" ] ||
+    { echo "Incomplete candidate encrypted backend; refusing protected installation." >&2; exit 88; }
+done
 install -d -m 0755 "$ROOT" "$ROOT/runtime" "$ROOT/runtime/usr" "$ROOT/runtime/usr/bin" "$ROOT/licenses"
 install -m 0755 "$SRC/app/direct_method_helper.sh" "$ROOT/direct_method_helper.sh"
 install -m 0755 "$SRC/system/selective_dns.py" "$ROOT/selective_dns.py"
+install -m 0755 "$SRC/system/encrypted_selective_dns.py" "$ROOT/encrypted_selective_dns.py"
+install -m 0644 "$SRC/system/encrypted_selective_policy.py" "$ROOT/encrypted_selective_policy.py"
 install -m 0755 "$SRC/system/control.sh" "$ROOT/control.sh"
 install -m 0755 "$SRC/system/uninstall_system.sh" "$ROOT/uninstall_system.sh"
 install -m 0644 "$SRC/app/hosts.txt" "$ROOT/direct_hosts.txt"
@@ -84,12 +101,14 @@ systemctl daemon-reload
 test -x "$ROOT/control.sh"
 test -x "$ROOT/direct_method_helper.sh"
 test -x "$ROOT/selective_dns.py"
+test -x "$ROOT/encrypted_selective_dns.py"
+test -f "$ROOT/encrypted_selective_policy.py"
 for action in start stop recovery; do test -f "/etc/systemd/system/directinternetmethod-$action.service"; done
 test -f /etc/polkit-1/rules.d/49-directinternetmethod.rules
 test "$(cat /etc/directinternetmethod.uid)" = "$USER_UID"
 install -d -m 0755 /var/lib/directinternetmethod
 cat > /var/lib/directinternetmethod/install.json <<EOF
-{"schema":1,"version":"1.5.4","user":"$USER_NAME","uid":$USER_UID,"home":"$HOME_DIR"}
+{"schema":1,"version":"1.5.5-rc1","user":"$USER_NAME","uid":$USER_UID,"home":"$HOME_DIR"}
 EOF
 chmod 0644 /var/lib/directinternetmethod/install.json
-echo '{"ok":true,"systemBackend":"installed","version":"1.5.4"}'
+echo '{"ok":true,"systemBackend":"installed","version":"1.5.5-rc1"}'

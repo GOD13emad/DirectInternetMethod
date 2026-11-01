@@ -1,13 +1,14 @@
 {
   "schema": 1,
   "product": "Direct Internet Method",
-  "version": "1.5.4",
-  "status": "CANDIDATE_V154_UNPUBLISHED",
+  "version": "1.5.5-rc1",
+  "status": "PRIVATE_WINDOWS_RC1_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN",
   "date": "2026-10-13",
   "previousAccepted": {
-    "version": "1.5.3",
-    "tag": "v1.5.3",
-    "tagCommit": "581a063836a20ca3c0adb941bfc77146e33d693a"
+    "version": "1.5.4",
+    "tag": "v1.5.4",
+    "tagCommit": "51009372e3c2d069d7016b97773f35ee5e1e0631",
+    "status": "PUBLIC_STABLE_UNCHANGED"
   },
   "architecture": "Native WPF UI + fixed-command Windows service + bundled PowerShell 7.6.6 + leak-closed direct-IP ctrld DoH + accepted zapret/winws/WinDivert multiprotocol engine with Targeted/All Sites scope control",
   "features": {
@@ -136,10 +137,10 @@
     "Targeted remains the default scope; All Sites is explicit opt-in.",
     "Windows installer remains not Authenticode-signed."
   ],
-  "exactNextAction": "Source-only v1.5.4 pending exact SHA native Windows/Linux acceptance; official v1.5.3 unaffected.",
+  "exactNextAction": "Windows 1.5.5-rc1 isolated build and staged-hosted install/upgrade rollback with byte-pinned public v1.5.4; no public promotion before native acceptance.",
   "buildIdentityNote": "Installer and manifest hashes are intentionally not embedded here because this file is itself part of the packaged payload. Authoritative artifact identity lives in root RELEASE.json, SHA256SUMS.txt and evidence records.",
   "publication": {
-    "tag": "v1.5.4",
+    "tag": null,
     "tagCommit": null,
     "releaseUrl": null,
     "publishedAt": null
