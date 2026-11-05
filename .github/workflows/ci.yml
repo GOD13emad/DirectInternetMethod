@@ -145,7 +145,7 @@ jobs:
           $eol=(git ls-files --eol -- windows/installer/DirectInternetMethod.iss)
           if ($eol -notmatch 'attr/-text') { throw "INNO_MIXED_EOL_BYTE_PRESERVATION_MISSING" }
           Write-Output "PASS_R465_WINDOWS_SOURCE_CHECKOUT_CLEAN_AND_PINNED"
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
         with:
           dotnet-version: '10.0.x'
       - name: R482 fail-closed .NET 10 WPF and Service migration contract
