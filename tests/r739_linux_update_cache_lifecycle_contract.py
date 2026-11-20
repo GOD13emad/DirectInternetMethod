@@ -34,7 +34,7 @@ fn_scope = {
 exec(compile(ast.Module(body=METHOD, type_ignores=[]), "installed_linux_updater_real_function", "exec"), fn_scope)
 install = fn_scope["download_and_install_update"]
 
-VERSION = "1.5.6"
+VERSION = "1.5.7"
 ARCHIVE_NAME = f"DirectInternetMethod_{VERSION}_Linux_x86_64.zip"
 PREFIX = ARCHIVE_NAME.removesuffix(".zip") + "/"
 

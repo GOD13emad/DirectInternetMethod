@@ -11,12 +11,12 @@ from __future__ import annotations
 import argparse,fcntl,hashlib,json,os,pathlib,re,shutil,stat,sys,tempfile
 from contextlib import contextmanager
 
-TARGET_VERSION="1.5.6"
+TARGET_VERSION="1.5.7"
 CURRENT_BACKEND_VERSION="1.5.2"
 # Accept exactly the two separately pinned previously installed Root baselines.
 # This is not an arbitrary fromVersion bypass; the old file SHA depends on the
 # verified installed metadata version, and is checked before any mutation.
-SUPPORTED_BASELINE_VERSIONS=("1.5.2","1.5.5-rc1")
+SUPPORTED_BASELINE_VERSIONS=("1.5.2","1.5.5-rc1","1.5.6")
 
 def baseline_old_sha(version, old, new):
     need(version in SUPPORTED_BASELINE_VERSIONS,"OLD_ROOT_VERSION")

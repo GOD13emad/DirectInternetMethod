@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""R803: real user transaction from accepted private 1.5.5-rc1 to 1.5.6.
+"""R803: real user transaction from accepted private 1.5.5-rc1 to 1.5.7.
 
 Strictly user-owned temporary HOME; no physical install, pkexec, network,
 systemd, DNS, Tailscale, external browser, or release publication.
@@ -48,7 +48,7 @@ def initialize(home,manage_provider):
  return app,metadata,preserved,H(provider.read_bytes())
 def finalize_metadata(app,source_manifest):
  installed={
-    "schema":2,"version":"1.5.6",
+    "schema":2,"version":"1.5.7",
     "managedProviderSha256":source_manifest["providerSha"],
     "managedCodeSha256":{name:row["sha"] for name,row in source_manifest["managed"].items()
                          if name!="router_gateway/providers.json"},
@@ -70,7 +70,7 @@ def case(label,manage_provider,commit):
   invoke(home,"--stage")
   pending=home/".local/state/DirectInternetMethod/update-pending"
   manifest=json.loads((pending/"manifest.json").read_text())
-  need(manifest["version"]=="1.5.6" and manifest["previousVersion"]=="1.5.5-rc1","INCORRECT_RC1_PREDECESSOR")
+  need(manifest["version"]=="1.5.7" and manifest["previousVersion"]=="1.5.5-rc1","INCORRECT_RC1_PREDECESSOR")
   need(manifest["providerManaged"] is manage_provider,"PROVIDER_MANAGED_POLICY")
   need(len(manifest["managed"])==(9 if manage_provider else 8),"MANAGED_CARDINALITY")
   invoke(home,"--apply")
@@ -78,7 +78,7 @@ def case(label,manage_provider,commit):
   if commit:
    finalize_metadata(app,manifest)
    invoke(home,"--commit")
-   need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.6","RC1_FORWARD_VERSION")
+   need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.7","RC1_FORWARD_VERSION")
    for name,row in manifest["managed"].items():
     need(H((app/name).read_bytes())==row["sha"],"NEW_MANAGED_SHA_"+name)
    if not manage_provider:
