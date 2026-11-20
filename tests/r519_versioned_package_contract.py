@@ -15,7 +15,7 @@ ROOT_TXN=R/"linux/system/protected_upgrade_transaction.py"
 INSTALLER=R/"linux/install.sh"
 USER_TXN=R/"linux/app/user_update_transaction.py"
 PKG_DOC=R/"docs/README_PACKAGE_157.md"
-EXPECTED={"version":VERSION,"files":28,"sha256":"F5506E1AE0092A20071B8D63E770ADBF6CDE3AA0701CC6A1B4F1E925C74CAFB6"}
+EXPECTED={"version":VERSION,"files":28,"sha256":"368DABBDC1B89A3B8AAFF7B9E75C97D14988F54E293096E0FA0DE225E8835FA7"}
 def digest(data):return hashlib.sha256(data).hexdigest().upper()
 class Tests(unittest.TestCase):
     @classmethod

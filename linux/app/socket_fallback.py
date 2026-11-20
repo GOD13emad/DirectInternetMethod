@@ -346,11 +346,13 @@ def _handle_request(bridge: "LocalSocketFallback", client: socket.socket) -> Non
         _reply(client, 2)
         return
     remote = None
+    connected_ipv4 = None
     for ip in addresses:
         if bridge._stopping.is_set():
             return
         try:
             remote = bridge._dialer(ip, port, bridge.route.source_ip)
+            connected_ipv4 = ip
             break
         except OSError:
             continue
@@ -377,7 +379,11 @@ def _handle_request(bridge: "LocalSocketFallback", client: socket.socket) -> Non
             if now - last_activity > MAX_IDLE_SECONDS:
                 return
             if now >= next_route_check:
-                if bridge._route_getter() != bridge.route:
+                # Fail closed if target-specific routing changes after connect.
+                # A split VPN policy can change without a default-route change.
+                if (bridge._route_getter() != bridge.route or
+                        bridge._destination_route_getter(
+                            connected_ipv4, bridge.route) is not True):
                     return
                 next_route_check = now + 15
             ready, _, _ = select.select((client, remote), (), (), 0.3)
