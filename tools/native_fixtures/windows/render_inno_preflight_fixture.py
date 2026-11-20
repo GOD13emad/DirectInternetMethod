@@ -20,6 +20,7 @@ from installer_engine.engine import EngineError, hash_file, require
 
 PRODUCTION_APP_ID = uuid.UUID("B5388E8B-9AF3-41F4-87E2-01C9601A36CB")
 TEMPLATE = Path(__file__).with_name("InnoPreflightFixture.iss.in")
+AUTO_UNINSTALL = Path(__file__).with_name("InnoAutoCleanupFixture.inc")
 REPLACEMENTS = {
     "@VERSION@", "@TAG@", "@SOURCE_ZIP@", "@ARCHIVE_SHA256@",
     "@NORMALIZED_SHA256@", "@ENGINE_BINARY@", "@APPID_DIRECTIVE@",
@@ -52,9 +53,12 @@ def build_fixture(
     tag: str,
     app_id: uuid.UUID,
     install_root: str,
+    integrated_uninstall: bool = False,
 ) -> dict:
     require(isinstance(tag, str) and TAG_RE.fullmatch(tag) is not None,
             "INVALID_FIXTURE_TAG")
+    require(type(integrated_uninstall) is bool,
+            "INVALID_UNINSTALL_FIXTURE_FLAG")
     require(type(app_id) is uuid.UUID and app_id != PRODUCTION_APP_ID,
             "FIXTURE_MUST_NOT_USE_PRODUCTION_APP_ID")
     require(type(independent_archive_pin) is str and
@@ -115,6 +119,20 @@ def build_fixture(
             template = template.replace(key, val)
         require(not any(key in template for key in REPLACEMENTS),
                 "INNO_UNRENDERED_VARIABLE")
+        if integrated_uninstall:
+            # Native Inno cleanup observed on a synthetic guest only.
+            extra = AUTO_UNINSTALL.read_text("utf-8")
+            placeholder = "@FIXTURE_UNINSTALL_REGISTRY_PATH@"
+            require(extra.count(placeholder) == 2,
+                    "INNO_AUTO_UNINSTALL_TEMPLATE_REGISTRY_GUARD_MISSING")
+            native_registry = (
+                "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\"
+                + "{" + str(app_id).upper() + "}_is1")
+            template += "\n" + extra.replace(placeholder, native_registry)
+            require("function InitializeUninstall()" in template and
+                    "procedure CurUninstallStepChanged(" in template and
+                    "usDone" in template and "--native-unregistered" in template,
+                    "INNO_NATIVE_FIXTURE_UNINSTALL_NOT_WIRED")
         require("PrivilegesRequired=lowest" in template and
                 "function PrepareToInstall" in template and
                 "Flags: dontcopy noencryption" in template and
@@ -135,6 +153,7 @@ def build_fixture(
             "source_version": doc["version"],
             "native_service_installed": False,
             "native_install_or_rollback_accepted": False,
+            "native_uninstall_fixture_automatic": integrated_uninstall,
             "publisher_authenticated": False
         }
         receipt.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n",
@@ -152,10 +171,12 @@ def main() -> None:
     p.add_argument("--tag", required=True)
     p.add_argument("--app-id", type=uuid.UUID, required=True)
     p.add_argument("--install-root", required=True)
+    p.add_argument("--integrated-uninstall", action="store_true", help="synthetic native Inno cleanup fixture ONLY")
     a = p.parse_args()
     print(json.dumps(build_fixture(
         a.source_zip, a.archive_sha256, a.engine_exe, a.engine_sha256,
-        a.out, a.tag, a.app_id, a.install_root), sort_keys=True))
+        a.out, a.tag, a.app_id, a.install_root,
+        a.integrated_uninstall), sort_keys=True))
 
 
 if __name__ == "__main__":

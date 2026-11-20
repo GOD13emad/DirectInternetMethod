@@ -72,12 +72,13 @@ class InnoFixtureRendererTests(unittest.TestCase):
         return archive
 
     def render(self, archive=None, pin=None, app_id=None, dest=None,
-               root=r"C:\DIM_UE_TEST_ISOLATED\app"):
+               root=r"C:\DIM_UE_TEST_ISOLATED\app", integrated=False):
         archive = archive or self.archive()
         return build_fixture(
             archive, self.digest(archive) if pin is None else pin,
             self.binary, self.bin_pin, self.out if dest is None else dest,
-            "small-157", self.guid if app_id is None else app_id, root
+            "small-157", self.guid if app_id is None else app_id, root,
+            integrated
         )
 
     def test_render_valid_fixture_has_preinstall_and_is_not_native_proof(self):
@@ -132,6 +133,32 @@ class InnoFixtureRendererTests(unittest.TestCase):
         with self.assertRaisesRegex(EngineError, "INNO_UNSAFE_LITERAL"):
             self.render(root='C:\\DIM_UE_TEST"; Executes=anything')
 
+    def test_auto_uninstall_fixture_renders_two_verified_registry_guards(self):
+        result = self.render(integrated=True)
+        self.assertTrue(result["native_uninstall_fixture_automatic"])
+        self.assertFalse(result["native_install_or_rollback_accepted"])
+        text = Path(result["fixture_script"]).read_text(encoding="utf8")
+        registry = (
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\"
+            + "{" + str(self.guid).upper() + "}_is1")
+        self.assertEqual(text.count(registry.replace("\\", "\\")), 2)
+        self.assertIn("function InitializeUninstall()", text)
+        self.assertIn("procedure CurUninstallStepChanged(", text)
+        self.assertIn("--native-unregistered", text)
+        self.assertIn("usDone", text)
+        self.assertNotIn("@FIXTURE_UNINSTALL_REGISTRY_PATH@", text)
+
+    def test_auto_uninstall_is_disabled_by_default(self):
+        result = self.render()
+        self.assertFalse(result["native_uninstall_fixture_automatic"])
+        text = Path(result["fixture_script"]).read_text(encoding="utf8")
+        self.assertNotIn("function InitializeUninstall()", text)
+        self.assertNotIn("--native-unregistered", text)
+
+    def test_reject_non_boolean_native_uninstaller_mode(self):
+        with self.assertRaisesRegex(EngineError, "INVALID_UNINSTALL_FIXTURE_FLAG"):
+            self.render(integrated="yes")
+        self.assertEqual(list(self.out.iterdir()), [])
     def test_existing_output_refuses_clobber(self):
         result = self.render()
         with self.assertRaisesRegex(EngineError, "INNO_FIXTURE_OUTPUT_ALREADY_EXISTS"):
