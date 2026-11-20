@@ -10,13 +10,14 @@ from .engine import Engine, EngineError
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Direct Internet Method portable installation transaction kernel")
-    parser.add_argument("action", choices=("verify", "stage", "activate", "commit", "rollback"))
+    parser.add_argument("action", choices=("verify", "stage", "activate", "commit", "rollback", "uninstall-prepare", "uninstall-commit", "uninstall-abort"))
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--platform", choices=("linux-x86_64", "windows-x86_64"), required=True)
     parser.add_argument("--bundle", type=Path)
     parser.add_argument("--expected-manifest-sha256")
     parser.add_argument("--quiesced", action="store_true", help="adapter has stopped/verified all product processes")
     parser.add_argument("--accepted", action="store_true", help="adapter verified native registration, service health and data")
+    parser.add_argument("--native-unregistered", action="store_true", help="trusted native adapter has proven service and product de-registration")
     a = parser.parse_args(argv)
     try:
         runtime = "windows" if sys.platform == "win32" else "linux"
@@ -33,8 +34,14 @@ def main(argv=None) -> int:
             out = e.activate(lambda: a.quiesced)
         elif a.action == "commit":
             out = e.commit(lambda: a.accepted)
-        else:
+        elif a.action == "rollback":
             out = e.rollback(lambda: a.quiesced)
+        elif a.action == "uninstall-prepare":
+            out = e.prepare_uninstall(lambda: a.quiesced)
+        elif a.action == "uninstall-abort":
+            out = e.abort_uninstall(lambda: a.quiesced)
+        else:
+            out = e.finish_uninstall(lambda: a.native_unregistered)
         print(json.dumps(out, sort_keys=True))
         return 0
     except (EngineError, OSError, ValueError) as exc:

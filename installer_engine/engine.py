@@ -246,6 +246,7 @@ class Engine:
         self.previous = self.state / "previous"
         self.installed = self.state / "installed.json"
         self.pending = self.state / "pending.json"
+        self.uninstall_journal = self.state / "uninstall.json"
 
     @contextlib.contextmanager
     def locked(self) -> Iterator[None]:
@@ -317,7 +318,8 @@ class Engine:
 
     def verify(self) -> dict:
         with self.locked():
-            require(self._pending() is None, "PENDING_REQUIRES_RECOVERY_OR_COMMIT")
+            require(self._pending() is None and self._uninstall() is None,
+                    "PENDING_REQUIRES_RECOVERY_OR_COMMIT")
             installed = self._installed()
             require(not self.previous.exists() and not self.staging.exists(),
                     "ORPHANED_TRANSACTION_SLOTS")
@@ -329,8 +331,9 @@ class Engine:
 
     def stage(self, bundle: Path | str, pin: str) -> dict:
         with self.locked():
-            require(self._pending() is None and not self.staging.exists() and
-                    not self.previous.exists(), "UNRECONCILED_PRIOR_TRANSACTION")
+            require(self._pending() is None and self._uninstall() is None and
+                    not self.staging.exists() and not self.previous.exists(),
+                    "UNRECONCILED_PRIOR_TRANSACTION")
             old = self._installed()
             if old is not None:
                 validate_slot(self.current, old["manifest"])
@@ -372,6 +375,7 @@ class Engine:
 
     def activate(self, quiescent: Callable[[], bool], *, fault: str | None = None) -> dict:
         with self.locked():
+            require(self._uninstall() is None, "UNINSTALL_TRANSACTION_ACTIVE")
             pending = self._pending()
             require(pending is not None, "NO_STAGED_TRANSACTION")
             require(self.staging.is_dir() and not self.previous.exists(), "STAGED_STATE_NOT_READY")
@@ -395,6 +399,7 @@ class Engine:
 
     def commit(self, accepted: Callable[[], bool]) -> dict:
         with self.locked():
+            require(self._uninstall() is None, "UNINSTALL_TRANSACTION_ACTIVE")
             p = self._pending()
             require(p is not None, "NO_PENDING_TO_COMMIT")
             require(callable(accepted) and accepted() is True, "PLATFORM_ACCEPTANCE_REQUIRED")
@@ -415,6 +420,7 @@ class Engine:
 
     def rollback(self, quiescent: Callable[[], bool]) -> dict:
         with self.locked():
+            require(self._uninstall() is None, "UNINSTALL_TRANSACTION_ACTIVE")
             p = self._pending()
             require(p is not None, "NO_PENDING_TO_ROLLBACK")
             require(callable(quiescent) and quiescent() is True, "PRODUCT_NOT_QUIESCED")
@@ -469,3 +475,100 @@ class Engine:
             self.pending.unlink()
             durable_dir(self.state)
             return {"status": "PASS_ROLLED_BACK", "version": old["manifest"]["version"] if old else None}
+
+    def _uninstall(self) -> dict | None:
+        if not self.uninstall_journal.exists():
+            require(not self.uninstall_journal.is_symlink(), "UNINSTALL_JOURNAL_LINK")
+            return None
+        doc = load_json(self.uninstall_journal)
+        require(set(doc) == {"schema", "old", "phase"} and
+                type(doc["schema"]) is int and doc["schema"] == 1 and
+                doc["phase"] in ("prepared", "accepted"), "UNINSTALL_JOURNAL_SCHEMA")
+        old = doc["old"]
+        require(type(old) is dict and set(old) ==
+                {"schema", "manifest", "manifest_sha256"} and
+                old["schema"] == 1 and type(old["manifest_sha256"]) is str and
+                SHA_RE.fullmatch(old["manifest_sha256"]) is not None,
+                "UNINSTALL_OLD_STATE_INVALID")
+        manifest_schema(old["manifest"], platform=self.platform)
+        return doc
+
+    def prepare_uninstall(self, quiescent: Callable[[], bool]) -> dict:
+        """Park owned code; native adapter may unregister only after this.
+
+        The first durable journal precedes moving current -> previous. Until
+        native unregistration is accepted, abort_uninstall can restore code.
+        Mutable root/data and unrelated paths remain untouched.
+        """
+        with self.locked():
+            require(self._pending() is None and self._uninstall() is None,
+                    "OTHER_TRANSACTION_ACTIVE")
+            require(not self.staging.exists() and not self.previous.exists(),
+                    "ORPHANED_TRANSACTION_SLOTS")
+            old = self._installed()
+            require(old is not None, "NOT_INSTALLED")
+            validate_slot(self.current, old["manifest"])
+            require(callable(quiescent) and quiescent() is True,
+                    "PRODUCT_NOT_QUIESCED")
+            atomic_json(self.uninstall_journal,
+                        {"schema": 1, "old": old, "phase": "prepared"})
+            os.rename(self.current, self.previous)
+            durable_dir(self.root)
+            return {"status": "PASS_UNINSTALL_PREPARED", "version": old["manifest"]["version"]}
+
+    def abort_uninstall(self, quiescent: Callable[[], bool]) -> dict:
+        """Replay-safe cancellation *before* native registration is removed."""
+        with self.locked():
+            state = self._uninstall()
+            require(state is not None and state["phase"] == "prepared",
+                    "UNINSTALL_NOT_ABORTABLE")
+            require(callable(quiescent) and quiescent() is True,
+                    "PRODUCT_NOT_QUIESCED")
+            require(self._pending() is None and not self.staging.exists(),
+                    "FOREIGN_UPDATE_DURING_UNINSTALL")
+            old = state["old"]
+            if self.previous.exists():
+                require(not self.current.exists(), "BOTH_SLOTS_DURING_UNINSTALL")
+                validate_slot(self.previous, old["manifest"])
+                os.rename(self.previous, self.current)
+                durable_dir(self.root)
+            else:
+                # The process may have exited after restoring the slot.
+                validate_slot(self.current, old["manifest"])
+            require(self._installed() == old, "UNINSTALL_INSTALLED_RECEIPT_DRIFT")
+            self.uninstall_journal.unlink()
+            durable_dir(self.state)
+            return {"status": "PASS_UNINSTALL_ABORTED", "version": old["manifest"]["version"]}
+
+    def finish_uninstall(self, native_unregistered: Callable[[], bool]) -> dict:
+        """Delete *only* verified owned code after native adapter acceptance.
+
+        'accepted' is persisted before file deletion. A crash after deleting
+        the previous slot or installed.json can replay finish_uninstall; a
+        partially deleted slot remains fail-closed for explicit inspection.
+        """
+        with self.locked():
+            state = self._uninstall()
+            require(state is not None, "NO_UNINSTALL_JOURNAL")
+            require(callable(native_unregistered) and native_unregistered() is True,
+                    "NATIVE_UNREGISTRATION_NOT_PROVEN")
+            require(self._pending() is None and not self.staging.exists() and
+                    not self.current.exists(), "UNINSTALL_SLOT_CONFLICT")
+            old = state["old"]
+            if state["phase"] == "prepared":
+                require(self.previous.exists(), "UNINSTALL_NOT_PREPARED")
+                require(self._installed() == old, "UNINSTALL_INSTALLED_RECEIPT_DRIFT")
+                validate_slot(self.previous, old["manifest"])
+                atomic_json(self.uninstall_journal,
+                            {"schema": 1, "old": old, "phase": "accepted"})
+            if self.previous.exists():
+                safe_remove_slot(self.previous, old["manifest"])
+            # After accepted phase a prior process may have finished cleanup
+            # and died before deleting the final journal.
+            if self.installed.exists():
+                require(self._installed() == old, "UNINSTALL_INSTALLED_RECEIPT_DRIFT")
+                self.installed.unlink()
+                durable_dir(self.state)
+            self.uninstall_journal.unlink()
+            durable_dir(self.state)
+            return {"status": "PASS_UNINSTALLED_CODE_ONLY", "data_preserved": True}
