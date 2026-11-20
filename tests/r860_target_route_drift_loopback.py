@@ -67,7 +67,7 @@ try:
     assert read_exact(right,len(record))==record
     right.sendall(b"CONTROL_OK")
     assert read_exact(client,10)==b"CONTROL_OK"
-    assert len(checks)==1,("EXPECTED_ONE_INITIAL_CHECK",len(checks))
+    assert len(checks)>=3,("EXPECTED_PRE_TLS_EGRESS_CHECKS",len(checks))
     allowed[0]=False
     # Advance only the local synthetic timer; no OS clock or actual route.
     mod.time.monotonic=lambda:native()+20

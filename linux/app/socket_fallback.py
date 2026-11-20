@@ -260,15 +260,16 @@ def tls_hello_sni(record: bytes) -> str:
     return normalize_allowed_host(found)[0]
 
 
-def send_initial_tls(upstream, record: bytes, *, split: bool) -> None:
-    """Only the first TLS record is intentionally segmented; no sleeps."""
+def send_initial_tls(upstream, record: bytes, *, split: bool,
+                     route_guard=None) -> None:
+    """Segment first TLS record without sleeps; guard each outbound write."""
     if not record or record[0] != 22:
         raise ValueError("SOCKET_INITIAL_TLS_RECORD_INVALID")
-    if split:
-        upstream.sendall(record[:1])
-        upstream.sendall(record[1:])
-    else:
-        upstream.sendall(record)
+    chunks = (record[:1], record[1:]) if split else (record,)
+    for chunk in chunks:
+        if route_guard is not None and route_guard() is not True:
+            raise ValueError("SOCKET_ROUTE_CHANGED_BEFORE_TLS_SEND")
+        upstream.sendall(chunk)
 
 
 def _read_exact(sock: socket.socket, count: int) -> bytes:
@@ -359,6 +360,16 @@ def _handle_request(bridge: "LocalSocketFallback", client: socket.socket) -> Non
     if remote is None:
         _reply(client, 4)
         return
+    def route_safe() -> bool:
+        # A periodic check alone leaves an outbound 15-second leak window.
+        # Check immediately before each actual write to the physical socket.
+        try:
+            return (bridge._route_getter() == bridge.route and
+                    bridge._destination_route_getter(
+                        connected_ipv4, bridge.route) is True)
+        except (OSError, RuntimeError, ValueError, subprocess.SubprocessError):
+            return False
+
     bridge._track(remote)
     try:
         _reply(client, 0)
@@ -369,7 +380,8 @@ def _handle_request(bridge: "LocalSocketFallback", client: socket.socket) -> Non
         record = first + _read_exact(client, length)
         if tls_hello_sni(record) != host:
             raise ValueError("SOCKET_TLS_SNI_CONNECT_HOST_MISMATCH")
-        send_initial_tls(remote, record, split=split)
+        send_initial_tls(remote, record, split=split,
+                         route_guard=route_safe)
         client.settimeout(15)
         remote.settimeout(15)
         last_activity = time.monotonic()
@@ -381,15 +393,15 @@ def _handle_request(bridge: "LocalSocketFallback", client: socket.socket) -> Non
             if now >= next_route_check:
                 # Fail closed if target-specific routing changes after connect.
                 # A split VPN policy can change without a default-route change.
-                if (bridge._route_getter() != bridge.route or
-                        bridge._destination_route_getter(
-                            connected_ipv4, bridge.route) is not True):
+                if not route_safe():
                     return
                 next_route_check = now + 15
             ready, _, _ = select.select((client, remote), (), (), 0.3)
             for source in ready:
                 payload = source.recv(32768)
                 if not payload:
+                    return
+                if source is client and not route_safe():
                     return
                 (remote if source is client else client).sendall(payload)
                 last_activity = time.monotonic()
