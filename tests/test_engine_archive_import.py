@@ -55,7 +55,7 @@ class ArchiveImportTests(unittest.TestCase):
         }
         return {
             "installer-metadata/manifest.json":json.dumps(document).encode(),
-            "installer-metadata/RELEASE.json":b'{"version":"1.5.6"}',
+            "installer-metadata/RELEASE.json":b'{"product":"Direct Internet Method","version":"1.5.6"}',
             "installer-metadata/unins001.exe":b"mock Inno metadata",
             "installer-metadata/unins001.dat":b"mock Inno log",
             "managed/user/app/DirectInternetMethod.exe":a,
@@ -116,6 +116,37 @@ class ArchiveImportTests(unittest.TestCase):
         self.assertEqual(modes["install.sh"],0o755)
         self.assertEqual(modes["README.md"],0o644)
 
+    def test_inno_log_serial_number_is_generic_not_device_specific(self):
+        for serial in ("000", "042"):
+            members=self.windows_members()
+            original=members.pop("installer-metadata/unins001.exe")
+            data=members.pop("installer-metadata/unins001.dat")
+            members[f"installer-metadata/unins{serial}.exe"]=original
+            members[f"installer-metadata/unins{serial}.dat"]=data
+            members[f"installer-metadata/unins{serial}.msg"]=b"optional metadata"
+            report,bundle=self._import(members,"windows-managed",name=f"inno-{serial}.zip")
+            self.assertEqual(report["files"],2)
+            self.assertTrue((bundle/"manifest.json").exists())
+
+    def test_inno_uninstaller_mixed_serials_refused(self):
+        members=self.windows_members()
+        old=members.pop("installer-metadata/unins001.dat")
+        members["installer-metadata/unins002.dat"]=old
+        src=self._zip("mixed-inno.zip",members)
+        with self.assertRaisesRegex(EngineError,"WINDOWS_INNO_SINGLE_LOG_INDEX_REQUIRED"):
+            import_pinned_archive(src,digest(src.read_bytes()),
+                                  self.home/"bad-output","windows-managed")
+
+    def test_release_manifest_version_or_product_mismatch_rejected(self):
+        for field,value in (("version","9.9.9"),("product","UNKNOWN")):
+            members=self.windows_members()
+            release=json.loads(members["installer-metadata/RELEASE.json"])
+            release[field]=value
+            members["installer-metadata/RELEASE.json"]=json.dumps(release).encode()
+            src=self._zip(f"bad-release-{field}.zip",members)
+            with self.assertRaisesRegex(EngineError,"WINDOWS_RELEASE_MANIFEST_IDENTITY_MISMATCH"):
+                import_pinned_archive(src,digest(src.read_bytes()),
+                                      self.home/(field+".normalized"),"windows-managed")
     def test_reject_archive_pin_mismatch(self):
         source=self._zip("wrong-pin.zip",self.linux_members())
         with self.assertRaisesRegex(EngineError,"ARCHIVE_PIN_MISMATCH"):

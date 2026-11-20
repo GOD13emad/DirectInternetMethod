@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import stat
@@ -23,11 +24,9 @@ from .engine import (
 )
 from .native_plan import windows_scoped_plan, linux_distribution_plan
 
-WINDOWS_METADATA = frozenset({
+WINDOWS_METADATA_BASE = frozenset({
     "installer-metadata/manifest.json",
     "installer-metadata/RELEASE.json",
-    "installer-metadata/unins001.exe",
-    "installer-metadata/unins001.dat",
 })
 MAX_TOTAL_BYTES = 3 << 30
 
@@ -68,15 +67,36 @@ def _archive_index(z: zipfile.ZipFile) -> dict[str, zipfile.ZipInfo]:
 
 def _source_layout(z: zipfile.ZipFile, index: dict, kind: str) -> tuple[dict, list[tuple[str, str, dict]], set[str]]:
     if kind == "windows-managed":
-        require(WINDOWS_METADATA.issubset(index), "WINDOWS_INSTALLER_METADATA_MISSING")
+        require(WINDOWS_METADATA_BASE.issubset(index), "WINDOWS_INSTALLER_METADATA_MISSING")
         original = _strict_json(z.read(index["installer-metadata/manifest.json"]))
         native = windows_scoped_plan(original)
+        release = _strict_json(z.read(index["installer-metadata/RELEASE.json"]))
+        require(release.get("version") == native.version and
+                release.get("product") == PRODUCT,
+                "WINDOWS_RELEASE_MANIFEST_IDENTITY_MISMATCH")
+        # Inno's uninsNNN number depends on upgrade/install history. Requiring
+        # unins001 was a per-machine assumption: accept ONE matching exe/dat
+        # pair for any three-digit index and optional matching .msg metadata.
+        inno = {}
+        for filename in index:
+            candidate = re.fullmatch(
+                r"installer-metadata/unins([0-9]{3})\.(exe|dat|msg)",
+                filename)
+            if candidate:
+                inno.setdefault(candidate.group(1), set()).add(candidate.group(2))
+        require(len(inno) == 1, "WINDOWS_INNO_SINGLE_LOG_INDEX_REQUIRED")
+        serial, extensions = next(iter(inno.items()))
+        require({"exe", "dat"}.issubset(extensions),
+                "WINDOWS_INNO_UNINSTALLER_PAIR_REQUIRED")
+        expected_meta = set(WINDOWS_METADATA_BASE) | {
+            "installer-metadata/unins" + serial + "." + ext for ext in extensions
+        }
         files = []
         for scope, manifest in native.scopes:
             for row in manifest["files"]:
                 name = scope + "/" + row["path"]
                 files.append(("managed/" + name, name, row))
-        expected = set(WINDOWS_METADATA) | {item[0] for item in files}
+        expected = expected_meta | {item[0] for item in files}
         out = {"schema":1, "product":PRODUCT, "version":native.version,
                "platform":"windows-x86_64", "files":[item[2] | {"path":item[1]}
                                                    for item in files]}
