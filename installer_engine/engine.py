@@ -62,10 +62,15 @@ def relpath(value: str) -> tuple[str, ...]:
     require("\\" not in value and ":" not in value and "\x00" not in value, "MEMBER_INVALID_CHAR")
     parts = value.split("/")
     require(all(part not in ("", ".", "..") and not part.endswith((".", " "))
-                and not part.startswith(".") for part in parts), "MEMBER_UNSAFE_COMPONENT")
+                for part in parts), "MEMBER_UNSAFE_COMPONENT")
     require(not PurePosixPath(value).is_absolute(), "MEMBER_ABSOLUTE")
     # Stable namespace across Windows/Linux: case-fold collisions are rejected.
+    # Dot-prefixed package files (e.g. PowerShell .signature.p7s) are valid.
+    # Reject the engine control namespace and Git metadata at *any* depth;
+    # dot and dot-dot, trailing dots/spaces and alternate streams are already
+    # excluded above for Windows/Unix equivalence.
     require(all(re.fullmatch(r"[a-zA-Z0-9_.-]+", part) and
+                part.casefold() not in {".dim-engine", ".git"} and
                 part.split(".", 1)[0].upper() not in WIN_DEVICES for part in parts),
             "WINDOWS_PORTABLE_NAME_REQUIRED")
     require(parts[0].lower() not in {"data", "state", "current", ".dim-engine"}, "RESERVED_MEMBER")

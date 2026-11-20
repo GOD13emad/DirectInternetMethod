@@ -162,10 +162,15 @@ class EngineTests(unittest.TestCase):
         from installer_engine.engine import load_json
         with self.assertRaisesRegex(EngineError, "DUPLICATE_JSON_KEY"):
             load_json(path)
-        for bad in ("../evil", "c:/abs", "dir\\file", "CON", "a/NUL.txt", "foo/./bar", "app/.hidden"):
+        for bad in ("../evil", "c:/abs", "dir\\file", "CON", "a/NUL.txt", "foo/./bar", "app/.git/objects"):
             with self.assertRaises(EngineError, msg=bad):
                 manifest_schema({"schema":1,"product":"Direct Internet Method","version":"1.5.7",
                                  "platform":PLATFORM,"files":[{"path":bad,"bytes":1,"sha256":"a"*64,"mode":0o644}]})
+        # Legitimate dot-prefixed signature files are part of the real Windows
+        # PowerShell offline payload, not a path traversal or executable link.
+        manifest_schema({"schema":1,"product":"Direct Internet Method","version":"1.5.7",
+                         "platform":PLATFORM,"files":[{"path":"privileged/runtime/pwsh/Modules/PSReadLine/.signature.p7s",
+                         "bytes":1,"sha256":"a"*64,"mode":0o644}]})
         files = [{"path":p,"bytes":1,"sha256":"a"*64,"mode":0o644} for p in ("APP/a", "app/A")]
         with self.assertRaisesRegex(EngineError, "DUPLICATE_OR_CASEFOLD_PATH"):
             manifest_schema({"schema":1,"product":"Direct Internet Method","version":"1.5.7", "platform":PLATFORM,"files":files})
