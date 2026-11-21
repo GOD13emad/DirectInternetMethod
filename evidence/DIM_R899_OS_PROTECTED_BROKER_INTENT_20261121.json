@@ -55,7 +55,7 @@
       "mode": "trusted feature push only, no untrusted pull_request escalation",
       "rooted_actions": "sudo mkdir/install/chmod/tee/rm/rmdir only one disposable /usr/local/share/dim-r898-ci-protected-fd-fixture",
       "user_python": "emit and validate root-owned synthetic policy, refuse attacker-changed request bytes, chmod0666 policy reject, root chmod0777 reject",
-      "result": "PENDING_HOSTED_EXACT_HEAD",
+      "result": "R899 exact HEAD ENGINE push/pr 4x2 PASS, root-owned policy fixture PASS, frozen PR PASS, Source/Release Contracts SUCCESS; no native product acceptance",
       "initial_exact_head": {
         "sha": "8a3d1642aea79b531965be822130a254f3cc4530",
         "push_engine_run": 44860658258,
@@ -70,6 +70,33 @@
         "correction": "Scoped CI fixture env PYTHONPATH='.'; no change in policy, production security guard or Python root privilege. On Windows local reproduced nested script emits JSON with explicit PYTHONPATH, yaml validates.",
         "initial_failure_preserved": true,
         "next_check": "RECHECK_NEW_COMMIT_HOSTED_ROOT_OWNED_FIXTURE"
+      },
+      "final_exact_head": {
+        "sha": "ea82ff39fce2cba19dcb12f28bd69f1df4ba0de5",
+        "first_implementation_commit": "8a3d1642aea79b531965be822130a254f3cc4530",
+        "fixture_pythonpath_fix_commit": "ea82ff39fce2cba19dcb12f28bd69f1df4ba0de5",
+        "engine_push_run": 44860905728,
+        "engine_pr_run": 44860910052,
+        "frozen_pr_run": 44860910049,
+        "contract_push_run": 44860905731,
+        "matrix_push": "4/4 SUCCESS",
+        "matrix_pr": "4/4 SUCCESS",
+        "synthetic_root_owned_policy_job_id": 136713814821,
+        "synthetic_root_owned_policy_status": "SUCCESS",
+        "fixture_log_markers": [
+          "R898_HOSTED_ROOT_OWNED_FD_READONLY_PASS",
+          "PASS_R899_ROOT_OWNED_FD_POLICY_AND_INTENT_BOUND",
+          "PASS_R899_WORLD_WRITABLE_POLICY_REFUSED",
+          "R898_HOSTED_INSECURE_ROOT_DACL_REFUSED",
+          "R898_HOSTED_FIXTURE_SCOPE_ONLY_NOT_NATIVE_PRODUCT_INSTALL"
+        ],
+        "synthetic_policy_result": {
+          "native_installation_accepted": false,
+          "publisher_authenticated": false
+        },
+        "frozen_pr": "COMPLETED_SUCCESS",
+        "source_contracts": "COMPLETED_SUCCESS",
+        "source_contracts_run_id": 44860905731
       }
     }
   },

@@ -1,0 +1,136 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R900_WINDOWS_SANDBOX_GUEST_TERMINATION_TWO_SCOPE_RECOVERY_20261121",
+  "project": "Direct Internet Method - universal installation engine",
+  "canonical_baseline_head": "ea82ff39fce2cba19dcb12f28bd69f1df4ba0de5",
+  "host": "Emad Windows (owner services preserved)",
+  "scope": "Windows Sandbox offline, three separate synthetic guests, both file-only managed code scopes; not product install, SCM, UAC, systemd, administrator broker, physical power cut or host reboot",
+  "source_sha256": {
+    "tests/test_engine_vm_crash_fixture.py": "ef376601b369efd817fe6740c484dd1afc94d9f6ff462e6f1b9462066cd673e7",
+    "tools/native_fixtures/windows/VmCrashDualScopeEntry.py": "eac58a3c15842f62642abc97cc2e5c9592bde6c15f85c8fb39d10714d4d7ae61",
+    "tools/native_fixtures/windows/RunVmCrashGuest.ps1": "0f00761a8d0dc33133da41da2bc07966c35641ca58bef4cfab52c7be1f21c544"
+  },
+  "frozen_guest": {
+    "name": "R900VmReplayFixture.exe",
+    "sha256": "fc5ae53be56a487c00992bc50d848c4fdd56d65634313fb07faaec63d8332fc3",
+    "size_bytes": 9863018,
+    "source": "pre-commit locally built PyInstaller one-file test binary with verified source, guest pin enforced"
+  },
+  "vm_environment": {
+    "network": "Disabled",
+    "vgpu": "Disabled",
+    "clipboard": "Disabled",
+    "sandbox_sessions_before": 0,
+    "sandbox_sessions_after": 0,
+    "mounts": "fixed R900-only scratch mapped input read-only, persist/output read-write; no production install path or service hooks"
+  },
+  "stages": [
+    {
+      "phase": "guest1",
+      "marker": "READY_TO_FORCE_VM_EXIT_BEFORE_ROLLBACK",
+      "marker_file_sha256": "48EE8ACD01436B6E8528C381126753B22DF57BB45746993609DCA5D2C6DCC247",
+      "native_phase": "activated",
+      "host_forced_sandbox_pid": 45800,
+      "actual_first_session_termination_confirmed": true,
+      "owner_data_preserved": true
+    },
+    {
+      "phase": "guest2",
+      "marker": "READY_TO_FORCE_VM_EXIT_AFTER_FIRST_CODE_COMMIT",
+      "marker_file_sha256": "0976FD7CA58239F85E6304EF84D17C9ED74A13AD015D6964D57E3A2868022862",
+      "native_phase": "finalizing",
+      "rollback_both_code_scopes_to_old_version": "1.5.6",
+      "injected_failure_after_first_scope_commit": true,
+      "host_forced_sandbox_pid": 27260,
+      "second_session_termination_confirmed": true,
+      "owner_data_preserved": true
+    },
+    {
+      "phase": "guest3",
+      "status": "PASS_R900_GUEST_THREE_REPLAY",
+      "final_version_both_scopes": "1.5.7",
+      "replayed_forward_from_finalizing": true,
+      "verified_no_coordinator_journal": true,
+      "original_owner_data_sha256": "1a11d7bd2b4aeb1f767c13d364dceb63b44d58b7d4437ae9d43a4baa3ab35a5b",
+      "guest_session_closed_after_pass": true
+    }
+  ],
+  "independent_guest_receipts": {
+    "persist_sha256": "c2696f559e7b8256225c4678c17634d8e156c00b9aad350566de649e4de166d1",
+    "guest_output_sha256": "5cdce556a6e0be2a9189e73eabae921f05365602b0e45d774020eeb8c22f5afb",
+    "from_guest": {
+      "final_version": "1.5.7",
+      "forward_replay_after_second_guest_exit": true,
+      "native_product_installation_accepted": false,
+      "old_version": "1.5.6",
+      "physical_power_loss_accepted": false,
+      "real_service_or_uac_accepted": false,
+      "rollback_after_first_guest_exit": true,
+      "schema": 1,
+      "status": "PASS_R900_SYNTHETIC_TWO_VM_FORCED_TERMINATIONS_REPLAY",
+      "user_data_sha256": "1a11d7bd2b4aeb1f767c13d364dceb63b44d58b7d4437ae9d43a4baa3ab35a5b"
+    },
+    "from_guest_wrapper": {
+      "status": "PASS_R900_GUEST_THREE_REPLAY",
+      "schema": 1,
+      "phase": "complete",
+      "frozen_sha256": "FC5AE53BE56A487C00992BC50D848C4FDD56D65634313FB07FAAEC63D8332FC3",
+      "persist_receipt_sha256": "C2696F559E7B8256225C4678C17634D8E156C00B9AAD350566DE649E4DE166D1",
+      "native_product_installation_accepted": false,
+      "physical_power_loss_accepted": false
+    },
+    "host_verified_same_hash": true
+  },
+  "native_guest_output_log_sha256": {
+    "stage.guest.log": "408F94F16842557FF9A16E7C6B164FBBCBC7856057B3C037F43E0FC4CCC912B6",
+    "rollback-then-forward.guest.log": "BF13F7E5E0B5E26373A4161C8AC2BA8A00020AE79BD6B01D144002870F3D82C8",
+    "complete.guest.log": "EC4EB7FCED8574048C058C13C7476EA802E6521EC79168ADE2D3AC73598454B1"
+  },
+  "testing": {
+    "source_fixture_windows": {
+      "tests": 5,
+      "passed": 5,
+      "failed": 0
+    },
+    "source_fixture_linux_user_only": {
+      "tests": 5,
+      "passed": 5,
+      "failed": 0
+    },
+    "windows_full_suite": {
+      "tests": 224,
+      "passed": 199,
+      "skipped": 25,
+      "failed": 0,
+      "operation_id": "20d1be5d-b9d0-46a2-87ef-d4e8f51afff2",
+      "stderr_sha256": "371047d05655ccb969cb082ec4cce4649d8b29f9c6931df2f3974031683cf1ac"
+    },
+    "physical_guest_vm_session_close": true,
+    "physical_power_loss_tested": false,
+    "code_only_recovery_not_native_service_accepted": true,
+    "initial_source_test_negative": {
+      "status": "one of 5 first tests failed in a static guard checking for any literal `Tailscale` even though that word was only in protective comment, not service command",
+      "root_cause": "False-positive test assertion checked comment text instead of a service-control action",
+      "repair": "Checked forbidden Get-Service Tailscale and Stop-Service Tailscale command strings, preserving prohibition of production host mutation",
+      "final": "Windows 5/5 PASS, Linux 5/5 PASS, and full Windows 224 total/199 PASS/25 SKIP/0 FAIL"
+    }
+  },
+  "original_services_after": {
+    "DirectInternetMethodSvc": "Running",
+    "Tailscale": "Running"
+  },
+  "pr_release_status": "Draft PR #68; public Release HOLD",
+  "open_gates": [
+    "trusted privileged Linux root/systemd/polkit broker",
+    "Windows UAC/Inno/SCM native install and protected service restart after failure",
+    "hard physical VM reboot/power-off with durable storage testing",
+    "signed independent publisher policy and replay-resistant protected authorization ledger",
+    "actual DIM version and user configuration migration / independent traffic security acceptance"
+  ],
+  "temporary_data_cleanup": "PENDING_VERIFIED_EVIDENCE_PERSISTED_AND_DEPENDENT_CHECKS",
+  "native_guest_log_markers": {
+    "stage.guest.log": "R900_GUEST_ONE_ACTIVATED_VM_CUT_READY",
+    "rollback-then-forward.guest.log": "R900_GUEST_TWO_FIRST_SCOPE_COMMITTED_VM_CUT_READY",
+    "complete.guest.log": "R900_GUEST_THREE_FORWARD_REPLAY_PASS"
+  }
+}
