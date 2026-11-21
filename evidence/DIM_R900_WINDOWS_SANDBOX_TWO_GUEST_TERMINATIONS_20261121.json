@@ -113,6 +113,26 @@
       "root_cause": "False-positive test assertion checked comment text instead of a service-control action",
       "repair": "Checked forbidden Get-Service Tailscale and Stop-Service Tailscale command strings, preserving prohibition of production host mutation",
       "final": "Windows 5/5 PASS, Linux 5/5 PASS, and full Windows 224 total/199 PASS/25 SKIP/0 FAIL"
+    },
+    "cleanup": {
+      "windows_test_scratch_removed": true,
+      "linux_owned_source_fixture_removed": true,
+      "windows_removed_item_count": 74,
+      "sandbox_sessions_after": 0,
+      "dim_service_after": "Running",
+      "tailscale_service_after": "Running"
+    },
+    "hosted_ci": {
+      "source_head": "0baa1886663e025d6d07c8e2891ba67052999757",
+      "engine_pr_run_id": 44861816842,
+      "engine_pr_matrix": "4/4 SUCCESS",
+      "engine_push_run_id": 44861812689,
+      "engine_push_matrix": "4/4 SUCCESS",
+      "root_owned_linux_policy_fixture": "PASS",
+      "frozen_pr_run_id": 44861816834,
+      "frozen_pr": "SUCCESS",
+      "source_release_contracts_run_id": 44861812697,
+      "source_release_contracts": "SUCCESS"
     }
   },
   "original_services_after": {
@@ -127,7 +147,7 @@
     "signed independent publisher policy and replay-resistant protected authorization ledger",
     "actual DIM version and user configuration migration / independent traffic security acceptance"
   ],
-  "temporary_data_cleanup": "PENDING_VERIFIED_EVIDENCE_PERSISTED_AND_DEPENDENT_CHECKS",
+  "temporary_data_cleanup": "VERIFIED_REMOVED_EXACT_74_ITEM_NO_REPARSE_TEST_TREE_AFTER_GIT_COMMIT_AND_GUEST_RECEIPT_SHA_CHECK",
   "native_guest_log_markers": {
     "stage.guest.log": "R900_GUEST_ONE_ACTIVATED_VM_CUT_READY",
     "rollback-then-forward.guest.log": "R900_GUEST_TWO_FIRST_SCOPE_COMMITTED_VM_CUT_READY",

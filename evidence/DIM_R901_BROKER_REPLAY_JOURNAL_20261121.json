@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R901_REPLAY_SAFE_BROKER_REQUEST_JOURNAL_FIXTURE_20261121",
+  "parent_head": "0baa1886663e025d6d07c8e2891ba67052999757",
+  "scope": "OS-independent user-owned synthetic journal contract; no root/UAC native broker and no trusted OS-held ledger",
+  "reason": "Prevent accidentally restarting a policy/request id from scratch after a durable reserve or process crash; enable only explicit exact-identity recovery rather than treating a prior request id as new",
+  "source_sha256": {
+    "installer_engine/broker_replay.py": "d9c087ebcee14bba5a08d50fed23c5c57f15330368a8df9c1ecc20ae4d254064",
+    "tests/test_engine_broker_replay.py": "80eb8345586e7d8426dabcd5b370621e56ecaa4086d1f78f19632c65f0e4d225"
+  },
+  "implementation": {
+    "class": "BrokerReplayFixtureLedger",
+    "mode": "file-only synthetic replay control, NO elevated native actions",
+    "storage": "one bounded `broker-replay.json` within the existing Engine state lock root; `Engine.locked()` (Windows byte lock, Linux flock) and existing atomic_json/fsync, no new OS permissions",
+    "requests": "reuses R899 compare_pinned_policy_intent() with caller-provided, not authentically publisher-protected policy pin; exact request ID 128-bit lowercase hex + SHA256 of request bytes + policy SHA256 bound to active record",
+    "state_machine": "absent -> reserved -> applying -> tombstoned (synthetic completed or aborted); no native service can be accepted by this API",
+    "recovery": "fault after durable reserve or applying -> reopen state, require exact id+request and policy SHA, return RECOVERY_REQUIRED_NOT_NEW_PRIVILEGED_WORK; no duplicate reserve; no callback-executed native work",
+    "uniqueness": "used request IDs retained in same file, no eviction; capacity 256 => fail-closed and require independently authorized policy epoch rotation outside fixture",
+    "foreign_tamper_refusal": "duplicate JSON keys, duplicate reserved ID, missing active ID in history, unsupported platform/state/role/outcome, stale *.writing and symlink journal rejected",
+    "accepted_native_install": false,
+    "publisher_authenticated": false,
+    "privileged_broker_implemented": false
+  },
+  "validation": {
+    "windows": {
+      "tests_total": 21,
+      "passed": 20,
+      "skipped": 1,
+      "failed": 0,
+      "reason_for_skip": "Windows unprivileged symlink creation unavailable; POSIX real symlink test PASS",
+      "full_source_total": 245,
+      "full_source_passed": 219,
+      "full_source_skipped": 26,
+      "full_source_failed": 0,
+      "operation_id": "86d6579c-3c70-4308-84dc-526e7a1b1e88",
+      "stderr_sha256": "00631b995f8968caeb49733d219eb80ea7de465798b5ca8db6484debef913578",
+      "python_syntax": "PASS",
+      "git_diff_check": "PASS"
+    },
+    "linux": {
+      "uid": 1000,
+      "tests_total": 21,
+      "passed": 21,
+      "skipped": 0,
+      "failed": 0,
+      "unprivileged_temporary_source_copy": "SHA-pinned exact to Windows source and removed",
+      "original_owner_systemd_units": "inactive",
+      "source_hash_checked": true
+    },
+    "crossprocess": {
+      "child_os_exit_under_open_engine_lock_exit_code": 42,
+      "following_process_exact_id_recovery": "PASS",
+      "simultaneous_independent_workers_for_same_id": "one success, one fail closed on both Windows and Linux",
+      "replay_after_aborted_or_completed": "refused within bounded history"
+    }
+  },
+  "limitation": "This is NOT a trusted OS-privileged replay ledger: directory is user-owned in tests, caller-supplied policy hash not publisher auth; Windows power cut durability and Linux root-owned handle-bound protected writes unproven. Never authorize root/SCM actions solely from this fixture.",
+  "references": [
+    "https://docs.python.org/3.14/library/os.html",
+    "https://learn.microsoft.com/en-us/windows/win32/services/service-security-and-access-rights",
+    "https://polkit.pages.freedesktop.org/polkit/pkexec.1.html"
+  ],
+  "hosted_ci_status": "PENDING_EXACT_R901_HEAD",
+  "public_release": "HOLD",
+  "pr68": "DRAFT"
+}
