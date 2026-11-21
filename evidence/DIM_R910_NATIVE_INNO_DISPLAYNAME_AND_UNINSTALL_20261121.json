@@ -82,6 +82,14 @@
     "No independent human security review, cross-host VPN leak validation or public release.",
     "The existing unowned sandbox session was intentionally left untouched after changed session identity."
   ],
-  "exact_head_ci": "PENDING after code commit/push",
+  "exact_head_ci": {
+    "source_commit": "dd99630d25b0cc4a2cda538e22e445f7c976a56d",
+    "engine_run": 44872178134,
+    "engine_windows_linux_python311_314": "4/4 SUCCESS",
+    "linux_root_policy_job": "SKIPPED on this PR event, not native privileged acceptance",
+    "frozen_run": 44872178161,
+    "windows_linux_frozen_jobs": "2/2 SUCCESS",
+    "product_release_accepted": false
+  },
   "release": "HOLD"
 }
