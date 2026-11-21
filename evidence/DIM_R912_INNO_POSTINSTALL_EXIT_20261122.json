@@ -74,8 +74,8 @@
     "fixture_binary_sha256": "0904859835B0B84152E373E817557BDD592436A27DC3697925581795759A331E",
     "fixture_bytes": 154272776,
     "compiler_result": "PASS",
-    "native_vm_result": "NOT_EXECUTED",
-    "reason": "Windows Sandbox CO_E_APPSINGLEUSE while another unrelated sandbox owned by a separate session was active; no takeover/stop",
+    "native_vm_result": "EXECUTED_AS_NEGATIVE_BASELINE_WITH_EXIT0_IN_ISOLATED_GUEST; SEE native_full_product_fault_matrix",
+    "reason": "Earlier not-executed status superseded by 2026-11-22 native guest run, not by initial synthetic inference.",
     "safety": "All full fault test-only exe payloads renamed to .test-only-disabled or .incomplete-disabled pending isolated test",
     "native_rollback_accepted": false
   },
@@ -130,5 +130,70 @@
     },
     "commit": "PENDING_COMMIT_AND_HOSTED_CI",
     "acceptance": "SOURCE_AND_NATIVE_COMPILER_PASS_NOT_NATIVELY_INSTALLED_IN_VM"
+  },
+  "native_full_product_fault_matrix": {
+    "observed_date": "2026-11-22",
+    "baseline_old_r912_testonly": {
+      "source_script_sha256": "A0B845E1A29A6F431FE74250FC1B087E44C8A71F2A2361E99E4A3DE274F047D4",
+      "setup_sha256": "0904859835B0B84152E373E817557BDD592436A27DC3697925581795759A331E",
+      "guest_id": "34d0b197-abc8-43ac-91dc-000000000912",
+      "guest_identity": "NT AUTHORITY\\SYSTEM, isolated Windows Sandbox, network disabled",
+      "preflight_sha256": "911F52FD5F51BC7485F5CAEB64DE9B27826E2D4DB06D7EC4A89A4932ABE899AB",
+      "installer_exit_code": 0,
+      "observed_fault": "DIM_R912_CONTROLLED_TEST_FAULT_AFTER_SCM",
+      "postfault_service_DirectInternetMethodSvc": "Running",
+      "postfault_service_ctrld": "Stopped",
+      "postfault_registry_display_version": "1.5.7",
+      "postfault_user_code_exists": true,
+      "postfault_privileged_code_exists": true,
+      "failure_receipt_sha256": "46F07283C0ED7A60FA7A5425609E710753929EA73D9A1FE50426BC952996B95B",
+      "inno_install_log_sha256": "3585F0E92BF70F4E58F87B6A39193F0ECCF534E6468552ABA21BF5027805BE96",
+      "cleanup": {
+        "via": "actual registered Inno Uninstaller in same isolated guest; not automatic rollback",
+        "status": "PASS",
+        "uninstall_exit_code": 0,
+        "checks_pass": 12,
+        "receipt_sha256": "C7E0014CA452D0C9FE218716319CDFD58A460758E29ABE63D06FD27D31B45DEB",
+        "log_sha256": "16AE68B972EFCE7F93B60BA372C61976EA1E0FEE59DCF8278896D79324D69C1E"
+      },
+      "conclusion": "FAIL_FALSE_SUCCESS_AND_INCOMPLETE_INSTALLED_STATE; later guest uninstall PASS"
+    },
+    "corrected_r913_testonly": {
+      "source_feature_head": "a7ee3fa469e0a0bdc6c05197780a5fa40b3685f5",
+      "product_iss_source_sha256": "C9A377D635C94FF5C61FC9A4E15CEC40C874ECA3C6F3B52571CD549D2E061206",
+      "testonly_injected_source_sha256": "F4AE260360AD75998CD22C366EC59595478430FE33C918A32832443F763A297F",
+      "setup_sha256": "EFFFF3A48C9188997F9A5C938943FC0D5B8578729E2C67B0CA87A6E7CE751460",
+      "setup_bytes": 154272782,
+      "guest_id": "34d0b197-abc8-43ac-91dc-000000000913",
+      "guest_identity": "NT AUTHORITY\\SYSTEM, isolated Windows Sandbox, network disabled",
+      "preflight_sha256": "F9A56B81407BA517BD7E34F38230ED5EC0EE017CD6118DF9D7CE365F0E23ECC5",
+      "installer_exit_code": 67,
+      "observed_fault": "DIM_R913_TEST_ONLY_FAULT_AFTER_SCM",
+      "postfault_service_DirectInternetMethodSvc": "Running",
+      "postfault_service_ctrld": "Stopped",
+      "postfault_registry_display_version": "1.5.7",
+      "postfault_user_code_exists": true,
+      "postfault_privileged_code_exists": true,
+      "failure_receipt_sha256": "205E284F2F261AB9DB8EB4153735BC36AD347A9D76C1DB203D913FF9EAEC0963",
+      "inno_install_log_sha256": "1D76C17811708E3D5014DDBC0ABB878A176B90B771EEF1BFA35FC71338C5EAC0",
+      "cleanup": {
+        "via": "actual registered Inno Uninstaller in same isolated guest; not automatic rollback",
+        "status": "PASS",
+        "uninstall_exit_code": 0,
+        "checks_pass": 12,
+        "receipt_sha256": "ED9CBC30B559992FB06400E1D97F8BF8DD2B9FF18095872E0F29D38BB667B900",
+        "log_sha256": "4D2870AB4A49F4826E443935CAB0D0739771CCC4DE01D7E07D09F449278079E8"
+      },
+      "conclusion": "PASS_NATIVE_PRODUCT_FAULT_EXIT_CODE_FAIL_CLOSED; INCOMPLETE_INSTALL_REMAINS_UNTIL_MANUAL_UNINSTALL"
+    },
+    "held_constant": [
+      "Same historical 681-file v1.5.7 payload manifest SHA 9C664DB49104D1F8775413260036155CCC920D8517CF7DB2AFAFBFE0A715D966",
+      "Same postinstall fault insertion site immediately following InstallOrUpdateService()",
+      "Both fresh isolated Windows Sandbox guests under System with network/clipboard disabled",
+      "No Windows owner product installation/registry/services modified"
+    ],
+    "security_caveat": "No atomic two-scope rollback, no private SYSTEM-owned completion receipt or normal-user UAC acceptance; false-success exit fixed only.",
+    "guest_lifecycle": "Both owned disposable Sandbox sessions stopped after raw receipts retained; test-only artifacts renamed .test-only-disabled.",
+    "gate": "PASS_FULL_NATIVE_INNO_EXPLICIT_FAILURE_EXIT_AND_POSTFAULT_UNINSTALL; HOLD_AUTOMATIC_ROLLBACK"
   }
 }
