@@ -133,6 +133,13 @@ function DIMQueryServiceStatus(Service: THandle; var Status: TDIMServiceStatus):
 function DIMCloseServiceHandle(Handle: THandle): Boolean;
   external 'CloseServiceHandle@advapi32.dll stdcall';
 
+// Fail closed: an exception in ssPostInstall may be suppressed in /VERYSILENT
+// mode, otherwise producing exit 0 even if service registration failed.
+// Setup globals initialize to False, and the flag is set only after
+// both SCM registrations and pending-evidence preservation complete.
+var
+  DIMPostInstallCompleted: Boolean;
+
 function RunSc(Params: String; var ResultCode: Integer): Boolean;
 begin
   Result := Exec(ExpandConstant('{sys}\sc.exe'), Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
@@ -368,7 +375,18 @@ begin
     InstallOrUpdateCtrldService();
     InstallOrUpdateService();
     CompletePendingDirectUpdate();
+    DIMPostInstallCompleted := True;
   end;
+end;
+
+// Inno may still emit ssDone after a suppressed Pascal Script exception;
+// return a deterministic, nonzero exit code instead of a false positive.
+function GetCustomSetupExitCode: Integer;
+begin
+  if DIMPostInstallCompleted then
+    Result := 0
+  else
+    Result := 67;
 end;
 
 function InitializeUninstall(): Boolean;

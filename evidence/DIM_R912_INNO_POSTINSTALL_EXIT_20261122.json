@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R912-INNO-POSTINSTALL-NONZERO-EXIT-20261122",
+  "date": "2026-11-21",
+  "project": "Direct Internet Method",
+  "scope": "Synthetic Inno 6.7.3 owner-user-local nonprivileged test; NOT production install, service or rollback acceptance",
+  "source_feature_head_when_test_began": "9612eef6e72ac0ef59139d7f30a2b04ce06a9b3b",
+  "environment": {
+    "platform": "Windows",
+    "inno": "6.7.3",
+    "setup_args": [
+      "/VERYSILENT",
+      "/SUPPRESSMSGBOXES",
+      "/NORESTART",
+      "/SP-"
+    ],
+    "product_service_before": "Running",
+    "tailscale_before": "Running",
+    "product_service_after": "Running",
+    "tailscale_after": "Running"
+  },
+  "negative_without_explicit_exit": {
+    "synthetic_setup_sha256": "76FE79F3B11F565D939E9D8D3AB080E53A149D883C6B58C912799B6F311F90D3",
+    "source_sha256": "F6E9701127BD61E84046E9384A17187F8624A02311E79A15815B3258547BB8E5",
+    "test": "RaiseException in CurStepChanged(ssPostInstall) under silent suppression",
+    "exit_code_first": "not captured",
+    "exit_code_repeat": 0,
+    "two_repeated_event_sequences": [
+      [
+        "ssInstall",
+        "ssPostInstall",
+        "ssDone"
+      ],
+      [
+        "ssInstall",
+        "ssPostInstall",
+        "ssDone"
+      ]
+    ],
+    "repeat_inno_log_sha256": "E22A7282C6898D783C67742DDA79086873B8DEAAAA609C23BBEE85826BEC7C79",
+    "observed_error_log": "CurStepChanged raised an exception; defaulting to OK for suppressed message box",
+    "conclusion": "FALSE_SUCCESS_RISK_CONFIRMED_FOR_SYNTHETIC_SILENT_EXCEPTION"
+  },
+  "corrected_custom_exit": {
+    "synthetic_setup_sha256": "BC8D74ABFE39AC732CDF0887A22FCF771067504010F47CB3DA972A65E33FFAB1",
+    "source_sha256": "B2A42346EF33CA5F6FAD61A57E1C63E61D52B74721E08522206C14AAF4DFA504",
+    "method": "PostInstallFailed flag plus official GetCustomSetupExitCode",
+    "exit_code": 67,
+    "events": [
+      "ssInstall",
+      "ssPostInstall_FaultFlagSet",
+      "ssDone"
+    ],
+    "log_sha256": "A5374B62B2D047D3242F8A2B920DF7B596ACE5431592917F6F15061E66EC3195",
+    "conclusion": "EXPLICIT_POSTINSTALL_NONZERO_EXIT_CONFIRMED_IN_SYNTHETIC_TEST"
+  },
+  "nominal_control": {
+    "synthetic_setup_sha256": "58B34DF0D35378AD7A26DC2806DE8C3BE512A4D6491E5FED0CBB6BFD5FE87945",
+    "source_sha256": "7D15FAE11AA873DEBA0C5FD48D863273263F8FCFC1E25035B21039E185520189",
+    "error_flag": false,
+    "exit_code": 0,
+    "events": [
+      "ssInstall",
+      "ssPostInstall_NoFault",
+      "ssDone"
+    ],
+    "log_sha256": "8C8AFD1DA7A3A5232F2D0C2244C3C64C90A7661254BC4FDB6FF947A814C4C99B",
+    "conclusion": "NO_FAULT_EXIT_ZERO_CONTROL_PASS"
+  },
+  "full_product_fault_fixture": {
+    "product_source": "R910 historical SHA-pinned 681-file in-place staged package",
+    "changed_scope": "Test-only Inno Pascal source injected RaiseException immediately after successful InstallOrUpdateService()",
+    "fixture_source_sha256": "A0B845E1A29A6F431FE74250FC1B087E44C8A71F2A2361E99E4A3DE274F047D4",
+    "fixture_binary_sha256": "0904859835B0B84152E373E817557BDD592436A27DC3697925581795759A331E",
+    "fixture_bytes": 154272776,
+    "compiler_result": "PASS",
+    "native_vm_result": "NOT_EXECUTED",
+    "reason": "Windows Sandbox CO_E_APPSINGLEUSE while another unrelated sandbox owned by a separate session was active; no takeover/stop",
+    "safety": "All full fault test-only exe payloads renamed to .test-only-disabled or .incomplete-disabled pending isolated test",
+    "native_rollback_accepted": false
+  },
+  "findings": [
+    "ssDone can execute even when post-install custom code raises an exception under suppressed message box conditions",
+    "zero Setup exit code is not a sufficient success criterion for bespoke SCM post-install steps",
+    "GetCustomSetupExitCode can turn a tracked post-install failure into a nonzero process exit, but does not implement rollback",
+    "Protected completion receipt and OS-native authenticated broker still required before deleting updater staging or reporting product update done"
+  ],
+  "official_docs": [
+    "https://jrsoftware.org/inno-setup/documentation/topic_scriptevents.htm",
+    "https://jrsoftware.org/inno-setup/documentation/topic_setupcmdline.htm",
+    "https://jrsoftware.org/inno-setup/documentation/topic_setupexitcodes.htm"
+  ],
+  "pull_request": 68,
+  "pull_request_comment_id": 7058593067,
+  "remaining": [
+    "R911 pending evidence cleanup can still race installer finishing after Registry and service start; native post-install completion handshake and actual privileged rollback remain open.",
+    "Production integration of explicit post-install failure flag and nonzero exit",
+    "Exact native guest fault injection and verified cleanup/rollback under isolated Windows Sandbox",
+    "Immutable completion marker bound to native OS identity and exact pending installer provenance",
+    "Linux root-owned native adapter, power-cut VM recovery, normal-user UAC acceptance, authenticated publisher trust, VPN safety, independent review, release"
+  ],
+  "release_status": "HOLD",
+  "applied_at": "2026-11-22",
+  "production_source_patch": {
+    "prior_committed_feature_head": "1baab86bc75a24bba6bd1c046fcb3b46d00cde91",
+    "path": "windows/installer/DirectInternetMethod.iss",
+    "modified_sha256": "C9A377D635C94FF5C61FC9A4E15CEC40C874ECA3C6F3B52571CD549D2E061206",
+    "behavior": "Exact native Inno SCM postinstall calls run prior to a success-only flag, and GetCustomSetupExitCode returns 67 if that flag was never set due to a suppressed Pascal Script exception.",
+    "success_flag": "DIMPostInstallCompleted",
+    "protected_cleanup_only_by_broker": false,
+    "publisher_authentication": false,
+    "previous_product_installed_unchanged": true,
+    "source_tests": {
+      "passed": 22,
+      "failed": 0
+    },
+    "full_windows_engine_tests": {
+      "passed": 284,
+      "skipped": 28,
+      "failed": 0,
+      "elapsed_seconds": 36.54,
+      "terminal": "term-162"
+    },
+    "compiler": {
+      "inno": "6.7.3",
+      "base_staged_manifest_sha256": "9C664DB49104D1F8775413260036155CCC920D8517CF7DB2AFAFBFE0A715D966",
+      "test_only_staged_binary_sha256": "0189A247E3E3AF77F62E08DFF5A88DE2395A6DD80AD4E4C3EA4306C216063A1A",
+      "test_only_staged_binary_bytes": 154272745,
+      "exit_code": 0
+    },
+    "commit": "PENDING_COMMIT_AND_HOSTED_CI",
+    "acceptance": "SOURCE_AND_NATIVE_COMPILER_PASS_NOT_NATIVELY_INSTALLED_IN_VM"
+  }
+}
