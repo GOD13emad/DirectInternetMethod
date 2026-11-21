@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -191,6 +194,69 @@ class CoordinatedUninstallTests(unittest.TestCase):
         with self.assertRaisesRegex(EngineError,"PATH_CHANGED"):
             self.uninstaller.finish(lambda: True)
         self.assertTrue((self.roots["code"]/".dim-engine"/"previous"/"app"/"program.bin").exists())
+
+
+    def _crash_worker(self, action):
+        """Hard process exit AFTER a real Engine filesystem mutation.
+
+        No exception handler, atexit, or Python resource cleanup in the
+        worker; the parent is a fresh coordinator process and must recover.
+        """
+        root = Path(__file__).resolve().parents[1]
+        code = r'''
+import os
+from pathlib import Path
+import sys
+from installer_engine.engine import Engine
+from installer_engine.two_scope_uninstall import TwoScopeUninstallFixtureCoordinator
+op, ledger, code_root, user_root = sys.argv[1:]
+roots = {"code": Path(code_root), "user": Path(user_root)}
+method = "prepare_uninstall" if op == "prepare" else "finish_uninstall"
+prior = getattr(Engine, method)
+def interrupted(self, *a, **kw):
+    result = prior(self, *a, **kw)
+    if self.root == roots["code"]:
+        os._exit(71 if op == "prepare" else 72)
+    return result
+setattr(Engine, method, interrupted)
+co = TwoScopeUninstallFixtureCoordinator(Path(ledger), "windows-x86_64", roots)
+if op == "prepare":
+    co.prepare(lambda: True)
+else:
+    co.finish(lambda: True)
+sys.exit(99)
+'''
+        env = os.environ.copy()
+        env["PYTHONPATH"] = (str(root) + os.pathsep + env.get("PYTHONPATH", ""))
+        out = subprocess.run(
+            [sys.executable, "-c", code, action, str(self.ledger),
+             str(self.roots["code"]), str(self.roots["user"])],
+            cwd=root, env=env, capture_output=True, text=True, timeout=20)
+        self.assertEqual(out.returncode, 71 if action == "prepare" else 72,
+                         (out.stdout, out.stderr))
+
+    def test_hard_process_exit_after_first_prepare_recover_abort(self):
+        self._crash_worker("prepare")
+        self.assertEqual(self.uninstaller._uninstall_journal()["phase"], "preparing")
+        fresh = TwoScopeUninstallFixtureCoordinator(
+            self.ledger, self.platform, self.roots)
+        fresh.abort(lambda: True, lambda: True)
+        self.check_old()
+        self.assertFalse(fresh.uninstall_path.exists())
+
+    def test_hard_process_exit_after_first_finish_recover_forward(self):
+        self.uninstaller.prepare(lambda: True)
+        self._crash_worker("finish")
+        self.assertEqual(self.uninstaller._uninstall_journal()["phase"], "finishing")
+        self.assertEqual(
+            Engine(self.roots["code"], self.platform).verify()["status"], "EMPTY")
+        fresh = TwoScopeUninstallFixtureCoordinator(
+            self.ledger, self.platform, self.roots)
+        with self.assertRaisesRegex(EngineError, "UNINSTALL_FORWARD_ONLY"):
+            fresh.abort(lambda: True, lambda: True)
+        fresh.finish(lambda: True)
+        self.check_empty()
+        self.assertFalse(fresh.uninstall_path.exists())
 
 
 if __name__ == "__main__":

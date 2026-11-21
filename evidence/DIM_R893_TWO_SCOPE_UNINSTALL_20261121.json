@@ -97,5 +97,42 @@
       "inactive",
       "inactive"
     ]
+  },
+  "hard_process_exit_extension": {
+    "event_id": "DIM_R894_HARD_PROCESS_EXIT_20261121",
+    "scope": "fully terminated child Python process using os._exit(71/72) after actual first-scope code modification, disposable two-scope synthetic data on both Windows and Linux; no privileged native operations, not power-cut/reboot",
+    "version": "Windows main source tests and Linux process tests executed before PR head R894",
+    "source_test": "tests/test_engine_two_scope_uninstall.py",
+    "source_test_sha256": "6a57b790b047b3226e8edc438fc165a33ff016c64b724529d7c860f53c36d286",
+    "prior_r893_test_sha256": "55ca72842f40ea544418048a794c104e93c7008ea6f99daa47e3c5439ed37f2c",
+    "windows": {
+      "status": "PASS",
+      "operation": "31ef5d96-0866-43bc-b20c-a7bf00ea9097",
+      "exit_code": 0,
+      "total": 162,
+      "passed": 159,
+      "skipped": 3,
+      "failed": 0,
+      "stderr_sha256": "1d602dbf614dbad60a862fecaac6557c4b8a7f9b238b3bede8e5e9b2aa102356"
+    },
+    "linux": {
+      "status": "PASS",
+      "operation": "d65cb610-18f2-41d1-a898-307233557cf2",
+      "exit_code": 0,
+      "total": 16,
+      "passed": 16,
+      "skipped": 0,
+      "failed": 0,
+      "stderr_sha256": "6e97074d5ac807543ba07c0d08e5b48c942822c8457e190687409303708d2a38",
+      "scratch_removed": true
+    },
+    "recovery_assertions": [
+      "SIGKILL-like immediate os._exit after first code scope park leaves PREPARING journal; new coordinator abort restores both old scopes",
+      "Immediate os._exit after first irreversible deletion leaves FINISHING journal; rollback refused; new coordinator completes both scope cleanup; data SHA unchanged"
+    ],
+    "limits": [
+      "Process termination is not physical reboot or power loss",
+      "No privilege separation, no verified production installer or service acceptance"
+    ]
   }
 }
