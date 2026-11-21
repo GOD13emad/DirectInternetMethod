@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R891_WINDOWS_TWO_SCOPE_NATIVE_SCM_SANDBOX_20261121",
+  "scope": "Isolated Windows Sandbox synthetic ServiceBase Windows SCM and two physical managed code paths (ProgramData + LocalAppData), not installed DIM product",
+  "source": {
+    "parent_head": "5773a6648054d450e84135f567c2e7daae330fb3",
+    "entry": "tools/native_fixtures/windows/ScmTwoScopeFixtureEntry.py",
+    "entry_sha256": "a2ddd16a43273222e14742502a961e8f9109cc8e4bafa671ed136c78b7eda644",
+    "builder": "tools/native_fixtures/windows/BuildScmTwoScopePackages.py",
+    "builder_sha256": "35f1d35fd0fa8195b327532524055b60f22465e089ca1c3e11e98cf72bc42cc4",
+    "script": "tools/native_fixtures/windows/RunScmTwoScopeSandboxFixture.ps1",
+    "executed_script_sha256": "ca954c62544024d3ba49571ece377a511bee3f00c681d13eb0beda548ea508bc"
+  },
+  "environment": {
+    "offline_network_disabled": true,
+    "clipboard_disabled": true,
+    "guest_closed": true,
+    "host_DIM": "Running",
+    "host_Tailscale": "Running",
+    "host_synthetic_service": "ABSENT",
+    "managed_roots_note": "C:\\ProgramData\\DIM_R891_Isolated_Code and guest LocalAppData\\DIM_R891_Isolated_UserCode"
+  },
+  "receipt": {
+    "sha256": "2d298f2446e46f5b76b1e83ae0883dbd4f6fc52e099e144b691faf289b321c57",
+    "content": {
+      "schema": 1,
+      "status": "PASS_R891_SYNTHETIC_NATIVE_SCM_TWO_SCOPE",
+      "native_product_installation_accepted": false,
+      "service": "DIMR887IsolatedFixtureSvc",
+      "platform": "windows-x86_64",
+      "code_root": "C:\\ProgramData\\DIM_R891_Isolated_Code",
+      "user_root": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\DIM_R891_Isolated_UserCode",
+      "stages": [
+        "FROZEN_CLI_AND_6_SOURCE_PACKAGES_SHA_PINNED",
+        "SCM_NATIVE_156_AND_BOTH_SCOPE_COMMIT",
+        "BAD_NATIVE_START_ABORT_BOTH_ROOTS_RESTORE_156",
+        "FIRST_SCOPE_FINALIZE_INTERRUPTED_REPLAY_BOTH_ROOTS_157",
+        "NATIVE_SCM_DELETE_TWO_SCOPE_UNINSTALL_OWNER_DATA_PRESERVED"
+      ],
+      "frozen_sha256": "EC3DBEB5A2E3853A44CC90D5CF3D51114C561FCCC11E1872345D4A9D11A4937C",
+      "owner_data_sha256": "3A07E3EBDD90309D0F971C32E7A9EB82E80EF7AB8BDFFFD0F670602A7C00439B",
+      "original_service_sha256": "fbf3f5f628c9c3e6a8d15748cec18bef12218fce4058aab88cb1774c3f60caf8",
+      "upgraded_service_sha256": "28f2bc04d55df9fd8c8ae0eefde2261226a0e612dbeb8b15fc35ded2ca1c046b"
+    }
+  },
+  "trace_sha256": "90B47459694CF28EB650A92233831574DD208C2582E01D6BD67B900FA989E042",
+  "initial_failures": [
+    {
+      "attempt": "initial guest incomplete",
+      "result": "NO_RECEIPT; guest closed after a bounded observation; no acceptance"
+    },
+    {
+      "attempt": "instrumented guest",
+      "result": "all stages traced but receipt missing due case-insensitive PowerShell $Receipt pathname vs $receipt report collision",
+      "trace_sha256": "7B601E5A5F272D67E004815A118EA207F51E6AC5FEF20263AF32EF993BD52276"
+    },
+    {
+      "attempt": "final guest",
+      "result": "renamed $ReceiptPath and $Report; persisted receipt before optional SCM cleanup; PASS"
+    }
+  ],
+  "limitations": [
+    "Both roots installed by one Sandbox Administrator session and under distinct paths; not a real privilege-separated system/user install",
+    "ProgramData synthetic SCM service, no production DirectInternetMethodSvc",
+    "SCM QueryServiceStatus + QueryServiceConfigW and binary integrity checked but do not authenticate publisher or provide a protected trust token",
+    "No actual Inno AppId/installer rollback in this combined two-scope test",
+    "No hard VM restart/power-loss recovery, no authentic v1.5.7 release payload and no independent review",
+    "All native fixture outputs explicitly set native_product_installation_accepted=false"
+  ]
+}
