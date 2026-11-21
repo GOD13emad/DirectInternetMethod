@@ -240,6 +240,77 @@ def safe_remove_slot(p: Path, doc: dict) -> None:
     p.rmdir()
 
 
+
+def validate_accepted_uninstall_residual(slot: Path, doc: dict) -> None:
+    """Validate the still-present OWNED subset after durable uninstall acceptance.
+
+    Missing manifest files are allowed *only* after the accepted journal
+    transition, because a prior process may have already unlinked them.
+    Surviving files must still match their manifest hashes exactly; links,
+    foreign files and even foreign empty directories are refused. This is
+    not an authorization to delete an untrusted install root.
+    """
+    no_links(slot)
+    if not slot.exists():
+        return
+    require(slot.is_dir(), "UNINSTALL_RESIDUAL_NOT_DIRECTORY")
+    declared_files = {row["path"]: row for row in doc["files"]}
+    declared_dirs: set[str] = set()
+    for path in declared_files:
+        parts = relpath(path)
+        for i in range(1, len(parts)):
+            declared_dirs.add("/".join(parts[:i]))
+    seen: set[str] = set()
+    for base, dirs, files in os.walk(slot, followlinks=False):
+        for name in dirs:
+            path = Path(base) / name
+            no_links(path)
+            require(path.is_dir() and
+                    path.relative_to(slot).as_posix() in declared_dirs,
+                    "FOREIGN_UNINSTALL_RESIDUAL_DIRECTORY")
+        for name in files:
+            path = Path(base) / name
+            require(regular(path), "UNINSTALL_RESIDUAL_NONREGULAR")
+            relative = path.relative_to(slot).as_posix()
+            require(relative in declared_files,
+                    "FOREIGN_UNINSTALL_RESIDUAL_FILE")
+            row = declared_files[relative]
+            require(path.stat().st_size == row["bytes"] and
+                    hash_file(path) == row["sha256"].lower(),
+                    "UNINSTALL_RESIDUAL_FILE_CHANGED")
+            seen.add(relative)
+
+
+def remove_accepted_uninstall_residual(slot: Path, doc: dict) -> None:
+    """Replay-safe cleanup only after an accepted uninstall journal exists."""
+    validate_accepted_uninstall_residual(slot, doc)
+    if not slot.exists():
+        return
+    directories: set[Path] = set()
+    for row in doc["files"]:
+        path = slot.joinpath(*relpath(row["path"]))
+        no_links(path)
+        if path.exists():
+            require(regular(path) and path.stat().st_size == row["bytes"] and
+                    hash_file(path) == row["sha256"].lower(),
+                    "UNINSTALL_RESIDUAL_CHANGED_BEFORE_DELETE")
+            path.unlink()
+            durable_dir(path.parent)
+        directory = path.parent
+        while directory != slot:
+            directories.add(directory)
+            directory = directory.parent
+    for directory in sorted(directories, key=lambda d: len(d.parts), reverse=True):
+        no_links(directory)
+        # A previously interrupted deletion may already have removed this
+        # manifest-owned directory. Never recursively delete a foreign tree.
+        if directory.exists():
+            directory.rmdir()
+            durable_dir(directory.parent)
+    slot.rmdir()
+    durable_dir(slot.parent)
+
+
 class Engine:
     def __init__(self, root: Path | str, platform: str):
         require(platform in PLATFORMS, "UNKNOWN_PLATFORM")
@@ -548,9 +619,10 @@ class Engine:
     def finish_uninstall(self, native_unregistered: Callable[[], bool]) -> dict:
         """Delete *only* verified owned code after native adapter acceptance.
 
-        'accepted' is persisted before file deletion. A crash after deleting
-        the previous slot or installed.json can replay finish_uninstall; a
-        partially deleted slot remains fail-closed for explicit inspection.
+        'accepted' is persisted before file deletion. A crash even halfway
+        through the previous slot's manifest files can replay safely: only
+        remaining, independently hash-verified owned files are deleted;
+        missing entries may be treated as already removed ONLY after acceptance.
         """
         with self.locked():
             state = self._uninstall()
@@ -566,8 +638,10 @@ class Engine:
                 validate_slot(self.previous, old["manifest"])
                 atomic_json(self.uninstall_journal,
                             {"schema": 1, "old": old, "phase": "accepted"})
-            if self.previous.exists():
-                safe_remove_slot(self.previous, old["manifest"])
+            # 'accepted' has already reached disk. Partial previous slots
+            # are expected after process death; never reuse the strict
+            # pre-acceptance safe_remove_slot() here.
+            remove_accepted_uninstall_residual(self.previous, old["manifest"])
             # After accepted phase a prior process may have finished cleanup
             # and died before deleting the final journal.
             if self.installed.exists():

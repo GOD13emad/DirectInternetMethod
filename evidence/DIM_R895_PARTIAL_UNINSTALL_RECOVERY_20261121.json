@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "id": "DIM_R895_PARTIAL_ACCEPTED_UNINSTALL_RECOVERY_20261121",
+  "prior_head": "fecc0b1c5cb02229c6b2b219a8361628c1d0bb44",
+  "purpose": "Correct common Engine fail-closed dead end: crash during per-file deletion of accepted uninstall. Recovery must remove remaining owned objects without trusting an incomplete slot.",
+  "scope": "Code-only, two user-owned physical scopes; POSIX + Windows on isolated synthetic fixtures, not native privilege acceptance",
+  "source_sha256": {
+    "installer_engine/engine.py": "f1bdf92fc39bc7b569520787825cb434b498afc5e313e9f44f963bbae97aecfb",
+    "installer_engine/two_scope_uninstall.py": "0a735915e99726ad26f3712d1d269acc46173dec66c04934691fd4b0df837e1b",
+    "tests/test_engine_partial_uninstall_replay.py": "594eaec5b4041b645ea3eaa2cf83811b7665238744a874d4aced446f1c682638"
+  },
+  "safety_boundary": "Before accepted journal require intact all files; after accepted journal a manifest-declared subset may be missing; every residual file must match declared path, exact length and SHA-256, and all directories must be manifest-owned; no foreign file/directory/symlink/changed file removed.",
+  "crash_tests": [
+    "os._exit(81) directly after physically unlinking first of two declared files in first code scope, then different process forwards both scoped deletions",
+    "os._exit(82) after rmdir of final manifest-owned directory, then different process forwards both scopes",
+    "Foreign file/empty directory insertion after partial removal refused; residual tampering refused; preacceptance missing file refused; POSIX symlink to foreign file refused and foreign target unchanged"
+  ],
+  "windows": {
+    "status": "PASS",
+    "full_suite_operation": "54b31577-78d8-434d-b336-f84f4588db80",
+    "full_suite_total": 169,
+    "full_suite_passed": 165,
+    "full_suite_skipped": 4,
+    "full_suite_failed": 0,
+    "stderr_sha256": "59e316ec9a41542b9a9400b07c66b242dd83a56955bcbb0d2e6561a9990f39ae",
+    "targeted_tests": 7,
+    "targeted_passed": 6,
+    "targeted_skipped": 1
+  },
+  "linux": {
+    "status": "PASS",
+    "targeted_two_scope_tests": 23,
+    "targeted_passed": 23,
+    "targeted_skipped": 0,
+    "temporary_source_sha_pinned": true,
+    "source_temporary_copy_removed": true,
+    "installed_system_services": [
+      "inactive",
+      "inactive",
+      "inactive"
+    ]
+  },
+  "limits": [
+    "No abrupt kernel/power outage or reboot",
+    "Windows directory metadata durability not demonstrated",
+    "No native SCM/Inno or Linux privileged root/systemd/polkit transaction acceptance",
+    "No solution to independently attested package-publisher privilege provenance, admin-user ACL mediation or VPN leak assurance"
+  ],
+  "ready_next": "Bind actual platform privilege-separated installer to common two-scope code protocol, VM hard power loss and reboot proof; Release HOLD",
+  "final_source_suite": {
+    "Windows": {
+      "total": 174,
+      "passed": 170,
+      "skipped": 4,
+      "failed": 0,
+      "operation": "3fca80a8-527a-47e6-bd9f-e0a8d0d3e15e",
+      "stderr_sha256": "cf8acb9b0f09b5dc00588ed0de14ccc7d92db21ebcc699adc6e856d6a4e0bcb6",
+      "scope": "R895+R896 source and fixture tests including C# compiler fixture only; not production native acceptance"
+    },
+    "Linux": {
+      "targeted_total": 23,
+      "passed": 23,
+      "skipped": 0,
+      "failed": 0
+    },
+    "Git": "Commit not yet created; CI pending"
+  }
+}

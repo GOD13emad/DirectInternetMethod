@@ -20,7 +20,7 @@ from typing import Callable, Mapping
 
 from .engine import (
     Engine, EngineError, atomic_json, durable_dir, load_json,
-    require, validate_slot,
+    require, validate_slot, validate_accepted_uninstall_residual,
 )
 from .two_scope import TwoScopeFixtureCoordinator
 
@@ -111,11 +111,12 @@ class TwoScopeUninstallFixtureCoordinator(TwoScopeFixtureCoordinator):
                             validate_slot(engine.previous,
                                           transaction["old"]["manifest"])
                         else:
-                            # A partially removed previous slot cannot be
-                            # silently treated as an intact package. Fail closed.
-                            require(not engine.previous.exists() or
-                                    self._slot_intact(engine, transaction),
-                                    "COORDINATOR_UNINSTALL_ACCEPTED_PARTIAL_SLOT")
+                            # Native unregistration was already accepted
+                            # and the individual Engine journal says accepted.
+                            # Validate all survivors/paths; missing files may
+                            # be the result of a prior interrupted deletion.
+                            validate_accepted_uninstall_residual(
+                                engine.previous, transaction["old"]["manifest"])
                     else:
                         require(transaction["phase"] == "prepared" and
                                 engine._installed() == transaction["old"],
@@ -126,14 +127,6 @@ class TwoScopeUninstallFixtureCoordinator(TwoScopeFixtureCoordinator):
                         else:
                             validate_slot(engine.current,
                                           transaction["old"]["manifest"])
-
-    @staticmethod
-    def _slot_intact(engine: Engine, transaction: dict) -> bool:
-        try:
-            validate_slot(engine.previous, transaction["old"]["manifest"])
-        except EngineError:
-            return False
-        return True
 
     def prepare(self, quiescent: Callable[[], bool],
                 *, fault_after: str | None = None) -> dict:
