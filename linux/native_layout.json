@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "product": "Direct Internet Method",
+  "version": "1.5.7",
+  "platform": "linux-x86_64",
+  "files": [
+    {
+      "scope": "privileged",
+      "source": "app/direct_method_helper.sh",
+      "target": "direct_method_helper.sh",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "system/selective_dns.py",
+      "target": "selective_dns.py",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "system/encrypted_selective_dns.py",
+      "target": "encrypted_selective_dns.py",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "system/encrypted_selective_policy.py",
+      "target": "encrypted_selective_policy.py",
+      "mode": 420
+    },
+    {
+      "scope": "privileged",
+      "source": "system/control.sh",
+      "target": "control.sh",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "system/uninstall_system.sh",
+      "target": "uninstall_system.sh",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "app/hosts.txt",
+      "target": "direct_hosts.txt",
+      "mode": 420
+    },
+    {
+      "scope": "privileged",
+      "source": "app/adult_hosts_fallback.txt",
+      "target": "adult_hosts_fallback.txt",
+      "mode": 420
+    },
+    {
+      "scope": "privileged",
+      "source": "app/strong_override_hosts.txt",
+      "target": "strong_override_hosts.txt",
+      "mode": 420
+    },
+    {
+      "scope": "privileged",
+      "source": "runtime/ctrld",
+      "target": "runtime/usr/bin/ctrld",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "runtime/nfqws",
+      "target": "runtime/usr/bin/nfqws",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "licenses/LICENSE-ctrld.txt",
+      "target": "licenses/LICENSE-ctrld.txt",
+      "mode": 420
+    },
+    {
+      "scope": "privileged",
+      "source": "licenses/LICENSE-zapret.txt",
+      "target": "licenses/LICENSE-zapret.txt",
+      "mode": 420
+    }
+  ]
+}
