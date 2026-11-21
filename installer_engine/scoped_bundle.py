@@ -18,6 +18,7 @@ from .engine import (
     relpath, require,
 )
 from .scoped_layout import compile_scoped_layout, _unique_pairs
+from .publish import publish_new_directory
 
 STATUS = "SCOPED_BUILD_ONLY_NOT_NATIVE_INSTALL"
 
@@ -107,9 +108,9 @@ def materialize_scope_bundle(source_bundle: Path | str,
         read_package(stage, pin, platform)
         require(not target.exists() and not target.is_symlink(),
                 "SCOPED_DESTINATION_APPEARED")
-        # Directory rename is intentionally NOT claimed cross-volume atomic
-        # or safe against a hostile concurrent target writer; user-local QA only.
-        stage.rename(target)
+        # No-clobber is atomic on Linux/Windows, but parent/ACL trust is NOT
+        # a native privilege boundary; this remains a user-local build helper.
+        publish_new_directory(stage, target)
         return {"status": STATUS, "platform": platform,
                 "scope": scope_name, "version": doc["version"],
                 "files": len(doc["files"]), "manifest_sha256": pin,

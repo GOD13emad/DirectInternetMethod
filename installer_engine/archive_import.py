@@ -23,6 +23,7 @@ from .engine import (
     hash_file, manifest_schema, no_links, relpath, require,
 )
 from .native_plan import windows_scoped_plan, linux_distribution_plan
+from .publish import publish_new_directory
 
 WINDOWS_METADATA_BASE = frozenset({
     "installer-metadata/manifest.json",
@@ -198,7 +199,7 @@ def import_pinned_archive(archive: Path | str, pin: str,
                 "ARCHIVE_SOURCE_CHANGED_DURING_IMPORT")
         no_links(dest)
         require(not dest.exists(), "BUNDLE_DESTINATION_RACE")
-        temp.rename(dest)
+        publish_new_directory(temp, dest)
         published = True
         return {
             "status": "PASS_IMPORTED_VERIFIED_CODE_BUNDLE_ONLY",
