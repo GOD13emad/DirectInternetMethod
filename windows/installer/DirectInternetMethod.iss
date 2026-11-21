@@ -93,6 +93,9 @@ Type: files; Name: "{app}\is-*.tmp"
 Type: files; Name: "{app}\app\is-*.tmp"
 Type: dirifempty; Name: "{app}\app"
 Type: dirifempty; Name: "{app}"
+; Only retire the protected updater transaction directory if it is empty;
+; never destroy pending provenance, downloaded setups or foreign data.
+Type: dirifempty; Name: "{commonpf}\DirectInternetMethod\Privileged\UpdateTransactions"
 ; Uninstaller tracks each managed file under Privileged; never delete a mixed directory recursively.
 Type: dirifempty; Name: "{commonpf}\DirectInternetMethod\Privileged"
 Type: dirifempty; Name: "{commonpf}\DirectInternetMethod"

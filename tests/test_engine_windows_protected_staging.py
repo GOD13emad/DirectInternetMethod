@@ -71,6 +71,15 @@ class ProtectedUpdateStagingContract(unittest.TestCase):
         self.assertIn("new service completes SHA-checked cleanup", i)
         self.assertNotIn('DeleteFile(PendingPath)', i)
 
+    def test_uninstall_removes_only_empty_protected_transaction_directory(self):
+        section = self.inno.split("[UninstallDelete]", 1)[1].split("[Icons]", 1)[0]
+        expected = 'Type: dirifempty; Name: "{commonpf}\\DirectInternetMethod\\Privileged\\UpdateTransactions"'
+        self.assertIn(expected, section)
+        self.assertLess(section.index(expected),
+                        section.index('Type: dirifempty; Name: "{commonpf}\\DirectInternetMethod\\Privileged"'))
+        self.assertNotIn('Type: dir; Name: "{commonpf}\\DirectInternetMethod\\Privileged\\UpdateTransactions"', section)
+        self.assertNotIn('Type: filesandordirs;', section)
+
     def test_private_parent_policy_does_not_grant_privileges_or_write_acl(self):
         src = self.policy
         self.assertIn('TryGetTrustedProtectedParent(', src)
