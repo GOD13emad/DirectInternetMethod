@@ -57,7 +57,9 @@ class NativeInnoReceiptContract(unittest.TestCase):
         for marker in ("File.Delete(stage)", "File.Delete(PendingUpdatePath)", 'WriteActionStatus("update", "done"'):
             self.assertLess(receipt, final.index(marker))
         self.assertLess(final.index("File.Delete(stage)"), final.index("File.Delete(PendingUpdatePath)"))
-        self.assertLess(final.index("File.Delete(PendingUpdatePath)"), final.index("File.Delete(receiptPath)"))
+        self.assertLess(final.index("File.Delete(receiptPath)"), final.index("File.Delete(PendingUpdatePath)"))
+        self.assertLess(final.index("NativeUpdateCleanupJournal.MarkReceiptConsumed("),
+                        final.index("File.Delete(receiptPath)"))
 
     def test_orphan_receipts_block_future_updater(self):
         update = PROGRAM.split("static async Task RunUpdateAsync()", 1)[1].split("static bool PendingNativeRegistrationMatches(", 1)[0]

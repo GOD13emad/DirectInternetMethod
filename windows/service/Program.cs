@@ -517,18 +517,23 @@ internal static class Program
                 if (!NativeInnoCompletionReceipt.Hex64(transactionId))
                     throw new InvalidDataException("Protected pending transaction identifier invalid.");
                 var receiptPath = CompletionReceiptPath(transactionId);
-                if (!File.Exists(receiptPath))
+                var cleanupCommitted = NativeUpdateCleanupJournal.IsReceiptConsumed(doc.RootElement);
+                // A committed, OS-protected cleanup journal proves that the
+                // receipt was already validated in the prior service process.
+                // Ordinary/prepared transactions ALWAYS require live ssDone.
+                if (!File.Exists(receiptPath) && !cleanupCommitted)
                 {
                     Log("pending-update-awaiting-inno-ssdone-completion-receipt");
                     WriteActionStatus("update", "running", null,
                         "Waiting for native installer completion; pending evidence preserved.");
                     return;
                 }
-                if ((File.GetAttributes(receiptPath) & FileAttributes.ReparsePoint) != 0 ||
-                    !NativeInnoCompletionReceipt.Matches(
-                        File.ReadAllText(receiptPath),
-                        transactionId,
-                        doc.RootElement.GetProperty("sha256").GetString()))
+                if (File.Exists(receiptPath) &&
+                    ((File.GetAttributes(receiptPath) & FileAttributes.ReparsePoint) != 0 ||
+                     !NativeInnoCompletionReceipt.Matches(
+                         File.ReadAllText(receiptPath),
+                         transactionId,
+                         doc.RootElement.GetProperty("sha256").GetString())))
                     throw new CryptographicException("Native completion receipt does not match protected pending identity.");
                 // Setup can still be running from this EXE while the service restarts.
                 // Keep one pending record until the verified file can be removed.
@@ -555,6 +560,9 @@ internal static class Program
                     (!fixedOwnedStage && !pinnedLegacyStage) ||
                     expectedSha.Length != 64 || !expectedSha.All(Uri.IsHexDigit))
                     throw new CryptographicException("Foreign staging path or invalid pending checksum.");
+                if (cleanupCommitted && File.Exists(stage))
+                    throw new InvalidDataException(
+                        "Committed native completion journal cannot coexist with staged installer.");
                 if (File.Exists(stage))
                 {
                     if ((File.GetAttributes(stage) & FileAttributes.ReparsePoint) != 0 ||
@@ -573,17 +581,27 @@ internal static class Program
                         return;
                     }
                 }
-                File.Delete(PendingUpdatePath);
-                // If power loss leaves an orphan completion receipt, the next
-                // update refuses it instead of treating it as a new success.
-                try { File.Delete(receiptPath); }
+                // The last irreversible boundary is the protected pending
+                // record, not the transient Inno receipt. Commit only AFTER
+                // verifying native ssDone and retiring the SHA-pinned stage.
+                // A process crash after receipt deletion can now recover from
+                // the committed protected journal (not from a forged receipt).
+                if (!cleanupCommitted)
+                    WriteJsonAtomic(PendingUpdatePath,
+                        NativeUpdateCleanupJournal.MarkReceiptConsumed(doc.RootElement));
+                try
+                {
+                    if (File.Exists(receiptPath))
+                        File.Delete(receiptPath);
+                }
                 catch (IOException)
                 {
-                    Log("completed-inno-receipt-locked-requires-reconciliation");
-                    WriteActionStatus("update", "error", -6,
-                        "Installed, but native completion evidence requires reconciliation.");
+                    Log("completed-inno-receipt-locked-retry-on-service-restart");
+                    WriteActionStatus("update", "running", null,
+                        "Installed; protected completion cleanup pending retry.");
                     return;
                 }
+                File.Delete(PendingUpdatePath);
                 WriteActionStatus("update", "done", 0, $"Updated to v{installed.ToString(3)}.");
                 Log($"update-complete:{installed.ToString(3)}:no-cache-duplicate");
             }
@@ -797,6 +815,8 @@ internal static class Program
             return "PROTECTED_UPDATE_ACL_SELFTEST_FAILED";
         if (!NativeInnoCompletionReceipt.SelfTest())
             return "NATIVE_INNO_COMPLETION_RECEIPT_SELFTEST_FAILED";
+        if (!NativeUpdateCleanupJournal.SelfTest())
+            return "NATIVE_UPDATE_CLEANUP_JOURNAL_SELFTEST_FAILED";
         return "PASS";
     }
 }

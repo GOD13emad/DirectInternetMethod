@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R922-PROTECTED-NATIVE-UPDATE-CLEANUP-JOURNAL-20261122",
+  "date": "2026-11-22",
+  "project": "DirectInternetMethod",
+  "baseline_commit": "570c4788a1978fd8ac0e7de86523ea9a1ca3c4e1",
+  "scope": "Windows Service protected transaction completion cleanup, process-restart recovery semantics, successful in-place same-version Inno update; NOT power-cut durability or automatic rollback.",
+  "root_cause": {
+    "original_behavior": "After exact Inno ssDone completion receipt verification, updater deleted pending-update.json BEFORE completion receipt. An unexpected Service crash between the two deletions left a protected orphan completion receipt and blocked future updates.",
+    "risk": "Safe fail-closed but automatic process restart recovery was unavailable.",
+    "correction": "Write protected pending-update.json cleanupPhase=receipt-consumed ONLY after validating exact native ssDone receipt, verifying SHA-pinned Stage and deleting it. Delete completion receipt next and pending record last. If a restarted Service reads receipt-consumed and Stage remains absent with valid version/registry/path/ACL checks, it can finalize cleanup even if completion receipt was deleted earlier. Unknown phases and receipt mismatch fail closed."
+  },
+  "implementation": {
+    "source": {
+      "windows/service/Program.cs": "A73180CC8AEDBC83AA703F3ABEBFE52AC3CBCF567A40688D24BCAACDC454447D",
+      "windows/service/NativeUpdateCleanupJournal.cs": "CBEDC562789CF9CCE3C2619A590ABFF57E56D5B724B390C817DC8108D47F55B8",
+      "tests/test_engine_windows_inno_ssdone_receipt.py": "28E1D2B3CEDD4EF78422E1AE8663DB0BC9A2CA03022CA3F49A4B4648454EC648",
+      "tests/test_engine_windows_native_cleanup_journal.py": "2B9C89786C7357C2DFF2C4FB170BB17B6276B883E0669BFFA66DE33548346732"
+    },
+    "phase": "receipt-consumed",
+    "native_service_console_selftest_exit": 0,
+    "native_service_exe_sha256": "70B155FB4F44B0935DE3EC865A8F1CE7D445F6E4B6444D2B9C5058CD55110AFF",
+    "native_service_exe_bytes": 73664323,
+    "targeted_python_tests_passed": 21,
+    "full_windows_engine_tests": {
+      "passed": 309,
+      "skipped": 28,
+      "failed": 0,
+      "runner": "term-59",
+      "elapsed_seconds": 26.23
+    },
+    "initial_transient_unrelated_python_error": "First full suite run failed 1 test at tests/test_engine_two_scope_uninstall.py Windows os.replace PermissionError; isolated reproduction PASS and separately repeated full suite 309 PASS 28 SKIP 0 FAIL. No unrelated Python engine source modified.",
+    "native_681_file_stage": {
+      "total_managed": 681,
+      "unchanged_from_R918": 680,
+      "changed": "privileged/app/DirectInternetMethod.Service.exe",
+      "manifest_sha256": "40A73A88F00BAE83E3001E27F9A12E426480F9184500BEBF5D17A6356F475F78",
+      "other_managed_files_unchanged": true,
+      "staged_contract_audit": {
+        "passed": 122,
+        "failed": 0
+      },
+      "initial_audit_context_fail": "Running copied staging audit without GIT_DIR/GIT_WORK_TREE gave only windows_strong_override_source_tracked false (git context not supplied). Correct verified repo Git tracking worktree context yielded 122/122 PASS."
+    },
+    "testonly_inno_setup": {
+      "sha256": "C3F70D566C9D4696BA9BD4DCB750A8F8BB783A0E010020360341DE5306398664",
+      "bytes": 154282851,
+      "source_iss_sha": "48F6B6BEA0DB34F8442FD870211E5117E9373F8EB4CBC732F48D9B5EC4A7BF16",
+      "public_released": false,
+      "signed": false
+    }
+  },
+  "native_guest": {
+    "id": "34d0b197-abc8-43ac-91dc-000000000922",
+    "environment": "Fresh Windows Sandbox, networking and clipboard disabled, SYSTEM account",
+    "preflight": "OBSERVATION_ONLY_NO_INSTALL / isolated guest accepted",
+    "clean_install": {
+      "status": "PASS_NATIVE_GUEST_SYSTEM_CLEAN_INSTALL_SOURCE_IDENTITY_AND_SCM",
+      "checks_pass": 17,
+      "setup_exit": 0,
+      "service_running": true,
+      "exact_manifest_and_service_sha": true,
+      "raw_receipt_sha256": "1F2BF70FAF751FE39129744E4C88177245825C62CE483325E1211279257EB455"
+    },
+    "same_version_positive_update": {
+      "status": "PASS_NATIVE_SSDONE_PROTECTED_TRANSACTION_FINALIZED",
+      "checks_pass": 16,
+      "setup_exit": 0,
+      "completion_receipt_consumed": true,
+      "pending_removed": true,
+      "pinned_stage_removed": true,
+      "service_running": true,
+      "sentinel_data_sha_preserved": true,
+      "raw_receipt_sha256": "E375F6C394F52E1E410BABB00C85D1C0F3758D92097182B1FFA8E00AD50988E4"
+    },
+    "attempted_negative_wrong_sha": {
+      "status": "NOT_RUN_NO_RECEIPT",
+      "sandbox_guest_exec_status": -196608,
+      "negative_receipt_absent": true,
+      "scope": "No claim of successful or failed negative product behavior; new test was not executed/verified."
+    },
+    "raw_evidence_sha256": {
+      "preflight": "5C0A1B54ED763884F7230C154846B4688D2ADD44483C47CD96956E45C83B3236",
+      "clean_install": "1F2BF70FAF751FE39129744E4C88177245825C62CE483325E1211279257EB455",
+      "positive_update": "E375F6C394F52E1E410BABB00C85D1C0F3758D92097182B1FFA8E00AD50988E4",
+      "native_install_log": "0D9177D1DB662312F08A8DC5E6019D68B65329DF97869C45C874127223172C01",
+      "native_update_log": "DE1F8A675773D57CFAEDA9F58DED2AE0AFCCA37FEC7A4D196CCCE8718BF7F17D"
+    },
+    "vm_stopped": true,
+    "guest_input_setup_disabled": true,
+    "owner_host_services": "DirectInternetMethodSvc and Tailscale Running; no host DIM installation changed"
+  },
+  "accepted": {
+    "source_order_and_phase_contract": true,
+    "native_helper_selftest": true,
+    "full_python_engine_regression": true,
+    "native_successful_inno_ssdone_cleanup": true,
+    "native_crash_after_journal_commit_and_receipt_delete": "NOT_TESTED_NATIVE_INJECTION",
+    "hardware_power_loss": "NOT_TESTED",
+    "full_native_automatic_rollback": "NOT_IMPLEMENTED_OR_ACCEPTED",
+    "real_version_update_official_154_to_private_157": "Prior R921 scoped native PASS; not repeated with R922 native exe"
+  },
+  "remaining": [
+    "Protected legacy ProgramData user-writable pending requires manual/native trust reconciliation and must not auto-promote",
+    "Process termination/crash at journal stages must be fault-injected and independently observed in disposable OS guest",
+    "Full power loss durability cannot be claimed without fsync/durable rename and reboot acceptance",
+    "Actual rollback after SCM registration failure not tested",
+    "Ordinary-user UAC, Linux root/systemd/polkit and no-leak tests pending",
+    "Independent review and publisher authentication pending"
+  ],
+  "pr": "Draft #68",
+  "release": "HOLD",
+  "notion": "NOTION_SYNC_PENDING"
+}
