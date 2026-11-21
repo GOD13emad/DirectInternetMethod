@@ -81,6 +81,54 @@
       "source": "licenses/LICENSE-zapret.txt",
       "target": "licenses/LICENSE-zapret.txt",
       "mode": 420
+    },
+    {
+      "scope": "user",
+      "source": "app/direct_internet_method.py",
+      "target": "direct_internet_method.py",
+      "mode": 493
+    },
+    {
+      "scope": "user",
+      "source": "app/socket_fallback.py",
+      "target": "socket_fallback.py",
+      "mode": 420
+    },
+    {
+      "scope": "user",
+      "source": "app/router_gateway.py",
+      "target": "router_gateway.py",
+      "mode": 493
+    },
+    {
+      "scope": "user",
+      "source": "app/router_gateway_core.py",
+      "target": "router_gateway_core.py",
+      "mode": 420
+    },
+    {
+      "scope": "user",
+      "source": "app/direct-internet-method.svg",
+      "target": "direct-internet-method.svg",
+      "mode": 420
+    },
+    {
+      "scope": "user",
+      "source": "uninstall.sh",
+      "target": "uninstall.sh",
+      "mode": 493
+    },
+    {
+      "scope": "user",
+      "source": "app/user_uninstall_preserve.py",
+      "target": "user_uninstall_preserve.py",
+      "mode": 493
+    },
+    {
+      "scope": "user",
+      "source": "app/user_update_transaction.py",
+      "target": "user_update_transaction.py",
+      "mode": 493
     }
   ]
 }

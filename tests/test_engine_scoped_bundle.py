@@ -190,5 +190,57 @@ class ScopedBundleTests(unittest.TestCase):
         self.assertEqual(data_path.read_bytes(), b"OWNER_SETTINGS_UNTOUCHED")
 
 
+    def test_actual_linux_user_code_scope_materializes_8_real_files_and_preserves_owner(self):
+        # Code from this exact repository checkout, not authenticated public
+        # release assets and NOT real native User/Root installation.
+        repo=Path(__file__).resolve().parents[1]
+        layout_path=repo/"linux"/"native_layout.json"
+        layout=json.loads(layout_path.read_text("utf-8"))
+        mapped=[row for row in layout["files"] if row["scope"]=="user"]
+        self.assertEqual(len(mapped),8)
+        normalized=self.base/"real-user-source"
+        (normalized/"payload").mkdir(parents=True)
+        rows=[]
+        # The shared compiler validates the COMPLETE 21-file distribution
+        # mapping before emitting only the eight files in the requested scope.
+        for row in layout["files"]:
+            source=repo/"linux"/row["source"]
+            if not source.is_file():
+                self.skipTest("exact real current Linux user source unavailable")
+            data=source.read_bytes()
+            dest=normalized/"payload"/row["source"]
+            dest.parent.mkdir(parents=True,exist_ok=True)
+            dest.write_bytes(data)
+            rows.append({"path":row["source"],"bytes":len(data),
+                         "sha256":hashlib.sha256(data).hexdigest(),
+                         "mode":row["mode"]})
+        manifest={"schema":1,"product":"Direct Internet Method",
+                  "version":"1.5.7","platform":"linux-x86_64",
+                  "files":rows}
+        pin=self.write_json(normalized/"manifest.json",manifest)
+        scoped=self.base/"actual-user-scope"
+        result=materialize_scope_bundle(
+            normalized,pin,layout_path,hash_file(layout_path),
+            "user",scoped,"linux-x86_64")
+        self.assertEqual(result["files"],8)
+        self.assertFalse(result["native_installation_or_rollback_accepted"])
+        self.assertFalse((scoped/"payload"/"router_gateway"/"providers.json").exists())
+        root=self.base/"isolated-user-managed-code"
+        user_data=root/"data"/"settings.json"
+        user_data.parent.mkdir(parents=True)
+        user_data.write_bytes(b'{"userCustomSettings": true}')
+        custom_providers=root/"data"/"router_gateway"/"providers.json"
+        custom_providers.parent.mkdir(parents=True)
+        custom_providers.write_bytes(b'{"userCustomizedProvider": true}')
+        e=Engine(root,"linux-x86_64")
+        e.stage(scoped,result["manifest_sha256"])
+        e.activate(lambda:True)  # synthetic callback only
+        e.commit(lambda:True)    # synthetic callback only
+        self.assertEqual(e.verify()["files"],8)
+        self.assertEqual(user_data.read_bytes(),b'{"userCustomSettings": true}')
+        self.assertEqual(custom_providers.read_bytes(),
+                         b'{"userCustomizedProvider": true}')
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
