@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 from installer_engine.engine import EngineError, relpath, require
 from installer_engine.native_delta import compare_managed_code_delta
 from installer_engine.native_plan import windows_scoped_plan
+from installer_engine.windows_handle_bound import read_windows_pinned_file
 
 BASELINE_MEMBER = "installer-metadata/manifest.json"
 STATUS = "READ_ONLY_WINDOWS_INSTALLED_CODE_DELTA_NOT_NATIVE_INSTALLATION"
@@ -90,9 +91,14 @@ def inventory(source: dict, *, measured: bool, user_root: Path,
                 path = base.joinpath(*parts)
                 no_reparse_ancestry(path)
                 require(path.is_file(), "DELTA_INSTALLED_FILE_MISSING")
-                info = path.stat()
-                row["bytes"] = info.st_size
-                row["sha256"] = sha256_file(path)
+                if os.name == "nt":
+                    locked = read_windows_pinned_file(path, entry["bytes"], entry["sha256"])
+                    row["bytes"] = locked["bytes"]
+                    row["sha256"] = locked["sha256"]
+                else:
+                    info = path.stat()
+                    row["bytes"] = info.st_size
+                    row["sha256"] = sha256_file(path)
             files.append(row)
         scopes.append({"name": name, "files": files})
     return {"schema": 1, "product": source["product"],
@@ -137,9 +143,12 @@ def observe(archive: Path, archive_sha: str, old_manifest_sha: str,
     # original archive; never trust a user's supplied local manifest.
     installed_manifest = user_root / "manifest.json"
     no_reparse_ancestry(installed_manifest)
-    require(installed_manifest.is_file() and
-            sha256_file(installed_manifest) == old_manifest_sha.lower(),
-            "DELTA_INSTALLED_MANIFEST_BASELINE_DRIFT")
+    require(installed_manifest.is_file(), "DELTA_INSTALLED_MANIFEST_BASELINE_DRIFT")
+    if os.name == "nt":
+        read_windows_pinned_file(installed_manifest, len(baseline_bytes), old_manifest_sha)
+    else:
+        require(sha256_file(installed_manifest) == old_manifest_sha.lower(),
+                "DELTA_INSTALLED_MANIFEST_BASELINE_DRIFT")
     observed = inventory(previous, measured=True,
                          user_root=user_root, privileged_root=privileged_root)
     delta = compare_managed_code_delta(native_plan, old_inventory, observed)
@@ -149,6 +158,7 @@ def observe(archive: Path, archive_sha: str, old_manifest_sha: str,
             "installed_manifest_sha256": old_manifest_sha.lower(),
             "target_manifest_sha256": target_sha.lower(),
             "old_file_count": sum(len(s["files"]) for s in old_inventory["scopes"]),
+            "win32_open_handle_file_hashes": sum(len(s["files"]) for s in old_inventory["scopes"]) if os.name == "nt" else 0,
             "stats": delta["stats"], "scopes": delta["scopes"],
             "publisher_authenticated": False,
             "native_installation_accepted": False,

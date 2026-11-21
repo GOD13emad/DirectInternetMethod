@@ -98,7 +98,9 @@ class WindowsManagedCodeDeltaProbe(unittest.TestCase):
         (self.user / "app/code.exe").write_bytes(b"corrupted")
         proc, result = self.run_probe()
         self.assertNotEqual(proc.returncode, 0)
-        self.assertIn("DELTA_INSTALLED_MANAGED_CODE_DRIFT", result["reason"])
+        self.assertTrue(any(tag in result["reason"] for tag in
+                            ("DELTA_INSTALLED_MANAGED_CODE_DRIFT",
+                             "WIN32_HANDLE_SIZE_MISMATCH", "WIN32_HANDLE_PIN_MISMATCH")))
 
     def test_replaced_archive_pin_rejected(self):
         proc, result = self.run_probe(**{"--archive-sha256": "0" * 64})
@@ -129,7 +131,9 @@ class WindowsManagedCodeDeltaProbe(unittest.TestCase):
         (self.user / "manifest.json").write_bytes(b"foreign-data")
         proc, result = self.run_probe()
         self.assertNotEqual(proc.returncode, 0)
-        self.assertIn("INSTALLED_MANIFEST_BASELINE_DRIFT", result["reason"])
+        self.assertTrue(any(tag in result["reason"] for tag in
+                            ("INSTALLED_MANIFEST_BASELINE_DRIFT",
+                             "WIN32_HANDLE_SIZE_MISMATCH", "WIN32_HANDLE_PIN_MISMATCH")))
 
     def test_symlink_parent_rejected_if_supported(self):
         alternative = self.home / "Elsewhere"
