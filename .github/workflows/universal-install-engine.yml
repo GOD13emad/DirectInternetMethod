@@ -76,16 +76,18 @@ jobs:
           fixture='/usr/local/share/dim-r898-ci-protected-fd-fixture'
           marker="$fixture/marker.txt"
           policy="$fixture/synthetic-broker-policy.json"
+          ledger="$fixture/synthetic-broker-journal.json"
           emitted="$RUNNER_TEMP/dim-r899-synthetic-broker-policy.json"
+          emitted_ledger="$RUNNER_TEMP/dim-r902-synthetic-broker-journal.json"
           if [[ -e "$fixture" || -L "$fixture" ]]; then
             echo 'FOREIGN_FIXTURE_ROOT_EXISTS'
             exit 2
           fi
           sudo install -d -o root -g root -m 0755 "$fixture"
           cleanup() {
-            sudo rm -f -- "$marker" "$policy"
+            sudo rm -f -- "$marker" "$policy" "$ledger"
             sudo rmdir -- "$fixture"
-            rm -f -- "$emitted"
+            rm -f -- "$emitted" "$emitted_ledger"
           }
           trap cleanup EXIT
           printf 'DIM-R898-SYNTHETIC-ROOT-MARKER\n' | sudo tee "$marker" >/dev/null
@@ -114,6 +116,16 @@ jobs:
           sudo chmod 0666 "$policy"
           python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py reject-unsafe-policy --fixture-root "$fixture"
           sudo chmod 0644 "$policy"
+          # Both synthetic roots must be distinct, real OS-root-owned,
+          # non-writable files opened from one trusted directory FD. Read
+          # and compare the independently pinned policy + replay snapshot.
+          # The CI fixture's self-generated hashes are NOT publisher pins.
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py emit-synthetic-ledger > "$emitted_ledger"
+          sudo install -o root -g root -m 0644 "$emitted_ledger" "$ledger"
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py verify-root-snapshot --fixture-root "$fixture"
+          sudo chmod 0666 "$ledger"
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py reject-unsafe-ledger --fixture-root "$fixture"
+          sudo chmod 0644 "$ledger"
           # Linux enforces directory write modes. A root-owned leaf is NOT
           # trusted if group/other write can replace the pinned member.
           sudo chmod 0777 "$fixture"

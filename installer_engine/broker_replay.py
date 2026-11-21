@@ -32,6 +32,64 @@ _PHASES = frozenset(("reserved", "applying"))
 STATUS = "REPLAY_FIXTURE_STATE_ONLY_NO_OS_AUTHORIZATION"
 
 
+
+def validate_replay_document(doc: object, platform: str) -> dict:
+    """Same single strict schema for native observations and fixture ledger."""
+    require(type(doc) is dict and
+            set(doc) == {"schema", "platform", "used_request_ids", "active"} and
+            type(doc["schema"]) is int and doc["schema"] == 1 and
+            doc["platform"] == platform,
+            "BROKER_REPLAY_SCHEMA_OR_PLATFORM")
+    used = doc["used_request_ids"]
+    require(type(used) is list and len(used) <= MAX_USED_REQUEST_IDS and
+            all(type(key) is str and _ID.fullmatch(key) for key in used) and
+            len(set(used)) == len(used),
+            "BROKER_REPLAY_USED_IDS_INVALID")
+    active = doc["active"]
+    if active is not None:
+        require(type(active) is dict and
+                set(active) == {"request_id", "request_sha256",
+                                "policy_sha256", "version", "operation",
+                                "phase"},
+                "BROKER_REPLAY_ACTIVE_SCHEMA")
+        require(type(active["request_id"]) is str and
+                _ID.fullmatch(active["request_id"]) and
+                active["request_id"] in used,
+                "BROKER_REPLAY_ACTIVE_ID_NOT_RESERVED")
+        require(all(type(active[name]) is str and
+                    _SHA.fullmatch(active[name])
+                    for name in ("request_sha256", "policy_sha256")),
+                "BROKER_REPLAY_ACTIVE_PIN_INVALID")
+        require(type(active["phase"]) is str and
+                active["phase"] in _PHASES,
+                "BROKER_REPLAY_PHASE_INVALID")
+        require(type(active["operation"]) is str and
+                active["operation"] in ("install", "upgrade", "uninstall"),
+                "BROKER_REPLAY_OPERATION_INVALID")
+        from .engine import version
+        require(type(active["version"]) is str,
+                "BROKER_REPLAY_VERSION_INVALID")
+        version(active["version"])
+
+    return doc
+
+
+def parse_replay_snapshot(raw: bytes, platform: str) -> dict:
+    """Bounded, duplicate-key rejecting parse of an already verified FD byte read.
+
+    This API does NOT certify OS ownership, publisher policy, or authority.
+    """
+    require(type(raw) is bytes and 0 < len(raw) <= 65536,
+            "BROKER_REPLAY_SNAPSHOT_BYTES_INVALID")
+    import json
+    from .broker_intent import _unique_pairs
+    try:
+        doc = json.loads(raw.decode("utf-8"), object_pairs_hook=_unique_pairs)
+    except (UnicodeError, ValueError) as exc:
+        raise EngineError("BROKER_REPLAY_SNAPSHOT_JSON_INVALID") from exc
+    return validate_replay_document(doc, platform)
+
+
 class BrokerReplayFixtureLedger:
     """Single-writer, user-owned test replay ledger, NOT a privileged adapter."""
 
@@ -45,39 +103,7 @@ class BrokerReplayFixtureLedger:
             return {"schema": 1, "platform": self.control.platform,
                     "used_request_ids": [], "active": None}
         doc = load_json(self.path)
-        require(set(doc) == {"schema", "platform", "used_request_ids", "active"} and
-                type(doc["schema"]) is int and doc["schema"] == 1 and
-                doc["platform"] == self.control.platform,
-                "BROKER_REPLAY_SCHEMA_OR_PLATFORM")
-        used = doc["used_request_ids"]
-        require(type(used) is list and len(used) <= MAX_USED_REQUEST_IDS and
-                all(type(key) is str and _ID.fullmatch(key) for key in used) and
-                len(set(used)) == len(used),
-                "BROKER_REPLAY_USED_IDS_INVALID")
-        active = doc["active"]
-        if active is not None:
-            require(type(active) is dict and
-                    set(active) == {"request_id", "request_sha256",
-                                    "policy_sha256", "version", "operation",
-                                    "phase"},
-                    "BROKER_REPLAY_ACTIVE_SCHEMA")
-            require(type(active["request_id"]) is str and
-                    _ID.fullmatch(active["request_id"]) and
-                    active["request_id"] in used,
-                    "BROKER_REPLAY_ACTIVE_ID_NOT_RESERVED")
-            require(all(type(active[name]) is str and
-                        _SHA.fullmatch(active[name])
-                        for name in ("request_sha256", "policy_sha256")),
-                    "BROKER_REPLAY_ACTIVE_PIN_INVALID")
-            require(type(active["phase"]) is str and
-                    active["phase"] in _PHASES,
-                    "BROKER_REPLAY_PHASE_INVALID")
-            require(type(active["operation"]) is str and
-                    active["operation"] in ("install", "upgrade", "uninstall"),
-                    "BROKER_REPLAY_OPERATION_INVALID")
-            from .engine import version
-            version(active["version"])
-        return doc
+        return validate_replay_document(doc, self.control.platform)
 
     @staticmethod
     def _report(status: str, request_id: str, phase: str) -> dict:
