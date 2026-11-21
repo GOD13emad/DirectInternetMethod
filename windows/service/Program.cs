@@ -398,6 +398,30 @@ internal static class Program
         }
     }
 
+    // Registration consistency is a prerequisite to cleanup, not publisher
+    // authentication or full native service/rollback acceptance.
+    static bool PendingNativeRegistrationMatches(JsonElement pending,
+                                                 Version serviceVersion,
+                                                 Version targetVersion)
+    {
+        const string keyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}_is1";
+        if (!pending.TryGetProperty("installDir", out var installRoot) ||
+            installRoot.ValueKind != JsonValueKind.String)
+            return false;
+        using var key = Registry.LocalMachine.OpenSubKey(keyPath, writable: false);
+        if (key is null ||
+            !NativePendingUpdateReceipt.IsConsistent(
+                key.GetValue("DisplayName") as string,
+                key.GetValue("DisplayVersion") as string,
+                key.GetValue("InstallLocation") as string,
+                installRoot.GetString(), serviceVersion, targetVersion))
+            return false;
+        // A matching registry string alone is insufficient even for cleanup:
+        // the registered application and manifest must exist in that root.
+        _ = GetRegisteredInstallDirectory();
+        return true;
+    }
+
     static async Task FinalizePendingAfterServiceRestartAsync()
     {
         // The Setup executable may be locked until Inno closes. Recheck only
@@ -417,7 +441,11 @@ internal static class Program
             await Task.Delay(TimeSpan.FromSeconds(5));
         }
         if (File.Exists(PendingUpdatePath))
+        {
             Log("pending-update-finalization-deferred-no-overwrite");
+            WriteActionStatus("update", "error", -4,
+                "Post-install native verification incomplete; pending evidence preserved.");
+        }
     }
 
     static void FinalizePendingUpdate()
@@ -433,6 +461,16 @@ internal static class Program
             var installed = CurrentVersion;
             if (installed >= target)
             {
+                if (!PendingNativeRegistrationMatches(doc.RootElement, installed, target))
+                {
+                    // Inno can finalize its registry/uninstall record before
+                    // a later ssPostInstall failure. Never erase update evidence
+                    // from Service version alone.
+                    Log("pending-update-native-registration-unverified-preserving-evidence");
+                    WriteActionStatus("update", "running", null,
+                        "Waiting for matching native Inno registration and service version.");
+                    return;
+                }
                 // Setup can still be running from this EXE while the service restarts.
                 // Keep one pending record until the verified file can be removed.
                 var stage = doc.RootElement.GetProperty("installer").GetString() ?? "";
@@ -489,6 +527,8 @@ internal static class Program
         catch (Exception ex)
         {
             Log($"update-finalize-failed:{ex.GetType().Name}:{Compact(ex.Message)}");
+            WriteActionStatus("update", "error", -4,
+                "Post-install verification failed; pending installer and identity preserved.");
         }
     }
 
@@ -654,6 +694,28 @@ internal static class Program
         var required = new[] { "Start-Direct.ps1", "Stop-Direct.ps1", "Recovery.ps1" };
         var missing = required.Where(x => !File.Exists(Path.Combine(AppContext.BaseDirectory, x))).ToArray();
         if (missing.Length != 0) return "MISSING:" + string.Join(",", missing);
+        var running = new Version(1, 5, 7, 0);
+        var pending = new Version(1, 5, 7);
+        const string root = @"C:\Users\qa\App";
+        if (!NativePendingUpdateReceipt.IsConsistent(
+                "Direct Internet Method", "1.5.7", root + @"\",
+                root, running, pending))
+            return "PENDING_NATIVE_VALID_RECEIPT_REJECTED";
+        var negatives = new (string? Name, string? Version, string? Root, string? Expected, Version Running, Version Target)[]
+        {
+            ("Direct Internet Method version 1.5.7", "1.5.7", root, root, running, pending),
+            ("Foreign", "1.5.7", root, root, running, pending),
+            ("Direct Internet Method", "1.5.6", root, root, running, pending),
+            ("Direct Internet Method", "1.5.8", root, root, running, pending),
+            ("Direct Internet Method", "1.5.7", @"C:\Users\foreign\App", root, running, pending),
+            ("Direct Internet Method", "1.5.7", root, @"..\relative", running, pending),
+            ("Direct Internet Method", "1.5.7", @"\\server\share\App", root, running, pending),
+            ("Direct Internet Method", "1.5.7", root, root, running, new Version(1, 5, 8)),
+            ("Direct Internet Method", "1.5.7", root, root, new Version(1, 5, 6), pending)
+        };
+        if (negatives.Any(n => NativePendingUpdateReceipt.IsConsistent(
+                n.Name, n.Version, n.Root, n.Expected, n.Running, n.Target)))
+            return "PENDING_NATIVE_NEGATIVE_RECEIPT_ACCEPTED";
         if (!DescribeActionFailure(1, "START_FAIL_DEFAULT_ROUTE_NOT_PHYSICAL").Contains("VPN or virtual adapter", StringComparison.Ordinal))
             return "MISSING_ROUTE_GUARD_MESSAGE";
         if (!DescribeActionFailure(1, "REFUSE_BROAD_TUNNEL_ROUTE").Contains("broad VPN route", StringComparison.Ordinal))
