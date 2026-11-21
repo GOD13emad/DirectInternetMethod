@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R918-NATIVE-INNO-SSDONE-TRANSACTION-BOUND-COMPLETION-20261122",
+  "observed_on": "2026-11-22",
+  "project": "DirectInternetMethod",
+  "baseline_feature_commit": "f6e4fee5e3f18929d141f88cc9e7bad45fca2469",
+  "scope": "Windows native SYSTEM-only isolated Windows Sandbox same-version Inno Setup transaction protocol. No GitHub update download, old-version upgrade, automatic rollback, publisher authentication or public release.",
+  "root_cause": "Prior cleanup could clear protected pending stage after matching new Service/Registry/version/sha even when Inno ssPostInstall subsequently failed; there was no native ssDone signal.",
+  "mechanism": {
+    "service": "Generate 32-byte cryptographically random transactionId; persist schema 2 in protected pending-update.json; pass /DIMTXN and /DIMSHA256 to Inno; reject legacy pending, stale or orphan receipts; wait for exact per-attempt completion receipt before deleting pinned stage and pending; reparse-point protection; any incomplete/bad receipt retains pending evidence.",
+    "inno": "Reject incomplete/duplicate/malformed txn parameters or wrong source location; only at ssDone after successful ssPostInstall hash actual {srcexe} versus pinned sha and atomically rename protected completion-<txn>.receipt; exit 67 if required receipt cannot be emitted; manual installer without txn remains permitted.",
+    "native_receipt": "DIM-INNO-V1|<64HEX transactionId>|<64HEX SHA256>, exact case-normalized bytes; no trailing newline; namespace exactly protected Program Files Privileged/UpdateTransactions.",
+    "limitations": [
+      "No publisher identity/authenticity proof from SHA-only GitHub asset comparison",
+      "No protected actual host publisher signing or legacy migration",
+      "Service cleanup is non-atomic across pending/receipt deletion if process killed; orphan receipt prevents next update rather than being silently trusted",
+      "One source-tree native fixture uses same-version reinstall, not 1.5.6→1.5.7 upgrade or rollback"
+    ]
+  },
+  "source_sha256": {
+    "windows/service/Program.cs": "518A2324052477D93E3ED4A7834433070C9A8792910171CE13E4E5DF9DAFDDD9",
+    "windows/service/NativeInnoCompletionReceipt.cs": "7A16B65AD29B5A82C2808635B80B7BFBD846353E7E5110E8D8A3F808F4C24998",
+    "windows/installer/DirectInternetMethod.iss": "48F6B6BEA0DB34F8442FD870211E5117E9373F8EB4CBC732F48D9B5EC4A7BF16",
+    "tests/test_engine_windows_inno_ssdone_receipt.py": "530A11A0CBC3D39012F0F5223DEBCEF8F0FE5B4CD6C519C1487CB49494B6318F",
+    "tests/test_engine_inno_postinstall_exit.py": "38A9A5C280F55CE543C56446AB26609CE502285D831FD7DC90D7805E28DE9478"
+  },
+  "build": {
+    "portable_sdk": "10.0.403 (preinstalled user-local, Authenticode Valid)",
+    "service_singlefile_sha256": "A234022BC43C4FD409F96D7ADD1D348A4E36F0D0BB9C474C95088D8FE332649D",
+    "service_bytes": 73664323,
+    "native_service_selftest_exit": 0,
+    "historical_managed_files": 681,
+    "unchanged_files_relative_to_R915": 680,
+    "one_modified_managed_file": "privileged/app/DirectInternetMethod.Service.exe",
+    "new_package_manifest_sha256": "56E7B8B1A6B9C1FD6E6692A0D247FDB4984E350F35CE18EA116E9C4583565D38",
+    "source_windows_engine_tests": {
+      "passed": 302,
+      "skipped": 28,
+      "failed": 0,
+      "terminal": "term-41",
+      "elapsed_seconds": 33.67
+    },
+    "targeted_tests": {
+      "passed": 19,
+      "failed": 0
+    },
+    "staged_windows_product_contract_audit": {
+      "passed": 122,
+      "failed": 0
+    },
+    "test_only_native_inno_sha256": "64A1E0E5BD3EF7F3B19DD1C148E334D678322374C17FAC6CBB7AFE6B7B08A89D",
+    "test_only_native_inno_bytes": 154272974,
+    "publisher_signature": "Not asserted; test-only; no public release"
+  },
+  "guest": {
+    "guest_id": "34d0b197-abc8-43ac-91dc-000000000918",
+    "guest_model": "Windows Sandbox Virtual Machine",
+    "guest_execution": "NT AUTHORITY\\SYSTEM",
+    "networking": "Disabled",
+    "clipboard": "Disabled",
+    "clean_install": "PASS_NATIVE_GUEST_SYSTEM_CLEAN_INSTALL_SOURCE_IDENTITY_AND_SCM",
+    "same_version_positive": {
+      "status": "PASS_NATIVE_SSDONE_PROTECTED_TRANSACTION_FINALIZED",
+      "setup_exit": 0,
+      "checks_pass": 16,
+      "pending_deleted": true,
+      "pinned_setup_stage_deleted": true,
+      "completion_receipt_consumed_deleted": true,
+      "native_service_log_confirmed": true,
+      "configuration_sha_preserved": true,
+      "raw_receipt_sha256": "FB2693C968FA06845B33BC7EF16C5756FA6F67BF7C1E1D05A5E0588B435C3B1D",
+      "raw_inno_log_sha256": "C17F90994C4CE05A66ABDE95A96D29EBBAAAAA0AE6986A01B8A9FFB0CE4977F9"
+    },
+    "same_version_negative": {
+      "status": "PASS_NATIVE_SSDONE_BAD_HASH_NO_FALSE_COMPLETION_EVIDENCE_RETAINED",
+      "given_setup_sha256": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+      "actual_staged_setup_sha256": "64A1E0E5BD3EF7F3B19DD1C148E334D678322374C17FAC6CBB7AFE6B7B08A89D",
+      "setup_exit": 67,
+      "checks_pass": 13,
+      "completion_receipt_not_emitted": true,
+      "pending_preserved": true,
+      "installer_stage_preserved": true,
+      "service_running": true,
+      "rollback_accepted": false,
+      "raw_receipt_sha256": "E976A04818C8ED58930C65D7E51B7FC04169C9D863DBABB9602E2F0B8B2B9462",
+      "raw_inno_log_sha256": "0386AF11C359AFAC11E5B953F415B7BE89674181B7AEA2DC259B597C3F8CD653"
+    },
+    "native_guest_initial": {
+      "preflight_receipt_sha256": "6EFEDEB8933D4275E9202703E35DEC721A9C545A8B5673B999E598E39281BB5C",
+      "clean_install_receipt_sha256": "DFD87F78DB83B90EA0CF8BD9747E5C8125B261FE8767797FBE2E7CFF5D1C98A3"
+    },
+    "attempted_forged_receipt_test": {
+      "status": "NOT_EXECUTED_NO_RESULT",
+      "observation": "Windows Sandbox wsb exec returned internal guest ExitCode -196608 for attempted follow-up and read-only reconciliation command, no result receipt; nothing treated as pass.",
+      "independent_CSharp_validator_selftest_passed": true,
+      "retest_condition": "Fresh isolated VM and validated guest process invocation, no reuse of uncertain previous test"
+    },
+    "owned_sandbox_stopped": true,
+    "guest_input_exe_renamed_test_only_disabled": true,
+    "owner_host_services_unmodified": "DirectInternetMethodSvc and Tailscale Running"
+  },
+  "gates": {
+    "native_same_version_ssdone_good": "PASS",
+    "native_bad_hash_failclosed": "PASS",
+    "native_forged_receipt_replay": "UNVERIFIED",
+    "native_old_version_in_place_upgrade": "HOLD",
+    "native_atomic_rollback": "HOLD",
+    "native_crash_reboot_recovery": "HOLD",
+    "ordinary_user_UAC": "HOLD",
+    "Linux_Root_Systemd_Polkit": "HOLD",
+    "independent_VPN_no_leak": "HOLD",
+    "security_review": "HOLD",
+    "public_release": "HOLD"
+  },
+  "sources": [
+    "https://jrsoftware.org/ishelp/topic_isxfunc_getsha256offile.htm",
+    "https://jrsoftware.org/inno-setup/documentation/topic_scriptevents.htm",
+    "https://jrsoftware.org/inno-setup/documentation/topic_consts.htm"
+  ],
+  "next_ready": "Fresh VM test mismatch/replay and old-version upgrade, after source CI verified; design protected legacy reconciliation and real rollback separately"
+}

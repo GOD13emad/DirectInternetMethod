@@ -138,10 +138,101 @@ function DIMCloseServiceHandle(Handle: THandle): Boolean;
 
 // Fail closed: an exception in ssPostInstall may be suppressed in /VERYSILENT
 // mode, otherwise producing exit 0 even if service registration failed.
-// Setup globals initialize to False, and the flag is set only after
-// both SCM registrations and pending-evidence preservation complete.
+// A transaction-bound receipt is emitted only at successful Inno ssDone.
 var
   DIMPostInstallCompleted: Boolean;
+  DIMUpdateReceiptExpected: Boolean;
+  DIMUpdateReceiptCompleted: Boolean;
+  DIMTransactionId: String;
+  DIMExpectedInstallerSHA: String;
+
+function DIMIsHex64(const Value: String): Boolean;
+var
+  I: Integer;
+  Ch: String;
+begin
+  Result := False;
+  if Length(Value) <> 64 then
+    exit;
+  for I := 1 to Length(Value) do
+  begin
+    Ch := UpperCase(Copy(Value, I, 1));
+    if Pos(Ch, '0123456789ABCDEF') = 0 then
+      exit;
+  end;
+  Result := True;
+end;
+
+function InitializeSetup(): Boolean;
+var
+  I: Integer;
+  Arg: String;
+  HaveTxn: Boolean;
+  HaveSHA: Boolean;
+  ExpectedStage: String;
+begin
+  Result := False;
+  HaveTxn := False;
+  HaveSHA := False;
+  DIMUpdateReceiptExpected := False;
+  DIMUpdateReceiptCompleted := False;
+  for I := 1 to ParamCount do
+  begin
+    Arg := ParamStr(I);
+    if Pos('/DIMTXN=', UpperCase(Arg)) = 1 then
+    begin
+      if HaveTxn then
+        exit;
+      HaveTxn := True;
+      DIMTransactionId := UpperCase(Copy(Arg, 9, Length(Arg)));
+    end
+    else if Pos('/DIMSHA256=', UpperCase(Arg)) = 1 then
+    begin
+      if HaveSHA then
+        exit;
+      HaveSHA := True;
+      DIMExpectedInstallerSHA := UpperCase(Copy(Arg, 12, Length(Arg)));
+    end;
+  end;
+  if HaveTxn <> HaveSHA then
+    exit;
+  if HaveTxn then
+  begin
+    if (not DIMIsHex64(DIMTransactionId)) or
+       (not DIMIsHex64(DIMExpectedInstallerSHA)) then
+      exit;
+    ExpectedStage := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\UpdateTransactions\DirectInternetMethod-update-stage.exe');
+    if not PathSame(ExpandConstant('{srcexe}'), ExpectedStage) then
+      exit;
+    DIMUpdateReceiptExpected := True;
+  end;
+  Result := True;
+end;
+
+procedure DIMWriteSuccessfulNativeCompletion();
+var
+  ObservedSHA: String;
+  ReceiptPath: String;
+  TempPath: String;
+  Payload: String;
+begin
+  if (not DIMUpdateReceiptExpected) or (not DIMPostInstallCompleted) then
+    RaiseException('No verified successful update transaction to finalize.');
+  ObservedSHA := UpperCase(GetSHA256OfFile(ExpandConstant('{srcexe}')));
+  if ObservedSHA <> DIMExpectedInstallerSHA then
+    RaiseException('Inno update source SHA-256 disagrees with privileged updater.');
+  ReceiptPath := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\UpdateTransactions\completion-') +
+    DIMTransactionId + '.receipt';
+  TempPath := ReceiptPath + '.tmp';
+  if FileExists(ReceiptPath) or FileExists(TempPath) then
+    RaiseException('Native completion receipt slot already occupied.');
+  Payload := 'DIM-INNO-V1|' + DIMTransactionId + '|' + DIMExpectedInstallerSHA;
+  if not SaveStringToFile(TempPath, Utf8Encode(Payload), False) then
+    RaiseException('Unable to write protected native completion temp receipt.');
+  if not RenameFile(TempPath, ReceiptPath) then
+    RaiseException('Unable to atomically publish native completion receipt.');
+  DIMUpdateReceiptCompleted := True;
+end;
 
 function RunSc(Params: String; var ResultCode: Integer): Boolean;
 begin
@@ -379,14 +470,17 @@ begin
     InstallOrUpdateService();
     CompletePendingDirectUpdate();
     DIMPostInstallCompleted := True;
-  end;
+  end
+  else if (CurStep = ssDone) and DIMUpdateReceiptExpected then
+    DIMWriteSuccessfulNativeCompletion();
 end;
 
 // Inno may still emit ssDone after a suppressed Pascal Script exception;
 // return a deterministic, nonzero exit code instead of a false positive.
 function GetCustomSetupExitCode: Integer;
 begin
-  if DIMPostInstallCompleted then
+  if DIMPostInstallCompleted and
+     ((not DIMUpdateReceiptExpected) or DIMUpdateReceiptCompleted) then
     Result := 0
   else
     Result := 67;

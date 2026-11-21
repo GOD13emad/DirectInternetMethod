@@ -26,7 +26,7 @@ class InnoPostinstallExitContract(unittest.TestCase):
         )[0]
         self.assertRegex(
             function,
-            r"if DIMPostInstallCompleted then\s+Result := 0\s+else\s+Result := 67;",
+            r"if DIMPostInstallCompleted and\s+\(\(not DIMUpdateReceiptExpected\) or DIMUpdateReceiptCompleted\) then\s+Result := 0\s+else\s+Result := 67;",
         )
         self.assertNotIn("RaiseException(", function)
 

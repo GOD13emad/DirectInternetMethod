@@ -141,6 +141,8 @@ internal static class Program
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..")),
         "UpdateTransactions");
     static string PendingUpdatePath => Path.Combine(UpdatesDir, "pending-update.json");
+    static string CompletionReceiptPath(string transactionId) =>
+        Path.Combine(UpdatesDir, NativeInnoCompletionReceipt.FileName(transactionId));
     static string LegacyPendingUpdatePath => Path.Combine(RuntimeDir, "pending-update.json");
     // Only one owned staging installer may exist for an active update.
     static string OwnedUpdateInstallerPath => Path.Combine(UpdatesDir, "DirectInternetMethod-update-stage.exe");
@@ -330,6 +332,9 @@ internal static class Program
                 if (File.Exists(PendingUpdatePath))
                     throw new IOException("Prior update still needs verification or cleanup; refusing a second installer.");
             }
+            if (Directory.Exists(UpdatesDir) &&
+                Directory.EnumerateFiles(UpdatesDir, "completion-*.receipt").Any())
+                throw new IOException("Orphan native completion evidence requires reconciliation; refusing another update.");
 
             Log("action-begin:update");
             WriteActionStatus(action, "running", null, "Checking official GitHub release.");
@@ -368,10 +373,14 @@ internal static class Program
             File.Move(partPath, finalPath); // Never overwrite a pending/foreign installer.
 
             var installDir = GetRegisteredInstallDirectory();
+            var transactionId = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            if (File.Exists(CompletionReceiptPath(transactionId)))
+                throw new IOException("Native completion receipt collision; refusing update.");
 
             WriteJsonAtomic(PendingUpdatePath, new
             {
-                schema = 1,
+                schema = 2,
+                transactionId,
                 targetVersion = package.Version.ToString(3),
                 tag = package.Tag,
                 installer = finalPath,
@@ -395,6 +404,8 @@ internal static class Program
             psi.ArgumentList.Add("/SP-");
             psi.ArgumentList.Add("/DIR=" + installDir);
             psi.ArgumentList.Add("/LOG=" + logPath);
+            psi.ArgumentList.Add("/DIMTXN=" + transactionId);
+            psi.ArgumentList.Add("/DIMSHA256=" + actual);
 
             var installer = Process.Start(psi);
             if (installer is null)
@@ -484,7 +495,7 @@ internal static class Program
                     "Protected native transaction ACL failed before finalization.");
             using var doc = JsonDocument.Parse(File.ReadAllText(PendingUpdatePath));
             var targetText = doc.RootElement.GetProperty("targetVersion").GetString() ?? "";
-            if (doc.RootElement.GetProperty("schema").GetInt32() != 1 ||
+            if (doc.RootElement.GetProperty("schema").GetInt32() != 2 ||
                 !Version.TryParse(targetText, out var target))
                 throw new InvalidDataException("Pending update schema or version invalid; preserve record.");
             var installed = CurrentVersion;
@@ -500,6 +511,25 @@ internal static class Program
                         "Waiting for matching native Inno registration and service version.");
                     return;
                 }
+                // The registered version and SCM state can predate ssPostInstall failure.
+                // Require a per-attempt receipt emitted only at native Inno ssDone.
+                var transactionId = doc.RootElement.GetProperty("transactionId").GetString() ?? "";
+                if (!NativeInnoCompletionReceipt.Hex64(transactionId))
+                    throw new InvalidDataException("Protected pending transaction identifier invalid.");
+                var receiptPath = CompletionReceiptPath(transactionId);
+                if (!File.Exists(receiptPath))
+                {
+                    Log("pending-update-awaiting-inno-ssdone-completion-receipt");
+                    WriteActionStatus("update", "running", null,
+                        "Waiting for native installer completion; pending evidence preserved.");
+                    return;
+                }
+                if ((File.GetAttributes(receiptPath) & FileAttributes.ReparsePoint) != 0 ||
+                    !NativeInnoCompletionReceipt.Matches(
+                        File.ReadAllText(receiptPath),
+                        transactionId,
+                        doc.RootElement.GetProperty("sha256").GetString()))
+                    throw new CryptographicException("Native completion receipt does not match protected pending identity.");
                 // Setup can still be running from this EXE while the service restarts.
                 // Keep one pending record until the verified file can be removed.
                 var stage = doc.RootElement.GetProperty("installer").GetString() ?? "";
@@ -544,6 +574,16 @@ internal static class Program
                     }
                 }
                 File.Delete(PendingUpdatePath);
+                // If power loss leaves an orphan completion receipt, the next
+                // update refuses it instead of treating it as a new success.
+                try { File.Delete(receiptPath); }
+                catch (IOException)
+                {
+                    Log("completed-inno-receipt-locked-requires-reconciliation");
+                    WriteActionStatus("update", "error", -6,
+                        "Installed, but native completion evidence requires reconciliation.");
+                    return;
+                }
                 WriteActionStatus("update", "done", 0, $"Updated to v{installed.ToString(3)}.");
                 Log($"update-complete:{installed.ToString(3)}:no-cache-duplicate");
             }
@@ -755,6 +795,8 @@ internal static class Program
             return "RAW_STDERR_LEAK";
         if (!NativeProtectedUpdateAcl.SyntheticPolicySelfTest())
             return "PROTECTED_UPDATE_ACL_SELFTEST_FAILED";
+        if (!NativeInnoCompletionReceipt.SelfTest())
+            return "NATIVE_INNO_COMPLETION_RECEIPT_SELFTEST_FAILED";
         return "PASS";
     }
 }
