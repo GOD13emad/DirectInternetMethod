@@ -106,6 +106,37 @@ def main() -> None:
         assert result["files"] == expected_files and not result[
             "native_installer_or_service_registered"]
         manifest_pin = result["normalized_manifest_sha256"]
+        # Same pinned source bytes -> one scope-specific code bundle using the
+        # frozen CLI, not host Python or native service registration.
+        normalized_doc = json.loads((normalized / "manifest.json").read_text("utf-8"))
+        selected = normalized_doc["files"][0]
+        layout = home / "scope-layout.json"
+        layout_doc = {
+            "schema": 1, "product": normalized_doc["product"],
+            "version": normalized_doc["version"], "platform": platform,
+            "files": [{"scope": "fixture", "source": selected["path"],
+                       "target": "bin/synthetic-stub.bin",
+                       "mode": selected["mode"]}],
+        }
+        layout_bytes = (json.dumps(layout_doc, sort_keys=True,
+                                   separators=(",", ":")) + "\n").encode("utf-8")
+        layout.write_bytes(layout_bytes)
+        scoped = home / "scoped"
+        scope_args = ("--bundle", str(normalized),
+                      "--expected-manifest-sha256", manifest_pin,
+                      "--layout", str(layout), "--scope", "fixture",
+                      "--destination", str(scoped))
+        invoke(binary, home, "materialize-scope", platform, *scope_args,
+               "--layout-sha256", "0" * 64, fail=True)
+        assert not scoped.exists(), "bad independent scope-layout pin must not write"
+        scope_result = invoke(binary, home, "materialize-scope", platform,
+                              *scope_args, "--layout-sha256", sha(layout_bytes))
+        assert scope_result["status"] == "SCOPED_BUILD_ONLY_NOT_NATIVE_INSTALL"
+        assert scope_result["files"] == 1 and not scope_result[
+            "native_installation_or_rollback_accepted"]
+        assert sha((scoped / "payload" / "bin" /
+                    "synthetic-stub.bin").read_bytes()) == selected["sha256"]
+        assert not (scoped / "payload" / "README.md").exists()
         args = ("--root", str(root))
         assert invoke(binary, home, "verify", platform, *args)["status"] == "EMPTY"
         invoke(binary, home, "stage", platform, *args, "--bundle", str(normalized),

@@ -13,6 +13,7 @@ import sys
 import zipfile
 
 from .archive_import import import_pinned_archive
+from .scoped_bundle import materialize_scope_bundle
 from .engine import Engine, EngineError
 
 
@@ -22,7 +23,7 @@ def main(argv=None) -> int:
     parser.add_argument("action", choices=(
         "verify", "stage", "activate", "commit", "rollback",
         "uninstall-prepare", "uninstall-commit", "uninstall-abort",
-        "import-archive"))
+        "import-archive", "materialize-scope"))
     parser.add_argument("--root", type=Path)
     parser.add_argument("--platform",
                         choices=("linux-x86_64", "windows-x86_64"), required=True)
@@ -33,6 +34,9 @@ def main(argv=None) -> int:
     parser.add_argument("--archive-kind",
                         choices=("windows-managed", "linux-distribution"))
     parser.add_argument("--destination", type=Path)
+    parser.add_argument("--layout", type=Path)
+    parser.add_argument("--layout-sha256")
+    parser.add_argument("--scope")
     parser.add_argument("--quiesced", action="store_true",
                         help="FIXTURE ONLY: trusted adapter must prove stopped processes")
     parser.add_argument("--accepted", action="store_true",
@@ -45,7 +49,8 @@ def main(argv=None) -> int:
         if not a.platform.startswith(runtime):
             raise EngineError("TARGET_PLATFORM_NOT_THIS_HOST")
         if a.action == "import-archive":
-            if a.root or a.bundle or a.quiesced or a.accepted or a.native_unregistered:
+            if (a.root or a.bundle or a.layout or a.layout_sha256 or a.scope or
+                    a.quiesced or a.accepted or a.native_unregistered):
                 raise EngineError("ARCHIVE_IMPORT_NOT_AN_INSTALL_TRANSACTION")
             if not all((a.archive, a.archive_sha256, a.archive_kind, a.destination)):
                 raise EngineError("ARCHIVE_SOURCE_PIN_KIND_DESTINATION_REQUIRED")
@@ -55,8 +60,19 @@ def main(argv=None) -> int:
                                         a.destination, a.archive_kind)
             if out["platform"] != a.platform:
                 raise EngineError("ARCHIVE_IMPORTED_PLATFORM_MISMATCH")
+        elif a.action == "materialize-scope":
+            if (a.root or a.archive or a.archive_sha256 or a.archive_kind or
+                    a.quiesced or a.accepted or a.native_unregistered):
+                raise EngineError("SCOPE_MATERIALIZATION_NOT_NATIVE_TRANSACTION")
+            if not all((a.bundle, a.expected_manifest_sha256, a.layout,
+                        a.layout_sha256, a.scope, a.destination)):
+                raise EngineError("SCOPE_SOURCE_LAYOUT_PINS_AND_DESTINATION_REQUIRED")
+            out = materialize_scope_bundle(
+                a.bundle, a.expected_manifest_sha256, a.layout,
+                a.layout_sha256, a.scope, a.destination, a.platform)
         else:
-            if a.archive or a.archive_sha256 or a.archive_kind or a.destination:
+            if (a.archive or a.archive_sha256 or a.archive_kind or a.destination or
+                    a.layout or a.layout_sha256 or a.scope):
                 raise EngineError("ARCHIVE_OPTIONS_ONLY_FOR_IMPORT")
             if a.root is None:
                 raise EngineError("INSTALLATION_ROOT_REQUIRED")
