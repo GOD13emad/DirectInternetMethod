@@ -44,3 +44,72 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: '1'
         run: python -m unittest discover -s tests -p test_engine*.py -v
+
+  linux-root-owned-fd-probe:
+    name: Linux / root-owned fd-bound fixture (not privileged installer)
+    # No untrusted PR checkout is launched under sudo; the only elevated
+    # commands create/mode/retire one isolated synthetic fixture directory.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-install-engine'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout immutable source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up pinned Python (no sudo Python execution)
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Root-owned fixture + negative ACL + descriptor-pinned bytes
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          fixture='/usr/local/share/dim-r898-ci-protected-fd-fixture'
+          marker="$fixture/marker.txt"
+          if [[ -e "$fixture" || -L "$fixture" ]]; then
+            echo 'FOREIGN_FIXTURE_ROOT_EXISTS'
+            exit 2
+          fi
+          sudo install -d -o root -g root -m 0755 "$fixture"
+          cleanup() {
+            sudo rm -f -- "$marker"
+            sudo rmdir -- "$fixture"
+          }
+          trap cleanup EXIT
+          printf 'DIM-R898-SYNTHETIC-ROOT-MARKER\n' | sudo tee "$marker" >/dev/null
+          sudo chmod 0644 "$marker"
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from installer_engine.linux_trusted_fd import TrustedLinuxRootFD
+          fixture=Path('/usr/local/share/dim-r898-ci-protected-fd-fixture')
+          content=b'DIM-R898-SYNTHETIC-ROOT-MARKER\n'
+          with TrustedLinuxRootFD(fixture) as directory:
+              got=directory.read_pinned_member('marker.txt',
+                  hashlib.sha256(content).hexdigest(),len(content))
+          assert got['native_installation_accepted'] is False
+          assert got['publisher_authenticated'] is False
+          assert got['bytes'] == len(content)
+          print('R898_HOSTED_ROOT_OWNED_FD_READONLY_PASS')
+          PY
+          # Linux enforces directory write modes. A root-owned leaf is NOT
+          # trusted if group/other write can replace the pinned member.
+          sudo chmod 0777 "$fixture"
+          python - <<'PY'
+          from pathlib import Path
+          from installer_engine.engine import EngineError
+          from installer_engine.linux_trusted_fd import TrustedLinuxRootFD
+          fixture=Path('/usr/local/share/dim-r898-ci-protected-fd-fixture')
+          try:
+              with TrustedLinuxRootFD(fixture):
+                  raise RuntimeError('UNTRUSTED_ROOT_ACL_WAS_ACCEPTED')
+          except EngineError as err:
+              if 'TRUSTED_FD_UNSAFE_DIRECTORY_COMPONENT' not in str(err):
+                  raise
+          print('R898_HOSTED_INSECURE_ROOT_DACL_REFUSED')
+          PY
+          sudo chmod 0755 "$fixture"
+          echo 'R898_HOSTED_FIXTURE_SCOPE_ONLY_NOT_NATIVE_PRODUCT_INSTALL'
