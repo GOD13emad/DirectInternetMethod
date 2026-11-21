@@ -55,7 +55,22 @@
       "mode": "trusted feature push only, no untrusted pull_request escalation",
       "rooted_actions": "sudo mkdir/install/chmod/tee/rm/rmdir only one disposable /usr/local/share/dim-r898-ci-protected-fd-fixture",
       "user_python": "emit and validate root-owned synthetic policy, refuse attacker-changed request bytes, chmod0666 policy reject, root chmod0777 reject",
-      "result": "PENDING_HOSTED_EXACT_HEAD"
+      "result": "PENDING_HOSTED_EXACT_HEAD",
+      "initial_exact_head": {
+        "sha": "8a3d1642aea79b531965be822130a254f3cc4530",
+        "push_engine_run": 44860658258,
+        "pr_engine_run": 44860663757,
+        "push_frozen_run": 44860658256,
+        "pr_frozen_run": 44860663836,
+        "root_owned_fixture_job_id": 136713023462,
+        "status": "PUSH_ENGINE_FAILURE_ISOLATED_FIXTURE_ONLY",
+        "engine_matrix": "4/4 PASS",
+        "synthetic_root_owned_fixture": "FAIL",
+        "root_cause": "Nested Python fixture invoked by path inserts tools/native_fixtures/linux into sys.path[0], checked-out root not in PYTHONPATH; ModuleNotFoundError installer_engine in unprivileged synthetic script before policy verification",
+        "correction": "Scoped CI fixture env PYTHONPATH='.'; no change in policy, production security guard or Python root privilege. On Windows local reproduced nested script emits JSON with explicit PYTHONPATH, yaml validates.",
+        "initial_failure_preserved": true,
+        "next_check": "RECHECK_NEW_COMMIT_HOSTED_ROOT_OWNED_FIXTURE"
+      }
     }
   },
   "open_gates": [

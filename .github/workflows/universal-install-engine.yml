@@ -67,6 +67,10 @@ jobs:
         shell: bash
         env:
           PYTHONDONTWRITEBYTECODE: '1'
+          # Executing a nested script by path replaces sys.path[0] with its
+          # subdirectory. Make this checked-out, trusted feature-push source
+          # available to the NON-ROOT fixture process explicitly.
+          PYTHONPATH: '.'
         run: |
           set -euo pipefail
           fixture='/usr/local/share/dim-r898-ci-protected-fd-fixture'
