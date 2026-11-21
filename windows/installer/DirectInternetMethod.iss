@@ -360,7 +360,7 @@ procedure CompletePendingDirectUpdate();
 var
   PendingPath: String;
 begin
-  PendingPath := ExpandConstant('{commonappdata}\DirectInternetMethod\pending-update.json');
+  PendingPath := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\UpdateTransactions\pending-update.json');
   // Do not report an update as completed or delete SHA/provenance while Setup
   // is still running. Only the installed service, after restart, may verify
   // the exact staged installer hash and then close its one pending slot.

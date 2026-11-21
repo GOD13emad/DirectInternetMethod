@@ -135,8 +135,13 @@ internal static class Program
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "runtime", "pwsh", "pwsh.exe"));
 
 
-    static string UpdatesDir => Path.Combine(RuntimeDir, "updates");
-    static string PendingUpdatePath => Path.Combine(RuntimeDir, "pending-update.json");
+    // Pending installer and its provenance must not live in a user-creatable
+    // ProgramData directory. This path is under verified privileged service.
+    static string UpdatesDir => Path.Combine(
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..")),
+        "UpdateTransactions");
+    static string PendingUpdatePath => Path.Combine(UpdatesDir, "pending-update.json");
+    static string LegacyPendingUpdatePath => Path.Combine(RuntimeDir, "pending-update.json");
     // Only one owned staging installer may exist for an active update.
     static string OwnedUpdateInstallerPath => Path.Combine(UpdatesDir, "DirectInternetMethod-update-stage.exe");
     static string NetworkStatePath => Path.Combine(
@@ -307,6 +312,13 @@ internal static class Program
 
         try
         {
+            if (File.Exists(LegacyPendingUpdatePath))
+                throw new IOException(
+                    "Legacy user-writable pending update requires protected native reconciliation; evidence preserved.");
+            if (Directory.Exists(UpdatesDir) &&
+                !NativeProtectedUpdateAcl.IsProtectedExistingDirectory(UpdatesDir))
+                throw new UnauthorizedAccessException(
+                    "Protected updater transaction directory ACL is untrusted.");
             if (File.Exists(NetworkStatePath))
             {
                 WriteActionStatus(action, "error", -10, "Direct Method must be OFF before update.");
@@ -330,7 +342,11 @@ internal static class Program
                 return;
             }
 
-            Directory.CreateDirectory(UpdatesDir);
+            var approvedRoot = NativeProtectedUpdateAcl.PrepareProtectedTransactionDirectory(
+                AppContext.BaseDirectory);
+            if (!string.Equals(approvedRoot, UpdatesDir,
+                               StringComparison.OrdinalIgnoreCase))
+                throw new UnauthorizedAccessException("Protected update root changed.");
             var sumsText = await UpdateHttp.GetStringAsync(package.ChecksumsUrl, timeout.Token);
             var expected = ParseExpectedSha256(sumsText, package.InstallerName);
             if (!expected.Equals(package.ApiSha256, StringComparison.OrdinalIgnoreCase))
@@ -424,6 +440,13 @@ internal static class Program
 
     static async Task FinalizePendingAfterServiceRestartAsync()
     {
+        if (File.Exists(LegacyPendingUpdatePath))
+        {
+            Log("legacy-user-writable-pending-update-preserved-no-auto-finalize");
+            WriteActionStatus("update", "error", -5,
+                "Legacy updater transaction requires protected native reconciliation.");
+            return;
+        }
         // The Setup executable may be locked until Inno closes. Recheck only
         // the one SHA-pinned owned installer, never delete a foreign path.
         for (var attempt = 0; attempt < 48 && !StopEvent.IsSet; attempt++)
@@ -452,7 +475,13 @@ internal static class Program
     {
         try
         {
+            if (File.Exists(LegacyPendingUpdatePath))
+                throw new IOException(
+                    "Legacy user-writable updater evidence cannot be auto-finalized.");
             if (!File.Exists(PendingUpdatePath)) return;
+            if (!NativeProtectedUpdateAcl.IsProtectedExistingDirectory(UpdatesDir))
+                throw new UnauthorizedAccessException(
+                    "Protected native transaction ACL failed before finalization.");
             using var doc = JsonDocument.Parse(File.ReadAllText(PendingUpdatePath));
             var targetText = doc.RootElement.GetProperty("targetVersion").GetString() ?? "";
             if (doc.RootElement.GetProperty("schema").GetInt32() != 1 ||
