@@ -180,31 +180,27 @@ class TrustedLinuxRootFD:
             os.close(self._fd)
             self._fd = -1
 
-    def read_pinned_member(self, relative: str, expected_sha256: str,
-                           expected_bytes: int, *,
-                           max_bytes: int = MAX_FILE_BYTES) -> dict:
-        """Verify an immutable-policy-pinned member without reopening paths.
-
-        No bytes are returned, stored, executed or installed. This API is for
-        verified identity and provenance inputs to future native adapters.
-        """
+    def _read_verified(self, relative: str, expected_sha256: str,
+                       expected_bytes: int, max_bytes: int,
+                       capture_bytes: bool) -> tuple[dict, bytes | None]:
         require(self._fd >= 0, "TRUSTED_FD_CLOSED")
         require(type(expected_sha256) is str and
                 SHA_RE.fullmatch(expected_sha256) is not None,
                 "TRUSTED_FD_EXPECTED_PIN")
-        require(type(expected_bytes) is int and 0 <= expected_bytes <= max_bytes <= MAX_FILE_BYTES,
+        require(type(expected_bytes) is int and type(max_bytes) is int and
+                0 <= expected_bytes <= max_bytes <= MAX_FILE_BYTES,
                 "TRUSTED_FD_EXPECTED_SIZE")
         fd = _open_owned_member(self._fd, relative)
         try:
             before = os.fstat(fd)
-            require(stat.S_ISREG(before.st_mode) and
-                    before.st_uid == 0 and
+            require(stat.S_ISREG(before.st_mode) and before.st_uid == 0 and
                     stat.S_IMODE(before.st_mode) & 0o022 == 0,
                     "TRUSTED_FD_MEMBER_NOT_ROOT_OWNED_REGULAR")
             require(before.st_size == expected_bytes,
                     "TRUSTED_FD_MEMBER_SIZE_MISMATCH")
             h = hashlib.sha256()
             size = 0
+            parts: list[bytes] = []
             while True:
                 chunk = os.read(fd, min(1 << 20, max_bytes + 1 - size))
                 if not chunk:
@@ -212,6 +208,8 @@ class TrustedLinuxRootFD:
                 size += len(chunk)
                 require(size <= max_bytes, "TRUSTED_FD_MEMBER_EXCEEDS_BOUND")
                 h.update(chunk)
+                if capture_bytes:
+                    parts.append(chunk)
             after = os.fstat(fd)
             require((before.st_dev, before.st_ino, before.st_size,
                      before.st_mtime_ns, before.st_ctime_ns) ==
@@ -221,11 +219,42 @@ class TrustedLinuxRootFD:
             require(size == expected_bytes and
                     h.hexdigest() == expected_sha256.lower(),
                     "TRUSTED_FD_MEMBER_PIN_MISMATCH")
-            return {
+            report = {
                 "status": "READ_ONLY_PINNED_ROOT_FILE_VERIFIED_NOT_AUTHORIZATION",
                 "sha256": h.hexdigest(), "bytes": size,
                 "native_installation_accepted": False,
                 "publisher_authenticated": False,
             }
+            return report, b"".join(parts) if capture_bytes else None
         finally:
             os.close(fd)
+
+    def read_pinned_member(self, relative: str, expected_sha256: str,
+                           expected_bytes: int, *,
+                           max_bytes: int = MAX_FILE_BYTES) -> dict:
+        """Read/hash only from a trusted directory FD; do not return bytes.
+
+        This verifies filesystem ownership and pinned bytes, not publisher
+        authority, an installable package or an accepted native service.
+        """
+        report, _ = self._read_verified(
+            relative, expected_sha256, expected_bytes, max_bytes, False)
+        return report
+
+    def read_pinned_small_file(self, relative: str,
+                               expected_sha256: str,
+                               expected_bytes: int) -> bytes:
+        """Return exactly pinned bytes of a small immutable *nonsecret* file.
+
+        This supports parsing an OS-protected broker policy after acquisition
+        from the trusted path; the caller still MUST source its expected pin
+        from an independently trusted deployment authority. Not a credential.
+        """
+        limit = 65536
+        require(type(expected_bytes) is int and
+                0 < expected_bytes <= limit,
+                "TRUSTED_FD_SMALL_FILE_SIZE_REQUIRED")
+        _, data = self._read_verified(
+            relative, expected_sha256, expected_bytes, limit, True)
+        assert data is not None  # created only after size and SHA verification
+        return data

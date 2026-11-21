@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R899_OS_PROTECTED_POLICY_TO_BROKER_INTENT_20261121",
+  "parent_head": "5589dcc30878e564aa498fb2fb256874955da8c6",
+  "objective": "Reject client-driven arbitrary privileged operations; compare bounded exact request bytes, separately out-of-band-pinned OS-protected policy and two independently hashed scope manifests before any future native authorization",
+  "source_sha256": {
+    "installer_engine/broker_intent.py": "3aef4d706de6fa010ff4e97130a207f4c35fa02e1eeb8d94cbaf0e97087c17e2",
+    "installer_engine/linux_trusted_fd.py": "4707869f942672cdb2e303f1532954e9a16e18aef99e307c5b73772d390adabd",
+    "tests/test_engine_broker_intent.py": "6e51d6d9720300e8a93be079cae5ef9bff97d7de57789d64ff05a3d8129b183f",
+    "tests/test_engine_linux_trusted_fd.py": "c567eac1720db67c28a5227b400fb44c21472e3ea227166552ed9dafdca5aee1",
+    "tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py": "2cd19870e184ab361994955310b2cec7c3943c8a111d5eaa6239ec131b9e9925",
+    ".github/workflows/universal-install-engine.yml": "30f7f36fb475815f7932ca23b790b33ad593bdffdca54d2fe7b394aabfd2dc09"
+  },
+  "architecture": {
+    "shared_pure_parser": "installer_engine/broker_intent.py: strict schemas, supported install|upgrade|uninstall only, exact product+version+platform, 128bit lowercase hex request ID, request bytes SHA pinned by policy, two sorted distinct scope hashes and distinct protected/user roles, native NativePlan scope manifest hashes, no root paths or commands from client, duplicates JSON rejected, bounds at 65536",
+    "linux_real_os_input": "TrustedLinuxRootFD.read_pinned_small_file() obtains policy contents from root-owned and all nested root-owned directory handles via real openat2; exact externally pinned sha256 and file length, size<=65536; compare_linux_fd_pinned_intent binds bytes to request+NativePlan",
+    "output": {
+      "status": "READONLY_BROKER_INTENT_BOUND_NOT_NATIVE_AUTHORIZED",
+      "native_installation_accepted": false,
+      "publisher_authenticated": false,
+      "privileged_broker_implemented": false
+    },
+    "risk_limit": "Fixture generates its own matching policy and sha. A caller-provided digest can never authenticate publisher or privilege; a real trusted signed/protected policy and an OS-approved privileged broker must be provisioned out of band; no replay journal or protected writes implemented."
+  },
+  "tests": {
+    "windows": {
+      "operation_id": "051e3348-fa0d-4dbf-bbbf-fcd8dfd6f141",
+      "total": 219,
+      "passed": 194,
+      "skipped": 25,
+      "failed": 0,
+      "stderr_sha256": "a9df615499090658c73475342630f9686d22b7f0043add4b0b039d31b6b5f4d2",
+      "native_linux_tests_skipped_expected": 15,
+      "synthetic_broker_contract_tests_passed": 22,
+      "workflow_yaml_parsed": true
+    },
+    "linux": {
+      "native_unprivileged_tests_total": 37,
+      "passed": 37,
+      "skipped": 0,
+      "failed": 0,
+      "synthetic_policy_emit": "PASS",
+      "source_byte_sha_validated": true,
+      "fixture_root": "/tmp/dim-r899-contract-CCuBnH8c",
+      "owned_temp_cleanup": "VERIFIED_REMOVED_AFTER_SHA_PINS",
+      "system_dim_units_after": [
+        "inactive",
+        "inactive",
+        "inactive"
+      ],
+      "root_privilege_obtained": false
+    },
+    "ci": {
+      "existing_job": "linux-root-owned-fd-probe",
+      "mode": "trusted feature push only, no untrusted pull_request escalation",
+      "rooted_actions": "sudo mkdir/install/chmod/tee/rm/rmdir only one disposable /usr/local/share/dim-r898-ci-protected-fd-fixture",
+      "user_python": "emit and validate root-owned synthetic policy, refuse attacker-changed request bytes, chmod0666 policy reject, root chmod0777 reject",
+      "result": "PENDING_HOSTED_EXACT_HEAD"
+    }
+  },
+  "open_gates": [
+    "Actual Windows UAC/SCM/Inno trusted broker and Linux root/systemd/polkit authenticated native installer",
+    "Independently signed publisher policy provisioned OS-protected; no caller-supplied pins as proof",
+    "Replay sequence ledger and handle-based writes, rollback native service/SCM/systemd",
+    "Real DIM signed/native package application and owner settings retention",
+    "True VM hard reboot/power cut recovery and independent VPN leak/security acceptance"
+  ],
+  "public_release": "HOLD",
+  "pr68": "DRAFT"
+}

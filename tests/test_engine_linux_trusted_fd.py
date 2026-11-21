@@ -77,6 +77,24 @@ class LinuxTrustedFDTests(unittest.TestCase):
                 root.read_pinned_member("tmp/irrelevant-synthetic-file",
                                         "0" * 64, 0)
 
+    def test_small_root_owned_policy_bytes_are_returned_only_after_pin(self):
+        # This is generic public text for FD byte semantics, not an
+        # authenticated policy; the protected policy fixture is tested in CI.
+        original = self.public_file.read_bytes()
+        if len(original) > 65536:
+            self.skipTest("selected public text exceeds policy byte bound")
+        with TrustedLinuxRootFD(self.public_file.parent) as root:
+            verified = root.read_pinned_small_file(
+                self.public_file.name, self.expected, self.length)
+        self.assertEqual(verified, original)
+
+    def test_small_file_guard_rejects_excessive_policy_size(self):
+        with TrustedLinuxRootFD(self.public_file.parent) as root:
+            with self.assertRaisesRegex(EngineError,
+                                        "TRUSTED_FD_SMALL_FILE_SIZE_REQUIRED"):
+                root.read_pinned_small_file(
+                    self.public_file.name, self.expected, 65537)
+
     def test_wrong_external_digest_refused(self):
         with TrustedLinuxRootFD(self.public_file.parent) as root:
             with self.assertRaisesRegex(EngineError, "MEMBER_PIN_MISMATCH"):
