@@ -31,6 +31,15 @@ def fixture_linux():
 
 
 class NativeReadinessTests(unittest.TestCase):
+    def test_product_inno_display_name_matches_strict_native_readiness(self):
+        from pathlib import Path
+        iss = (Path(__file__).resolve().parents[1] / "windows" / "installer" /
+               "DirectInternetMethod.iss").read_text(encoding="utf-8-sig")
+        self.assertIn('AppId={{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}', iss)
+        self.assertIn('AppName={#MyAppName}', iss)
+        self.assertIn('UninstallDisplayName={#MyAppName}', iss)
+        self.assertIn('UninstallLogMode=overwrite', iss)
+
     def test_windows_readiness_is_not_native_acceptance(self):
         with mock.patch("installer_engine.native_readiness.observe_windows",
                         return_value=fixture_windows()), mock.patch(
