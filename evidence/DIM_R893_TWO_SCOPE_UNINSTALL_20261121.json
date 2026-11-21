@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R893_TWO_SCOPE_CRASH_SAFE_UNINSTALL_20261121",
+  "parent_head": "8344fd459fac1ee6232422ebba5d64cbadfe0b99",
+  "feature": "coordinated two-scope code-only uninstall; pre-unregistration abort and post-unregistration forward replay",
+  "scope": "synthetic offline Windows Sandbox Inno HKLM64+SCM; user-owned Linux systemd --user service; not production native elevation",
+  "source_sha256": {
+    "installer_engine/two_scope_uninstall.py": "ac77f8e6fca1b4002852f560df218a42819038ed58930fd0a1c9ce92a15f755b",
+    "tools/native_fixtures/linux/RunSystemdUninstallTwoScopeFixture.py": "125bc0fa1420c7282eef053b5ff9af01995710c8701287ed35f55dd4f41b19a7",
+    "tools/native_fixtures/windows/ScmInnoCoordinatedUninstallEntry.py": "e2dda135082b5bf1767284bdad0869d9708998a19188458c9ccdbb0988494a41",
+    "tools/native_fixtures/windows/RunScmInnoTwoScopeUninstallSandboxFixture.ps1": "2065ad6741bec0639a83bed3b045243143932e882a538146ad4e9a72870fc473",
+    "tests/test_engine_two_scope_uninstall.py": "55ca72842f40ea544418048a794c104e93c7008ea6f99daa47e3c5439ed37f2c",
+    "tests/test_engine_two_scope_uninstall_native.py": "e0346c839b68a85f018a179854f35cd153d20da87b072f61cdb9862f16d089f5"
+  },
+  "windows": {
+    "status": "PASS",
+    "receipt_sha256": "71087fc86040cc2a0e2639c2291ad3e6ae59abd1842e6ab0c2aa64b62b6fc675",
+    "trace_sha256": "c0dd6a1ab19b5887d2f32039419f5aae7312c5b05a3db0bbddc8a6958c86113",
+    "receipt": {
+      "schema": 1,
+      "status": "PASS_R893_SYNTHETIC_INNO_SCM_COORDINATED_UNINSTALL",
+      "native_product_installation_accepted": false,
+      "service": "DIMR887IsolatedFixtureSvc",
+      "platform": "windows-x86_64",
+      "code_root": "C:\\ProgramData\\DIM_R891_Isolated_Code",
+      "user_root": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\DIM_R891_Isolated_UserCode",
+      "stages": [
+        "FROZEN_CLI_AND_6_SOURCE_PACKAGES_SHA_PINNED",
+        "INNO_HKLM_AND_SCM_156_TWO_SCOPE_COMMIT",
+        "BAD_NATIVE_START_ABORT_BOTH_ROOTS_RESTORE_156",
+        "INNO_HKLM_SCM_FIRST_COMMIT_REPLAY_BOTH_ROOTS_157",
+        "FIRST_PARK_INTERRUPTED_BOTH_SCOPES_ABORTED_NATIVE_REGISTERED",
+        "INNO_SCM_UNREGISTERED_FIRST_SCOPE_REMOVED_REPLAY_BOTH_CODE_ONLY"
+      ],
+      "frozen_sha256": "9BF42642DD8D19FAAE41A5485D3EE1CA46485D89FA511B2E9D6C9F4713D865CD",
+      "owner_data_sha256": "1A236F69026313F74162037E662BD091693700F8899E3698413D980D5A176CB2",
+      "original_service_sha256": "0036f0332d5dee344a5bf8f341d26c7d967a17fcc5a3d7d4cca5cb4960890f52",
+      "upgraded_service_sha256": "1e4ac182a5e6840c3631a4ba591450b42b1696dfb42b2667ad3a6a71fa2a1d12",
+      "inno_appid": "{E8039748-26D7-4E64-ACEF-3E24B708B9A2}",
+      "inno_old_installer_sha256": "8241FE7DB5BAE519ECFEE38F143B0D5A7CEEC4F612DB67418B298D41A6C6C836",
+      "inno_new_installer_sha256": "E7644CE0D503DDFB380728E9806D3DAD841294377D77D0E8B58754E8421D1E66"
+    },
+    "frozen_exe_sha256": "9bf42642dd8d19faae41a5485d3ee1ca46485d89fa511b2e9d6c9f4713d865cd",
+    "native_product_installation_accepted": false,
+    "sandbox_networking_enabled": false,
+    "sandbox_closed": true,
+    "owner_host_fixture_service_present": false,
+    "owner_host_fixture_registry_present": false,
+    "owner_host_DIM": "Running",
+    "owner_host_Tailscale": "Running"
+  },
+  "linux": {
+    "status": "PASS",
+    "operation_id": "0d7c5616-ea46-48d1-9458-93e507730ef8",
+    "exit_code": 0,
+    "stdout_sha256": "c1d251b4b2fedb291b84d2e8f7ee6e626336556d4c784d8ecf5b3a4e625cc8a0",
+    "stages": [
+      "REAL_USER_SYSTEMD_RUNTIME_UNIT",
+      "TWO_ROOTS_INITIAL_156_NATIVE_RUNNING",
+      "BAD_NATIVE_START_ABORT_BOTH_SCOPES_RESTORE_156",
+      "INTERRUPTED_COMMIT_FORWARD_REPLAY_BOTH_ROOTS_157",
+      "PARTIAL_PREPARE_ABORT_RESTORES_BOTH_157",
+      "NATIVE_UNIT_ABSENT_INTERRUPTED_UNINSTALL_FORWARD_REPLAY_BOTH"
+    ],
+    "unit": "dim-r893-dualscope-8f8fd09610fc.service",
+    "unit_load_after": "not-found",
+    "unit_active_after": "inactive",
+    "temporary_copy_removed": true,
+    "installed_product_units": "inactive",
+    "native_privileged_install_accepted": false
+  },
+  "tests": {
+    "windows_after_source_refinement": "PASS: 160 tests / 157 passed / 3 conditional skipped / 0 failed",
+    "linux_14": "PASS",
+    "native_4": "PASS: 4 source contract tests included in final suite",
+    "windows_final_operation_id": "3b557482-15ed-46c6-931e-3f8c30911d2b",
+    "windows_final_stderr_sha256": "2f991fcff56be41a5c8b68a8d2c17ff8136f828627bbe6de254ca393cbcded30"
+  },
+  "limitations": [
+    "Fixture-only native observations and callbacks are not an authenticated privileged transaction",
+    "Windows guest Sandbox Administrator executes both code scopes and Inno; no user/admin token boundary demonstrated",
+    "Linux user unit is unprivileged, no root systemd/polkit acceptance",
+    "Failure injection after first irreversible code deletion simulates process interruption, not physical reboot or power loss",
+    "No production DirectInternetMethodSvc, actual release payload, trusted signature, privacy/VPN traffic testing, or independent reviewer signoff"
+  ],
+  "next_gate": "Factual native privilege-separated protected-root adapter and hard VM reboot/crash simulation using real product assets; release remains HOLD",
+  "postflight": {
+    "linux_temporary_source_removed": true,
+    "linux_test_unit_load": "not-found",
+    "linux_test_unit_active": "inactive",
+    "windows_sandbox_closed": true,
+    "windows_temporary_source_removed": true,
+    "owner_windows_DIM": "Running",
+    "owner_windows_Tailscale": "Running",
+    "original_linux_product_units": [
+      "inactive",
+      "inactive",
+      "inactive"
+    ]
+  }
+}
