@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R890_TWO_SCOPE_SYSTEMD_USER_20261121",
+  "scope": "Linux Emad, isolated temporary two user-owned roots + real systemd --user unit; NOT root/polkit or real DIM",
+  "execution": {
+    "operation_id": "abb64f07-b7ef-40e7-952e-39d108a02c58",
+    "exit_code": 0,
+    "stdout_sha256": "4d2d246f41aa8a14f0a9cb1b0d9a5cb9cbeddfd7baad532fd50a8cfa67edc7ad"
+  },
+  "source": {
+    "fixture": "tools/native_fixtures/linux/RunSystemdDualScopeFixture.py",
+    "sha256": "2273b7f09fbff98d534deef8749f8714fc722e8f3987615b52c5f9f6fc22c083",
+    "engine_core_sha256": "230c1bcf086b7fdca6e058f9088f73e7956bf397aa744217281412c2d72a3faf",
+    "two_scope_sha256": "b9d8a7ceb0966132292906fd1d602c5df59489a6e2133be0270c99951f668486"
+  },
+  "result": {
+    "status": "PASS_R890_TWO_USER_ROOTS_NATIVE_SYSTEMD_FIXTURE",
+    "unit": "dim-r890-dualscope-37965a16f6b9.service",
+    "owner_sha256": "d033eba9cb1a6853dc5a676833e0899251a3838572fdf6bb49269e7ccf2718c7",
+    "stages": [
+      "REAL_USER_SYSTEMD_RUNTIME_UNIT",
+      "TWO_ROOTS_INITIAL_156_NATIVE_RUNNING",
+      "BAD_NATIVE_START_ABORT_BOTH_SCOPES_RESTORE_156",
+      "INTERRUPTED_COMMIT_FORWARD_REPLAY_BOTH_ROOTS_157",
+      "USER_UNIT_UNLINKED_TWO_CODE_ROOTS_CLEANED"
+    ],
+    "native_privileged_install_accepted": false
+  },
+  "postflight": {
+    "user_service_LoadState": "not-found",
+    "user_service_ActiveState": "inactive",
+    "transient_unit_link": "absent",
+    "temporary_source": "removed",
+    "temporary_execution_root": "automatically removed",
+    "main_product_units": [
+      "inactive",
+      "inactive",
+      "inactive"
+    ]
+  },
+  "limitations": [
+    "Both physical roots user-owned, no root/systemd/polkit",
+    "Synthetic shell service, not production DIM",
+    "Native callback is a fixture assertion, not a privilege or trust token",
+    "No power-loss/reboot and no public release"
+  ]
+}
