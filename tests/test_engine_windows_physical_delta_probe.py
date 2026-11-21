@@ -105,6 +105,21 @@ class WindowsManagedCodeDeltaProbe(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("ARCHIVE_PIN_MISMATCH", result["reason"])
 
+    def test_oversized_zip_member_rejected_before_decompression(self):
+        with zipfile.ZipFile(self.archive, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("installer-metadata/manifest.json", b"x" * (1024 * 1024 + 1))
+        self.archive_sha = sha(self.archive.read_bytes())
+        proc, result = self.run_probe()
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("DELTA_ARCHIVE_MANIFEST_SIZE", result["reason"])
+
+    def test_oversized_target_manifest_rejected_before_read(self):
+        self.target.write_bytes(b"x" * (1024 * 1024 + 1))
+        self.target_sha = sha(self.target.read_bytes())
+        proc, result = self.run_probe()
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("DELTA_TARGET_MANIFEST_SIZE", result["reason"])
+
     def test_target_source_pin_rejected(self):
         proc, result = self.run_probe(**{"--target-sha256": "0" * 64})
         self.assertNotEqual(proc.returncode, 0)

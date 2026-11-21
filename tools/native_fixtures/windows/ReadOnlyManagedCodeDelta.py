@@ -115,9 +115,16 @@ def observe(archive: Path, archive_sha: str, old_manifest_sha: str,
     with zipfile.ZipFile(archive) as zf:
         require(zf.namelist().count(BASELINE_MEMBER) == 1,
                 "DELTA_ARCHIVE_MANIFEST_AMBIGUOUS")
+        info = zf.getinfo(BASELINE_MEMBER)
+        require(0 < info.file_size <= 1024 * 1024,
+                "DELTA_ARCHIVE_MANIFEST_SIZE")
         baseline_bytes = zf.read(BASELINE_MEMBER)
+        require(len(baseline_bytes) == info.file_size,
+                "DELTA_ARCHIVE_MANIFEST_LENGTH_DRIFT")
     require(hashlib.sha256(baseline_bytes).hexdigest() ==
             old_manifest_sha.lower(), "DELTA_BASELINE_MANIFEST_PIN_MISMATCH")
+    require(0 < target.stat().st_size <= 1024 * 1024,
+            "DELTA_TARGET_MANIFEST_SIZE")
     target_bytes = target.read_bytes()
     require(hashlib.sha256(target_bytes).hexdigest() == target_sha.lower(),
             "DELTA_TARGET_MANIFEST_PIN_MISMATCH")
