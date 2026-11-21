@@ -23,6 +23,7 @@ def fixture_windows():
 def fixture_linux():
     return {"protected_root": "/usr/lib/directinternetmethod",
             "protected_root_safe_ownership_observed": True,
+            "protected_root_ancestor_chain_trusted": True,
             "units": [{"unit": "dim-start.service", "LoadState": "loaded",
                        "ActiveState": "active"},
                       {"unit": "dim-stop.service", "LoadState": "loaded",
@@ -109,6 +110,22 @@ class NativeReadinessTests(unittest.TestCase):
                         return_value=report):
             with self.assertRaisesRegex(EngineError, "LINUX_PROTECTED_ROOT_UNTRUSTED"):
                 linux_readiness("/tmp/foreign", ["dim-start.service"])
+
+    def test_linux_spoofed_safe_leaf_but_untrusted_ancestor_refused(self):
+        report = fixture_linux()
+        report["protected_root_ancestor_chain_trusted"] = False
+        with mock.patch("installer_engine.native_readiness.observe_linux",
+                        return_value=report):
+            with self.assertRaisesRegex(EngineError, "LINUX_PROTECTED_ROOT_PARENT_UNTRUSTED"):
+                linux_readiness("/tmp/fake-root-owned", ["dim-start.service"])
+
+    def test_linux_missing_parent_chain_evidence_is_not_trust(self):
+        report = fixture_linux()
+        report.pop("protected_root_ancestor_chain_trusted")
+        with mock.patch("installer_engine.native_readiness.observe_linux",
+                        return_value=report):
+            with self.assertRaisesRegex(EngineError, "LINUX_PROTECTED_ROOT_PARENT_UNTRUSTED"):
+                linux_readiness("/usr/lib/directinternetmethod", ["dim-start.service"])
 
     def test_linux_unloaded_and_inactive_refused(self):
         for key, value, expected in (

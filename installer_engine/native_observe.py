@@ -142,14 +142,30 @@ def observe_linux(protected_root: Path | str, units: Sequence[str]) -> dict:
     require(len(set(units)) == len(units), "SYSTEMD_DUPLICATE_UNITS")
     p = Path(protected_root).absolute()
     no_links(p)
-    try:
-        info = p.lstat()
-        owner = int(info.st_uid)
-        mode = stat.S_IMODE(info.st_mode)
-        trusted = bool(stat.S_ISDIR(info.st_mode) and owner == 0 and
-                       not mode & 0o022 and not p.is_symlink())
-    except FileNotFoundError:
-        owner, mode, trusted = None, None, False
+    # Checking only the leaf owner is insufficient: a writable parent
+    # may allow replacement of the entire protected installation subtree.
+    # Conservatively reject sticky world-writable ancestors as untrusted.
+    chain = list(reversed((p, *p.parents)))
+    trusted = True
+    owner = mode = None
+    unsafe_ancestor = None
+    for node in chain:
+        try:
+            info = node.lstat()
+        except FileNotFoundError:
+            trusted = False
+            if unsafe_ancestor is None:
+                unsafe_ancestor = str(node)
+            continue
+        uid = int(info.st_uid)
+        permissions = stat.S_IMODE(info.st_mode)
+        if node == p:
+            owner, mode = uid, permissions
+        if not (stat.S_ISDIR(info.st_mode) and uid == 0 and
+                not (permissions & 0o022) and not node.is_symlink()):
+            trusted = False
+            if unsafe_ancestor is None:
+                unsafe_ancestor = str(node)
     statuses = [_unit_observation(u) for u in units]
     return {
         "status": IDENTITY,
@@ -158,6 +174,8 @@ def observe_linux(protected_root: Path | str, units: Sequence[str]) -> dict:
         "protected_root_uid": owner,
         "protected_root_mode": mode,
         "protected_root_safe_ownership_observed": trusted,
+        "protected_root_ancestor_chain_trusted": trusted,
+        "unsafe_ancestor": unsafe_ancestor,
         "units": statuses,
         "publisher_authenticated": False,
         "native_installation_or_rollback_accepted": False,

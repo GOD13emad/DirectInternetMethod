@@ -116,6 +116,8 @@ def linux_readiness(protected_root: Path | str, units: list[str] | tuple[str, ..
     observation = observe_linux(protected_root, units)
     require(observation["protected_root_safe_ownership_observed"] is True,
             "LINUX_PROTECTED_ROOT_UNTRUSTED")
+    require(observation.get("protected_root_ancestor_chain_trusted") is True,
+            "LINUX_PROTECTED_ROOT_PARENT_UNTRUSTED")
     states = {entry["unit"]: entry for entry in observation["units"]}
     require(all(entry["LoadState"] == "loaded" for entry in states.values()),
             "SYSTEMD_UNIT_NOT_LOADED")
