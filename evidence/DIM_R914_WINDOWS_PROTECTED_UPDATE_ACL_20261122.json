@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R914-WINDOWS-PRIVILEGED-UPDATE-ACL-POLICY-20261122",
+  "observed_date": "2026-11-22",
+  "feature_baseline_commit": "ec3f19fa72fd363e6c6b8ff174d7c350a94de68c",
+  "scope": "Windows native privileged update/receipt directory ACL policy helper, not integrated into updater or production deployment",
+  "decision": "Use a SYSTEM/Administrator-owned and non-user-writable child under exact Program Files DirectInternetMethod Privileged instead of trusting user-creatable ProgramData updates for native completion.",
+  "source": [
+    {
+      "path": "windows/service/NativeProtectedUpdateAcl.cs",
+      "sha256": "2AA33EE814984052F403B5CABDF458BBA4AB2D662C8A20811305746F022A7FB4"
+    },
+    {
+      "path": "windows/service/Program.cs",
+      "sha256": "0FA02A3353EB99D83A2A89B974EF6282703CC52A513600FEE5BA41E4259A0E46"
+    },
+    {
+      "path": "tests/test_engine_windows_protected_acl.py",
+      "sha256": "B009FE12F73C56A8DB5F9BA4380E9CE1456846F72EE0336D06D7C8BA3D542480"
+    }
+  ],
+  "policy": {
+    "verified_required_parent_path": "C:\\Program Files\\DirectInternetMethod\\Privileged",
+    "future_protected_subdir_name": "UpdateTransactions",
+    "untrusted_live_legacy_path": "C:\\ProgramData\\DirectInternetMethod\\updates",
+    "guardrails": [
+      "Exact Program Files product/Privileged/app layout",
+      "Owner SID SYSTEM/Administrators/TrustedInstaller only",
+      "No final path reparse",
+      "Reject ANY nonprivileged allow WRITE/ADD/DELETE/WRITE_DAC/WRITE_OWNER ACE, including inherited",
+      "No OS ACL mutation or elevation",
+      "Check parent before child creation and child after creation"
+    ],
+    "no_protected_directory_created_on_owner_host": true,
+    "no_live_update_service_connected_yet": true
+  },
+  "verification": {
+    "native_compiler": {
+      "sdk": "10.0.403",
+      "authenticode": "Valid on dotnet host",
+      "build": "PASS 0 warnings 0 errors",
+      "service_dll_sha256": "E04AC8BCA9F56C5004A2A42660AAA5C74CA4C17E53886A2984BCA86519DB8DC8"
+    },
+    "native_console_selftest": {
+      "exit_code": 0,
+      "includes": [
+        "Safe SYSTEM/Admin owner+ACL",
+        "Reject User-write ACE",
+        "Reject user-owned ACL"
+      ]
+    },
+    "owner_windows_readonly_probe": {
+      "runtime": "native .NET 10.0.403 from owner user token, no root or host mutations",
+      "privileged_root_safe": true,
+      "insecure_programdata_updates_rejected": true,
+      "exact_app_under_privileged_root_accepted": true,
+      "synthetic_descriptor_policy_pass": true,
+      "exit_code": 0,
+      "program_sha256": "7C7E781AA008BFEA887A9203C7C8A22E10E7F53AC6C5F81EB21137FFC0F0E3F0"
+    },
+    "targeted_source_tests": {
+      "passed": 13,
+      "failed": 0
+    },
+    "full_windows_engine_suite": {
+      "passed": 288,
+      "skipped": 28,
+      "failed": 0,
+      "elapsed_seconds": 35.52,
+      "terminal": "term-21",
+      "exit_code": 0
+    }
+  },
+  "official_sources": [
+    "https://learn.microsoft.com/en-us/windows/win32/fileio/file-security-and-access-rights",
+    "https://learn.microsoft.com/en-us/windows/win32/fileio/file-access-rights-constants",
+    "https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemaclextensions.getaccesscontrol?view=net-10.0"
+  ],
+  "limits": [
+    "Native ACL policy prototype is not yet wired to RunUpdateAsync staging/launch; unsafe current ProgramData update path still used by existing installed and source updater",
+    "Directory-only ACL policy does not attest a trusted publisher, exact held stage handle, Inno complete transaction, previous-version recovery or power cut",
+    "Native Windows file locks, service identity and rooted path must be validated after protected integration",
+    "All native customer deployment, independent review, Linux privilege, UAC, VPN no-leak, public release remain HOLD"
+  ],
+  "release_gate": "HOLD"
+}

@@ -724,6 +724,8 @@ internal static class Program
             return "MISSING_RUNTIME_INTEGRITY_MESSAGE";
         if (DescribeActionFailure(1, "SECRET_SAMPLE private path").Contains("SECRET_SAMPLE", StringComparison.Ordinal))
             return "RAW_STDERR_LEAK";
+        if (!NativeProtectedUpdateAcl.SyntheticPolicySelfTest())
+            return "PROTECTED_UPDATE_ACL_SELFTEST_FAILED";
         return "PASS";
     }
 }
