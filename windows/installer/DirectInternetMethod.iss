@@ -7,6 +7,10 @@
 AppId={{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+; Match the native_readiness exact registered DisplayName contract.
+; Inno otherwise appends "version 1.5.7" by default, causing false native
+; readiness rejection after an otherwise successful installer transaction.
+UninstallDisplayName={#MyAppName}
 VersionInfoVersion=1.5.7.0
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\DirectInternetMethod

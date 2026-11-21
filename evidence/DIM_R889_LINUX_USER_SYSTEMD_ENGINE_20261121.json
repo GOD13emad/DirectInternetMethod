@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R889_USER_SYSTEMD_ENGINE_20261121",
+  "scope": "Linux Emad host, unprivileged unique runtime-only systemd --user unit with synthetic one-root Engine code",
+  "source": {
+    "script": "tools/native_fixtures/linux/RunSystemdUserEngineFixture.py",
+    "sha256": "d6b28ddcfb6678aae972530990c178eac2741b9fd72b7957da5b4c0d822df425",
+    "engine_core_sha256": "230c1bcf086b7fdca6e058f9088f73e7956bf397aa744217281412c2d72a3faf"
+  },
+  "operation": {
+    "id": "af536013-c986-4961-8492-7d105e767b39",
+    "stdout_sha256": "424d4821cfb4fea2459b84ab844ce0bbf54b2f136086060b89dc1ea17d63999f",
+    "exit_code": 0,
+    "raw_result": {
+      "bad_pin": "562d6d6c03712dc57b3cea085b9b5d94316fce78bd59e16fdce5baf6da1dfc55",
+      "native_root_systemd_polkit_install_accepted": false,
+      "new_pin": "12f304e0150faa5bc4916979f91182fde6fe1c9deb85b9c6552efdc9c2796eaa",
+      "old_pin": "66c5cf44777b8e308b2612003be1d61d3623ab03af8f5e59c9cbf23e75aa1c9b",
+      "owner_sha256": "2e7ef519c490473f3bdbfdb14cb8a9dadf9c22cd4afbe27ee50c18691f1a0473",
+      "schema": 1,
+      "scope": "user-only synthetic",
+      "stages": [
+        "RUNTIME_ONLY_SYSTEMD_USER_UNIT_REGISTERED",
+        "SYSTEMD_156_AND_ENGINE_COMMIT",
+        "SYSTEMD_FAILED_START_ENGINE_ROLLBACK",
+        "SYSTEMD_157_AND_ENGINE_COMMIT",
+        "SYSTEMD_USER_UNREGISTERED_AND_ENGINE_UNINSTALL"
+      ],
+      "status": "PASS_ISOLATED_SYSTEMD_USER_ENGINE_FIXTURE",
+      "unit": "dim-r889-engine-fixture-5f6cbf47fc48.service"
+    }
+  },
+  "postflight": {
+    "runtime_link": "ABSENT",
+    "unit_load_state": "not-found",
+    "unit_active_state": "inactive",
+    "main_production_start_stop_recovery_units": "unchanged inactive",
+    "scratch_run_directory": "removed automatically",
+    "transferred_source_directory": "cleanup separately"
+  },
+  "limitations": [
+    "Unprivileged systemd --user unit only, NOT root/systemd/polkit",
+    "Synthetic code/data, not real DIM install",
+    "One managed root, not user+root coordinated physical rollback",
+    "No actual reboot or power-loss",
+    "No production service or network modified",
+    "Callback check is not a cryptographic elevation grant"
+  ]
+}

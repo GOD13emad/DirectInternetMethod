@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R906-BOUNDED-MANIFEST-DECOMPRESSION-20261121",
+  "date": "2026-11-21",
+  "prior_feature_commit": "578eabac37473ca2f844723ac14d721ddc2c621f",
+  "source_path": "tools/native_fixtures/windows/ReadOnlyManagedCodeDelta.py",
+  "source_sha256": "BF9293651C286B03EA12B2D9E4D7A73BC1B8E67EFD033A8BED95C46C04F94D9E",
+  "test_path": "tests/test_engine_windows_physical_delta_probe.py",
+  "test_sha256": "FB9AF24E58373CB8E949891A703EC22B0CC95D1E7331D9095521B14BF65FD971",
+  "defect": "Original read-only probe read full compressed manifest member and target manifest into memory before enforcing strict_json <=1MiB, allowing unnecessary oversized decompression/allocation by an input with a user-supplied matching SHA pin.",
+  "correction": "Before zipfile.read, require declared ZipInfo.file_size in 1..1048576 bytes and verify decompressed length; before target.read_bytes require Path.stat().st_size in same range. No deployment logic, privilege or OS state changes.",
+  "targeted_tests": {
+    "passed": 26,
+    "skipped": 1,
+    "failed": 0,
+    "exit_code": 0,
+    "negative_synthetic": [
+      "Oversized compressed ZIP manifest member rejected before decompression",
+      "Oversized target source manifest rejected before reading"
+    ],
+    "real_native_old_version_probe": "R905 remains valid for original source input pins; R906 input guards need exact-head CI retest"
+  },
+  "previous_commit_ci": {
+    "head": "578eabac37473ca2f844723ac14d721ddc2c621f",
+    "engine_run": 44868400731,
+    "engine_jobs_success": 4,
+    "linux_root_owned_job": "SKIPPED",
+    "frozen_run": 44868400782,
+    "frozen_jobs_success": 2
+  },
+  "execution_limits": [
+    "R906 protects memory bounds for a read-only probe; native installer, trusted publisher identity, OS-authorized broker, UAC/polkit, rollback, power-off recovery, user config upgrade, and VPN safety remain unaccepted."
+  ],
+  "product_release": "HOLD",
+  "full_windows_engine_suite": {
+    "passed": 267,
+    "skipped": 27,
+    "failed": 0,
+    "exit_code": 0,
+    "terminal_session": "term-66",
+    "duration_seconds": 31.74
+  }
+}

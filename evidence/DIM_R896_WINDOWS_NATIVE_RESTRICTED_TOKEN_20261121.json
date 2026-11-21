@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "id": "DIM_R896_WINDOWS_RESTRICTED_TOKEN_ACL_20261121",
+  "parent_head": "fecc0b1c5cb02229c6b2b219a8361628c1d0bb44",
+  "scope": "Disposable offline Windows Sandbox only; actual native Windows restricted impersonation token and ACL enforcement on synthetic guest-owned ProgramData vs LocalAppData roots; not DIM installed-root privilege acceptance",
+  "source_sha256": {
+    "tools/native_fixtures/windows/RestrictedBoundaryProbe.cs": "5d893465501a21dbfcb84b5b4299befee49c704aec03a8073ae70bbbe4ccd4d9",
+    "tools/native_fixtures/windows/RunRestrictedBoundarySandboxFixture.ps1": "26ef2e8f0042654b873c5d6f676258d9cdf3304320afa1f84d83fcb5bb01baa5",
+    "tests/test_engine_restricted_acl_fixture.py": "f93b5e6f0137283c65de66b9955e05a66fb1267127686e810d6622915cfd8809"
+  },
+  "frozen_csharp_binary_sha256": "7aa009eea0de9fa70875287c79885bb9d800dd4e8e2625259a4ead07b3932954",
+  "negative_initial": {
+    "receipt_sha256": "6f9a17e6b108e61e56422a78f3dc278174ca25c7425167555c65d49d99ab12cb",
+    "trace_sha256": "b04eb7c1e7febc20d2a5abefdecb0944391adc0e2d1b0d2949732f1f100279ac",
+    "failure": "ICACLS_FAILED_",
+    "root_cause": "PowerShell automatic $Args variable collided with declared $Args function parameter so icacls received empty argument array. Corrected to $AclArguments; negative never counted as PASS."
+  },
+  "success_after_fix": {
+    "receipt_sha256": "c60c5f329df8bc2a07d3743d0df9d81268f14bc348ae85353a84509fcc0e0dd9",
+    "trace_sha256": "fb2afbbb047d819f442574909bbbe2b026d9d2da58ccbbe7e7cd32ac6dd8a193",
+    "receipt": {
+      "schema": 1,
+      "status": "PASS_R896_ISOLATED_RESTRICTED_TOKEN_ACL",
+      "native_product_installation_accepted": false,
+      "source_scope": "synthetic Administrator-created fixture roots in offline Sandbox",
+      "protected_root": "C:\\ProgramData\\DIM_R896_ProtectedACL",
+      "user_root": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\DIM_R896_UserACL",
+      "probe": {
+        "schema": 1,
+        "status": "PASS_R896_RESTRICTED_TOKEN_ACL",
+        "restricted_token": true,
+        "protected_write_denied": true,
+        "user_write_allowed": true,
+        "protected_marker_preserved": true,
+        "native_product_installation_accepted": false
+      },
+      "executable_sha256": "7AA009EEA0DE9FA70875287C79885BB9D800DD4E8E2625259A4EAD07B3932954",
+      "protected_marker_sha256": "BCD4190051FE4A3B027EB6D2DE3E408BD70F20CDBE5F8D81821AEDBB1577071B",
+      "user_data_separate": true,
+      "actual_acl_authorization_test": true,
+      "publisher_authenticated": false,
+      "uac_elevation_boundary_accepted": false,
+      "production_privilege_boundary_accepted": false
+    },
+    "probe_executable_authenticated_by_sha": true,
+    "networking_disabled": true,
+    "clipboard_disabled": true,
+    "synthetic_acl_only": true
+  },
+  "observed_permission_boundary": [
+    "CreateRestrictedToken called on elevated guest token with admin SID deny-only, all privileges removed and builtin Users restricting SID",
+    "IsTokenRestricted returned True",
+    "Impersonation of restricted token denied creating a file in a Windows DACL root with SYSTEM/Administrators only",
+    "Same restricted token wrote successfully in separately ACL-granted Users root",
+    "Protected fixture marker SHA unchanged; test process reverted impersonation",
+    "All changes confined to disposable Sandbox; owner host production DIM/Tailscale untouched"
+  ],
+  "limits": [
+    "Restricted thread token test, NOT a full standard-user service/bootstrap identity or UAC prompt",
+    "No protected production DIM Installer, actual SCM operation or secure native installer broker",
+    "No publisher signature or trusted update authorization, Linux root/polkit or physical reboot",
+    "Windows Sandbox is administrator-owned and synthetic; test cannot be promoted to real production acceptance"
+  ],
+  "official_docs": [
+    "https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-createrestrictedtoken",
+    "https://learn.microsoft.com/en-us/windows/win32/secauthz/restricted-tokens",
+    "https://learn.microsoft.com/en-us/windows/win32/secauthz/mandatory-integrity-control"
+  ],
+  "postflight": {
+    "sandbox_closed": true,
+    "hostDIM": "Running",
+    "hostTailscale": "Running",
+    "host_fixture_programdata": "NOT_CREATED_OUTSIDE_GUEST",
+    "host_fixture_service": "NOT_CREATED",
+    "sandbox_scratches_removed_after_pin_check": true,
+    "cleanup_operation": "9345d43b-c011-4846-913e-469425ed1cb6"
+  },
+  "final_tests": {
+    "Windows_all_engine_tests": {
+      "total": 174,
+      "passed": 170,
+      "skipped": 4,
+      "failed": 0,
+      "operation": "3fca80a8-527a-47e6-bd9f-e0a8d0d3e15e",
+      "stderr_sha256": "cf8acb9b0f09b5dc00588ed0de14ccc7d92db21ebcc699adc6e856d6a4e0bcb6"
+    },
+    "restricted_fixture_source_compiler_tests": 5,
+    "all_pass": true
+  }
+}

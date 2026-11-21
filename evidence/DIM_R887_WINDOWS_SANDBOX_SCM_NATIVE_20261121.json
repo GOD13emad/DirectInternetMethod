@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R887_NATIVE_SCM_SANDBOX_20261121",
+  "scope": "Disposable, offline, clipboard-disabled Windows Sandbox; real SCM synthetic service only; no installed DIM product update",
+  "source": {
+    "host_branch_before_commit": "8ba6fe081849a1ed32fa75c4d04c374d66dd236a",
+    "service_source": "tools/native_fixtures/windows/ScmFixtureService.cs",
+    "sandbox_script": "tools/native_fixtures/windows/RunScmSandboxFixture.ps1",
+    "executed_script_sha256": "8f21d0dc0254bedeefb9f0b18139066ce727a82d8e373c978df469cf8488e869"
+  },
+  "environment": {
+    "network": "disabled",
+    "clipboard": "disabled",
+    "vgpu": "disabled",
+    "service_name": "DIMR887IsolatedFixtureSvc",
+    "owner_host_dim_service": "Running",
+    "owner_host_tailscale_service": "Running",
+    "owner_host_fixture_service": "absent",
+    "sandbox_guest_closed": true
+  },
+  "negative_probe": {
+    "sha256": "9993f1b84fabc2107840bcf1666509dac19397d25ae106eb2899e1c39c88acc0",
+    "cause": "Fixture PowerShell function name Sc collided with Set-Content alias; fixed to Invoke-ScFixture before retest",
+    "receipt": {
+      "schema": 1,
+      "status": "FAIL_CLOSED_ISOLATED_SCM_FIXTURE",
+      "product_native_installation_accepted": false,
+      "error": "Cannot process command because of one or more missing mandatory parameters: Value.",
+      "stages": [
+        "PINNED_TWO_DIFFERENT_BINARIES"
+      ]
+    }
+  },
+  "accepted_fixture": {
+    "sha256": "d4dc88a8284b3977e5fb74fccdc80df3a28a6faf1865df0b6d4526af3f1d5954",
+    "receipt": {
+      "schema": 1,
+      "status": "PASS_ISOLATED_NATIVE_SCM_FIXTURE_NO_PRODUCT",
+      "product_native_installation_accepted": false,
+      "platform": "windows-x86_64",
+      "service": "DIMR887IsolatedFixtureSvc",
+      "stages": [
+        "PINNED_TWO_DIFFERENT_BINARIES",
+        "REAL_SCM_REGISTRATION",
+        "REAL_SCM_START_156",
+        "INVALID_BINARY_START_REJECTED",
+        "ROLLBACK_TO_156_AND_RESTART",
+        "UPGRADE_TO_157_AND_RESTART",
+        "NATIVE_SCM_UNREGISTERED",
+        "OWNED_CODE_REMOVED_OWNER_DATA_PRESERVED"
+      ],
+      "old_sha256": "9740F8305148F36D4B346A4A411606158BA4B886E6662F760F8960890A006C4D",
+      "new_sha256": "A200D42D54BB4C5154D55170072EFE3617FA6C234F8005A14B7642194C52E3BB",
+      "owner_data_sha256": "7054677D1723E9EB8999FA49364A259A183E26C06176258E7445B699941A73BC"
+    }
+  },
+  "limitations": [
+    "Service is native but synthetic and isolated",
+    "No Inno installer or actual DIM Service binary",
+    "No unified Engine two-scope commit linked to SCM",
+    "No VM hardware reboot/power-failure recovery",
+    "No Windows owner-host installation or networking modifications",
+    "No production native adapter acceptance or release authority"
+  ]
+}

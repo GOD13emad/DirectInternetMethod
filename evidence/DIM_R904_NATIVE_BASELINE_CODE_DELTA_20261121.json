@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R904_ACTUAL_LINUX_156_TO_157_MANAGED_CODE_DELTA_20261121",
+  "prior_commit": "432e4489c307a6ccfb0d3a44d69a5054e99de870",
+  "scope": "Reusable two-scope source-only code delta planner + real Linux owner-host 1.5.6 baseline read-only comparison, without root approval or any deployed mutation",
+  "cause": "Avoid unnecessary reinstall/overwrite of the entire 21-file managed code set when 13 protected root files and four user code files already match v1.5.7; at the same time reject unknown baseline and foreign changes rather than treating them as upgrade candidates",
+  "source_sha256": {
+    "installer_engine/native_delta.py": "f206d3f32b902bacb02feb015cd71eebfdfded8a76dcb628b71d5c5cc8263f57",
+    "tests/test_engine_native_delta.py": "c63ad5d971eb89fb4a3d5ee98caa61a6f6dcb93b30eb12a383cb830fb23e2989",
+    "linux/native_layout.json": "b423f13fb8c03ade801fe09ad70aaf64ca485d3f6b9e51092108a083d3f5e1b8",
+    "linux/system/protected_upgrade_transaction.py": "239a0c21eb4a9564799a97afe440c120668cedcd49412e33d0ac78c8866820e7",
+    "linux/system/upgrade_guard.py": "66b683e14fcdec8d62cdfd2879aab29d9de0fd778dd67e0522bfb1218dc122d0",
+    "linux/app/user_update_transaction.py": "69ae3a76cfcd3bb251546ccd5237f3af081ed0477323a8f95737c8a4bc87b6f8"
+  },
+  "generic_contract": {
+    "module": "installer_engine/native_delta.py",
+    "api": "compare_managed_code_delta(plan, prior, observed)",
+    "prior_and_observed": "Two distinct strict schema 1 snapshots, same product/platform/older baseline version, exact two scope names and casefold-distinct managed paths, exact per-file SHA256/byte-size/POSIX mode. Actual observed must match *every* prior declared byte identity; old managed members missing from target require separate native retire review.",
+    "result": "READ_ONLY_MANAGED_CODE_DELTA_NOT_NATIVE_INSTALLATION",
+    "actions": [
+      "unchanged",
+      "replace",
+      "create"
+    ],
+    "allow_arbitrary_native_write": false,
+    "native_installation_accepted": false,
+    "publisher_authenticated": false,
+    "privileged_broker_implemented": false,
+    "protected_write_performed": false,
+    "trust_limit": "Both input snapshots are raw engineering data; a caller-provided prior/observation does NOT authenticate publisher or OS ownership. Real broker must pin signed baseline and use OS-trusted FD reads and handle-bound writes before accepting transaction.",
+    "baseline_reboot_or_service_health_accepted": false
+  },
+  "actual_owner_linux_readonly": {
+    "actor_uid": 1000,
+    "installed_root_release": "1.5.6",
+    "installed_user_release": "1.5.6",
+    "user_metadata_protected_backend_release": "1.5.6",
+    "installed_protected_path": "/usr/lib/directinternetmethod",
+    "installed_user_path": "~/.local/share/DirectInternetMethod",
+    "protected_managed_file_count": 13,
+    "protected_regular_uid0_correct_mode": true,
+    "protected_current_SHA_equals_157_target": 13,
+    "protected_current_sha_drift_count": 0,
+    "protected_existing_upgrade_transaction": "linux/system/protected_upgrade_transaction.py has exactly 4 enumerated code mutation candidates and 9 STATIC_ROOT members; all 13 installed protected file SHA equal both transaction expected current baseline pins and R903 target current source bytes",
+    "user_managed_file_count": 8,
+    "user_observed_uid1000_regular_correct_mode": true,
+    "user_current_sha_matches_installed_INSTALL_json_managedCodeSha256": 8,
+    "user_current_equals_157_target": 4,
+    "user_target_code_to_replace": [
+      "direct_internet_method.py",
+      "socket_fallback.py",
+      "user_uninstall_preserve.py",
+      "user_update_transaction.py"
+    ],
+    "user_target_code_unchanged": [
+      "router_gateway.py",
+      "router_gateway_core.py",
+      "direct-internet-method.svg",
+      "uninstall.sh"
+    ],
+    "user_mutable_data_modified": false,
+    "native_units": [
+      "directinternetmethod-start.service inactive",
+      "directinternetmethod-stop.service inactive",
+      "directinternetmethod-recovery.service inactive"
+    ],
+    "actual_owner_root_authentication": false,
+    "generic_delta_executed_live": {
+      "result": "PASS_R904_REAL_OWNER_156_TO_157_READONLY_FD_CODE_DELTA",
+      "actual_root_source": "TrustedLinuxRootFD using Linux kernel openat2, root-owned and group/other nonwritable ancestral chain; each of 13 managed code files size/SHA pinned against actual 1.5.7 checked-out source manifest",
+      "actual_user_source": "Actual 8 managed user files opened with O_NOFOLLOW|O_NONBLOCK|CLOEXEC; fstat UID, mode, size, dev/inode/mtime_ns/ctime_ns stable, SHA compared to separately installed user INSTALL.json managedCodeSha256",
+      "installed_metadata": "Root install.json verified regular UID0, schema 1, v1.5.6 and active UID; user INSTALL.json verified regular UID1000 schema 2 v1.5.6 and protectedBackendVersion v1.5.6",
+      "source_product_layout_sha256": "b423f13fb8c03ade801fe09ad70aaf64ca485d3f6b9e51092108a083d3f5e1b8",
+      "result_stats": {
+        "unchanged": 17,
+        "replace": 4,
+        "create": 0
+      },
+      "output_native_acceptance": false,
+      "output_publisher_authenticated": false,
+      "output_protected_write_performed": false,
+      "package_install_or_root_grant": false,
+      "user_only_six_file_temporary_sources": "SHA_PINNED_VERIFIED_REMOVED",
+      "owner_linux_systemd_units_after": [
+        "inactive",
+        "inactive",
+        "inactive"
+      ]
+    }
+  },
+  "source_only_tests": {
+    "real_21_target_source": "Uses R903 full 28-file source mapping and actual file bytes via AST, synthetic previously managed code hashes for 1.5.6 in portable unit suite",
+    "focused_tests": 18,
+    "passed": 18,
+    "failed": 0,
+    "real_root_transaction_static_contract": "4 FILES + 9 STATIC_ROOT exactly cover 13 privileged code files and all SHA/modes match current v1.5.7 source",
+    "allowed_native_guard_baseline": [
+      "1.5.2+1.5.4",
+      "1.5.5-rc1+1.5.5-rc1",
+      "1.5.6+1.5.6"
+    ],
+    "actual_installed_host_source_age": "One host snapshot only; not a general platform deployment proof",
+    "full_suite_status": "PASS",
+    "windows_full": {
+      "tests": 285,
+      "passed": 259,
+      "skipped": 26,
+      "failed": 0,
+      "operation_id": "bf993220-c0c8-430b-9647-bcb306e8de69",
+      "stderr_sha256": "6af44a7bf4297e5dfcd1dfbe540862473bea0ec12f4a3b140d83f7d0eda19f3c",
+      "python_compile": "PASS",
+      "git_diff_check": "PASS"
+    },
+    "explicit_root_writer_parity_tests": 2,
+    "host_linux_live_comparison": "PASS, 13 fd-verified root source pinned, 8 user bytes compared with installed managed metadata, R904 generic planner 17 unchanged 4 replace 0 create"
+  },
+  "open_gates": [
+    "publisher-authenticated independently installed policy pins, root/UAC bounded privilege broker",
+    "OS-verified actual baseline and protected FD/handle-bound replay writer and code mutations",
+    "real native 1.5.7 install, SCM/systemd service, on-device rollback/reboot, user data and VPN leak security acceptance"
+  ],
+  "release": "HOLD",
+  "pr68": "DRAFT",
+  "hosted_ci_status": "PENDING_R904_HEAD"
+}

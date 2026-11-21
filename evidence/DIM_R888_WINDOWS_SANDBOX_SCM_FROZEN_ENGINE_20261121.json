@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R888_SCM_FROZEN_ENGINE_SANDBOX_20261121",
+  "scope": "Synthetic one-scope Windows SCM + portable frozen Engine lifecycle in offline Windows Sandbox, NOT an installed DIM production service",
+  "source": {
+    "git_feature_parent": "be83a8c0d6e2b47d536ee080aa446609e03676d3",
+    "builder": "tools/native_fixtures/windows/BuildScmEngineFixture.py",
+    "builder_sha256": "7269198991138b1bfc2f172aaefee1f199004d0ec7a1722785840231db63b280",
+    "guest_script": "tools/native_fixtures/windows/RunScmEngineSandboxFixture.ps1",
+    "executed_guest_script_sha256": "10eb448387d8ab3996eb89aafb1ab13afec944bcce39619f01a503696c76a6c8"
+  },
+  "environment": {
+    "network": "disabled by .wsb configuration",
+    "clipboard": "disabled by .wsb configuration",
+    "vgpu": "disabled by .wsb configuration",
+    "sandbox_guest_closed": true,
+    "owner_host_dim_service": "Running",
+    "owner_host_tailscale_service": "Running",
+    "owner_host_fixture_service": "ABSENT"
+  },
+  "failed_first_probe": {
+    "receipt_sha256": "0a8c2f5ed1db422902f0fec9e6fa47d786642d2ad24eb64f2c70485ed3afeb4f",
+    "root_cause": "PowerShell function parameter shadowed automatic $args, invoking engine without CLI arguments; fixed parameter naming and stderr capture before fresh guest",
+    "receipt": {
+      "schema": 1,
+      "status": "FAIL_CLOSED_ISOLATED_SCM_ENGINE_FIXTURE",
+      "native_product_installation_accepted": false,
+      "error": "usage: dim-universal-engine.exe [-h] [--root ROOT]",
+      "stages": [
+        "PINNED_FROZEN_ENGINE_AND_3_BUNDLES"
+      ]
+    }
+  },
+  "successful_native_guest": {
+    "receipt_sha256": "2440717f29f9d91ce00639bc9fd3cf9a649082bc07c2b5f32b5f7fb6baf19f87",
+    "receipt": {
+      "schema": 1,
+      "status": "PASS_ISOLATED_SCM_PLUS_FROZEN_ENGINE_FIXTURE",
+      "native_product_installation_accepted": false,
+      "platform": "windows-x86_64",
+      "service": "DIMR887IsolatedFixtureSvc",
+      "stages": [
+        "PINNED_FROZEN_ENGINE_AND_3_BUNDLES",
+        "SCM_NATIVE_156_PLUS_FROZEN_ENGINE_COMMIT",
+        "SCM_START_FAILURE_FROZEN_ENGINE_ROLLBACK_RESTART_156",
+        "SCM_NATIVE_157_PLUS_FROZEN_ENGINE_COMMIT",
+        "NATIVE_SCM_DELETE_ENGINE_CODE_ONLY_UNINSTALL_PRESERVE_DATA"
+      ],
+      "engine_sha256": "119A08C16F5D314ED780B364BDB2B3A6A74040618574B6ECD731ACDFB5A8CC5A",
+      "old_manifest_sha256": "5ed2318bc2ec0c40f0d15d5c8c7879a0329771a8150d40d980dc3d2061a8b7b2",
+      "bad_manifest_sha256": "7b0a1905835e03f3c5f571d4465d72aadf8be7e4c92053fd07d3d48c933b480f",
+      "new_manifest_sha256": "537fda28544a61a61678f1e0e1d24f04ccfb2770d7bc2462df96c2a675f89584",
+      "owner_data_sha256": "A9B8E18C4413C1D5DBA08EB79B1217C71986EC2D6DAFF6376DF6C51A52237643"
+    }
+  },
+  "limits": [
+    "Real isolated synthetic Windows service, not production DirectInternetMethodSvc",
+    "Single managed engine code root only; not Windows user+privileged two-root integration",
+    "CLI --quiesced, --accepted and --native-unregistered are fixture-only assertions, not verified trust tokens",
+    "No Inno AppId/registry transaction integrated with SCM+Engine",
+    "No reboot or sudden power-loss recovery",
+    "No physical host installation and no production VPN leak proof",
+    "No public release, independent review or publisher authenticity acceptance"
+  ]
+}

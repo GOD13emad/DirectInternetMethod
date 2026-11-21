@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R910-NATIVE-INNO-DISPLAYNAME-PRODUCTION-FIX-20261121",
+  "observed_date": "2026-11-21",
+  "baseline_feature_commit": "8ee949471aaf2dc8aef1a88194e3036722e6f954",
+  "root_cause": "Production Inno Setup omitted UninstallDisplayName, so its default DisplayName included version (Direct Internet Method version 1.5.7); shared native_readiness.windows_readiness rejects any display_name other than exactly Direct Internet Method. Isolated SYSTEM Windows Sandbox caught mismatch after genuine clean installation and exact code SHA verification.",
+  "corrective_source": {
+    "file": "windows/installer/DirectInternetMethod.iss",
+    "original_source_sha256": "163DF9B5635FBEA82096F1DE2554491A36F7C40860CAB3BF83BB00EFB04BEB37",
+    "corrected_source_sha256": "7796D6664DAB73867C702BCFAD11430BF841B7C31725BDF1724F1DF41A2FE182",
+    "line": "UninstallDisplayName={#MyAppName}",
+    "same_product_AppId_as_previous": true,
+    "unchanged_source_managed_manifest_sha256": "9C664DB49104D1F8775413260036155CCC920D8517CF7DB2AFAFBFE0A715D966",
+    "new_source_contract_test": "tests/test_engine_native_readiness.py",
+    "new_source_contract_test_sha256": "B73FA8545EDBAA5AC9F23E00CEEE1CFA13B718EE565062B87FEF03B5B43E1067",
+    "targeted_tests": {
+      "passed": 30,
+      "failed": 0
+    },
+    "full_native_windows_engine_tests": {
+      "passed": 275,
+      "skipped": 28,
+      "failed": 0,
+      "duration_seconds": 36.98,
+      "terminal": "term-89"
+    }
+  },
+  "exact_native_installer": {
+    "stage": "only isolated source rebuilt after verifying original R850 postbuild manifest identity",
+    "installer_sha256": "C9B1136CE4C3FBD41C61135974888DE1AE4D09EB7F7264B65415C98450CC052E",
+    "installer_bytes": 154272724,
+    "authenticode": "NotSigned",
+    "bytes_identical_to_R909_old_setup": false,
+    "private_candidate_v157_not_public_release": true
+  },
+  "offline_sandbox": {
+    "same_guest_as_R909_native_install_uninstall": true,
+    "context": "NT AUTHORITY\\SYSTEM in Windows Sandbox, networking/clipboard/vGPU disabled, source share read-only",
+    "initial_state": "R909 native uninstaller completed successfully and preserved custom-hosts/evidence sentinels",
+    "corrected_setup_install": {
+      "result": "PASS_GUEST_SYSTEM_ONLY_REGISTRY_NAME_CORRECT_AND_DATA_PRESERVED",
+      "checks": 17,
+      "errors": 0,
+      "exit_code": 0,
+      "HKLM_DisplayName": "Direct Internet Method",
+      "DisplayVersion": "1.5.7",
+      "only_one_InstallLocation": true,
+      "no_HKCU_duplicate": true,
+      "unchanged_managed_manifest_sha256": "9C664DB49104D1F8775413260036155CCC920D8517CF7DB2AFAFBFE0A715D966",
+      "gui_sha256": "51F5141FFD9AAF4FAF890A04E9242E40576223038440C1F0B3C607A1E068B6BE",
+      "service_sha256": "CBA9D030DFC4CAFE235AB14406BF6DA66642197BE9EC3CA631C133DD6557C480",
+      "DirectInternetMethodSvc": "Running",
+      "preserved_user_config_sha256": "CB1C761754EE0D05C74AC96C2623C1FABE96E7CFD15C82121B6E428CDB54E1D2",
+      "preserved_owner_evidence_sha256": "CF7D57AB066AD7B6809A05B41CC376EEECC2E98EA709D5718193B0C19619B448",
+      "receipt_sha256": "0751C58B5D9491C8518E01EB9F4BA3BE019D8CDEEF4DB4FE42DEF20298C62B93",
+      "inno_setup_log_sha256": "6EFF608E3258A7521AFEFBF945CDE8EAFFDB0FCC82F273665432B88E8B7CA06D"
+    },
+    "corrected_setup_uninstall": {
+      "result": "PASS_R910_NATIVE_GUEST_SYSTEM_UNINSTALL_WITH_OWNER_DATA_PRESERVATION",
+      "checks": 16,
+      "errors": 0,
+      "exit_code": 0,
+      "appid_removed": true,
+      "scm_service_removed": true,
+      "ctrld_service_removed": true,
+      "managed_gui_and_service_code_removed": true,
+      "custom_user_config_and_evidence_preserved_exact_SHA": true,
+      "receipt_sha256": "9862C10A15ACBBB16E42C37EF121C64077FFB62E088F03192AB0B3EDAF19F2F3",
+      "inno_uninstall_log_sha256": "252CF1C7C0106CF5B7184DC74D3B87A89FDAAFF24F94236169B0EF4F3C2520F1"
+    },
+    "session_teardown": {
+      "owned_guest_id": "d1115e2a-19d6-4d22-b032-2fb2d58c9079",
+      "after_test_owned_guest_no_longer_listed": true,
+      "unknown_different_guest_id_listed": "5afcb03b-bda9-4b49-8305-43b7da0c0910",
+      "other_guest_not_stopped": true,
+      "no_native_host_service_or_network_mutation": true
+    }
+  },
+  "limits": [
+    "This is an authentic Inno/SCM service and user-data test only inside isolated SYSTEM sandbox, not normal interactive UAC or physically installed host acceptance.",
+    "No installer engine two-scope native transaction integration, crash/power-off replay or publisher signature authentication.",
+    "No independent human security review, cross-host VPN leak validation or public release.",
+    "The existing unowned sandbox session was intentionally left untouched after changed session identity."
+  ],
+  "exact_head_ci": {
+    "source_commit": "dd99630d25b0cc4a2cda538e22e445f7c976a56d",
+    "engine_run": 44872178134,
+    "engine_windows_linux_python311_314": "4/4 SUCCESS",
+    "linux_root_policy_job": "SKIPPED on this PR event, not native privileged acceptance",
+    "frozen_run": 44872178161,
+    "windows_linux_frozen_jobs": "2/2 SUCCESS",
+    "product_release_accepted": false
+  },
+  "release": "HOLD"
+}

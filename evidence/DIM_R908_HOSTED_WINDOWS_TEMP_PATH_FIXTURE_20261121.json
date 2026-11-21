@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R908-WINDOWS-CI-TEMP-FINAL-PATH-FIXTURE-20261121",
+  "date": "2026-11-21",
+  "baseline_head": "73c9acea177c16cc2c62269dc26c46a4e85854b5",
+  "failed_ci": {
+    "engine_run": 44869927663,
+    "result": "FAILURE",
+    "linux_jobs": "2 SUCCESS",
+    "windows_py311": "FAILURE",
+    "windows_py314": "FAILURE",
+    "root_owned_policy_job": "SKIPPED",
+    "frozen_run": 44869927657,
+    "frozen_result": "SUCCESS",
+    "failure": "WIN32_HANDLE_FINAL_PATH_MISMATCH on synthetic TemporaryDirectory root on hosted Windows runner; four consequential failures/errors in tests, not real installed owner Windows"
+  },
+  "root_cause_hypothesis": "Windows GitHub hosted TEMP directory can be path-aliased or linked relative to native GetFinalPathNameByHandleW canonical physical path. Fixture previously used unqualified OS default tempfile root while security module deliberately rejects unexpected native final paths. This is a test-root problem; never downgrade final-path validation to make it pass.",
+  "change": [
+    {
+      "path": "tests/test_engine_windows_physical_delta_probe.py",
+      "adjustment": "Synthetic temporary roots now created under the current checked-out repository Path(__file__).resolve().parents[1]"
+    },
+    {
+      "path": "tests/test_engine_windows_handle_bound.py",
+      "adjustment": "Native held-handle negative/positive test scratch created under the checked-out repository, not redirected TEMP"
+    }
+  ],
+  "local_targeted": {
+    "pass": 33,
+    "skip": 2,
+    "fail": 0
+  },
+  "native_checks_still_required": [
+    "Win32 CreateFileW held-handle SHA check",
+    "GetFileInformationByHandle before/after",
+    "GetFinalPathNameByHandleW exact path check",
+    "fail closed on junction/reparse drift",
+    "no privileged writes/service control"
+  ],
+  "linux_user_host_NPP": "NoNewPrivs:1 still blocks elevation; not related to Windows CI fixture",
+  "ci_exact_corrected_commit": {
+    "commit": "8ee949471aaf2dc8aef1a88194e3036722e6f954",
+    "engine_run": 44870201172,
+    "engine_four_os_python_jobs": "4/4 SUCCESS",
+    "linux_root_policy_job": "SKIPPED on pull_request event",
+    "frozen_run": 44870201050,
+    "frozen_two_os_jobs": "2/2 SUCCESS",
+    "native_product_installer_accepted": false
+  },
+  "product_release": "HOLD",
+  "local_full_windows_suite": {
+    "passed": 274,
+    "skipped": 28,
+    "failed": 0,
+    "terminal": "term-71",
+    "seconds": 32.46,
+    "exitCode": 0
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R907-WINDOWS-NATIVE-HELD-HANDLE-READONLY-CODE-DELTA-20261121",
+  "observed_date": "2026-11-21",
+  "platform": "windows-x86_64",
+  "baseline_feature_commit": "cac5bd39e80ec3742fee88b211c64bad3d85cca4",
+  "scope": "Native Windows read-only file descriptor held through SHA-256, not OS privilege authorization or deployment",
+  "implementation": {
+    "file": "installer_engine/windows_handle_bound.py",
+    "sha256": "AA585AE88D9F7F827FB3412F252E235D41B59778175ABDF273A36002C82C0286",
+    "probe": "tools/native_fixtures/windows/ReadOnlyManagedCodeDelta.py",
+    "probe_sha256": "7FC9271221CB7CB3A8FAD6D17AF25FD98978AB35167BE4F48EE326FA498AC908",
+    "native_tests": "tests/test_engine_windows_handle_bound.py",
+    "native_tests_sha256": "249D5FEB0B1EB5531D0FCB9414594485BAABFFE3B9EC1524D300EC1404C3216B",
+    "probe_tests": "tests/test_engine_windows_physical_delta_probe.py",
+    "probe_tests_sha256": "2A9F6932E8A0A5A7BDE01638F78A5D88469651467241DEB4689D5B0F2114FF06"
+  },
+  "native_security": {
+    "Win32": [
+      "CreateFileW GENERIC_READ + FILE_SHARE_READ only",
+      "FILE_FLAG_OPEN_REPARSE_POINT",
+      "GetFileInformationByHandle before and after",
+      "GetFinalPathNameByHandleW compared to expected canonical local drive path",
+      "ReadFile from exact held handle and SHA256",
+      "CloseHandle in finally"
+    ],
+    "live_security_result": "Pass on prior-installed files; Windows cannot replace a held synthetic file while the read-only handle is open",
+    "negative_tests": [
+      "Unexpected path",
+      "Wrong SHA",
+      "Wrong byte count",
+      "Directory/refused path",
+      "Symlink/reparse where OS permits",
+      "Share-read denies concurrent file replacement"
+    ],
+    "publisher_authenticated": false,
+    "native_installation_accepted": false,
+    "privileged_broker_implemented": false,
+    "protected_write_performed": false,
+    "os_trusted_root_authority_accepted": false
+  },
+  "native_installed_verification": {
+    "archive_sha256": "ECFEC3E563407FF23232A75E804850F5858EF69CB9E1106D4505337AE0BE3779",
+    "old_installed_manifest_sha256": "0084F000B7E4741C181F92240378206E1249C643A6291611D15C1021AA8FD328",
+    "target_v157_manifest_sha256": "B6D6B5F6A927D18BB0C25A843E1589F28D218E24F75327D39ACB85A509965CEE",
+    "operation_id": "d16a17bf-8307-48bc-86c4-23f7ef9aa16e",
+    "status": "SUCCEEDED",
+    "exit_code": 0,
+    "stdout_sha256": "C84F01882C25AE9E0B40F14DC3871CD8B2C8E7E35C00CDEB0C1282E4020A28C5",
+    "total_installed_old_managed_files_verified_via_win32_held_handles": 681,
+    "delta": {
+      "unchanged": 678,
+      "replace": 3,
+      "create": 0,
+      "retire": 0
+    },
+    "replacements": [
+      "privileged:app/DirectInternetMethod.Service.exe",
+      "user:app/DirectInternetMethod.exe",
+      "user:RELEASE.json"
+    ],
+    "physical_os_services_after": {
+      "DirectInternetMethodSvc": "Running",
+      "Tailscale": "Running"
+    },
+    "network_or_installed_files_mutated": false
+  },
+  "tests": {
+    "focused": {
+      "passed": 33,
+      "skipped": 2,
+      "failed": 0
+    },
+    "full": {
+      "passed": 274,
+      "skipped": 28,
+      "failed": 0,
+      "terminal": "term-69",
+      "duration_seconds": 25.3
+    },
+    "ci_on_new_exact_commit": "PENDING until committed/pushed"
+  },
+  "official_refs": [
+    "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew",
+    "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew",
+    "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfileinformationbyhandle"
+  ],
+  "remaining": [
+    "Source archive and target release SHA pins still depend on independent trust; no publisher-authenticated installed broker",
+    "Win32 held handle validates exact bytes in file while opened, not ACL ownership or protected write authorization",
+    "Real Inno/SCM/UAC native install/uninstall/rollback, Root/systemd/polkit native deployment, VM power cut, VPN safety and independent human review remain open"
+  ],
+  "release": "HOLD"
+}

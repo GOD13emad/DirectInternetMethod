@@ -1,0 +1,88 @@
+#define FixtureVersion "@VERSION@"
+#define FixtureTag "@TAG@"
+#define SourceFile "@SOURCE_ZIP@"
+#define ArchivePin "@ARCHIVE_SHA256@"
+#define NormalizedPin "@NORMALIZED_SHA256@"
+#define FrozenBin "@ENGINE_BINARY@"
+[Setup]
+AppId=@APPID_DIRECTIVE@
+AppName=DIM Universal Engine Isolated Fixture
+AppVersion={#FixtureVersion}
+DefaultDirName=@FIXTURE_INSTALL_ROOT@
+UsePreviousAppDir=yes
+UninstallLogMode=overwrite
+PrivilegesRequired=lowest
+Uninstallable=yes
+DefaultGroupName=DIM-UE-Fixture-Isolated
+DisableProgramGroupPage=yes
+DisableDirPage=yes
+CloseApplications=no
+RestartApplications=no
+Compression=lzma2
+SolidCompression=yes
+OutputDir=@FIXTURE_OUTPUT_DIR@
+OutputBaseFilename=DimUEPreflight_@TAG@
+[Files]
+Source: "{#FrozenBin}"; DestName: "dim-ue-preflight.exe"; Flags: dontcopy noencryption
+Source: "{#SourceFile}"; DestName: "source-preflight.zip"; Flags: dontcopy noencryption
+Source: "{#FrozenBin}"; DestDir: "{app}\engine"; DestName: "dim-universal-engine.exe"; Flags: ignoreversion
+Source: "{#SourceFile}"; DestDir: "{app}\source"; DestName: "source.zip"; Flags: ignoreversion
+[Code]
+
+// Fail before Inno writes any files or uninstall records. A postinstall
+// exception is TOO LATE for automatic Inno rollback (documented install order).
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  Code: Integer;
+  InputZip: String;
+  EngineExe: String;
+  StagedFolder: String;
+  Args: String;
+begin
+  Result := '';
+  try
+    ExtractTemporaryFile('dim-ue-preflight.exe');
+    ExtractTemporaryFile('source-preflight.zip');
+    InputZip := ExpandConstant('{tmp}\source-preflight.zip');
+    EngineExe := ExpandConstant('{tmp}\dim-ue-preflight.exe');
+    StagedFolder := ExpandConstant('{tmp}\dim-ue-verified-{#FixtureTag}');
+    Args := 'import-archive --platform windows-x86_64 --archive "' + InputZip +
+      '" --archive-sha256 {#ArchivePin} --archive-kind windows-managed --destination "' +
+      StagedFolder + '"';
+    if (not Exec(EngineExe, Args, '', SW_HIDE, ewWaitUntilTerminated, Code)) or
+       (Code <> 0) then
+      Result := 'SHA-pinned fixture source cannot be verified before installation';
+  except
+    Result := 'Fixture source pre-install validation failed';
+  end;
+end;
+
+procedure CheckEngine(const StageLabel: String; const Params: String);
+var
+  Code: Integer;
+begin
+  if (not Exec(ExpandConstant('{app}\engine\dim-universal-engine.exe'), Params,
+      '', SW_HIDE, ewWaitUntilTerminated, Code)) or (Code <> 0) then
+    RaiseException('Fixture step ' + StageLabel + ' failed with exit=' + IntToStr(Code));
+end;
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  InputZip: String;
+  BundleDir: String;
+  ManagedRoot: String;
+begin
+  if CurStep <> ssPostInstall then exit;
+  InputZip := ExpandConstant('{app}\source\source.zip');
+  BundleDir := ExpandConstant('{tmp}\DIMUE-normalized-{#FixtureTag}');
+  ManagedRoot := ExpandConstant('{app}\managed');
+  CheckEngine('import-archive', 'import-archive --platform windows-x86_64 --archive "' + InputZip +
+    '" --archive-sha256 {#ArchivePin} --archive-kind windows-managed --destination "' +
+    BundleDir + '"');
+  CheckEngine('stage', 'stage --platform windows-x86_64 --root "' + ManagedRoot +
+    '" --bundle "' + BundleDir + '" --expected-manifest-sha256 {#NormalizedPin}');
+  CheckEngine('activate', 'activate --platform windows-x86_64 --root "' + ManagedRoot +
+    '" --quiesced');
+  CheckEngine('commit', 'commit --platform windows-x86_64 --root "' + ManagedRoot +
+    '" --accepted');
+  DeleteFile(InputZip);
+end;

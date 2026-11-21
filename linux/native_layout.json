@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "product": "Direct Internet Method",
+  "version": "1.5.7",
+  "platform": "linux-x86_64",
+  "files": [
+    {
+      "scope": "privileged",
+      "source": "app/direct_method_helper.sh",
+      "target": "direct_method_helper.sh",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "system/selective_dns.py",
+      "target": "selective_dns.py",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "system/encrypted_selective_dns.py",
+      "target": "encrypted_selective_dns.py",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "system/encrypted_selective_policy.py",
+      "target": "encrypted_selective_policy.py",
+      "mode": 420
+    },
+    {
+      "scope": "privileged",
+      "source": "system/control.sh",
+      "target": "control.sh",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "system/uninstall_system.sh",
+      "target": "uninstall_system.sh",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "app/hosts.txt",
+      "target": "direct_hosts.txt",
+      "mode": 420
+    },
+    {
+      "scope": "privileged",
+      "source": "app/adult_hosts_fallback.txt",
+      "target": "adult_hosts_fallback.txt",
+      "mode": 420
+    },
+    {
+      "scope": "privileged",
+      "source": "app/strong_override_hosts.txt",
+      "target": "strong_override_hosts.txt",
+      "mode": 420
+    },
+    {
+      "scope": "privileged",
+      "source": "runtime/ctrld",
+      "target": "runtime/usr/bin/ctrld",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "runtime/nfqws",
+      "target": "runtime/usr/bin/nfqws",
+      "mode": 493
+    },
+    {
+      "scope": "privileged",
+      "source": "licenses/LICENSE-ctrld.txt",
+      "target": "licenses/LICENSE-ctrld.txt",
+      "mode": 420
+    },
+    {
+      "scope": "privileged",
+      "source": "licenses/LICENSE-zapret.txt",
+      "target": "licenses/LICENSE-zapret.txt",
+      "mode": 420
+    },
+    {
+      "scope": "user",
+      "source": "app/direct_internet_method.py",
+      "target": "direct_internet_method.py",
+      "mode": 493
+    },
+    {
+      "scope": "user",
+      "source": "app/socket_fallback.py",
+      "target": "socket_fallback.py",
+      "mode": 420
+    },
+    {
+      "scope": "user",
+      "source": "app/router_gateway.py",
+      "target": "router_gateway.py",
+      "mode": 493
+    },
+    {
+      "scope": "user",
+      "source": "app/router_gateway_core.py",
+      "target": "router_gateway_core.py",
+      "mode": 420
+    },
+    {
+      "scope": "user",
+      "source": "app/direct-internet-method.svg",
+      "target": "direct-internet-method.svg",
+      "mode": 420
+    },
+    {
+      "scope": "user",
+      "source": "uninstall.sh",
+      "target": "uninstall.sh",
+      "mode": 493
+    },
+    {
+      "scope": "user",
+      "source": "app/user_uninstall_preserve.py",
+      "target": "user_uninstall_preserve.py",
+      "mode": 493
+    },
+    {
+      "scope": "user",
+      "source": "app/user_update_transaction.py",
+      "target": "user_update_transaction.py",
+      "mode": 493
+    }
+  ]
+}
