@@ -17,7 +17,7 @@ from installer_engine.windows_handle_bound import read_windows_pinned_file
 @unittest.skipUnless(os.name == "nt", "Windows native handles required")
 class WindowsNativeHandleVerification(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1])
         self.addCleanup(self.tmp.cleanup)
         self.path = Path(self.tmp.name) / "owned.bin"
         self.body = b"WIN32-HELD-HANDLE-READ-ONLY-TEST\x00" * 512

@@ -24,7 +24,7 @@ def sha(data):
 
 class WindowsManagedCodeDeltaProbe(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(dir=ROOT)
         self.addCleanup(self.tmp.cleanup)
         self.home = Path(self.tmp.name)
         self.user = self.home / "User"
