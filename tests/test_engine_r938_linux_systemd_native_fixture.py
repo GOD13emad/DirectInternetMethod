@@ -130,6 +130,36 @@ class R938FixtureContracts(unittest.TestCase):
                             ValueError, "R938_NONCANONICAL_OS_FIXTURE_ROOT"):
                         fixture.main()
 
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux AF_UNIX readiness")
+    def test_socket_readiness_requires_live_listener_not_stale_socket_inode(self):
+        # Reproduce CI's root cause: -S remains true after a service stops,
+        # yet an AF_UNIX connect returns ECONNREFUSED until rebind/listen.
+        import socket
+        import subprocess
+        shell = HARNESS.read_text("utf-8")
+        matching = [line for line in shell.splitlines()
+                    if "s.connect_ex(sys.argv[1])" in line]
+        self.assertEqual(len(matching), 1)
+        program = matching[0].split(" -c '", 1)[1].rsplit("'", 1)[0]
+        with tempfile.TemporaryDirectory(prefix="dim-r942-socket-") as temp:
+            name = str(Path(temp) / "broker.sock")
+            def probe():
+                return subprocess.run(
+                    [sys.executable, "-c", program, name],
+                    check=False, capture_output=True, timeout=3).returncode
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server:
+                server.bind(name)
+                self.assertNotEqual(probe(), 0,
+                                    "BOUND_BUT_NOT_LISTENING_MUST_NOT_BE_READY")
+                server.listen(1)
+                self.assertEqual(probe(), 0, "LISTENING_SOCKET_MUST_BE_READY")
+                with server.accept()[0]:
+                    pass
+            self.assertTrue(Path(name).exists(),
+                            "SOCKET_PATH_MUST_SURVIVE_SERVER_CLOSE")
+            self.assertNotEqual(probe(), 0,
+                                "STALE_SOCKET_PATH_MUST_NOT_MEAN_READY")
+
     def test_ci_native_root_fixture_is_push_only_and_nonproduction(self):
         src = HARNESS.read_text(encoding="utf8")
         self.assertIn("GITHUB_EVENT_NAME", src)

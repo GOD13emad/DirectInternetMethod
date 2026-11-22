@@ -134,7 +134,12 @@ start_unit() {
 start_unit
 wait_socket() {
   for i in $(seq 1 80); do
-    [[ -S "$ROOT/public/broker.sock" ]] && return 0
+    # Socket pathname may survive systemctl restart while nobody listens.
+    # Kernel AF_UNIX connect_ex (not -S alone) must prove a LIVE listener.
+    if [[ -S "$ROOT/public/broker.sock" ]] &&
+       /usr/bin/python3 -c 'import socket,sys; s=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM); s.settimeout(0.2); sys.exit(s.connect_ex(sys.argv[1]) != 0)' "$ROOT/public/broker.sock"; then
+      return 0
+    fi
     if [[ "$(systemctl is-failed "$UNIT" 2>/dev/null || true)" == failed ]]; then
       sudo -n journalctl --no-pager -n 20 -u "$UNIT" || true
       return 1
