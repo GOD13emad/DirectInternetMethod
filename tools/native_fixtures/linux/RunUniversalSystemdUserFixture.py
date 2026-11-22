@@ -20,7 +20,7 @@ import time
 import uuid
 
 from installer_engine.engine import (
-    Engine, EngineError, atomic_json, hash_bytes, require,
+    Engine, EngineError, atomic_json, hash_bytes, require, validate_slot,
 )
 from installer_engine.native_receipt import intent_sha256
 from installer_engine.universal_install import UniversalFixtureInstaller
@@ -134,10 +134,27 @@ class SystemdUserFixtureAdapter:
         return False
 
     def _code_versions(self) -> set:
-        return {
-            Engine(path, PLATFORM).verify().get("version")
-            for path in (self.code_root, self.user_root)
-        }
+        # During an activated transaction Engine.verify() MUST reject pending
+        # state. Inspect the owned current slot under its lock and validate
+        # every file hash without falsely declaring the transaction committed.
+        # R928 real-systemd integration: pending != finished.
+        observed = set()
+        for path in (self.code_root, self.user_root):
+            engine = Engine(path, PLATFORM)
+            with engine.locked():
+                installed = engine._installed()
+                pending = engine._pending()
+                if pending is not None:
+                    must(installed is not None and
+                         installed["manifest_sha256"] ==
+                         pending["new"]["manifest_sha256"],
+                         "PENDING_ACTIVE_MANIFEST_IDENTITY_DRIFT")
+                if installed is None:
+                    observed.add(None)
+                else:
+                    validate_slot(engine.current, installed["manifest"])
+                    observed.add(installed["manifest"]["version"])
+        return observed
 
     def _receipt(self, intent: dict, status: str) -> None:
         atomic_json(self.receipt_path, receipt(intent, status))

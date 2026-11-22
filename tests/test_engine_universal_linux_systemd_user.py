@@ -43,6 +43,8 @@ class NativeUserSystemdOrchestratorContracts(unittest.TestCase):
 
     def test_restore_phase_links_native_unit_before_resume_while_code_is_old(self):
         source = RUNNER.read_text("utf8")
+        self.assertIn("pending = engine._pending()", source)
+        self.assertIn('validate_slot(engine.current, installed["manifest"])', source)
         self.assertIn("tx.abort_uninstall()", source)
         self.assertIn("uninstall-restoring-native", source)
         self.assertIn("ctx.Process(", source)
