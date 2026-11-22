@@ -1,0 +1,22 @@
+﻿{
+    "schema":  1,
+    "status":  "PASS_R937_REAL_SYSTEM_SCM_BROKER_REPLAY_AND_RECEIPT_SYNTHETIC_ONLY",
+    "service_name":  "DIMR937BrokerFixtureSvc",
+    "running_scm_pid_at_completion":  2108,
+    "actual_different_os_processes_restricted_client":  true,
+    "real_non_system_login_verified":  false,
+    "OS_system_protected_replay_writer_fixture":  true,
+    "R899_exact_request_reused":  true,
+    "R901_replay_ledger_finalized_no_second_request":  true,
+    "R926_native_completion_receipt_synthetic":  true,
+    "service_restarted_and_replay_denied":  true,
+    "owner_data_preserved":  true,
+    "service_unregistered":  true,
+    "native_receipt_sha256":  "49559dfbab63de74da7745c751a128dbbca8a011ca928a435e41d942ce731323",
+    "replay_ledger_sha256":  "c653bf0e3ab213b146f1cddcfa6f2e67c3ed570e9547e753f1fb25a5e2a87701",
+    "native_product_installation_accepted":  false,
+    "production_privileged_broker_implemented":  false,
+    "publisher_authenticated":  false,
+    "hard_powercut_reboot_accepted":  false,
+    "real_two_scope_app_upgrade_accepted":  false
+}

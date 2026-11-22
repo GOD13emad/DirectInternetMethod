@@ -8,6 +8,7 @@ on:
       - '.github/workflows/universal-install-engine.yml'
       - 'tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py'
       - 'tools/native_fixtures/windows/R935*'
+      - 'tools/native_fixtures/windows/R937*'
   push:
     branches:
       - feature/universal-install-engine
@@ -17,6 +18,7 @@ on:
       - '.github/workflows/universal-install-engine.yml'
       - 'tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py'
       - 'tools/native_fixtures/windows/R935*'
+      - 'tools/native_fixtures/windows/R937*'
   workflow_dispatch:
 
 permissions:
@@ -175,3 +177,16 @@ jobs:
           [System.Management.Automation.Language.Parser]::ParseFile('tools/native_fixtures/windows/RunR935NativeBrokerPipeSandboxFixture.ps1', [ref]$t, [ref]$errors) | Out-Null
           if ($errors.Count -ne 0) { throw 'R935_SANDBOX_SCRIPT_SYNTAX_INVALID' }
           Write-Host 'R935_WINDOWS_NATIVE_PIPE_OS_ADAPTER_SOURCE_COMPILE_PASS_NOT_NATIVE_AUTHORITY'
+      - name: Compile isolated SCM-backed receipt fixture without SCM authorization
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet build tools/native_fixtures/windows/R937NativeScmReceiptFixture.csproj --configuration Release -p:NuGetAudit=false --nologo --verbosity quiet
+          if ($LASTEXITCODE -ne 0) { throw 'R937_NATIVE_SCM_SOURCE_COMPILE_FAILED' }
+          $binary = 'tools/native_fixtures/windows/bin/Release/net10.0-windows/R937NativeScmReceiptFixture.exe'
+          if (-not (Test-Path -LiteralPath $binary)) { throw 'R937_NATIVE_SCM_BUILT_EXE_MISSING' }
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile('tools/native_fixtures/windows/RunR937ScmReceiptSandboxFixture.ps1', [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw 'R937_NATIVE_SCM_GUEST_RUNNER_PARSE_FAILED' }
+          Write-Host 'R937_NATIVE_SCM_RECEIPT_FIXTURE_SOURCE_ONLY_COMPILED_NOT_OS_AUTHORIZED'

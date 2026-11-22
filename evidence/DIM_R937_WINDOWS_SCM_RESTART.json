@@ -1,0 +1,9 @@
+﻿{
+    "schema":  1,
+    "status":  "PASS_R937_REAL_SCM_STOP_RESTART_LEDGER_PRESERVED",
+    "original_service_pid":  4744,
+    "restarted_service_pid":  2108,
+    "before_receipt_sha256":  "49559dfbab63de74da7745c751a128dbbca8a011ca928a435e41d942ce731323",
+    "after_receipt_sha256":  "49559dfbab63de74da7745c751a128dbbca8a011ca928a435e41d942ce731323",
+    "native_product_installation_accepted":  false
+}

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup>
+<OutputType>Exe</OutputType>
+<TargetFramework>net10.0-windows</TargetFramework>
+<Nullable>enable</Nullable>
+<ImplicitUsings>enable</ImplicitUsings>
+<EnableWindowsTargeting>true</EnableWindowsTargeting>
+<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+<AssemblyName>R937NativeScmReceiptFixture</AssemblyName>
+</PropertyGroup>
+<ItemGroup><Compile Include="R937NativeScmReceiptFixture.cs"/></ItemGroup>
+</Project>
