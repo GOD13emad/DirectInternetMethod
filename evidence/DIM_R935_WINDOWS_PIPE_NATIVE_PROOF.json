@@ -1,0 +1,21 @@
+﻿{
+    "schema":  1,
+    "status":  "PASS_R935_GENUINE_WINDOWS_SANDBOX_PIPE_IDENTITY_ONLY",
+    "stages":  [
+                   "SYSTEM_WINDOWS_SANDBOX_VERIFIED_PINNED_DOTNET_NATIVE_API",
+                   "REAL_SYSTEM_NTFS_PROTECTED_FIXTURE_ROOT_ONLY",
+                   "REAL_NTFS_RESTRICTED_TOKEN_WRITE_DENIED",
+                   "REAL_SYSTEM_NAMED_PIPE_SESSION_WITH_RESTRICTED_CLIENT_TOKEN",
+                   "EXACT_EXISTING_R899_POLICY_REQUEST_ACCEPTED_TAMPERED_REQUEST_REJECTED"
+               ],
+    "probe_sha256":  "26c3898ddc2399564375322611ed10b2d1bdd10ca6c688b3a811a6210f73f625",
+    "verified_guest_client_os_identity":  true,
+    "restricted_os_client_denied_protected_writer":  true,
+    "native_pipe_acl":  true,
+    "trusted_production_broker_implemented":  false,
+    "native_product_installation_accepted":  false,
+    "publisher_authenticated":  false,
+    "native_completed_receipt_issued":  false,
+    "protected_replay_writer_implemented":  false,
+    "native_scm_operations_tested":  false
+}

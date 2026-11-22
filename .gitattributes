@@ -29,3 +29,5 @@ windows/installer/DirectInternetMethod.iss -text whitespace=cr-at-eol
 evidence/DIM_R933_WINDOWS_QT_IFW_* -text whitespace=cr-at-eol
 # Preserve byte-exact real Windows guest policy/ledger and failure logs.
 evidence/DIM_R934_WINDOWS_BROKER_* -text whitespace=cr-at-eol
+# Exact byte fidelity for independently pinned Windows SYSTEM guest receipts.
+evidence/DIM_R935_WINDOWS_PIPE_* -text whitespace=cr-at-eol

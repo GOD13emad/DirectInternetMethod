@@ -7,6 +7,7 @@ on:
       - 'tests/test_engine*.py'
       - '.github/workflows/universal-install-engine.yml'
       - 'tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py'
+      - 'tools/native_fixtures/windows/R935*'
   push:
     branches:
       - feature/universal-install-engine
@@ -15,6 +16,7 @@ on:
       - 'tests/test_engine*.py'
       - '.github/workflows/universal-install-engine.yml'
       - 'tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py'
+      - 'tools/native_fixtures/windows/R935*'
   workflow_dispatch:
 
 permissions:
@@ -144,3 +146,32 @@ jobs:
           PY
           sudo chmod 0755 "$fixture"
           echo 'R898_HOSTED_FIXTURE_SCOPE_ONLY_NOT_NATIVE_PRODUCT_INSTALL'
+
+  windows-native-pipe-source-compile:
+    name: Windows / sandbox-only named-pipe ACL fixture source compile
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout pinned feature source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Use pinned .NET 10 toolchain
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Compile isolated Windows native token/pipe OS adapter only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet build tools/native_fixtures/windows/R935NativePipeBoundaryFixture.csproj --configuration Release -p:NuGetAudit=false --nologo --verbosity quiet
+          if ($LASTEXITCODE -ne 0) { throw 'R935_OS_NATIVE_PIPE_SOURCE_COMPILE_FAILED' }
+          $binary = 'tools/native_fixtures/windows/bin/Release/net10.0-windows/R935NativePipeBoundaryFixture.exe'
+          if (-not (Test-Path -LiteralPath $binary)) { throw 'R935_OS_NATIVE_PIPE_BINARY_MISSING' }
+          $t = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile('tools/native_fixtures/windows/RunR935NativeBrokerPipeSandboxFixture.ps1', [ref]$t, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw 'R935_SANDBOX_SCRIPT_SYNTAX_INVALID' }
+          Write-Host 'R935_WINDOWS_NATIVE_PIPE_OS_ADAPTER_SOURCE_COMPILE_PASS_NOT_NATIVE_AUTHORITY'
