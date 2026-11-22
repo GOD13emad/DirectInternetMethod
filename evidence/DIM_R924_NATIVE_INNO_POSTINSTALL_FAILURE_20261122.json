@@ -1,0 +1,21 @@
+﻿{
+    "schema":  1,
+    "status":  "PASS_R924_SYNTHETIC_INNO_FAILURE_REINSTALL",
+    "stages":  [
+                   "BOTH_SYNTHETIC_INNO_EXE_SHA_PINNED",
+                   "REAL_INNO_OLD_SETUP_156_REGISTERED_AND_HASHED",
+                   "POSTINSTALL_EXIT67_LEFT_NEW_NATIVE_CODE_AND_REGISTRY",
+                   "EXPLICIT_PINNED_OLD_INNO_REINSTALL_RESTORED_NATIVE_CODE_AND_REGISTRY",
+                   "NATIVE_UNINSTALL_REMOVED_REGISTRATION_CODE_KEPT_USER_DATA"
+               ],
+    "old_sha256":  "F97DFBD4F4CDF848E794E98DD87240A9CBF067A40B7C84579F119CDE5DDF3B9A",
+    "new_sha256":  "14A0F79EAC0134A02B006A55589CB5A35DBD7757D8C905AC086DAC721ADB2CC0",
+    "old_code_sha256":  "95ac41b5d48c71146e00d9c48122c743fc66b91d2f8f6e6c4475a0beac84647f",
+    "new_code_sha256":  "b3075f2bb686a905f01ec961092660b5e7180f100d8527b4448ae43fe9e8c2dc",
+    "owner_data_sha256":  "D1F45AE39D4166BF4D6AD6F758A2058B5DEFD036FD4C5547FA037C6C5D6C61B5",
+    "appid":  "{BE452737-93D8-4693-930C-C0ABFF932924}",
+    "real_product_rollback_accepted":  false,
+    "power_loss_accepted":  false,
+    "native_service_rollback_accepted":  false,
+    "human_release_accepted":  false
+}
