@@ -26,7 +26,7 @@ def check_order(parts):
 
 required=[
     'var targetText = doc.RootElement.GetProperty("targetVersion").GetString()',
-    'doc.RootElement.GetProperty("schema").GetInt32() != 1',
+    'doc.RootElement.GetProperty("schema").GetInt32() != 2',
     '!Version.TryParse(targetText, out var target)',
     'var installed = CurrentVersion;',
     'if (installed >= target)',
@@ -52,6 +52,18 @@ required=[
     'WriteActionStatus("update", "done", 0,',
 ]
 check_order(required)
+# Native Inno ssDone and protected commit ordering supersede the old schema1
+# source guard; never weaken the original owned-path/hash checks below.
+check_order([
+    'if (!PendingNativeRegistrationMatches(doc.RootElement, installed, target))',
+    'if (!NativeInnoCompletionReceipt.Hex64(transactionId))',
+    'if (!File.Exists(receiptPath) && !cleanupCommitted)',
+    'NativeInnoCompletionReceipt.Matches(',
+    'var stage = doc.RootElement.GetProperty("installer").GetString()',
+    'File.Delete(stage);',
+    'NativeUpdateCleanupJournal.MarkReceiptConsumed(doc.RootElement)',
+    'File.Delete(PendingUpdatePath);',
+])
 guard(body.count("File.Delete(stage);")==1,"STAGING_DELETE_COUNT")
 guard(body.count("File.Delete(PendingUpdatePath);")==1,"PENDING_DELETE_COUNT")
 guard(body.count("throw new CryptographicException(")>=3,"NO_FOREIGN_OR_SHA_REJECTION")
