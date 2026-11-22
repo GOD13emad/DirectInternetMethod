@@ -33,6 +33,9 @@ class _NativeFixture:
     def quiesced(self) -> bool:
         return True
 
+    def quiesce(self) -> None:
+        return None
+
     @staticmethod
     def _fixture_receipt(intent: dict, status: str = "completed") -> bytes:
         return json.dumps({"schema": 1, "status": status,

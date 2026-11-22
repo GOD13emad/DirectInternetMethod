@@ -41,6 +41,7 @@ class NativeAdapter(Protocol):
     def snapshot(self) -> bytes: ...
     def observed_version(self) -> str | None: ...
     def quiesced(self) -> bool: ...
+    def quiesce(self) -> None: ...
     def apply(self, target_version: str, intent: dict) -> None: ...
     def completed(self, intent: dict) -> bytes | None: ...
     def restore(self, snapshot: bytes, intent: dict) -> None: ...
@@ -241,6 +242,7 @@ class UniversalFixtureInstaller:
     def activate(self) -> dict:
         doc = self._load()
         require(doc["phase"] == "staged", "UNIVERSAL_NOT_STAGED")
+        self.adapter.quiesce()
         require(self.adapter.quiesced() is True,
                 "UNIVERSAL_NATIVE_NOT_QUIESCED")
         self.code.activate(self.adapter.quiesced)
@@ -281,6 +283,7 @@ class UniversalFixtureInstaller:
                 "UNIVERSAL_FORWARD_REPLAY_REQUIRED")
         intent = self._intent(doc)
         if doc["phase"] != "restoring-native":
+            self.adapter.quiesce()
             require(self.adapter.quiesced() is True,
                     "UNIVERSAL_NATIVE_NOT_QUIESCED")
             if doc["phase"] != "restoring-code":
@@ -334,6 +337,10 @@ class UniversalFixtureInstaller:
                   "preimage_b64": raw_b64, "preimage_sha256": sha}
         self._intent(record)
         self._write(record)
+        # Capture native running/stopped state BEFORE stopping the runtime.
+        self.adapter.quiesce()
+        require(self.adapter.quiesced() is True,
+                "UNIVERSAL_NATIVE_NOT_QUIESCED")
         self.uninstall.prepare(self.adapter.quiesced)
         record["phase"] = "uninstall-prepared"
         self._write(record)
@@ -379,6 +386,7 @@ class UniversalFixtureInstaller:
                 "UNIVERSAL_UNINSTALL_FORWARD_REPLAY_REQUIRED")
         intent = self._intent(doc)
         if doc["phase"] != "uninstall-restoring-native":
+            self.adapter.quiesce()
             require(self.adapter.quiesced() is True,
                     "UNIVERSAL_NATIVE_NOT_QUIESCED")
             if doc["phase"] != "uninstall-restoring-code":

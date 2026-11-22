@@ -47,6 +47,9 @@ class FileNativeFixture:
     def quiesced(self) -> bool:
         return True
 
+    def quiesce(self) -> None:
+        return None
+
     @staticmethod
     def _fixture_receipt(intent: dict, status: str = "completed") -> bytes:
         return json.dumps({"schema": 1, "status": status,
@@ -452,5 +455,55 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         self.adapter.complete_on_resume = True
         self.new_engine().recover()
         self.assertFalse(self.core.journal.exists())
+
+    def test_uninstall_captures_native_running_state_before_quiesce(self):
+        self.cycle("1.5.6")
+        observed = []
+        running = [True]
+        original_snapshot = self.adapter.snapshot
+
+        def snapshot():
+            observed.append(("snapshot", running[0]))
+            return original_snapshot()
+
+        def quiesce():
+            observed.append(("quiesce", running[0]))
+            running[0] = False
+
+        self.adapter.snapshot = snapshot
+        self.adapter.quiesce = quiesce
+        self.adapter.quiesced = lambda: not running[0]
+        self.core.begin_uninstall()
+        self.assertEqual(observed[:2],
+                         [("snapshot", True), ("quiesce", True)])
+        self.assertFalse(running[0])
+        self.assertEqual(self.core._load()["phase"], "uninstall-prepared")
+        self.core.abort_uninstall()
+        self.assertFalse(self.core.journal.exists())
+
+    def test_activation_stops_native_after_checkpoint_but_before_code_swap(self):
+        self.cycle("1.5.6")
+        events = []
+        running = [True]
+        original_snapshot = self.adapter.snapshot
+
+        def snapshot():
+            events.append(("snapshot", running[0]))
+            return original_snapshot()
+
+        def quiesce():
+            events.append(("quiesce", running[0]))
+            running[0] = False
+
+        self.adapter.snapshot = snapshot
+        self.adapter.quiesce = quiesce
+        self.adapter.quiesced = lambda: not running[0]
+        self.core.begin(self.sources("1.5.7"))
+        self.assertEqual(events, [("snapshot", True)])
+        self.core.activate()
+        self.assertEqual(events, [("snapshot", True), ("quiesce", True)])
+        self.core.commit()
+        self.assertEqual(set(self.state().values()), {"1.5.7"})
+
 if __name__ == "__main__":
     unittest.main()
