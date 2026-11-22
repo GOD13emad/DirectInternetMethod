@@ -1,0 +1,102 @@
+{
+  "architecture_decision": "Do NOT replace R931 common transaction kernel with unmodified Qt IFW. It does not meet previous-version rollback DoD in the observed failing-update case. Qt IFW remains reusable as OPTIONAL installer/maintenance UI or distribution shell only after strictly single-ownership of files is designed and tested. TUF metadata could be a complementary external verified implementation, not a native OS installer.",
+  "binarycreator_sha256": "589c76061d3a1fc83ce4550304a10a88bb0ea3117ecf2b2bc7c9d2db49756699",
+  "fault_observation": "Native Qt 4.7 Update aborted after Execute(/usr/bin/false): new A extraction undone but previous A 1.0.3 file NOT restored; component A absent, B 1.0.0 remained; original owner data unchanged. The previous-file absence and B-only component manifest were directly observed before explicit manual repair. This is failure of automatic rollback for this exact fixture, not proof of behavior of all newer Qt versions.",
+  "fault_update_exit_code": 3,
+  "fixture_source": "Official Qt Installer Framework 4.7 examples/online, only local loopback repository URL and owned /tmp target changed; failed update package contains an injected Execute(/usr/bin/false)",
+  "gate": "R932_EXISTING_VENDOR_QT_INSTALLER_FRAMEWORK_REUSE_PILOT",
+  "generated_synthetic_installer_bytes": 36687312,
+  "generated_synthetic_installer_sha256": "2a44396ada327bf914743dc4fa1af808c6100af005668c21e8eb96e1126c940c",
+  "healthy_component_A": "1.0.3-1",
+  "license_status": "Qt Installer Framework GPLv3+Qt GPL exception/commercial; redistribution requires project-specific license review; pilot only",
+  "logs": {
+    "check-updates.log": {
+      "bytes": 1165,
+      "sha256": "77af89217875c0acdfb95bfc7b515c597885dbd1bb61ae7da3be400494d90f1b"
+    },
+    "fault-update.log": {
+      "bytes": 3128,
+      "sha256": "d34b0ba42557186ef4c7f66c5b9641672a736f50a2c439068120c13f6e12aa58"
+    },
+    "final-remove.log": {
+      "bytes": 2092,
+      "sha256": "f2c49afff2ec1ca53c3c26413550b63e490bd178f685bce1aaf0f389f2a824ff"
+    },
+    "install.log": {
+      "bytes": 2754,
+      "sha256": "739379c8ce71d292dd706355c780650be50396b89e99462043a185aacef4886e"
+    },
+    "remove.log": {
+      "bytes": 1908,
+      "sha256": "2707f4a2ec614d4cfe0d19416589eac4d952111ee632fb2dbea9471df014abaf"
+    },
+    "update.log": {
+      "bytes": 2289,
+      "sha256": "ba02f26a52592727a39df9e29cbcbfe4528e7839352f15650a9112fa317f8696"
+    },
+    "vendor-recovery-install.log": {
+      "bytes": 3199,
+      "sha256": "0f7dfee4eda094f7a80b112a0a511677a6768f8a0982530c61be8188c7b8ca14"
+    }
+  },
+  "native_test_operations": {
+    "archive_download": "6da067e3-5e81-4ce1-9a23-be60b261c890",
+    "final_vendor_uninstall": "d4e09644-5599-4885-a24d-eae6cf77c2fa",
+    "first_install_then_bad_cwd_repo_step": "e270b990-7430-4dc3-ba82-d3542a79827c",
+    "manual_vendor_repair": "7907b66f-ad97-459d-adac-81604c534f2d",
+    "negative_update": "8128bbed-4ad6-469d-b853-cbc30e8878c7",
+    "real_healthy_update_then_fixture_hash_assertion_error": "f7542fae-d295-43b1-83ca-ceef664d6b05",
+    "vendor_build": "2598d63d-e402-4ec9-9650-1ac46b7f8701"
+  },
+  "negative_excerpt": [
+    "[16] Operation \\\"Execute\\\" with arguments \\\"/usr/bin/false\\\" failed: Execution failed (Unexpected exit code: 1): \\\"/usr/bin/false\\\"",
+    "[17] Update aborted!"
+  ],
+  "official_docs": [
+    "https://doc.qt.io/qtinstallerframework/ifw-overview.html",
+    "https://doc.qt.io/qtinstallerframework/operations.html",
+    "https://doc.qt.io/qtinstallerframework/ifw-use-cases-cli.html",
+    "https://theupdateframework.io/docs/security/"
+  ],
+  "official_prebuilt_archive_bytes": 59604779,
+  "official_prebuilt_archive_sha1": "8951b51067774c711dc0d076daade5ee1219f6e9",
+  "official_prebuilt_archive_sha256": "dd86e6098e88baf0aad28a03334b505f8767eb45294b74d118d16a4a1d64f035",
+  "original_component_A": "1.0.2-1",
+  "owner_config_sha256": "12eda7c26cb925c85b1ce332ac548494a63801f3d8205760d48126228c5be538",
+  "platform": "linux-x86_64",
+  "rejected_update_A": "1.0.4-1",
+  "repogen_sha256": "238e8b5a8e70d83915785ab5fd981d2573b1387df9afe6a4f1872245015e0795",
+  "schema": 1,
+  "scope": {
+    "linux_root_systemd_tested": false,
+    "loopback_repository_only": true,
+    "native_service_transaction_tested": false,
+    "non_root_os_temp_only": true,
+    "powercut_crash_rollback_tested": false,
+    "product_files_or_services_touched": false,
+    "ready_for_release": false,
+    "ready_to_replace_shared_universal_transaction_engine": false,
+    "real_vendor_installer_execution": true,
+    "real_vendor_update_execution": true,
+    "trusted_publisher_or_tuf_attested": false,
+    "windows_vendor_runtime_tested": false
+  },
+  "source": "https://download.qt.io/online/qtsdkrepository/linux_x64/desktop/tools_ifw/qt.tools.ifw.47/4.7.0-0-202402150941ifw-linux-x64.7z",
+  "stages": {
+    "automatic_rollback_restored_previous_component_A": false,
+    "final_components_removed_owner_data_preserved": true,
+    "injected_execute_nonzero_aborted_update": true,
+    "manual_supported_vendor_reinstall_A_103_from_pinned_local_repository": true,
+    "official_prebuilt_binarycreator_generated_linux_installer": true,
+    "official_repogen_generated_local_update_repository": true,
+    "one_active_version_A_103_and_B_100_verified": true,
+    "post_abort_component_A_absent_observed_before_manual_repair": true,
+    "real_vendor_check_updates_discovered_A_103": true,
+    "real_vendor_install_A_B": true,
+    "real_vendor_remove_preserved_owner_config": true,
+    "real_vendor_upgrade_A_102_to_103": true
+  },
+  "unaffected_component_B": "1.0.0-1",
+  "vendor": "Qt Installer Framework",
+  "vendor_version": "4.7.0"
+}

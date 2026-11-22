@@ -1,0 +1,61 @@
+qt.dbus.integration: Could not connect "org.freedesktop.NetworkManager" to "stateChanged"
+qt.dbus.integration: Could not connect "org.freedesktop.NetworkManager" to "connectivityChanged"
+qt.dbus.integration: Could not connect "org.freedesktop.NetworkManager" to "deviceTypeChanged"
+qt.dbus.integration: Could not connect "org.freedesktop.NetworkManager" to "meteredChanged"
+[0] Arguments: /tmp/dim-qtifw-vendor-pilot-20261122/installed/maintenancetool, --confirm-command, --accept-licenses, --default-answer, update
+[0] Operations sanity check succeeded.
+[0] Using metadata cache from "/tmp/dim-qtifw-vendor-pilot-20261122/home/.cache/qt-installer-framework/903c16cf-0aa2-3ffd-a126-4e82823678cf"
+[1] Found 1 cached items.
+[1] Fetching latest update information...
+[1] Downloading 1 items to cache.
+[1] Retrieving information from remote repositories...
+[2] Retrieving meta information from remote repository...
+[3] Extracting meta information...
+[4] Updating local cache with 1 new items...
+[5] Loading component scripts...
+[7] Loading component scripts...
+[7] Loading component scripts...
+[8] Warning: QFont::setPixelSize: Pixel size <= 0 (-1)
+[8] Selected components without dependencies:
+A
+[8] Installation space required: "93.00 bytes" Temporary space required: "245.00 bytes" Local repository size: "0.00 bytes"
+[9] Cache and install directories are on the same volume. Volume mount point: "/tmp" Free space available: "14.83 GB"
+[9] Installation will use 85.00 bytes of disk space.
+[9] Install size: 1 components
+[9] Preparing the installation...
+[9] Downloading packages...
+[9] Downloading archive "1.0.4-1content.7z.sha1" for component A.
+[10] Downloading archive "1.0.4-1content.7z" for component A.
+[11] Removing deselected components...
+[11] undo operation= "MinimumProgress"
+[11] undo operation= "Extract"
+[11] undo A operation: Extract
+[11] 	- arguments: installer://A/1.0.3-1content.7z, /tmp/dim-qtifw-vendor-pilot-20261122/installed
+[11] Done
+[12] Preparing to unpack components...
+[12] backup A concurrent operation: Extract
+[12] 	- arguments: installer://A/1.0.4-1content.7z, /tmp/dim-qtifw-vendor-pilot-20261122/installed
+[12] Started
+[12] Unpacking components...
+[12] perform A concurrent operation: Extract
+[12] 	- arguments: installer://A/1.0.4-1content.7z, /tmp/dim-qtifw-vendor-pilot-20261122/installed
+[12] Started
+[12] Installing component A
+[12] backup A operation: Execute
+[12] 	- arguments: /usr/bin/false
+[12] Done
+[12] perform A operation: Execute
+[12] 	- arguments: /usr/bin/false
+[13] /usr/bin/false" started, arguments: "
+[16] Done
+[16] Operation \"Execute\" with arguments \"/usr/bin/false\" failed: Execution failed (Unexpected exit code: 1): \"/usr/bin/false\"
+[16] installationErrorWithCancel : Installer Error : Error during installation process (A):
+Execution failed (Unexpected exit code: 1): "/usr/bin/false" Retry|Ignore|Cancel
+[16] Answer: "Cancel"
+[17] undo A operation: Execute
+[17] 	- arguments: /usr/bin/false
+[17] Done
+[17] undo A operation: Extract
+[17] 	- arguments: installer://A/1.0.4-1content.7z, /tmp/dim-qtifw-vendor-pilot-20261122/installed
+[17] Done
+[17] Update aborted!
