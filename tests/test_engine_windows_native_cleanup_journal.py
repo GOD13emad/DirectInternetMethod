@@ -35,7 +35,7 @@ class NativeUpdateRestartJournalContract(unittest.TestCase):
         self.assertIn("if (!File.Exists(receiptPath) && !cleanupCommitted)", f)
         self.assertIn("if (File.Exists(receiptPath) &&", f)
         self.assertIn("NativeInnoCompletionReceipt.Matches(", f)
-        self.assertIn("if (cleanupCommitted && File.Exists(stage))", f)
+        self.assertIn("NativeUpdateCleanupJournal.RequireSafeStageAfterCommit(cleanupCommitted, File.Exists(stage))", f)
         self.assertIn("Unknown protected update cleanup phase", JOURNAL)
         self.assertNotIn("File.Delete(LegacyPendingUpdatePath)", PROGRAM)
 
@@ -58,7 +58,7 @@ class NativeUpdateRestartJournalContract(unittest.TestCase):
     def test_committed_phase_recovers_missing_receipt_but_refuses_present_stage(self):
         f = self.final
         self.assertIn("if (!File.Exists(receiptPath) && !cleanupCommitted)", f)
-        self.assertIn("if (cleanupCommitted && File.Exists(stage))", f)
+        self.assertIn("NativeUpdateCleanupJournal.RequireSafeStageAfterCommit(cleanupCommitted, File.Exists(stage))", f)
         self.assertIn("if (!cleanupCommitted)", f)
         self.assertIn("WriteJsonAtomic(PendingUpdatePath,", f)
         self.assertIn("File.Delete(PendingUpdatePath)", f)

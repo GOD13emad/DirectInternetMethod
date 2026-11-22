@@ -35,6 +35,15 @@ internal static class NativeUpdateCleanupJournal
         return record;
     }
 
+    // Shared by the actual Service finalizer and the process-exit fixture.
+    // Never treat an existing staged installer as safe once cleanup was committed.
+    internal static void RequireSafeStageAfterCommit(bool committed, bool stagedInstallerExists)
+    {
+        if (committed && stagedInstallerExists)
+            throw new InvalidDataException(
+                "Committed native completion journal cannot coexist with staged installer.");
+    }
+
     internal static bool SelfTest()
     {
         const string baseline =
@@ -52,6 +61,14 @@ internal static class NativeUpdateCleanupJournal
         try
         {
             _ = MarkReceiptConsumed(committed.RootElement);
+            return false;
+        }
+        catch (InvalidDataException) { }
+        RequireSafeStageAfterCommit(true, false);
+        RequireSafeStageAfterCommit(false, true);
+        try
+        {
+            RequireSafeStageAfterCommit(true, true);
             return false;
         }
         catch (InvalidDataException) { }

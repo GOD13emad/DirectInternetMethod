@@ -560,9 +560,8 @@ internal static class Program
                     (!fixedOwnedStage && !pinnedLegacyStage) ||
                     expectedSha.Length != 64 || !expectedSha.All(Uri.IsHexDigit))
                     throw new CryptographicException("Foreign staging path or invalid pending checksum.");
-                if (cleanupCommitted && File.Exists(stage))
-                    throw new InvalidDataException(
-                        "Committed native completion journal cannot coexist with staged installer.");
+
+                NativeUpdateCleanupJournal.RequireSafeStageAfterCommit(cleanupCommitted, File.Exists(stage));
                 if (File.Exists(stage))
                 {
                     if ((File.GetAttributes(stage) & FileAttributes.ReparsePoint) != 0 ||
