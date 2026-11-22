@@ -311,7 +311,7 @@ def verify(directory: Path, output: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    modes = parser.add_subparsers(dest="mode", required=True)
+    modes = parser.add_subparsers(dest="action", required=True)
     for name in ("prepare", "serve", "client", "verify"):
         p = modes.add_parser(name)
         if name in ("prepare", "client", "verify"):
@@ -324,11 +324,11 @@ def main() -> None:
         if name == "verify":
             p.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    if args.mode == "prepare":
+    if args.action == "prepare":
         prepare(args.input)
-    elif args.mode == "serve":
+    elif args.action == "serve":
         serve(args.root)
-    elif args.mode == "client":
+    elif args.action == "client":
         client(args.input, args.root, args.mode)
     else:
         verify(args.input, args.output)

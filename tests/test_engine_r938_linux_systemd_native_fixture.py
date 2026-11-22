@@ -87,6 +87,19 @@ class R938FixtureContracts(unittest.TestCase):
             })
             self.assertTrue(verify_completion_receipt(native, synthetic))
 
+    def test_client_subcommand_and_request_mode_are_distinct(self):
+        from unittest.mock import patch
+        # Before the fix, argparse used dest=mode for BOTH subcommand and
+        # --mode and dispatched a client as verify(), missing --output.
+        for kind in ("good", "tampered", "replay", "wrong-uid"):
+            with self.subTest(client_mode=kind):
+                argv = ["r938", "client", "--input", "/nonexistent",
+                        "--root", "/tmp/r938-untrusted", "--mode", kind]
+                with patch.object(sys, "argv", argv):
+                    with self.assertRaisesRegex(
+                            ValueError, "R938_NONCANONICAL_OS_FIXTURE_ROOT"):
+                        fixture.main()
+
     def test_ci_native_root_fixture_is_push_only_and_nonproduction(self):
         src = HARNESS.read_text(encoding="utf8")
         self.assertIn("GITHUB_EVENT_NAME", src)
