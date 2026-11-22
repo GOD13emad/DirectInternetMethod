@@ -90,6 +90,19 @@ def main() -> None:
     kind = "windows-managed" if os.name == "nt" else "linux-distribution"
     with tempfile.TemporaryDirectory(prefix="dim-frozen-generic-source-") as td:
         home = Path(td)
+        # Same frozen portable executable exercises the full two-scope
+        # install/upgrade/failure-rollback/uninstall protocol on BOTH OSs.
+        universal = invoke(binary, home, "universal-selftest", platform)
+        assert universal["status"] == "PASS_UNIVERSAL_TRANSACTION_FIXTURE"
+        assert all(universal[k] == "PASS" for k in (
+            "fresh_install", "in_place_upgrade",
+            "incomplete_native_update_rollback",
+            "uninstall_preserves_owner_data"))
+        assert universal["native_product_install_accepted"] is False
+        assert universal["power_cut_accepted"] is False
+        invoke(binary, home, "universal-selftest", platform,
+               "--root", str(home / "foreign-install-path"), fail=True)
+        assert not (home / "foreign-install-path").exists()
         zip_file = home / "source.zip"
         normalized = home / "normalized"
         root = home / "engine-root"

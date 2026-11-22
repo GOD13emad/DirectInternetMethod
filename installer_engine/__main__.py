@@ -23,7 +23,7 @@ def main(argv=None) -> int:
     parser.add_argument("action", choices=(
         "verify", "stage", "activate", "commit", "rollback",
         "uninstall-prepare", "uninstall-commit", "uninstall-abort",
-        "import-archive", "materialize-scope"))
+        "import-archive", "materialize-scope", "universal-selftest"))
     parser.add_argument("--root", type=Path)
     parser.add_argument("--platform",
                         choices=("linux-x86_64", "windows-x86_64"), required=True)
@@ -48,7 +48,15 @@ def main(argv=None) -> int:
         runtime = "windows" if sys.platform == "win32" else "linux"
         if not a.platform.startswith(runtime):
             raise EngineError("TARGET_PLATFORM_NOT_THIS_HOST")
-        if a.action == "import-archive":
+        if a.action == "universal-selftest":
+            if any((a.root, a.bundle, a.expected_manifest_sha256,
+                    a.archive, a.archive_sha256, a.archive_kind,
+                    a.destination, a.layout, a.layout_sha256, a.scope,
+                    a.quiesced, a.accepted, a.native_unregistered)):
+                raise EngineError("UNIVERSAL_SELFTEST_TAKES_NO_INSTALL_PATHS_OR_FLAGS")
+            from .universal_selftest import run
+            out = run(a.platform)
+        elif a.action == "import-archive":
             if (a.root or a.bundle or a.layout or a.layout_sha256 or a.scope or
                     a.quiesced or a.accepted or a.native_unregistered):
                 raise EngineError("ARCHIVE_IMPORT_NOT_AN_INSTALL_TRANSACTION")
