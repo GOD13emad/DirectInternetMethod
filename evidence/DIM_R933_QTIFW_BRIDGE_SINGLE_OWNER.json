@@ -1,0 +1,99 @@
+{
+  "architecture_decision": "Qt IFW can invoke the existing universal engine without owning managed code, but failure can remove Qt component metadata while external code remains installed. It is a supplementary UX shell only. Implementing an IFW-owned package manager PLUS a second lifecycle authority would create metadata drift. No release/deployment acceptance.",
+  "component_versions": [
+    "1.0.0-1",
+    "1.0.1-1",
+    "1.0.2-1(broken)"
+  ],
+  "external_dual_scope_managed_code_sha256": {
+    "protected": "8ba965059297b610402db389f5dadf733dadf375a1b026c338327b8f57112946",
+    "user": "4eb8657289a54e222b2dc9c330a58f953e5bc1ee0e4ada44149b158134bfe61c"
+  },
+  "external_dual_scope_managed_code_version": "1.5.6",
+  "external_owner_data_sha256": "343d8e7052849f3cc58d2e765cb06c97232b62291a51dbb9dceaa1bb942b413c",
+  "gate": "R933_EXISTING_VENDOR_SHELL_SINGLE_EXTERNAL_TRANSACTION_OWNER",
+  "installer_v2_bytes": 36686715,
+  "installer_v2_sha256": "7249de4a0f22d1a2085e0b203699191a41d30b1947c9bfb7adbc5d2b54d556d2",
+  "limits": {
+    "atomic_rollback_across_qt_internal_metadata_and_engine_code": false,
+    "external_code_upgrade_by_qt": false,
+    "native_broker_receipt_authorized": false,
+    "native_linux_systemd_root_service_integration": false,
+    "native_windows_qt_runtime": false,
+    "powercut_reboot": false,
+    "production_ready": false,
+    "publisher_provenance": false,
+    "qt_4_11_runtime": false,
+    "real_product_install": false
+  },
+  "logs": {
+    "qt-bridge-fault-102.log": {
+      "bytes": 4307,
+      "sha256": "dac6ed3994612addfc0cfdd5a432b16fd88d7e26caae8214ed4f515b370ea2f9"
+    },
+    "qt-bridge-install-v2.log": {
+      "bytes": 3183,
+      "sha256": "2324f6980d2475dc999cc9682ae83ea1d502d56f1667baa68646d71b64feaf04"
+    },
+    "qt-bridge-install.log": {
+      "bytes": 2031,
+      "sha256": "74ce866ecb41f281abc2815d72464366a047ba0a25266d19976fab753c72a610"
+    },
+    "qt-bridge-update-101.log": {
+      "bytes": 3442,
+      "sha256": "ce967228e1505698c2185bc750a254a83c6d1d987e95cd4db222d7185641ca3f"
+    },
+    "qt-shell-metadata-repair.log": {
+      "bytes": 3584,
+      "sha256": "2bc3e286a8bf09416a08a37052168bac25435d21d43fdbcf3221a2b1f016305e"
+    },
+    "qt-shell-remove.log": {
+      "bytes": 2070,
+      "sha256": "8e89d3ad2fc31edb209d2d0661a2b5efdb564d1f5d6640fa1daa2974dcac1528"
+    }
+  },
+  "official_vendor_archive_bytes": 59604779,
+  "official_vendor_archive_sha256": "dd86e6098e88baf0aad28a03334b505f8767eb45294b74d118d16a4a1d64f035",
+  "operation_ids": {
+    "fault_shell_upgrade": "bac5e0cb-cad0-4d21-8cfb-fa2e8f32b64c",
+    "first_boolean_semantics_negative": "b27f164e-473e-4258-b43b-4729d57bd5a0",
+    "metadata_repair_remove": "aee711f9-7e84-4e87-88a2-42cd2a3dcc4c",
+    "original_qt_vendor_setup": "67343196-c96b-4120-8818-81b5eebd9c7b",
+    "positive_shell_install": "99b75cd4-47c8-4880-8b30-9ed2fa78728b",
+    "positive_shell_upgrade": "d9282b1c-b33d-4344-8ace-b619b4695474"
+  },
+  "platform": "linux-x86_64",
+  "project_code_head": "e5d3bd84cc268b4b99af3e630d3f1623928ba054",
+  "qt_component_inventory_after_final_remove": [],
+  "qt_package_scripts": {
+    "packages_100": {
+      "payload_files": 0,
+      "sha256": "075fbb98d1d835d85327b3ebb0568f92cc69480f6cf504ccbad165f19bed9385"
+    },
+    "packages_101": {
+      "payload_files": 0,
+      "sha256": "075fbb98d1d835d85327b3ebb0568f92cc69480f6cf504ccbad165f19bed9385"
+    },
+    "packages_102_failure": {
+      "payload_files": 0,
+      "sha256": "c3214a6271166d7f179a0d56042efd8f7993ec5e566cb0ebd2ef11a37ebf23e1"
+    }
+  },
+  "qt_vendor_version": "4.7.0",
+  "schema": 1,
+  "separate_synthetic_owner_data_sha256": "2bdd8a45434ad9900d6ea89210732a1fe86e6b2e5f8031affef4d3c9f4039723",
+  "stages": {
+    "external_dual_scope_code_hash_and_version_untouched": true,
+    "external_owner_data_hash_untouched": true,
+    "first_attempt_register_operation_return_value_false_assumption_was_invalid": true,
+    "qt_component_removed_external_code_still_intact": true,
+    "qt_failed_update_removed_qt_component_metadata": true,
+    "qt_failing_update_102_runs_shared_test_then_built_in_execute_false": true,
+    "qt_failing_update_exit_code": 3,
+    "qt_healthy_update_100_to_101_executes_existing_universal_selftest": true,
+    "qt_install_zero_code_payload_executes_existing_universal_selftest": true,
+    "qt_native_repair_metadata_via_repo_101": true
+  },
+  "synthetic_data_payload_empty_all_packages": true,
+  "vendor_binarycreator_sha256": "589c76061d3a1fc83ce4550304a10a88bb0ea3117ecf2b2bc7c9d2db49756699"
+}

@@ -1,0 +1,68 @@
+{
+  "compiled_vendor_installer_bytes": 36686689,
+  "compiled_vendor_installer_sha256": "d2c7a3f4214e4fd12e4705f8e369df6d7ed955bb0bbd7ad276e1762584d38c32",
+  "decision": "Qt IFW can act as a test-only existing maintenance/installer outer shell invoking the existing universal engine, with zero Qt-managed product payload. Its component metadata can disappear on failure despite intact external code. It must NOT become a second authority for managed files or claim full transactional integration.",
+  "engine_external_code_pins": {
+    "protected": "8ba965059297b610402db389f5dadf733dadf375a1b026c338327b8f57112946",
+    "user": "4eb8657289a54e222b2dc9c330a58f953e5bc1ee0e4ada44149b158134bfe61c"
+  },
+  "engine_external_code_version": "1.5.6",
+  "engine_external_owner_sha256": "343d8e7052849f3cc58d2e765cb06c97232b62291a51dbb9dceaa1bb942b413c",
+  "external_engine_two_scopes_unchanged_across_failure": true,
+  "external_owner_settings_unchanged_across_failure": true,
+  "fixture_renderer_os_python_alias_fix_applied": true,
+  "fixture_renderer_sha256": "894ce4bed6f0d4d9c38af2d0443b0185cb792ab89afa37c39f6c0752c845ef5e",
+  "limits": {
+    "native_broker_receipt_authorized": false,
+    "native_windows_qt_binary_tested": false,
+    "powercut_or_hard_reboot_tested": false,
+    "product_files_mutated": false,
+    "production_installer_authenticated": false,
+    "qt_ifw_4_11_runtime_tested": false,
+    "qt_metadata_atomic_with_external_code": false,
+    "ready_for_release": false,
+    "root_systemd_service_installed": false
+  },
+  "logs": {
+    "failed-update-102.log": {
+      "bytes": 4271,
+      "sha256": "ba60bbd0db6e1d884b331c16e2a1de3bdf78e50d2e171ebb0730e3462a800457"
+    },
+    "installer.log": {
+      "bytes": 3092,
+      "sha256": "8fbdd89f30db57fbace781524543fae51b972dea9f139e580cc98de1dfdf2f6c"
+    },
+    "remove-final.log": {
+      "bytes": 2025,
+      "sha256": "dc76f17c8df32fd2db7bfd1fa986acfd3a04139dd0046e25324ed852355e7d11"
+    },
+    "repair-101.log": {
+      "bytes": 3553,
+      "sha256": "d0466d4bfed5848cfd8f8660ef9a725fe5ad38af7f718de0163ea4a0da02b92c"
+    },
+    "update-101.log": {
+      "bytes": 3411,
+      "sha256": "8776f04aabdc3225a60a6cefd69d54d691290ca8b61affb85afaa6f922637252"
+    }
+  },
+  "no_managed_product_payload_in_any_vendor_package": true,
+  "ops": {
+    "corrected_exact_renderer_full_upgrade_fault_repair_remove": "3990c709-d202-4f6d-a590-e1f3ae03cc7d",
+    "corrected_exact_renderer_native_installer": "df9fd2d7-5981-4521-9e43-df9dbe34146e",
+    "native_exact_renderer_first_attempt_real_os_python_symlink_guard_failed": "1b2d3d1f-4241-4a30-8229-99fdb71ad88d"
+  },
+  "platform": "linux-x86_64",
+  "project_source_head": "e5d3bd84cc268b4b99af3e630d3f1623928ba054",
+  "qt_component_inventory_after_final_remove": [],
+  "qt_renderer_receipt_sha256": "4e1dad151698d442d6ed766f9fd0cc17ee1e2a9047d82a02725360e25a809a64",
+  "schema": 1,
+  "status": "PASS_R933_EXACT_RENDERER_VENDOR_QT_NATIVE_SINGLE_CODE_OWNER_FIXTURE",
+  "vendor": "Qt Installer Framework",
+  "vendor_component_metadata_repaired_then_removed": true,
+  "vendor_official_archive_sha256": "dd86e6098e88baf0aad28a03334b505f8767eb45294b74d118d16a4a1d64f035",
+  "vendor_version": "4.7.0",
+  "version_100_install_from_exact_renderer_pass": true,
+  "version_101_upgrade_from_exact_renderer_pass": true,
+  "version_102_execute_false_failure_rc": 3,
+  "version_102_vendor_update_aborted_and_component_metadata_lost": true
+}
