@@ -93,7 +93,7 @@ def send(conn: socket.socket, payload: dict) -> None:
     conn.sendall(struct.pack("<I", len(blob)) + blob)
 
 
-def prepare(directory: Path) -> None:
+def prepare(directory: Path, polkit_action: str | None = None) -> None:
     from installer_engine.broker_intent import compare_pinned_policy_intent
     from installer_engine.engine import hash_bytes
     from installer_engine.native_receipt import validate_intent, intent_sha256
@@ -101,6 +101,11 @@ def prepare(directory: Path) -> None:
     if directory.exists():
         raise ValueError("R938_PREPARE_FRESH_DIRECTORY_REQUIRED")
     directory.mkdir(mode=0o700)
+    if polkit_action is not None:
+        from installer_engine.linux_polkit_authorization import ACTION_RE
+        if (not isinstance(polkit_action, str) or
+                ACTION_RE.fullmatch(polkit_action) is None):
+            raise ValueError("R940_OS_POLKIT_ACTION_INVALID")
     plan, policy, req, pb, rb = fixture_contract(fixture_plan("linux-x86_64"))
     binding = compare_pinned_policy_intent(plan, pb, hash_bytes(pb), rb)
     if binding["native_installation_accepted"]:
@@ -122,6 +127,10 @@ def prepare(directory: Path) -> None:
         "production_privileged_broker_implemented": False,
         "publisher_authenticated": False,
     }
+    if polkit_action is not None:
+        # Copied under Root ownership by the isolated CI setup. Never sourced
+        # from a socket client. No production publisher is authenticated.
+        metadata["polkit_action"] = polkit_action
     for name, value in {
         "broker-request.json": rb, "broker-policy.json": pb,
         "native-intent.json": canonical(native),
@@ -164,6 +173,18 @@ def serve(root: Path) -> None:
             or meta["native_product_installation_accepted"] is not False
             or not 0 < meta["expected_peer_uid"] < 2**32):
         raise ValueError("R938_SYNTHETIC_POLICY_INVALID")
+    action = meta.get("polkit_action")
+    if action is not None:
+        from installer_engine.linux_polkit_authorization import ACTION_RE
+        if not isinstance(action, str) or ACTION_RE.fullmatch(action) is None:
+            raise ValueError("R940_ROOT_POLICY_ACTION_INVALID")
+        contract_info = os.lstat(root / "inputs/contract.json")
+        if (not stat.S_ISREG(contract_info.st_mode) or
+                contract_info.st_uid != 0 or
+                stat.S_IMODE(contract_info.st_mode) != 0o400):
+            raise PermissionError("R940_ROOT_ACTION_METADATA_UNTRUSTED")
+        from installer_engine.linux_polkit_authorization import (
+            observe_linux_polkit_authorization)
     for name, pinned in (("broker-request.json", meta["request_sha256"]),
                          ("broker-policy.json", meta["policy_sha256"]),
                          ("native-intent.json", meta["native_intent_sha256"])):
@@ -199,6 +220,14 @@ def serve(root: Path) -> None:
                     if uid != meta["expected_peer_uid"] or pid <= 1:
                         send(conn, {"status": "DENIED", "reason": "R938_KERNEL_UID_DENIED"})
                         continue
+                    if action is not None:
+                        # Real OS polkit verdict for the *live socket peer*.
+                        # No request JSON may select the action or grant access.
+                        verdict = observe_linux_polkit_authorization(conn, action)
+                        if not verdict.get("polkit_authorized", False):
+                            send(conn, {"status": "DENIED",
+                                        "reason": "R940_OS_POLKIT_DENIED"})
+                            continue
                     raw = request(conn)
                     if digest(raw) != meta["request_sha256"]:
                         send(conn, {"status": "DENIED", "reason": "R938_REQUEST_SHA_MISMATCH"})
@@ -237,6 +266,7 @@ def serve(root: Path) -> None:
                     send(conn, {"status": "COMPLETED_SYNTHETIC_SYSTEMD_POSTFLIGHT",
                                 "kernel_peer_uid": uid, "server_euid": os.geteuid(),
                                 "service_pid": os.getpid(),
+                                "polkit_authorized": action is not None,
                                 "native_product_installation_accepted": False})
                 except (ValueError, KeyError, OSError, TypeError) as error:
                     try:
@@ -258,7 +288,8 @@ def client(directory: Path, root: Path, mode: str) -> None:
     if mode == "good":
         expected = "COMPLETED_SYNTHETIC_SYSTEMD_POSTFLIGHT"
     else:
-        expected = ("R938_REQUEST_SHA_MISMATCH" if mode == "tampered"
+        expected = ("R940_OS_POLKIT_DENIED" if mode == "polkit-denied"
+                    else "R938_REQUEST_SHA_MISMATCH" if mode == "tampered"
                     else "R938_KERNEL_UID_DENIED" if mode == "wrong-uid"
                     else "R938_REQUEST_REPLAY_DENIED")
         if response.get("reason") != expected:
@@ -285,6 +316,8 @@ def verify(directory: Path, output: Path) -> None:
     if (ledger["active"] is not None or
             ledger["used_request_ids"] != [native["request_id"]]):
         raise ValueError("R938_NATIVE_ROOT_REPLAY_DRIFT")
+    meta = read_json(directory / "contract.json")
+    polkit_mode = "polkit_action" in meta
     checks = {}
     for stage, wanted in (("good", "COMPLETED_SYNTHETIC_SYSTEMD_POSTFLIGHT"),
                           ("tampered", "R938_REQUEST_SHA_MISMATCH"),
@@ -295,6 +328,15 @@ def verify(directory: Path, output: Path) -> None:
         if (result["status"] if stage == "good" else result["reason"]) != wanted:
             raise ValueError("R938_CLIENT_PHASE_MISMATCH_" + stage)
         checks[stage] = "PASS"
+        if stage == "good" and (result.get("polkit_authorized", False)
+                                is not polkit_mode):
+            raise ValueError("R940_NATIVE_OS_POLKIT_RESULT_MISMATCH")
+    if polkit_mode:
+        no_policy = read_json(output / "polkit-denied.json")
+        if (no_policy.get("reason") != "R940_OS_POLKIT_DENIED"
+                or no_policy.get("status") != "DENIED"):
+            raise ValueError("R940_OS_POLKIT_DEFAULT_DENY_NOT_PROVEN")
+        checks["polkit-denied"] = "PASS"
     print(canonical({
         "schema": 1, "status": "PASS_R938_SYNTHETIC_ROOT_SYSTEMD_BROKER_REPLAY",
         "stages": checks, "root_owned_state_replay": True,
@@ -305,7 +347,8 @@ def verify(directory: Path, output: Path) -> None:
         "publisher_authenticated": False,
         "hard_powercut_reboot_accepted": False,
         "real_two_scope_app_upgrade_accepted": False,
-        "polkit_authorized": False,
+        "polkit_authorized": polkit_mode,
+        "os_vendor_policy_allow_and_deny_proved": polkit_mode,
     }).decode())
 
 
@@ -318,14 +361,17 @@ def main() -> None:
             p.add_argument("--input", type=Path, required=True)
         if name in ("serve", "client"):
             p.add_argument("--root", type=Path, required=True)
+        if name == "prepare":
+            p.add_argument("--polkit-action")
         if name == "client":
-            p.add_argument("--mode", choices=("good", "tampered", "replay", "wrong-uid"),
+            p.add_argument("--mode", choices=("good", "tampered", "replay", "wrong-uid",
+                                              "polkit-denied"),
                            required=True)
         if name == "verify":
             p.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.action == "prepare":
-        prepare(args.input)
+        prepare(args.input, args.polkit_action)
     elif args.action == "serve":
         serve(args.root)
     elif args.action == "client":

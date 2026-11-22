@@ -29,6 +29,36 @@ spec.loader.exec_module(fixture)
 
 
 class R938FixtureContracts(unittest.TestCase):
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux-only source build")
+    def test_r940_installed_action_is_root_metadata_not_client_grant(self):
+        with tempfile.TemporaryDirectory(prefix="dim-r940-action-") as tmp:
+            action = "org.god13emad.directinternetmethod.r940fixture"
+            target = Path(tmp) / "input"
+            fixture.prepare(target, polkit_action=action)
+            meta = json.loads((target / "contract.json").read_bytes())
+            request = json.loads((target / "broker-request.json").read_bytes())
+            self.assertEqual(meta["polkit_action"], action)
+            self.assertNotIn("polkit_action", request)
+            self.assertFalse(meta["native_product_installation_accepted"])
+            self.assertFalse(meta["production_privileged_broker_implemented"])
+            self.assertFalse(meta["publisher_authenticated"])
+            with self.assertRaisesRegex(ValueError, "R940_OS_POLKIT_ACTION_INVALID"):
+                fixture.prepare(Path(tmp) / "bad", polkit_action="org.bad;code")
+
+    def test_r940_ci_uses_installed_test_only_vendor_policy_and_unchanged_kernel(self):
+        script = SCRIPT.read_text(encoding="utf8")
+        shell = HARNESS.read_text(encoding="utf8")
+        self.assertIn("observe_linux_polkit_authorization(conn, action)", script)
+        self.assertIn('metadata["polkit_action"] = polkit_action', script)
+        self.assertIn('"R940_OS_POLKIT_DENIED"', script)
+        self.assertIn('R940_POLKIT_NATIVE', shell)
+        self.assertIn('subject.user === "runner"', shell)
+        self.assertIn('<allow_any>no</allow_any>', shell)
+        self.assertIn("R940_POLKIT_DENIAL_MUTATED_RECEIPT", shell)
+        self.assertIn("GITHUB_EVENT_NAME", shell)
+        self.assertIn("refs/heads/feature/universal-install-engine", shell)
+        self.assertNotIn("rm -rf -- \"$ROOT\"", shell)
+
     def test_cli_is_synthetic_not_a_second_product_installer(self):
         source = SCRIPT.read_text(encoding="utf8")
         self.assertIn("native_product_installation_accepted\": False", source)

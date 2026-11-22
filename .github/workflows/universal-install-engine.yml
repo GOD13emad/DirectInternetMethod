@@ -219,3 +219,32 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: '1'
         run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
+
+  linux-root-systemd-polkit-native:
+    name: Linux / OS Polkit DENY+ALLOW with real root systemd broker (synthetic)
+    # Reuse one root/systemd fixture plus the existing vendor pkcheck adapter.
+    # NEVER run feature-branch privileged scripts on untrusted pull_requests.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-install-engine'
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact trusted feature source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Linux vendor Polkit subject and R938/R940 source tests
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          python3 -m unittest tests.test_engine_linux_polkit_authorization tests.test_engine_r938_linux_systemd_native_fixture -q
+          bash -n tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
+      - name: OS-installed temporary Polkit action denies then authorizes isolated peer
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          R940_POLKIT_NATIVE: '1'
+        run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
