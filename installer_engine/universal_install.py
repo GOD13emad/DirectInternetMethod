@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import secrets
 from functools import wraps
 from pathlib import Path
 from typing import Mapping, Protocol, runtime_checkable
@@ -20,6 +21,7 @@ from .engine import (
 )
 from .two_scope import TwoScopeFixtureCoordinator
 from .two_scope_uninstall import TwoScopeUninstallFixtureCoordinator
+from .native_receipt import validate_intent, verify_completion_receipt
 
 MAX_SNAPSHOT = 65536
 UPDATE_PHASES = frozenset(("preparing", "staged", "activated", "finalizing"))
@@ -35,11 +37,11 @@ class NativeAdapter(Protocol):
     def snapshot(self) -> bytes: ...
     def observed_version(self) -> str | None: ...
     def quiesced(self) -> bool: ...
-    def apply(self, target_version: str) -> None: ...
-    def completed(self, target_version: str) -> bool: ...
-    def restore(self, snapshot: bytes) -> None: ...
-    def unregister(self) -> None: ...
-    def uninstall_completed(self) -> bool: ...
+    def apply(self, target_version: str, intent: dict) -> None: ...
+    def completed(self, intent: dict) -> bytes | None: ...
+    def restore(self, snapshot: bytes, intent: dict) -> None: ...
+    def unregister(self, intent: dict) -> None: ...
+    def uninstall_completed(self, intent: dict) -> bytes | None: ...
 
 
 def _serialized(method):
@@ -84,8 +86,9 @@ class UniversalFixtureInstaller:
         doc = load_json(self.journal)
         require(type(doc) is dict and
                 set(doc) == {"schema", "platform", "phase", "old", "new",
-                             "preimage_b64", "preimage_sha256"} and
-                type(doc["schema"]) is int and doc["schema"] == 1 and
+                             "preimage_b64", "preimage_sha256",
+                             "request_id", "scope_pins"} and
+                type(doc["schema"]) is int and doc["schema"] == 2 and
                 doc["platform"] == self.platform and
                 type(doc["phase"]) is str and doc["phase"] in PHASES and
                 type(doc["preimage_b64"]) is str and
@@ -113,7 +116,48 @@ class UniversalFixtureInstaller:
         require(self._snapshot(raw) ==
                 (doc["preimage_b64"], doc["preimage_sha256"]),
                 "UNIVERSAL_PREIMAGE_SHA_INVALID")
+        self._intent(doc)
+        # Cross-check the top-level pinned manifests with coordinator state.
+        if doc["phase"] in UPDATE_PHASES and self.code.path.exists():
+            rows = self.code._journal()["scopes"]
+            expected = [{"name": row["name"],
+                         "manifest_sha256": row["new"]["pin"]}
+                        for row in rows]
+            require(expected == doc["scope_pins"],
+                    "UNIVERSAL_SCOPE_MANIFEST_PIN_DRIFT")
+        if (doc["phase"] in UNINSTALL_PHASES and
+                self.uninstall.uninstall_path.exists()):
+            rows = self.uninstall._uninstall_journal()["scopes"]
+            expected = [{"name": row["name"],
+                         "manifest_sha256": row["old"]["pin"]}
+                        for row in rows]
+            require(expected == doc["scope_pins"],
+                    "UNIVERSAL_SCOPE_MANIFEST_PIN_DRIFT")
         return doc
+
+    def _intent(self, doc: dict) -> dict:
+        """Exact native request identity for all adapters, never a privilege grant."""
+        kind = ("uninstall" if doc["phase"] in UNINSTALL_PHASES
+                else "upgrade" if doc["old"] is not None else "install")
+        intent = {"schema": 1, "request_id": doc["request_id"],
+                  "platform": doc["platform"], "operation": kind,
+                  "old": doc["old"], "new": doc["new"],
+                  "preimage_sha256": doc["preimage_sha256"],
+                  "scope_pins": doc["scope_pins"]}
+        validate_intent(intent)
+        require([row["name"] for row in intent["scope_pins"]] ==
+                list(self.code.names) and intent["platform"] == self.platform,
+                "UNIVERSAL_INTENT_SCOPE_OR_PLATFORM_DRIFT")
+        return intent
+
+    def _native_complete(self, doc: dict) -> bool:
+        intent = self._intent(doc)
+        return verify_completion_receipt(intent, self.adapter.completed(intent))
+
+    def _native_uninstalled(self, doc: dict) -> bool:
+        intent = self._intent(doc)
+        return verify_completion_receipt(
+            intent, self.adapter.uninstall_completed(intent))
 
     def _write(self, doc: dict) -> None:
         with self.code.control.locked():
@@ -168,9 +212,14 @@ class UniversalFixtureInstaller:
                 "UNIVERSAL_PACKAGE_VERSION_SPLIT")
         require(old is None or version(new) > version(old),
                 "UNIVERSAL_PACKAGE_NOT_NEWER")
-        record = {"schema": 1, "platform": self.platform,
+        record = {"schema": 2, "platform": self.platform,
                   "phase": "preparing", "old": old, "new": new,
+                  "request_id": secrets.token_hex(16),
+                  "scope_pins": [{"name": name,
+                                  "manifest_sha256": sources[name][1].lower()}
+                                 for name in self.code.names],
                   "preimage_b64": raw_b64, "preimage_sha256": sha}
+        self._intent(record)
         self._write(record)
         self.code.prepare(sources)
         record["phase"] = "staged"
@@ -186,7 +235,7 @@ class UniversalFixtureInstaller:
         self.code.activate(self.adapter.quiesced)
         doc["phase"] = "activated"
         self._write(doc)  # Persist before touching native registration.
-        self.adapter.apply(doc["new"])
+        self.adapter.apply(doc["new"], self._intent(doc))
         return {"status": "UNIVERSAL_NATIVE_APPLY_UNVERIFIED_FIXTURE",
                 "version": doc["new"]}
 
@@ -196,7 +245,7 @@ class UniversalFixtureInstaller:
         require(doc["phase"] in ("activated", "finalizing"),
                 "UNIVERSAL_NOT_ACTIVATED")
         # Registry or unit version alone may predate a postinstall failure.
-        require(self.adapter.completed(doc["new"]) is True,
+        require(self._native_complete(doc) is True,
                 "UNIVERSAL_NATIVE_COMPLETION_RECEIPT_MISSING")
         require(self.adapter.observed_version() == doc["new"],
                 "UNIVERSAL_NATIVE_TARGET_NOT_INSTALLED")
@@ -204,7 +253,7 @@ class UniversalFixtureInstaller:
             doc["phase"] = "finalizing"
             self._write(doc)
         result = self.code.finalize(
-            lambda: self.adapter.completed(doc["new"]) is True
+            lambda: self._native_complete(doc) is True
             and self.adapter.observed_version() == doc["new"],
             fault_after=fault_after)
         self._remove()
@@ -222,7 +271,7 @@ class UniversalFixtureInstaller:
         require(self.adapter.quiesced() is True,
                 "UNIVERSAL_NATIVE_NOT_QUIESCED")
         raw = base64.b64decode(doc["preimage_b64"].encode("ascii"))
-        self.adapter.restore(raw)
+        self.adapter.restore(raw, self._intent(doc))
         require(self.adapter.observed_version() == doc["old"],
                 "UNIVERSAL_NATIVE_RESTORE_NOT_VERIFIED")
         if self.code.path.exists():
@@ -240,9 +289,19 @@ class UniversalFixtureInstaller:
         old = self._consistent_old()
         require(old is not None, "UNIVERSAL_NOT_INSTALLED")
         raw_b64, sha = self._capture(old)
-        record = {"schema": 1, "platform": self.platform,
+        scope_pins = []
+        for name in self.code.names:
+            snapshot = self.code._snapshot(name)
+            require(snapshot is not None and snapshot["version"] == old,
+                    "UNIVERSAL_UNINSTALL_SOURCE_CHANGED")
+            scope_pins.append({"name": name,
+                               "manifest_sha256": snapshot["pin"]})
+        record = {"schema": 2, "platform": self.platform,
                   "phase": "uninstall-preparing", "old": old, "new": None,
+                  "request_id": secrets.token_hex(16),
+                  "scope_pins": scope_pins,
                   "preimage_b64": raw_b64, "preimage_sha256": sha}
+        self._intent(record)
         self._write(record)
         self.uninstall.prepare(self.adapter.quiesced)
         record["phase"] = "uninstall-prepared"
@@ -257,7 +316,7 @@ class UniversalFixtureInstaller:
                 "UNIVERSAL_UNINSTALL_NOT_PREPARED")
         require(self.adapter.quiesced() is True,
                 "UNIVERSAL_NATIVE_NOT_QUIESCED")
-        self.adapter.unregister()
+        self.adapter.unregister(self._intent(doc))
         return {"status": "UNIVERSAL_NATIVE_UNREGISTER_UNVERIFIED_FIXTURE"}
 
     @_serialized
@@ -265,14 +324,14 @@ class UniversalFixtureInstaller:
         doc = self._load()
         require(doc["phase"] in ("uninstall-prepared", "uninstall-finalizing"),
                 "UNIVERSAL_UNINSTALL_NOT_READY")
-        require(self.adapter.uninstall_completed() is True and
+        require(self._native_uninstalled(doc) is True and
                 self.adapter.observed_version() is None,
                 "UNIVERSAL_NATIVE_UNINSTALL_RECEIPT_MISSING")
         if doc["phase"] != "uninstall-finalizing":
             doc["phase"] = "uninstall-finalizing"
             self._write(doc)
         self.uninstall.finish(
-            lambda: self.adapter.uninstall_completed() is True
+            lambda: self._native_uninstalled(doc) is True
             and self.adapter.observed_version() is None,
             fault_after=fault_after)
         require(self._consistent_old() is None,
@@ -289,7 +348,7 @@ class UniversalFixtureInstaller:
         require(self.adapter.quiesced() is True,
                 "UNIVERSAL_NATIVE_NOT_QUIESCED")
         raw = base64.b64decode(doc["preimage_b64"].encode("ascii"))
-        self.adapter.restore(raw)
+        self.adapter.restore(raw, self._intent(doc))
         require(self.adapter.observed_version() == doc["old"],
                 "UNIVERSAL_NATIVE_RESTORE_NOT_VERIFIED")
         if self.uninstall.uninstall_path.exists():

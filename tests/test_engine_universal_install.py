@@ -14,6 +14,7 @@ import unittest
 
 from installer_engine.engine import Engine, EngineError
 from installer_engine.universal_install import UniversalFixtureInstaller
+from installer_engine.native_receipt import intent_sha256
 
 
 class FileNativeFixture:
@@ -41,40 +42,40 @@ class FileNativeFixture:
     def quiesced(self) -> bool:
         return True
 
-    def apply(self, target_version: str) -> None:
+    @staticmethod
+    def _fixture_receipt(intent: dict) -> bytes:
+        return json.dumps({"schema": 1, "status": "completed",
+                           "intent_sha256": intent_sha256(intent)},
+                          sort_keys=True).encode("utf8")
+
+    def apply(self, target_version: str, intent: dict) -> None:
         self.write(target_version)
+        self.receipt.unlink(missing_ok=True)
         if self.complete_on_apply:
-            self.receipt.write_text(
-                json.dumps({"target": target_version}), encoding="utf8")
+            self.receipt.write_bytes(self._fixture_receipt(intent))
         if self.fail_after_apply:
             raise EngineError("SYNTHETIC_NATIVE_POSTINSTALL_ERROR")
 
-    def completed(self, target_version: str) -> bool:
-        if not self.receipt.exists():
-            return False
-        try:
-            return json.loads(self.receipt.read_text("utf8")) == {
-                "target": target_version}
-        except ValueError:
-            return False
+    def completed(self, intent: dict) -> bytes | None:
+        return self.receipt.read_bytes() if self.receipt.exists() else None
 
-    def restore(self, snapshot: bytes) -> None:
+    def restore(self, snapshot: bytes, intent: dict) -> None:
         doc = json.loads(snapshot.decode("utf8"))
         if type(doc) is not dict or set(doc) != {"schema", "version"}:
             raise EngineError("SYNTHETIC_NATIVE_PREIMAGE_INVALID")
         self.path.write_bytes(snapshot)
         self.receipt.unlink(missing_ok=True)
 
-    def unregister(self) -> None:
+    def unregister(self, intent: dict) -> None:
         self.write(None)
+        self.receipt.unlink(missing_ok=True)
         if self.complete_on_apply:
-            self.receipt.write_text('{"uninstall": true}', encoding="utf8")
+            self.receipt.write_bytes(self._fixture_receipt(intent))
         if self.fail_after_apply:
             raise EngineError("SYNTHETIC_NATIVE_UNINSTALL_ERROR")
 
-    def uninstall_completed(self) -> bool:
-        return (self.receipt.exists() and
-                self.receipt.read_text("utf8") == '{"uninstall": true}')
+    def uninstall_completed(self, intent: dict) -> bytes | None:
+        return self.receipt.read_bytes() if self.receipt.exists() else None
 
 class UniversalInstallCrossPlatform(unittest.TestCase):
     def setUp(self):
@@ -286,6 +287,89 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         self.core.begin(sources)
         self.core.abort()
         self.assertEqual(set(self.state().values()), {None})
+
+
+    def test_stale_receipt_same_version_same_pins_new_request_id_denied(self):
+        self.cycle("1.5.6")
+        same_sources = self.sources("1.5.7")
+        self.core.begin(same_sources)
+        self.core.activate()
+        prior = self.adapter.receipt.read_bytes()
+        first_id = self.core._load()["request_id"]
+        self.core.abort()
+        self.adapter.complete_on_apply = False
+        self.core.begin(same_sources)
+        self.assertNotEqual(self.core._load()["request_id"], first_id)
+        self.core.activate()
+        self.adapter.receipt.write_bytes(prior)
+        with self.assertRaisesRegex(EngineError, "NATIVE_RECEIPT_INTENT_MISMATCH"):
+            self.core.commit()
+        self.assertTrue(self.core.journal.exists())
+        self.core.abort()
+        self.assertEqual(set(self.state().values()), {"1.5.6"})
+
+    def test_changed_scope_manifest_pin_refuses_old_receipt(self):
+        self.cycle("1.5.6")
+        self.core.begin(self.sources("1.5.7"))
+        self.core.activate()
+        source = self.core.journal.read_bytes()
+        altered = json.loads(source)
+        altered["scope_pins"][0]["manifest_sha256"] = "0" * 64
+        self.core.journal.write_text(json.dumps(altered), encoding="utf8")
+        with self.assertRaisesRegex(EngineError, "UNIVERSAL_SCOPE_MANIFEST_PIN_DRIFT"):
+            self.core.commit()
+        self.assertTrue(self.core.code.path.exists())
+        # Restore test-owned synthetic checkpoint before test-only rollback.
+        self.core.journal.write_bytes(source)
+        self.core.abort()
+
+    def test_replayed_update_receipt_cannot_authorize_uninstall(self):
+        self.cycle("1.5.6")
+        upgrade_receipt = self.adapter.receipt.read_bytes()
+        self.adapter.complete_on_apply = False
+        self.core.begin_uninstall()
+        self.core.apply_uninstall()
+        self.adapter.receipt.write_bytes(upgrade_receipt)
+        with self.assertRaisesRegex(EngineError, "NATIVE_RECEIPT_INTENT_MISMATCH"):
+            self.core.finish_uninstall()
+        self.core.abort_uninstall()
+        self.assertEqual(set(self.state().values()), {"1.5.6"})
+
+    def test_duplicate_receipt_field_is_rejected_without_code_cleanup(self):
+        self.core.begin(self.sources("1.5.6"))
+        self.core.activate()
+        self.adapter.receipt.write_bytes(
+            b'{"schema":1,"schema":1,"status":"completed",'
+            b'"intent_sha256":"' + b"0" * 64 + b'"}')
+        with self.assertRaisesRegex(EngineError, "NATIVE_RECEIPT_DUPLICATE_FIELD"):
+            self.core.commit()
+        self.assertTrue(self.core.code.path.exists())
+        self.core.abort()
+
+    def test_invalid_request_id_in_journal_blocks_resume(self):
+        self.core.begin(self.sources("1.5.6"))
+        orig = self.core.journal.read_bytes()
+        doc = json.loads(orig)
+        doc["request_id"] = "1" * 31 + "z"
+        self.core.journal.write_text(json.dumps(doc), encoding="utf8")
+        with self.assertRaisesRegex(EngineError, "NATIVE_INTENT_REQUEST_ID_INVALID"):
+            self.new_engine().recover()
+        self.assertTrue(self.core.code.path.exists())
+        self.core.journal.write_bytes(orig)
+        self.core.abort()
+
+    def test_unrecognized_v1_fixture_journal_refused_without_mutation(self):
+        self.core.begin(self.sources("1.5.6"))
+        orig = self.core.journal.read_bytes()
+        doc = json.loads(orig)
+        doc["schema"] = 1
+        self.core.journal.write_text(json.dumps(doc), encoding="utf8")
+        with self.assertRaisesRegex(EngineError, "UNIVERSAL_TRANSACTION_SCHEMA_INVALID"):
+            self.new_engine().recover()
+        self.assertTrue(self.core.code.path.exists())
+        self.core.journal.write_bytes(orig)
+        self.core.abort()
+
 
 if __name__ == "__main__":
     unittest.main()

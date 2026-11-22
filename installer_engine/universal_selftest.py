@@ -14,6 +14,7 @@ import tempfile
 
 from .engine import Engine, EngineError, require
 from .universal_install import UniversalFixtureInstaller
+from .native_receipt import intent_sha256
 
 
 class _NativeFixture:
@@ -31,26 +32,32 @@ class _NativeFixture:
     def quiesced(self) -> bool:
         return True
 
-    def apply(self, target_version: str) -> None:
+    @staticmethod
+    def _fixture_receipt(intent: dict) -> bytes:
+        return json.dumps({"schema": 1, "status": "completed",
+                           "intent_sha256": intent_sha256(intent)},
+                          sort_keys=True).encode("utf8")
+
+    def apply(self, target_version: str, intent: dict) -> None:
         self.version = target_version
-        self.receipt = None if self.suppress_receipt else ("up", target_version)
+        self.receipt = None if self.suppress_receipt else self._fixture_receipt(intent)
 
-    def completed(self, target_version: str) -> bool:
-        return self.receipt == ("up", target_version)
+    def completed(self, intent: dict) -> bytes | None:
+        return self.receipt
 
-    def restore(self, snapshot: bytes) -> None:
+    def restore(self, snapshot: bytes, intent: dict) -> None:
         v = json.loads(snapshot.decode("utf8"))
         require(type(v) is dict and set(v) == {"v"},
                 "SELFTEST_NATIVE_SNAPSHOT_INVALID")
         self.version = v["v"]
         self.receipt = None
 
-    def unregister(self) -> None:
+    def unregister(self, intent: dict) -> None:
         self.version = None
-        self.receipt = None if self.suppress_receipt else ("down", None)
+        self.receipt = None if self.suppress_receipt else self._fixture_receipt(intent)
 
-    def uninstall_completed(self) -> bool:
-        return self.receipt == ("down", None)
+    def uninstall_completed(self, intent: dict) -> bytes | None:
+        return self.receipt
 
 
 def _bundle(base: Path, platform: str, scope: str, ver: str):
@@ -111,7 +118,7 @@ def run(platform: str) -> dict:
         tx.begin(sources("1.5.8"))
         tx.activate()
         require(backend.version == "1.5.8" and
-                not backend.completed("1.5.8"),
+                backend.completed(tx._intent(tx._load())) is None,
                 "UNIVERSAL_SELFTEST_NEGATIVE_NOT_REPRODUCED")
         # Crash/restart: new instance checks durable journal; MUST abort rather
         # than assume success merely because native version is already 1.5.8.
