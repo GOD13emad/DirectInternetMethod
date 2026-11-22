@@ -26,7 +26,14 @@ from tests.test_engine_broker_intent import (
 @unittest.skipUnless(os.name == "nt", "OS native Win32 handles required")
 class BrokerWindowsHeldSnapshotTests(unittest.TestCase):
     def setUp(self):
-        self.folder = tempfile.TemporaryDirectory(prefix="dim-r934-wbroker-")
+        # GitHub Windows RUNNER_TEMP may be a reparse/mounted alias. The held-
+        # handle API intentionally rejects a different final pathname; allocate
+        # the fixture under the canonical checkout just like the preexisting
+        # Win32 handle tests, rather than weakening this native security check.
+        self.folder = tempfile.TemporaryDirectory(
+            prefix="dim-r934-wbroker-",
+            dir=Path(__file__).resolve().parents[1],
+        )
         self.addCleanup(self.folder.cleanup)
         self.root = Path(self.folder.name)
         self.plan, self.policy, self.request, self.pb, self.rb = (
