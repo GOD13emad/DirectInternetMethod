@@ -1,0 +1,16 @@
+<Packages>
+    <ApplicationName>R933 Synthetic Vendor Shell Windows</ApplicationName>
+    <ApplicationVersion>1.0.0</ApplicationVersion>
+    <Package>
+        <Name>org.dim.bridge.fixture</Name>
+        <Title>R933 Synthetic Vendor Qt Metadata Only</Title>
+        <Description>No DIM managed app payload; calls existing shared kernel</Description>
+        <SortingPriority>0</SortingPriority>
+        <TreeName moveChildren="false"></TreeName>
+        <Version>1.0.0-1</Version>
+        <LastUpdateDate></LastUpdateDate>
+        <InstallDate>2026-11-22</InstallDate>
+        <Size>0</Size>
+        <Checkable>true</Checkable>
+    </Package>
+</Packages>

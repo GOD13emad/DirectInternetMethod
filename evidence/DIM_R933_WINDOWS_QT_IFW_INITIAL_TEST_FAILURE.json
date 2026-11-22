@@ -1,0 +1,10 @@
+﻿{
+    "schema":  1,
+    "status":  "FAIL_R933_REAL_WINDOWS_QT_VENDOR_SHELL",
+    "stages":  [
+                   "REAL_SYSTEM_WINDOWS_SANDBOX_AND_PINNED_OFFICIAL_VENDOR_BINARIES"
+               ],
+    "error":  "R933_QT_INITIAL_COMPONENT_WRONG",
+    "product_installation_accepted":  false,
+    "native_privileged_broker_authenticated":  false
+}
