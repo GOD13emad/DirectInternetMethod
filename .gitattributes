@@ -27,3 +27,5 @@ windows/bin/zapret/GPL3.Cygwin.txt text eol=lf
 windows/installer/DirectInternetMethod.iss -text whitespace=cr-at-eol
 # Keep exact OS guest error/receipt bytes; no CRLF normalization.
 evidence/DIM_R933_WINDOWS_QT_IFW_* -text whitespace=cr-at-eol
+# Preserve byte-exact real Windows guest policy/ledger and failure logs.
+evidence/DIM_R934_WINDOWS_BROKER_* -text whitespace=cr-at-eol

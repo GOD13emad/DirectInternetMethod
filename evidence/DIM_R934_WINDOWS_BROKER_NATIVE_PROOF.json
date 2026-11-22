@@ -1,0 +1,25 @@
+﻿{
+    "schema":  1,
+    "status":  "PASS_R934_WINDOWS_SYSTEM_PROTECTED_BROKER_SNAPSHOT_READONLY_ONLY",
+    "stages":  [
+                   "SYSTEM_SANDBOX_AND_FROZEN_ORIGINAL_SHARED_ENGINE_PINS",
+                   "SYSTEM_OWNED_PROTECTED_DIR_REAL_NTFS_DACL",
+                   "REAL_WIN32_HELD_POLICY_AND_LEDGER_BYTES_PASS",
+                   "OS_PROTECTED_POLICY_TAMPER_SIZE_DENIED",
+                   "OS_PROTECTED_LEDGER_TAMPER_SAME_SIZE_SHA_DENIED",
+                   "OS_PROTECTED_NATIVE_BROKER_READONLY_RECOVERY_PASS"
+               ],
+    "policy_sha256":  "f78b8d6482d5eb0da85cc266ed763ccf094c25101774d278a161907b62265238",
+    "ledger_sha256":  "2e15b33800435de75a6b0c8665bd75176c85a8440c6a0daf873874f048ffc8a2",
+    "probe_sha256":  "8ab9e8ff4a2c40bde73d0982a4c39a213ae922a0fc9e99a252097b94d86cd3c8",
+    "protected_root_owner_system":  true,
+    "directory_no_nontrusted_write_ace":  true,
+    "policy_size_tamper_denied":  true,
+    "same_size_ledger_hash_tamper_denied":  true,
+    "native_installation_accepted":  false,
+    "privileged_broker_implemented":  false,
+    "publisher_authenticated":  false,
+    "native_receipt_issued":  false,
+    "actual_scm_service_tested":  false,
+    "reboot_accepted":  false
+}

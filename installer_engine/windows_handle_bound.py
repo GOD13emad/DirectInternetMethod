@@ -104,7 +104,8 @@ def _final_name(api, handle) -> str:
 
 
 def read_windows_pinned_file(path: str | Path, expected_bytes: int,
-                             expected_sha256: str) -> dict:
+                             expected_sha256: str, *,
+                             _include_bytes: bool = False) -> dict:
     """Read immutable content through the one opened Win32 handle.
 
     This does not grant OS/native installer acceptance; the independently
@@ -115,6 +116,11 @@ def read_windows_pinned_file(path: str | Path, expected_bytes: int,
             type(expected_sha256) is str and
             _SHA.fullmatch(expected_sha256) is not None,
             "WIN32_HANDLE_EXPECTED_SIZE_OR_SHA_INVALID")
+    require(type(_include_bytes) is bool,
+            "WIN32_HANDLE_CONTENT_MODE_INVALID")
+    if _include_bytes:
+        require(expected_bytes <= 65536,
+                "WIN32_HANDLE_SMALL_FILE_LIMIT")
     name = str(path)
     canonical = _normalized(name)
     api = _windows_api()
@@ -136,7 +142,8 @@ def read_windows_pinned_file(path: str | Path, expected_bytes: int,
         api.ReadFile.restype = wintypes.BOOL
         digest = hashlib.sha256()
         total = 0
-        buf = ctypes.create_string_buffer(1 << 20)
+        pieces = [] if _include_bytes else None
+        buf = ctypes.create_string_buffer(65536 if _include_bytes else 1 << 20)
         count = wintypes.DWORD()
         while True:
             require(bool(api.ReadFile(handle, buf, len(buf),
@@ -146,13 +153,16 @@ def read_windows_pinned_file(path: str | Path, expected_bytes: int,
                 break
             total += count.value
             require(total <= expected_bytes, "WIN32_HANDLE_EXCEEDED_EXPECTED")
-            digest.update(buf.raw[:count.value])
+            part = buf.raw[:count.value]
+            digest.update(part)
+            if pieces is not None:
+                pieces.append(part)
         require(total == expected_bytes and
                 digest.hexdigest() == expected_sha256.lower(),
                 "WIN32_HANDLE_PIN_MISMATCH")
         require(_identity(api, handle) == identity,
                 "WIN32_HANDLE_CHANGED_DURING_READ")
-        return {
+        result = {
             "status": "WIN32_OPEN_HANDLE_SHA_VALIDATED_NOT_NATIVE_AUTHORITY",
             "bytes": total, "sha256": digest.hexdigest(),
             "held_handle_hash_verified": True,
@@ -160,5 +170,21 @@ def read_windows_pinned_file(path: str | Path, expected_bytes: int,
             "native_installation_accepted": False,
             "protected_write_performed": False,
         }
+        if pieces is not None:
+            result["content"] = b"".join(pieces)
+        return result
     finally:
         api.CloseHandle(handle)
+
+
+def read_windows_pinned_small_file(path: str | Path, expected_bytes: int,
+                                   expected_sha256: str) -> bytes:
+    """Return <=64 KiB from the SAME verified open Win32 handle.
+
+    Bound the read before opening, reject reparse/sharing races, and check the
+    final path, digest and handle identity. OS ACLs, trusted publisher pins,
+    trusted service identity and native authorization are SEPARATE gates.
+    """
+    return read_windows_pinned_file(
+        path, expected_bytes, expected_sha256, _include_bytes=True
+    )["content"]
