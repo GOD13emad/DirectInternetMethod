@@ -7,6 +7,7 @@ on:
       - 'tests/test_engine*.py'
       - '.github/workflows/universal-install-engine.yml'
       - 'tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py'
+      - 'tools/native_fixtures/linux/RunR938*'
       - 'tools/native_fixtures/windows/R935*'
       - 'tools/native_fixtures/windows/R937*'
   push:
@@ -17,6 +18,7 @@ on:
       - 'tests/test_engine*.py'
       - '.github/workflows/universal-install-engine.yml'
       - 'tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py'
+      - 'tools/native_fixtures/linux/RunR938*'
       - 'tools/native_fixtures/windows/R935*'
       - 'tools/native_fixtures/windows/R937*'
   workflow_dispatch:
@@ -190,3 +192,30 @@ jobs:
           [System.Management.Automation.Language.Parser]::ParseFile('tools/native_fixtures/windows/RunR937ScmReceiptSandboxFixture.ps1', [ref]$tokens, [ref]$errors) | Out-Null
           if ($errors.Count -ne 0) { throw 'R937_NATIVE_SCM_GUEST_RUNNER_PARSE_FAILED' }
           Write-Host 'R937_NATIVE_SCM_RECEIPT_FIXTURE_SOURCE_ONLY_COMPILED_NOT_OS_AUTHORIZED'
+  linux-root-systemd-synthetic-broker:
+    name: Linux / real root systemd + kernel peer receipt/replay (synthetic only)
+    # Only trusted feature PUSH source is executed under real root on
+    # isolated ephemeral GitHub runners; never run untrusted PR code via sudo.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-install-engine'
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact feature source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Source-only R938 negative/contract tests (non-root)
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          python3 -m unittest tests.test_engine_r938_linux_systemd_native_fixture -v
+          bash -n tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
+      - name: Genuine ephemeral root systemd OS fixture, not DIM installation
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
