@@ -174,6 +174,9 @@ def serve(root: Path) -> None:
             or not 0 < meta["expected_peer_uid"] < 2**32):
         raise ValueError("R938_SYNTHETIC_POLICY_INVALID")
     action = meta.get("polkit_action")
+    # A disconnected client may leave /proc before pkcheck can inspect its
+    # identity. That is a DENIED request, not a fatal root-service exception.
+    denied_exceptions = (ValueError, KeyError, OSError, TypeError)
     if action is not None:
         from installer_engine.linux_polkit_authorization import ACTION_RE
         if not isinstance(action, str) or ACTION_RE.fullmatch(action) is None:
@@ -185,6 +188,8 @@ def serve(root: Path) -> None:
             raise PermissionError("R940_ROOT_ACTION_METADATA_UNTRUSTED")
         from installer_engine.linux_polkit_authorization import (
             observe_linux_polkit_authorization)
+        from installer_engine.engine import EngineError
+        denied_exceptions += (EngineError,)
     for name, pinned in (("broker-request.json", meta["request_sha256"]),
                          ("broker-policy.json", meta["policy_sha256"]),
                          ("native-intent.json", meta["native_intent_sha256"])):
@@ -268,7 +273,7 @@ def serve(root: Path) -> None:
                                 "service_pid": os.getpid(),
                                 "polkit_authorized": action is not None,
                                 "native_product_installation_accepted": False})
-                except (ValueError, KeyError, OSError, TypeError) as error:
+                except denied_exceptions as error:
                     try:
                         send(conn, {"status": "DENIED", "reason": "R938_FAIL_CLOSED"})
                     except OSError:

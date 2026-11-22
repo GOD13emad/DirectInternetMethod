@@ -129,6 +129,7 @@ start_unit() {
     --property="ReadWritePaths=$ROOT" \
     --property=ProtectHome=yes \
     --property=RuntimeMaxSec=90s \
+    --setenv=PYTHONDONTWRITEBYTECODE=1 \
     /usr/bin/python3 "$ROOT/RunR938SystemdReceiptFixture.py" serve --root "$ROOT"
 }
 start_unit
