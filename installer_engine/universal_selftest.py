@@ -22,6 +22,7 @@ class _NativeFixture:
         self.version = None
         self.receipt = None
         self.suppress_receipt = False
+        self.restored_receipt = None
 
     def snapshot(self) -> bytes:
         return json.dumps({"v": self.version}, sort_keys=True).encode("utf8")
@@ -33,8 +34,8 @@ class _NativeFixture:
         return True
 
     @staticmethod
-    def _fixture_receipt(intent: dict) -> bytes:
-        return json.dumps({"schema": 1, "status": "completed",
+    def _fixture_receipt(intent: dict, status: str = "completed") -> bytes:
+        return json.dumps({"schema": 1, "status": status,
                            "intent_sha256": intent_sha256(intent)},
                           sort_keys=True).encode("utf8")
 
@@ -51,6 +52,7 @@ class _NativeFixture:
                 "SELFTEST_NATIVE_SNAPSHOT_INVALID")
         self.version = v["v"]
         self.receipt = None
+        self.restored_receipt = None
 
     def unregister(self, intent: dict) -> None:
         self.version = None
@@ -58,6 +60,14 @@ class _NativeFixture:
 
     def uninstall_completed(self, intent: dict) -> bytes | None:
         return self.receipt
+
+    def resume_restored(self, old_version: str | None, intent: dict) -> None:
+        require(self.version == old_version,
+                "SELFTEST_RESTORE_NATIVE_VERSION_MISMATCH")
+        self.restored_receipt = self._fixture_receipt(intent, "restored")
+
+    def restored(self, intent: dict) -> bytes | None:
+        return self.restored_receipt
 
 
 def _bundle(base: Path, platform: str, scope: str, ver: str):

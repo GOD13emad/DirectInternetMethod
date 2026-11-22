@@ -87,12 +87,15 @@ def _unique_pairs(pairs: list[tuple[str, object]]) -> dict:
     return out
 
 
-def verify_completion_receipt(intent: dict, receipt: bytes | None) -> bool:
+def verify_native_receipt(intent: dict, receipt: bytes | None,
+                          *, expected_status: str = "completed") -> bool:
     """Fail closed: no receipt -> False; wrong/malformed/stale -> EngineError.
 
     Exact digest binds request ID, operation, platform, version transition,
     old native snapshot SHA and BOTH pinned managed code scope manifests.
     """
+    require(expected_status in {"completed", "restored"},
+            "NATIVE_RECEIPT_EXPECTED_STATUS_INVALID")
     if receipt is None:
         return False
     require(type(receipt) is bytes and
@@ -106,7 +109,7 @@ def verify_completion_receipt(intent: dict, receipt: bytes | None) -> bool:
     require(type(parsed) is dict and set(parsed) == {
         "schema", "intent_sha256", "status"
     } and type(parsed["schema"]) is int and parsed["schema"] == 1 and
-        parsed["status"] == "completed" and
+        parsed["status"] == expected_status and
         type(parsed["intent_sha256"]) is str and
         _SHA.fullmatch(parsed["intent_sha256"]) is not None,
         "NATIVE_RECEIPT_SCHEMA_INVALID")
@@ -114,3 +117,11 @@ def verify_completion_receipt(intent: dict, receipt: bytes | None) -> bool:
                                 intent_sha256(intent)),
             "NATIVE_RECEIPT_INTENT_MISMATCH")
     return True
+
+
+def verify_completion_receipt(intent: dict, receipt: bytes | None) -> bool:
+    return verify_native_receipt(intent, receipt, expected_status="completed")
+
+
+def verify_restoration_receipt(intent: dict, receipt: bytes | None) -> bool:
+    return verify_native_receipt(intent, receipt, expected_status="restored")

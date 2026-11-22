@@ -26,6 +26,11 @@ class FileNativeFixture:
         self.write(None)
         self.complete_on_apply = True
         self.fail_after_apply = False
+        self.restored_receipt = None
+        self.fail_after_resume = False
+        self.complete_on_resume = True
+        self.resume_count = 0
+        self.check_code_restored = None
 
     def write(self, version: str | None):
         self.path.write_text(
@@ -43,8 +48,8 @@ class FileNativeFixture:
         return True
 
     @staticmethod
-    def _fixture_receipt(intent: dict) -> bytes:
-        return json.dumps({"schema": 1, "status": "completed",
+    def _fixture_receipt(intent: dict, status: str = "completed") -> bytes:
+        return json.dumps({"schema": 1, "status": status,
                            "intent_sha256": intent_sha256(intent)},
                           sort_keys=True).encode("utf8")
 
@@ -65,6 +70,7 @@ class FileNativeFixture:
             raise EngineError("SYNTHETIC_NATIVE_PREIMAGE_INVALID")
         self.path.write_bytes(snapshot)
         self.receipt.unlink(missing_ok=True)
+        self.restored_receipt = None
 
     def unregister(self, intent: dict) -> None:
         self.write(None)
@@ -76,6 +82,20 @@ class FileNativeFixture:
 
     def uninstall_completed(self, intent: dict) -> bytes | None:
         return self.receipt.read_bytes() if self.receipt.exists() else None
+
+    def resume_restored(self, old_version: str | None, intent: dict) -> None:
+        if self.observed_version() != old_version:
+            raise EngineError("FIXTURE_RESTORE_VERSION_MISMATCH")
+        if self.check_code_restored is not None and not self.check_code_restored(old_version):
+            raise EngineError("FIXTURE_OLD_CODE_NOT_READY_FOR_NATIVE_START")
+        self.resume_count += 1
+        if self.complete_on_resume:
+            self.restored_receipt = self._fixture_receipt(intent, "restored")
+        if self.fail_after_resume:
+            raise EngineError("SYNTHETIC_CRASH_AFTER_NATIVE_RESUME")
+
+    def restored(self, intent: dict) -> bytes | None:
+        return self.restored_receipt
 
 class UniversalInstallCrossPlatform(unittest.TestCase):
     def setUp(self):
@@ -91,6 +111,7 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         self.control = self.base / "managed-journal"
         self.adapter = FileNativeFixture(self.base)
         self.core = self.new_engine()
+        self.adapter.check_code_restored = lambda old: set(self.state().values()) == {old}
 
     def new_engine(self):
         return UniversalFixtureInstaller(self.control, self.platform,
@@ -371,5 +392,65 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         self.core.abort()
 
 
+
+    def test_upgrade_crash_after_native_restart_receipt_replays_without_restart(self):
+        self.cycle("1.5.6")
+        self.core.begin(self.sources("1.5.7"))
+        self.core.activate()
+        self.adapter.fail_after_resume = True
+        with self.assertRaisesRegex(EngineError, "SYNTHETIC_CRASH_AFTER_NATIVE_RESUME"):
+            self.core.abort()
+        self.assertEqual(self.core._load()["phase"], "restoring-native")
+        self.assertEqual(self.adapter.resume_count, 1)
+        self.assertEqual(set(self.state().values()), {"1.5.6"})
+        self.adapter.fail_after_resume = False
+        self.assertEqual(self.new_engine().recover()["version"], "1.5.6")
+        self.assertEqual(self.adapter.resume_count, 1)
+        self.assertFalse(self.core.journal.exists())
+
+    def test_uninstall_crash_after_native_restart_receipt_replays(self):
+        self.cycle("1.5.6")
+        self.core.begin_uninstall()
+        self.core.apply_uninstall()
+        self.adapter.fail_after_resume = True
+        with self.assertRaisesRegex(EngineError, "SYNTHETIC_CRASH_AFTER_NATIVE_RESUME"):
+            self.core.abort_uninstall()
+        self.assertEqual(self.core._load()["phase"], "uninstall-restoring-native")
+        self.assertEqual(set(self.state().values()), {"1.5.6"})
+        self.adapter.fail_after_resume = False
+        self.assertEqual(self.new_engine().recover()["version"], "1.5.6")
+        self.assertEqual(self.adapter.resume_count, 1)
+        self.assertFalse(self.core.journal.exists())
+
+    def test_absent_native_restore_health_preserves_replay_journal(self):
+        self.cycle("1.5.6")
+        self.core.begin(self.sources("1.5.7"))
+        self.core.activate()
+        self.adapter.complete_on_resume = False
+        with self.assertRaisesRegex(EngineError, "NATIVE_RESTORE_HEALTH_NOT_VERIFIED"):
+            self.core.abort()
+        self.assertEqual(self.core._load()["phase"], "restoring-native")
+        self.assertEqual(set(self.state().values()), {"1.5.6"})
+        self.adapter.complete_on_resume = True
+        self.assertEqual(self.new_engine().recover()["version"], "1.5.6")
+        self.assertEqual(self.adapter.resume_count, 2)
+
+    def test_completed_native_receipt_cannot_replace_restoration_receipt(self):
+        self.cycle("1.5.6")
+        self.core.begin(self.sources("1.5.7"))
+        self.core.activate()
+        self.adapter.complete_on_resume = False
+        with self.assertRaisesRegex(EngineError, "NATIVE_RESTORE_HEALTH_NOT_VERIFIED"):
+            self.core.abort()
+        doc = self.core._load()
+        self.adapter.restored_receipt = self.adapter._fixture_receipt(
+            self.core._intent(doc), "completed")
+        with self.assertRaisesRegex(EngineError, "NATIVE_RECEIPT_SCHEMA_INVALID"):
+            self.new_engine().recover()
+        self.assertTrue(self.core.journal.exists())
+        self.adapter.restored_receipt = None
+        self.adapter.complete_on_resume = True
+        self.new_engine().recover()
+        self.assertFalse(self.core.journal.exists())
 if __name__ == "__main__":
     unittest.main()

@@ -7,6 +7,7 @@ import unittest
 from installer_engine.engine import EngineError
 from installer_engine.native_receipt import (
     intent_sha256, validate_intent, verify_completion_receipt,
+    verify_restoration_receipt,
 )
 
 
@@ -99,5 +100,17 @@ class UniversalNativeReceiptContract(unittest.TestCase):
         self.assertEqual(original, intent_sha256(reversed_doc))
 
 
+
+    def test_restoration_receipt_has_independent_status(self):
+        normal = self.receipt()
+        with self.assertRaisesRegex(EngineError, "NATIVE_RECEIPT_SCHEMA_INVALID"):
+            verify_restoration_receipt(self.intent, normal)
+        restored = json.dumps({
+            "schema": 1, "status": "restored",
+            "intent_sha256": intent_sha256(self.intent)
+        }).encode("utf8")
+        self.assertTrue(verify_restoration_receipt(self.intent, restored))
+        with self.assertRaisesRegex(EngineError, "NATIVE_RECEIPT_SCHEMA_INVALID"):
+            verify_completion_receipt(self.intent, restored)
 if __name__ == "__main__":
     unittest.main()

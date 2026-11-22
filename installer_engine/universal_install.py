@@ -21,12 +21,16 @@ from .engine import (
 )
 from .two_scope import TwoScopeFixtureCoordinator
 from .two_scope_uninstall import TwoScopeUninstallFixtureCoordinator
-from .native_receipt import validate_intent, verify_completion_receipt
+from .native_receipt import (validate_intent, verify_completion_receipt,
+                             verify_restoration_receipt)
 
 MAX_SNAPSHOT = 65536
-UPDATE_PHASES = frozenset(("preparing", "staged", "activated", "finalizing"))
+UPDATE_PHASES = frozenset(("preparing", "staged", "activated", "finalizing",
+                           "restoring-code", "restoring-native"))
 UNINSTALL_PHASES = frozenset(("uninstall-preparing", "uninstall-prepared",
-                              "uninstall-finalizing"))
+                              "uninstall-finalizing",
+                              "uninstall-restoring-code",
+                              "uninstall-restoring-native"))
 PHASES = UPDATE_PHASES | UNINSTALL_PHASES
 
 
@@ -42,6 +46,8 @@ class NativeAdapter(Protocol):
     def restore(self, snapshot: bytes, intent: dict) -> None: ...
     def unregister(self, intent: dict) -> None: ...
     def uninstall_completed(self, intent: dict) -> bytes | None: ...
+    def resume_restored(self, old_version: str | None, intent: dict) -> None: ...
+    def restored(self, intent: dict) -> bytes | None: ...
 
 
 def _serialized(method):
@@ -159,6 +165,11 @@ class UniversalFixtureInstaller:
         return verify_completion_receipt(
             intent, self.adapter.uninstall_completed(intent))
 
+    def _native_restored(self, doc: dict) -> bool:
+        intent = self._intent(doc)
+        return verify_restoration_receipt(
+            intent, self.adapter.restored(intent))
+
     def _write(self, doc: dict) -> None:
         with self.code.control.locked():
             atomic_json(self.journal, doc)
@@ -268,16 +279,36 @@ class UniversalFixtureInstaller:
                 "UNIVERSAL_UPDATE_TRANSACTION_REQUIRED")
         require(doc["phase"] != "finalizing",
                 "UNIVERSAL_FORWARD_REPLAY_REQUIRED")
-        require(self.adapter.quiesced() is True,
-                "UNIVERSAL_NATIVE_NOT_QUIESCED")
-        raw = base64.b64decode(doc["preimage_b64"].encode("ascii"))
-        self.adapter.restore(raw, self._intent(doc))
+        intent = self._intent(doc)
+        if doc["phase"] != "restoring-native":
+            require(self.adapter.quiesced() is True,
+                    "UNIVERSAL_NATIVE_NOT_QUIESCED")
+            if doc["phase"] != "restoring-code":
+                doc["phase"] = "restoring-code"
+                self._write(doc)
+            # Native identity/registration restored while service STOPPED.
+            raw = base64.b64decode(doc["preimage_b64"].encode("ascii"))
+            self.adapter.restore(raw, intent)
+            require(self.adapter.observed_version() == doc["old"],
+                    "UNIVERSAL_NATIVE_RESTORE_NOT_VERIFIED")
+            if self.code.path.exists():
+                self.code.abort(self.adapter.quiesced)
+            require(self._consistent_old() == doc["old"],
+                    "UNIVERSAL_CODE_PREIMAGE_NOT_RESTORED")
+            # Durable boundary before restarting the OLD service.
+            doc["phase"] = "restoring-native"
+            self._write(doc)
+        else:
+            require(self._consistent_old() == doc["old"],
+                    "UNIVERSAL_CODE_PREIMAGE_NOT_RESTORED")
+        # On replay after a process exit, a matching restored receipt means
+        # the old native runtime was already resumed; do not start twice.
+        if not self._native_restored(doc):
+            self.adapter.resume_restored(doc["old"], intent)
+        require(self._native_restored(doc) is True,
+                "UNIVERSAL_NATIVE_RESTORE_HEALTH_NOT_VERIFIED")
         require(self.adapter.observed_version() == doc["old"],
-                "UNIVERSAL_NATIVE_RESTORE_NOT_VERIFIED")
-        if self.code.path.exists():
-            self.code.abort(self.adapter.quiesced)
-        require(self._consistent_old() == doc["old"],
-                "UNIVERSAL_CODE_PREIMAGE_NOT_RESTORED")
+                "UNIVERSAL_NATIVE_RESTORED_VERSION_CHANGED")
         self._remove()
         return {"status": "UNIVERSAL_TWO_SCOPE_ABORT_FIXTURE_ONLY",
                 "version": doc["old"],
@@ -343,20 +374,37 @@ class UniversalFixtureInstaller:
     @_serialized
     def abort_uninstall(self) -> dict:
         doc = self._load()
-        require(doc["phase"] in ("uninstall-preparing", "uninstall-prepared"),
+        require(doc["phase"] in UNINSTALL_PHASES and
+                doc["phase"] != "uninstall-finalizing",
                 "UNIVERSAL_UNINSTALL_FORWARD_REPLAY_REQUIRED")
-        require(self.adapter.quiesced() is True,
-                "UNIVERSAL_NATIVE_NOT_QUIESCED")
-        raw = base64.b64decode(doc["preimage_b64"].encode("ascii"))
-        self.adapter.restore(raw, self._intent(doc))
+        intent = self._intent(doc)
+        if doc["phase"] != "uninstall-restoring-native":
+            require(self.adapter.quiesced() is True,
+                    "UNIVERSAL_NATIVE_NOT_QUIESCED")
+            if doc["phase"] != "uninstall-restoring-code":
+                doc["phase"] = "uninstall-restoring-code"
+                self._write(doc)
+            raw = base64.b64decode(doc["preimage_b64"].encode("ascii"))
+            self.adapter.restore(raw, intent)
+            require(self.adapter.observed_version() == doc["old"],
+                    "UNIVERSAL_NATIVE_RESTORE_NOT_VERIFIED")
+            if self.uninstall.uninstall_path.exists():
+                self.uninstall.abort(
+                    self.adapter.quiesced,
+                    lambda: self.adapter.observed_version() == doc["old"])
+            require(self._consistent_old() == doc["old"],
+                    "UNIVERSAL_UNINSTALL_ABORT_CODE_DRIFT")
+            doc["phase"] = "uninstall-restoring-native"
+            self._write(doc)
+        else:
+            require(self._consistent_old() == doc["old"],
+                    "UNIVERSAL_UNINSTALL_ABORT_CODE_DRIFT")
+        if not self._native_restored(doc):
+            self.adapter.resume_restored(doc["old"], intent)
+        require(self._native_restored(doc) is True,
+                "UNIVERSAL_NATIVE_RESTORE_HEALTH_NOT_VERIFIED")
         require(self.adapter.observed_version() == doc["old"],
-                "UNIVERSAL_NATIVE_RESTORE_NOT_VERIFIED")
-        if self.uninstall.uninstall_path.exists():
-            self.uninstall.abort(
-                self.adapter.quiesced,
-                lambda: self.adapter.observed_version() == doc["old"])
-        require(self._consistent_old() == doc["old"],
-                "UNIVERSAL_UNINSTALL_ABORT_CODE_DRIFT")
+                "UNIVERSAL_NATIVE_RESTORED_VERSION_CHANGED")
         self._remove()
         return {"status": "UNIVERSAL_UNINSTALL_ABORT_FIXTURE_ONLY",
                 "version": doc["old"],
