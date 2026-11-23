@@ -105,6 +105,15 @@ try {
  Require ((FileSha (Join-Path $App 'manifest.json')) -ceq $build.manifestSha) 'RC1_MANIFEST_PIN'
  & pwsh -NoProfile -NonInteractive -File (Join-Path $Root 'tests/r850_windows_privileged_manifest_attestation.ps1') -UserRoot $App -PrivilegedRoot $Priv -ExpectedVersion '1.5.7' -ExpectedManifestSha256 $build.manifestSha -ExpectedManagedFiles 681 -ExpectedPrivilegedFiles 674
  Require ($LASTEXITCODE -eq 0) 'R850_INSTALLED_PRIVILEGED_674_SHA_MATCH'
+ if($reviewedCandidate){
+  # Reuse the shared engine's native read-only observer against the actual
+  # Inno-installed flat roots, not synthetic current/previous directories.
+  $observed= & python -B -c 'import json,sys; from installer_engine.native_readiness import windows_flat_native_postflight; print(json.dumps(windows_flat_native_postflight(*sys.argv[1:])))' (Join-Path $Root 'windows\manifest.json') $build.manifestSha $App $Priv
+  Require ($LASTEXITCODE -eq 0) 'R952_SHARED_NATIVE_POSTFLIGHT_EXIT'
+  $native=$observed|ConvertFrom-Json
+  Require ($native.status -ceq 'R952_WINDOWS_FLAT_NATIVE_READONLY' -and $native.verified_immutable_files.privileged -eq 674 -and $native.verified_immutable_files.user -eq 6 -and @($native.mutable_owner_members_not_hashed_to_source).Count -eq 1 -and !$native.native_installation_accepted) 'R952_SHARED_NATIVE_IMMUTABLE_680_AND_SCM'
+  $report.sharedEngineNativeObservation=$native
+ }
  Require ((Get-Content (Join-Path $App 'RELEASE.json') -Raw|ConvertFrom-Json).version -ceq '1.5.7') 'RC1_INSTALLED_VERSION'
  Require ((FileSha $Config) -ceq $configSha -and (FileSha $Provider) -ceq $providerSha -and (FileSha $Evidence) -ceq $evidenceSha) 'IN_PLACE_USER_DATA_PRESERVED'
  $d=Registered '1.5.7'

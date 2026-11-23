@@ -313,3 +313,94 @@ def two_scope_native_postflight(
         "native_installation_accepted": False,
         "publisher_authenticated": False,
     }
+
+
+def windows_flat_native_postflight(
+    build_manifest: Path | str, manifest_sha256: str,
+    user_root: Path | str, privileged_root: Path | str,
+) -> dict:
+    """Observe the existing native Inno layout, without imposing slot paths.
+
+    The manifest pin must originate from an independent build/release record.
+    The only product-defined mutable manifest member is providers.json;
+    its preservation is a separate native upgrade check, not a code hash.
+    This observer does not authorize writes, attest ACLs or issue receipts.
+    """
+    import json
+    from .engine import (MAX_MANIFEST_BYTES, hash_bytes, no_links,
+                         regular, relpath)
+    from .native_plan import windows_scoped_plan
+    from .windows_handle_bound import read_windows_pinned_file
+
+    require(os.name == "nt", "WINDOWS_NATIVE_HOST_REQUIRED")
+    source = Path(build_manifest).absolute()
+    no_links(source)
+    require(regular(source), "R952_BUILD_MANIFEST_MISSING")
+    with source.open("rb") as stream:
+        raw = stream.read(MAX_MANIFEST_BYTES + 1)
+    require(0 < len(raw) <= MAX_MANIFEST_BYTES and
+            hash_bytes(raw) == manifest_sha256.lower(),
+            "R952_BUILD_MANIFEST_PIN_MISMATCH")
+
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            require(key not in result, "DUPLICATE_JSON_KEY:" + key)
+            result[key] = value
+        return result
+
+    plan = windows_scoped_plan(json.loads(raw, object_pairs_hook=unique))
+    roots = {"user": Path(user_root).absolute(),
+             "privileged": Path(privileged_root).absolute()}
+    a, b = roots.values()
+    require(a != b and a not in b.parents and b not in a.parents,
+            "R952_SCOPE_ROOT_OVERLAP")
+    for root in roots.values():
+        no_links(root)
+        require(root.is_dir(), "R952_INSTALLED_ROOT_MISSING")
+    # The build manifest bytes are pinned independently of the installed copy.
+    installed_manifest = a / "manifest.json"
+    no_links(installed_manifest)
+    read_windows_pinned_file(installed_manifest, len(raw), manifest_sha256)
+
+    counts = {}
+    mutable = []
+    for name, manifest in plan.scopes:
+        count = 0
+        for item in manifest["files"]:
+            target = roots[name].joinpath(*relpath(item["path"]))
+            no_links(target)
+            require(regular(target), "R952_INSTALLED_MEMBER_MISSING")
+            if name == "user" and item["path"] == "app/router_gateway/providers.json":
+                mutable.append(item["path"])
+                continue
+            read_windows_pinned_file(target, item["bytes"], item["sha256"])
+            count += 1
+        counts[name] = count
+
+    # Inno uses sc.exe create/config with the fixed service executable path.
+    # Accept ONLY the two equivalent exact quoted/unquoted binary commands;
+    # never accept appended arguments, alternate executable or a foreign path.
+    service = "DirectInternetMethodSvc"
+    executable = str(b / "app" / "DirectInternetMethod.Service.exe")
+    config = windows_service_configuration(service)
+    command = config["binary_command"]
+    require(command in (executable, '"' + executable + '"'),
+            "SCM_BINARY_COMMAND_MISMATCH")
+    native = windows_readiness(
+        "{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}", service,
+        expected_version=plan.version, expected_binary_command=command)
+    require(native["registrations"][0]["hive"] == "HKLM" and
+            native["scm_config"]["service_account"].casefold() == "localsystem" and
+            native["scm_config"]["start_type"] == 2,
+            "R952_NATIVE_SERVICE_IDENTITY_MISMATCH")
+    return {
+        "status": "R952_WINDOWS_FLAT_NATIVE_READONLY",
+        "version": plan.version,
+        "manifest_sha256": manifest_sha256.lower(),
+        "verified_immutable_files": counts,
+        "mutable_owner_members_not_hashed_to_source": mutable,
+        "native": native,
+        "publisher_authenticated": False,
+        "native_installation_accepted": False,
+    }

@@ -117,5 +117,63 @@ class NativeInstallPlanTests(unittest.TestCase):
             linux_distribution_plan(m)
 
 
+
+class WindowsFlatNativeReadbackTests(unittest.TestCase):
+    @unittest.skipUnless(__import__("os").name == "nt", "requires Win32 file handles")
+    def test_flat_installed_files_and_mutable_owner_member(self):
+        import hashlib
+        import tempfile
+        from unittest.mock import patch
+        from installer_engine.native_readiness import windows_flat_native_postflight
+        with tempfile.TemporaryDirectory() as folder:
+            base = Path(folder)
+            user, protected = base / "user", base / "protected"
+            user.mkdir()
+            protected.mkdir()
+            entries = []
+            for scope, root, rel, body in (
+                ("privileged", protected, "app/DirectInternetMethod.Service.exe", b"service"),
+                ("user", user, "app/DirectInternetMethod.exe", b"gui"),
+                ("user", user, "app/router_gateway/providers.json", b"default"),
+            ):
+                target = root / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(body)
+                entries.append(dict(scope=scope, file=rel, source=rel,
+                                    bytes=len(body), sha256=hashlib.sha256(body).hexdigest()))
+            raw = json.dumps(dict(schema=2, product="Direct Internet Method",
+                                  version="1.5.7", files=entries)).encode()
+            source = base / "build.json"
+            source.write_bytes(raw)
+            (user / "manifest.json").write_bytes(raw)
+            pin = hashlib.sha256(raw).hexdigest()
+            provider = user / "app/router_gateway/providers.json"
+            provider.write_bytes(b"custom owner provider")
+            command = str(protected / "app/DirectInternetMethod.Service.exe")
+            config = dict(binary_command=command, service_account="LocalSystem", start_type=2)
+            observed = dict(registrations=[dict(hive="HKLM")], scm_config=config)
+            with patch("installer_engine.native_readiness.windows_service_configuration",
+                       return_value=config), patch(
+                       "installer_engine.native_readiness.windows_readiness",
+                       return_value=observed):
+                args = (source, pin, user, protected)
+                result = windows_flat_native_postflight(*args)
+                self.assertEqual(result["verified_immutable_files"],
+                                 {"user": 1, "privileged": 1})
+                self.assertEqual(result["mutable_owner_members_not_hashed_to_source"],
+                                 ["app/router_gateway/providers.json"])
+                self.assertFalse(result["native_installation_accepted"])
+                self.assertEqual(provider.read_bytes(), b"custom owner provider")
+                with self.assertRaisesRegex(EngineError, "BUILD_MANIFEST_PIN"):
+                    windows_flat_native_postflight(source, "0"*64, user, protected)
+                (user / "app/DirectInternetMethod.exe").write_bytes(b"bad")
+                with self.assertRaisesRegex(EngineError, "WIN32_HANDLE_PIN"):
+                    windows_flat_native_postflight(*args)
+                (user / "app/DirectInternetMethod.exe").write_bytes(b"gui")
+                config["binary_command"] = command + " --other"
+                with self.assertRaisesRegex(EngineError, "SCM_BINARY_COMMAND_MISMATCH"):
+                    windows_flat_native_postflight(*args)
+
+
 if __name__=="__main__":
     unittest.main(verbosity=2)
