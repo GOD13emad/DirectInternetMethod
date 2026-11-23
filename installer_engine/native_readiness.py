@@ -404,3 +404,91 @@ def windows_flat_native_postflight(
         "publisher_authenticated": False,
         "native_installation_accepted": False,
     }
+
+
+def linux_flat_scope_postflight(plan: object, scope: str, root: Path | str) -> dict:
+    """Observe the real flat Linux code layout without treating data as code.
+
+    The caller supplies an independently pinned compiled layout/manifest.
+    Each scope is observed in its own OS identity: the user observer never
+    runs as root, and protected bytes use the existing root-owned FD reader.
+    The result cannot authorize native registration, commit or rollback.
+    """
+    import hashlib
+    import stat
+    import sys
+    from .engine import manifest_schema, no_links, relpath
+    from .native_plan import NativePlan
+    from .linux_trusted_fd import TrustedLinuxRootFD
+
+    require(sys.platform == "linux", "LINUX_NATIVE_HOST_REQUIRED")
+    require(isinstance(plan, NativePlan) and
+            plan.platform == "linux-x86_64" and
+            plan.source_kind == "PINNED_CODE_LAYOUT_REQUIRES_TRUSTED_NATIVE_ADAPTER" and
+            len(plan.scopes) == 2 and
+            {name for name, _ in plan.scopes} == {"privileged", "user"} and
+            scope in ("privileged", "user"),
+            "R953_TWO_SCOPE_LAYOUT_REQUIRED")
+    manifest = dict(plan.scopes)[scope]
+    manifest_schema(manifest, platform=plan.platform)
+    require(manifest["version"] == plan.version and
+            manifest["product"] == plan.product,
+            "R953_SCOPE_IDENTITY_DRIFT")
+    uid = os.geteuid()
+    require(scope != "user" or uid != 0, "R953_USER_OBSERVER_MUST_BE_UNPRIVILEGED")
+    directory = Path(root)
+    require(directory.is_absolute(), "R953_ABSOLUTE_SCOPE_REQUIRED")
+    no_links(directory)
+    require(directory.is_dir() and
+            directory.lstat().st_uid == (0 if scope == "privileged" else uid),
+            "R953_SCOPE_ROOT_OWNER_DRIFT")
+    files = manifest["files"]
+    if scope == "privileged":
+        with TrustedLinuxRootFD(directory) as held:
+            for item in files:
+                held.read_pinned_member(item["path"], item["sha256"], item["bytes"])
+                target = directory.joinpath(*relpath(item["path"]))
+                no_links(target)
+                require(stat.S_IMODE(target.lstat().st_mode) == item["mode"],
+                        "R953_PROTECTED_MODE_DRIFT")
+    else:
+        # All current User layout targets are simple basenames. Refuse a
+        # nested path until a descriptor-relative user traversal is provided.
+        flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC
+        parent = os.open(directory, flags | os.O_DIRECTORY)
+        try:
+            require(os.fstat(parent).st_uid == uid, "R953_USER_ROOT_OWNER_DRIFT")
+            for item in files:
+                parts = relpath(item["path"])
+                require(len(parts) == 1, "R953_USER_NESTED_PATH_UNSUPPORTED")
+                fd = os.open(parts[0], flags | os.O_NONBLOCK, dir_fd=parent)
+                try:
+                    before = os.fstat(fd)
+                    require(stat.S_ISREG(before.st_mode) and before.st_uid == uid and
+                            stat.S_IMODE(before.st_mode) == item["mode"] and
+                            before.st_size == item["bytes"],
+                            "R953_USER_FILE_IDENTITY_DRIFT")
+                    h = hashlib.sha256()
+                    total = 0
+                    while True:
+                        chunk = os.read(fd, 1 << 20)
+                        if not chunk:
+                            break
+                        total += len(chunk)
+                        require(total <= item["bytes"], "R953_USER_FILE_SIZE_DRIFT")
+                        h.update(chunk)
+                    after = os.fstat(fd)
+                    require((before.st_dev, before.st_ino, before.st_size,
+                             before.st_mtime_ns, before.st_ctime_ns) ==
+                            (after.st_dev, after.st_ino, after.st_size,
+                             after.st_mtime_ns, after.st_ctime_ns) and
+                            total == item["bytes"] and h.hexdigest() == item["sha256"],
+                            "R953_USER_FILE_PIN_DRIFT")
+                finally:
+                    os.close(fd)
+        finally:
+            os.close(parent)
+    return {"status": "R953_LINUX_FLAT_SCOPE_READONLY", "scope": scope,
+            "version": plan.version, "files": len(files),
+            "observed_uid": uid, "native_installation_accepted": False,
+            "publisher_authenticated": False}

@@ -277,6 +277,46 @@ def execute():
             "USER_METADATA_ATOMIC_MODE")
     as_runner(user, tx_script, "--status")
     unchanged_records(private)
+    # R953: use the existing independently pinned archive plus tracked layout
+    # to observe the actual flat native code roots, in each OS identity.
+    # This runs within the R528 disposable-host guard, before either rollback.
+    sys.path.insert(0, str(BASE))
+    from installer_engine.scoped_layout import compile_scoped_layout
+    from installer_engine.native_readiness import linux_flat_scope_postflight
+    with zipfile.ZipFile(candidate) as archive:
+        distribution = json.loads(archive.read(
+            r528.CANDIDATE_PREFIX + "PACKAGE_MANIFEST.json"))
+    plan = compile_scoped_layout(
+        distribution, (BASE / "linux/native_layout.json").read_bytes(),
+        "b423f13fb8c03ade801fe09ad70aaf64ca485d3f6b9e51092108a083d3f5e1b8")
+    protected_observation = linux_flat_scope_postflight(
+        plan, "privileged", "/usr/lib/directinternetmethod")
+    # Run the user observer as the actual unprivileged owner, NEVER root.
+    from dataclasses import asdict
+    user_code = (
+        "import json,sys; from installer_engine.native_plan import NativePlan; "
+        "from installer_engine.native_readiness import linux_flat_scope_postflight; "
+        "d=json.load(sys.stdin); d['scopes']=tuple((n,m) for n,m in d['scopes']); "
+        "print(json.dumps(linux_flat_scope_postflight(NativePlan(**d),'user',sys.argv[1])))"
+    )
+    observed = subprocess.run(
+        ["/usr/sbin/runuser", "-u", user.pw_name, "--", "/usr/bin/env",
+         "HOME=" + user.pw_dir, "PYTHONDONTWRITEBYTECODE=1",
+         "/usr/bin/python3", "-B", "-c", user_code, str(app)],
+        input=json.dumps(asdict(plan)), text=True, capture_output=True,
+        cwd=BASE, timeout=30, check=False)
+    require(observed.returncode == 0,
+            "R953_USER_POSTFLIGHT_" + observed.stderr[-500:])
+    user_observation = json.loads(observed.stdout)
+    require(protected_observation["files"] == 13 and
+            protected_observation["observed_uid"] == 0 and
+            user_observation["files"] == 8 and
+            user_observation["observed_uid"] == user.pw_uid and
+            all(o["native_installation_accepted"] is False and
+                o["publisher_authenticated"] is False
+                for o in (protected_observation, user_observation)),
+            "R953_SHARED_NATIVE_FLAT_21_FILES_AND_IDENTITIES")
+    unchanged_records(private)
     # No release acceptance is claimed; deliberately roll back BOTH sides.
     # User rollback runs first and is verified before protected root rollback.
     as_runner(user, tx_script, "--rollback")
@@ -298,6 +338,7 @@ def execute():
     require(json.loads((BASE/"RELEASE.json").read_text())["version"]=="1.5.4", "PUBLIC_TAG_AUTHORITY")
     print(json.dumps({
       "revision":"R529", "status":"PASS_HOSTED_ROOT_USER_ACTUAL_TRANSACTION",
+      "sharedEngineFlatReadback":{"privileged":protected_observation,"user":user_observation},
       "productionMachineTouched":False,"hostedRunner":True,
       "publicStable":"v1.5.4","candidate":"1.5.7",
       "userTransaction":"STAGE_APPLY_INLINE_ATOMIC_METADATA_ROLLBACK",

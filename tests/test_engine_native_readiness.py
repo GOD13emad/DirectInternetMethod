@@ -158,3 +158,49 @@ class NativeReadinessTests(unittest.TestCase):
     def test_windows_native_scm_config_query_on_missing_service_fails_closed(self):
         with self.assertRaisesRegex(EngineError, "SCM_CONFIG_READ_DENIED_OR_MISSING"):
             windows_service_configuration("DIM_NeverRegistered_271828")
+
+
+class LinuxFlatOwnerReadbackTests(unittest.TestCase):
+    @unittest.skipUnless(__import__("sys").platform == "linux" and
+                         getattr(os, "geteuid", lambda: 0)() != 0,
+                         "requires a real unprivileged Linux owner")
+    def test_owner_fd_readback_rejects_bytes_modes_links_and_preserves_data(self):
+        import hashlib
+        import tempfile
+        from pathlib import Path
+        from installer_engine.native_plan import NativePlan
+        from installer_engine.native_readiness import linux_flat_scope_postflight
+
+        body = b"R953_CODE"
+        entry = {"path": "code.py", "bytes": len(body),
+                 "sha256": hashlib.sha256(body).hexdigest(), "mode": 0o644}
+        manifest = {"schema": 1, "product": "Direct Internet Method",
+                    "version": "1.5.7", "platform": "linux-x86_64",
+                    "files": [entry]}
+        plan = NativePlan("Direct Internet Method", "1.5.7", "linux-x86_64",
+                          "PINNED_CODE_LAYOUT_REQUIRES_TRUSTED_NATIVE_ADAPTER",
+                          (("privileged", manifest), ("user", manifest)))
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            code = root / "code.py"
+            data = root / "settings.json"
+            data.write_bytes(b"OWNER_DATA")
+            code.write_bytes(body)
+            code.chmod(0o644)
+            args = (plan, "user", root)
+            report = linux_flat_scope_postflight(*args)
+            self.assertEqual(report["files"], 1)
+            self.assertEqual(report["observed_uid"], os.geteuid())
+            self.assertFalse(report["native_installation_accepted"])
+            code.write_bytes(b"X" * len(body))
+            with self.assertRaisesRegex(EngineError, "R953_USER_FILE_PIN_DRIFT"):
+                linux_flat_scope_postflight(*args)
+            code.write_bytes(body)
+            code.chmod(0o666)
+            with self.assertRaisesRegex(EngineError, "R953_USER_FILE_IDENTITY_DRIFT"):
+                linux_flat_scope_postflight(*args)
+            code.unlink()
+            code.symlink_to(data)
+            with self.assertRaises((OSError, EngineError)):
+                linux_flat_scope_postflight(*args)
+            self.assertEqual(data.read_bytes(), b"OWNER_DATA")
