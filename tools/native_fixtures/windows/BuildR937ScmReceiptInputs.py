@@ -14,7 +14,7 @@ from pathlib import Path
 import re
 import tempfile
 
-from installer_engine.broker_intent import compare_pinned_policy_intent
+from installer_engine.broker_intent import compare_native_transaction_policy_intent
 from installer_engine.broker_replay import parse_replay_snapshot
 from installer_engine.engine import hash_bytes
 from installer_engine.native_receipt import intent_sha256, validate_intent
@@ -48,10 +48,6 @@ def build(test_root: Path, binary_sha256: str) -> dict:
         raise ValueError("R937_GUEST_SOURCE_INPUT_NOT_EMPTY")
     plan, policy, request, pb, rb = fixture_contract(
         fixture_plan("windows-x86_64"))
-    binding = compare_pinned_policy_intent(plan, pb, hash_bytes(pb), rb)
-    if (binding["request_sha256"] != sha(rb)
-            or binding["native_installation_accepted"]):
-        raise ValueError("R937_R899_SOURCE_INTENT_OR_PRIVILEGE_MISMATCH")
     native = {
         "schema": 1,
         "request_id": request["request_id"],
@@ -63,6 +59,11 @@ def build(test_root: Path, binary_sha256: str) -> dict:
         "scope_pins": request["scopes"],
     }
     validate_intent(native)
+    binding = compare_native_transaction_policy_intent(
+        plan, pb, hash_bytes(pb), rb, native)
+    if (binding["request_sha256"] != sha(rb)
+            or binding["native_installation_accepted"]):
+        raise ValueError("R937_R899_SOURCE_INTENT_OR_PRIVILEGE_MISMATCH")
     ni = canonical(native)
     ledger = {
         "schema": 1, "platform": "windows-x86_64",

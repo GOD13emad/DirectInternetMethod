@@ -218,3 +218,47 @@ def compare_linux_fd_pinned_intent(
             result["privileged_broker_implemented"] is False,
             "BROKER_UNEXPECTED_NATIVE_AUTHORITY")
     return result
+
+
+def compare_native_transaction_policy_intent(
+    plan: NativePlan, protected_policy_bytes: bytes,
+    externally_trusted_policy_sha256: str, client_request_bytes: bytes,
+    native_transaction_intent: dict,
+) -> dict:
+    """Bind R899 broker request to the SAME R926 transaction identity.
+
+    This is a read-only, OS-neutral consistency check. The native intent
+    MUST originate from the installer's actual verified durable journal,
+    not from client JSON. That provenance and the policy pin's ownership
+    MUST be established by a trusted OS adapter; this function does neither.
+    In particular, matched hashes cannot mint a native completion receipt.
+    """
+    from .native_receipt import validate_intent, intent_sha256
+
+    result = compare_pinned_policy_intent(
+        plan, protected_policy_bytes, externally_trusted_policy_sha256,
+        client_request_bytes)
+    validate_intent(native_transaction_intent)
+    request = _read(client_request_bytes, maximum=MAX_REQUEST_BYTES,
+                    label="REQUEST")
+    require(request["request_id"] == native_transaction_intent["request_id"],
+            "BROKER_NATIVE_REQUEST_ID_DRIFT")
+    require((request["platform"], request["operation"]) ==
+            (native_transaction_intent["platform"],
+             native_transaction_intent["operation"]),
+            "BROKER_NATIVE_TRANSITION_DRIFT")
+    target_version = (native_transaction_intent["new"]
+                      if native_transaction_intent["new"] is not None
+                      else native_transaction_intent["old"])
+    require(request["version"] == target_version,
+            "BROKER_NATIVE_RELEASE_DRIFT")
+    require(request["scopes"] == native_transaction_intent["scope_pins"],
+            "BROKER_NATIVE_SCOPE_PIN_DRIFT")
+    require(result["native_installation_accepted"] is False and
+            result["publisher_authenticated"] is False,
+            "BROKER_NATIVE_AUTHORITY_UNEXPECTED")
+    return {
+        **result,
+        "status": "READONLY_BROKER_NATIVE_TRANSACTION_BOUND_NOT_AUTHORIZED",
+        "native_intent_sha256": intent_sha256(native_transaction_intent),
+    }

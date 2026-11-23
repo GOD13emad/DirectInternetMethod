@@ -243,5 +243,64 @@ class BrokerIntentNoPrivilegeTests(unittest.TestCase):
         self.assertFalse(result["native_installation_accepted"])
 
 
+    @staticmethod
+    def native_for_request(request, *, old="1.5.6", new="1.5.7"):
+        return {"schema": 1, "request_id": request["request_id"],
+                "platform": request["platform"], "operation": request["operation"],
+                "old": old, "new": new,
+                "preimage_sha256": hash_bytes(b"synthetic-old-native-registration"),
+                "scope_pins": request["scopes"]}
+
+    def test_native_transaction_identity_binds_broker_request_and_digest(self):
+        from installer_engine.broker_intent import compare_native_transaction_policy_intent
+        from installer_engine.native_receipt import intent_sha256
+        plan, policy, request, pb, rb = fixture_contract()
+        native = self.native_for_request(request)
+        result = compare_native_transaction_policy_intent(
+            plan, pb, hash_bytes(pb), rb, native)
+        self.assertEqual(result["native_intent_sha256"], intent_sha256(native))
+        self.assertFalse(result["native_installation_accepted"])
+
+    def test_same_files_new_request_id_does_not_authorize_stale_native_transaction(self):
+        from installer_engine.broker_intent import compare_native_transaction_policy_intent
+        plan, policy, request, pb, rb = fixture_contract()
+        native = self.native_for_request(request)
+        request["request_id"] = "11" * 16
+        request_bytes = canonical(request)
+        policy["request_sha256"] = hash_bytes(request_bytes)
+        policy_bytes = canonical(policy)
+        with self.assertRaisesRegex(EngineError, "BROKER_NATIVE_REQUEST_ID_DRIFT"):
+            compare_native_transaction_policy_intent(
+                plan, policy_bytes, hash_bytes(policy_bytes), request_bytes, native)
+
+    def test_native_scope_pin_and_transition_drift_denied(self):
+        from installer_engine.broker_intent import compare_native_transaction_policy_intent
+        plan, policy, request, pb, rb = fixture_contract()
+        native = self.native_for_request(request)
+        changed = dict(native, scope_pins=[
+            dict(row) for row in native["scope_pins"]])
+        changed["scope_pins"][0]["manifest_sha256"] = "0" * 64
+        with self.assertRaisesRegex(EngineError, "BROKER_NATIVE_SCOPE_PIN_DRIFT"):
+            compare_native_transaction_policy_intent(
+                plan, pb, hash_bytes(pb), rb, changed)
+        wrong_transition = self.native_for_request(request, old=None)
+        wrong_transition["operation"] = "install"
+        with self.assertRaisesRegex(EngineError, "BROKER_NATIVE_TRANSITION_DRIFT"):
+            compare_native_transaction_policy_intent(
+                plan, pb, hash_bytes(pb), rb, wrong_transition)
+
+    def test_native_uninstall_requires_matching_old_release_and_request(self):
+        from installer_engine.broker_intent import compare_native_transaction_policy_intent
+        plan, policy, request, pb, rb = fixture_contract(action="uninstall")
+        native = self.native_for_request(request, old="1.5.7", new=None)
+        result = compare_native_transaction_policy_intent(
+            plan, pb, hash_bytes(pb), rb, native)
+        self.assertEqual(result["operation"], "uninstall")
+        altered = dict(native, old="1.5.6")
+        with self.assertRaisesRegex(EngineError, "BROKER_NATIVE_RELEASE_DRIFT"):
+            compare_native_transaction_policy_intent(
+                plan, pb, hash_bytes(pb), rb, altered)
+
+
 if __name__ == "__main__":
     unittest.main()

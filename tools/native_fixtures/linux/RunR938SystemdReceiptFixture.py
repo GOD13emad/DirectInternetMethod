@@ -94,7 +94,7 @@ def send(conn: socket.socket, payload: dict) -> None:
 
 
 def prepare(directory: Path, polkit_action: str | None = None) -> None:
-    from installer_engine.broker_intent import compare_pinned_policy_intent
+    from installer_engine.broker_intent import compare_native_transaction_policy_intent
     from installer_engine.engine import hash_bytes
     from installer_engine.native_receipt import validate_intent, intent_sha256
     from tests.test_engine_broker_intent import fixture_contract, fixture_plan
@@ -107,9 +107,6 @@ def prepare(directory: Path, polkit_action: str | None = None) -> None:
                 ACTION_RE.fullmatch(polkit_action) is None):
             raise ValueError("R940_OS_POLKIT_ACTION_INVALID")
     plan, policy, req, pb, rb = fixture_contract(fixture_plan("linux-x86_64"))
-    binding = compare_pinned_policy_intent(plan, pb, hash_bytes(pb), rb)
-    if binding["native_installation_accepted"]:
-        raise ValueError("R938_SYNTHETIC_POLICY_NOT_PRODUCTION")
     native = {
         "schema": 1, "request_id": req["request_id"],
         "platform": "linux-x86_64", "operation": "upgrade",
@@ -118,6 +115,12 @@ def prepare(directory: Path, polkit_action: str | None = None) -> None:
         "scope_pins": req["scopes"],
     }
     validate_intent(native)
+    # One exact broker request ID and manifest identity for the R926 native
+    # intent; this source check is not a root/publisher authorization.
+    binding = compare_native_transaction_policy_intent(
+        plan, pb, hash_bytes(pb), rb, native)
+    if binding["native_installation_accepted"]:
+        raise ValueError("R938_SYNTHETIC_POLICY_NOT_PRODUCTION")
     metadata = {
         "schema": 1, "fixture_only": True,
         "expected_peer_uid": os.getuid(), "request_id": req["request_id"],

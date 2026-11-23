@@ -7,7 +7,8 @@ never an OS trust anchor.
 import json
 import unittest
 
-from installer_engine.broker_intent import compare_pinned_policy_intent
+from installer_engine.broker_intent import (
+    compare_pinned_policy_intent, compare_native_transaction_policy_intent)
 from installer_engine.engine import EngineError, PRODUCT, hash_bytes
 from installer_engine.native_plan import NativePlan
 from tests.test_engine_broker_intent import canonical, fixture_contract
@@ -47,6 +48,33 @@ class RealLinuxBrokerBinding(unittest.TestCase):
         self.assertEqual({row["name"]: row["manifest_sha256"]
                           for row in journal["scope_pins"]}, expected)
         self.assertEqual(journal["new"], "1.5.7")
+
+        # R945: the broker must match the random ID of THIS persisted
+        # transaction, not merely the same version and manifest hashes.
+        native_intent = self.fixture.engine._intent(journal)
+        request["request_id"] = native_intent["request_id"]
+        request["operation"] = native_intent["operation"]
+        policy["operation"] = native_intent["operation"]
+        broker_bytes = canonical(request)
+        policy["request_sha256"] = hash_bytes(broker_bytes)
+        pinned_policy = canonical(policy)
+        bound = compare_native_transaction_policy_intent(
+            plan, pinned_policy, hash_bytes(pinned_policy),
+            broker_bytes, native_intent)
+        self.assertFalse(bound["native_installation_accepted"])
+        self.assertEqual(bound["request_id"], journal["request_id"])
+
+        stale_request = dict(request,
+                             request_id=("0" * 32 if journal["request_id"] !=
+                                         "0" * 32 else "f" * 32))
+        stale_bytes = canonical(stale_request)
+        stale_policy = dict(policy, request_sha256=hash_bytes(stale_bytes))
+        stale_policy_bytes = canonical(stale_policy)
+        with self.assertRaisesRegex(EngineError, "BROKER_NATIVE_REQUEST_ID_DRIFT"):
+            compare_native_transaction_policy_intent(
+                plan, stale_policy_bytes, hash_bytes(stale_policy_bytes),
+                stale_bytes, native_intent)
+
 
         # A forged request can be self-consistent with a client-recomputed
         # policy hash, but cannot match the actual pinned 21-file plan.
