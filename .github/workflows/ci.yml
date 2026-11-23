@@ -7,6 +7,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      native_candidate_sha:
+        description: 'Exact reviewed feature HEAD for isolated R846 native Windows candidate QA (no release)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -666,15 +672,19 @@ jobs:
 
   windows-private-r846-native:
     name: windows-private-r846-native
-    if: github.event_name == 'push' && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/prep/r846-forward-157-native-gates'
+    if: github.repository == 'GOD13emad/DirectInternetMethod' && ((github.event_name == 'push' && github.ref == 'refs/heads/prep/r846-forward-157-native-gates') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.native_candidate_sha != '' && inputs.native_candidate_sha == github.sha))
     needs: windows-source
     runs-on: windows-2025
     timeout-minutes: 75
+    env:
+      R951_EXPECTED_SHA: ${{ inputs.native_candidate_sha }}
     permissions:
       contents: read
       actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: '10.0.x'

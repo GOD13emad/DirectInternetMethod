@@ -57,6 +57,32 @@ class ForwardWindows157(unittest.TestCase):
             self.assertIn("github-hosted",source)
             self.assertNotIn("refs/heads/prep/r803-forward-156-native-gates",source)
 
+    def test_universal_branch_native_qa_requires_explicit_sha_dispatch(self):
+        section=WF.split("  windows-private-r846-native:",1)[1].split(
+            "  windows-private-r848-v156-forward:",1)[0]
+        for token in ("github.repository == 'GOD13emad/DirectInternetMethod'",
+                      "github.event_name == 'workflow_dispatch'",
+                      "github.ref == 'refs/heads/feature/universal-install-engine'",
+                      "inputs.native_candidate_sha != ''",
+                      "inputs.native_candidate_sha == github.sha",
+                      "runs-on: windows-2025",
+                      "R951_EXPECTED_SHA:",
+                      "persist-credentials: false",
+                      "contents: read"):
+            self.assertIn(token,section)
+        self.assertNotIn("contents: write",section)
+        self.assertNotIn("pull_request",section)
+        for rel in ("tests/r846_windows_candidate_hosted_build.ps1",
+                    "tests/r846_windows_native_rollback.ps1"):
+            source=(R/rel).read_text("utf-8")
+            for token in ("$env:RUNNER_ENVIRONMENT -ne 'github-hosted'",
+                          "$env:GITHUB_EVENT_NAME -ceq 'workflow_dispatch'",
+                          "$env:R951_EXPECTED_SHA -ceq $env:GITHUB_SHA",
+                          "(git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA",
+                          "(!$historical -and !$reviewedCandidate)"):
+                self.assertIn(token,source,rel)
+
+
 if __name__=="__main__":
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(ForwardWindows157))
     raise SystemExit(0 if result.wasSuccessful() else 1)

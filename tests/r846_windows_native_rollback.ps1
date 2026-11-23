@@ -20,7 +20,12 @@ $PublicSha='FFB9A2AE19C2E89338EE12EE8DA133F5A16DBF4DCF961678C33D77D0C3843133'
 $PublicGui='BE9C78C0B5C007B4A46480D423079C219006B730D9589279AA466B0F14BCF00F'
 $PublicSvc='2AE7EA11A94BFA3187BC7CDF63A37CB5CD5B55C313C3966330FD280ECC9ECE41'
 if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:GITHUB_REPOSITORY -cne 'GOD13emad/DirectInternetMethod'){throw 'R846_HOSTED_VM_ONLY'}
-if($env:GITHUB_REF -cnotin @('refs/heads/prep/r846-forward-157-native-gates') -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R846_BRANCH_HEAD_DRIFT'}
+# Preserve the original historical hosted route. The current universal
+# engine branch may use this same pipeline ONLY via an explicit exact-SHA
+# dispatch on a GitHub-hosted disposable runner, never from a PR or local host.
+$historical=($env:GITHUB_REF -ceq 'refs/heads/prep/r846-forward-157-native-gates')
+$reviewedCandidate=($env:GITHUB_REF -ceq 'refs/heads/feature/universal-install-engine' -and $env:GITHUB_EVENT_NAME -ceq 'workflow_dispatch' -and $env:R951_EXPECTED_SHA -cmatch '^[0-9a-f]{40}$' -and $env:R951_EXPECTED_SHA -ceq $env:GITHUB_SHA)
+if((!$historical -and !$reviewedCandidate) -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R846_BRANCH_HEAD_DRIFT'}
 $admin=[Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if(!$admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){throw 'R846_ADMIN_TOKEN_REQUIRED'}
 if(!(Test-Path $Build) -or (Test-Path $Result) -or (Test-Path $Old)){throw 'R846_UNSAFE_REPLAY_OR_MISSING_BUILD'}
