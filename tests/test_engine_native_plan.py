@@ -125,7 +125,9 @@ class WindowsFlatNativeReadbackTests(unittest.TestCase):
         import tempfile
         from unittest.mock import patch
         from installer_engine.native_readiness import windows_flat_native_postflight
-        with tempfile.TemporaryDirectory() as folder:
+        # Match the established Win32 handle tests: a canonical checkout
+        # parent, not the potentially DOS-short-name runner TEMP path.
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1]) as folder:
             base = Path(folder)
             user, protected = base / "user", base / "protected"
             user.mkdir()
