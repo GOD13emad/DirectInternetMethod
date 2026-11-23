@@ -93,6 +93,54 @@ def send(conn: socket.socket, payload: dict) -> None:
     conn.sendall(struct.pack("<I", len(blob)) + blob)
 
 
+def verify_pinned_native_contract(inputs: Path, meta: dict) -> dict:
+    """Verify R899 and R926 together from independently root-custodied inputs.
+
+    In the native R940 service all input files and the code importing this
+    function must already be root-owned and non-writable by the socket peer.
+    A test-generated pin cannot authenticate an actual publisher.
+    """
+    from installer_engine.broker_intent import (
+        compare_native_transaction_policy_intent, _unique_pairs)
+    from installer_engine.native_plan import NativePlan
+
+    def unique_document(name: str) -> dict:
+        raw = (inputs / name).read_bytes()
+        if not 0 < len(raw) <= MAX_PACKET:
+            raise ValueError("R946_INPUT_BYTES_INVALID_" + name)
+        doc = json.loads(raw, object_pairs_hook=_unique_pairs)
+        if type(doc) is not dict:
+            raise ValueError("R946_INPUT_OBJECT_REQUIRED_" + name)
+        return doc
+
+    plan_bytes = (inputs / "native-plan.json").read_bytes()
+    if digest(plan_bytes) != meta.get("native_plan_sha256"):
+        raise ValueError("R946_NATIVE_PLAN_PIN_DRIFT")
+    doc = unique_document("native-plan.json")
+    if (set(doc) != {"schema", "product", "platform", "version",
+                     "source_kind", "scopes"} or
+            type(doc["schema"]) is not int or doc["schema"] != 1 or
+            type(doc["scopes"]) is not list or len(doc["scopes"]) != 2 or
+            any(type(item) is not dict or
+                set(item) != {"name", "manifest"} for item in doc["scopes"])):
+        raise ValueError("R946_NATIVE_PLAN_SCHEMA_INVALID")
+    plan = NativePlan(
+        doc["product"], doc["version"], doc["platform"], doc["source_kind"],
+        tuple((item["name"], item["manifest"]) for item in doc["scopes"]))
+    native = unique_document("native-intent.json")
+    if digest(canonical(native)) != meta["native_intent_sha256"]:
+        raise ValueError("R946_NATIVE_INTENT_PIN_DRIFT")
+    policy = (inputs / "broker-policy.json").read_bytes()
+    request_bytes = (inputs / "broker-request.json").read_bytes()
+    result = compare_native_transaction_policy_intent(
+        plan, policy, meta["policy_sha256"], request_bytes, native)
+    if (result["native_intent_sha256"] != meta["native_intent_sha256"]
+            or result["request_sha256"] != meta["request_sha256"]
+            or result["native_installation_accepted"]):
+        raise ValueError("R946_ROOT_BROKER_CONTRACT_INCONSISTENT")
+    return result
+
+
 def prepare(directory: Path, polkit_action: str | None = None) -> None:
     from installer_engine.broker_intent import compare_native_transaction_policy_intent
     from installer_engine.engine import hash_bytes
@@ -134,11 +182,23 @@ def prepare(directory: Path, polkit_action: str | None = None) -> None:
         # Copied under Root ownership by the isolated CI setup. Never sourced
         # from a socket client. No production publisher is authenticated.
         metadata["polkit_action"] = polkit_action
-    for name, value in {
+        synthetic_plan = {
+            "schema": 1, "product": plan.product,
+            "platform": plan.platform, "version": plan.version,
+            "source_kind": plan.source_kind,
+            "scopes": [{"name": name, "manifest": manifest}
+                       for name, manifest in plan.scopes],
+        }
+        plan_raw = canonical(synthetic_plan)
+        metadata["native_plan_sha256"] = digest(plan_raw)
+    payloads = {
         "broker-request.json": rb, "broker-policy.json": pb,
         "native-intent.json": canonical(native),
         "contract.json": canonical(metadata),
-    }.items():
+    }
+    if polkit_action is not None:
+        payloads["native-plan.json"] = plan_raw
+    for name, value in payloads.items():
         (directory / name).write_bytes(value)
     print(canonical({"status": "R938_SYNTHETIC_INPUTS_READY",
                      "request_sha256": digest(rb),
@@ -193,6 +253,14 @@ def serve(root: Path) -> None:
             observe_linux_polkit_authorization)
         from installer_engine.engine import EngineError
         denied_exceptions += (EngineError,)
+        # Actual root service verifies plan, policy and native intent from
+        # root-only input bytes. The nonroot prepare check is not sufficient.
+        plan_node = root / "inputs/native-plan.json"
+        plan_stat = os.lstat(plan_node)
+        if (not stat.S_ISREG(plan_stat.st_mode) or plan_stat.st_uid != 0
+                or stat.S_IMODE(plan_stat.st_mode) != 0o400):
+            raise PermissionError("R946_NATIVE_PLAN_NOT_ROOT_CUSTODIED")
+        verify_pinned_native_contract(root / "inputs", meta)
     for name, pinned in (("broker-request.json", meta["request_sha256"]),
                          ("broker-policy.json", meta["policy_sha256"]),
                          ("native-intent.json", meta["native_intent_sha256"])):

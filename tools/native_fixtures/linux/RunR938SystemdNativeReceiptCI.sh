@@ -50,6 +50,10 @@ cleanup() {
                 "$ROOT/installer_engine/engine.py" \
                 "$ROOT/installer_engine/linux_peer_credential.py" \
                 "$ROOT/installer_engine/linux_polkit_authorization.py" \
+                "$ROOT/installer_engine/broker_intent.py" \
+                "$ROOT/installer_engine/native_plan.py" \
+                "$ROOT/installer_engine/native_receipt.py" \
+                "$ROOT/inputs/native-plan.json" \
                 "$ROOT/inputs/broker-request.json" \
                 "$ROOT/inputs/broker-policy.json" \
                 "$ROOT/inputs/native-intent.json" \
@@ -103,7 +107,7 @@ sudo -n install -d -m 0711 -o root -g root "$ROOT/public"
 sudo -n install -o root -g root -m 0500 "$SCRIPT" "$ROOT/RunR938SystemdReceiptFixture.py"
 if [[ "$R940_POLKIT_NATIVE" == 1 ]]; then
   sudo -n install -d -o root -g root -m 0700 "$ROOT/installer_engine"
-  for f in __init__.py engine.py linux_peer_credential.py linux_polkit_authorization.py; do
+  for f in __init__.py engine.py linux_peer_credential.py linux_polkit_authorization.py broker_intent.py native_plan.py native_receipt.py; do
     sudo -n install -o root -g root -m 0400 "installer_engine/$f" "$ROOT/installer_engine/$f"
     cmp -s "installer_engine/$f" <(sudo -n cat "$ROOT/installer_engine/$f") || {
       echo "R940_ROOT_OWNED_ADAPTER_SHA_CHANGED_$f"; exit 81;
@@ -116,6 +120,9 @@ sudo -n install -o root -g root -m 0644 "$input/broker-request.json" "$ROOT/publ
 for name in broker-request.json broker-policy.json native-intent.json contract.json; do
   sudo -n install -o root -g root -m 0400 "$input/$name" "$ROOT/inputs/$name"
 done
+if [[ "$R940_POLKIT_NATIVE" == 1 ]]; then
+  sudo -n install -o root -g root -m 0400 "$input/native-plan.json" "$ROOT/inputs/native-plan.json"
+fi
 [[ "$(sudo -n stat -c '%u:%a' "$ROOT/state")" == 0:700 ]] || {
   echo R938_ROOT_LEDGER_MODE_WRONG; exit 86;
 }

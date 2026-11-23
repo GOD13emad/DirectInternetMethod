@@ -62,6 +62,41 @@ class R938FixtureContracts(unittest.TestCase):
         self.assertIn("refs/heads/feature/universal-install-engine", shell)
         self.assertNotIn("rm -rf -- \"$ROOT\"", shell)
 
+    def test_r946_root_policy_plan_binds_native_intent_and_rejects_repin(self):
+        from installer_engine.engine import EngineError
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory(prefix="dim-r946-policy-") as tmp:
+            inp = Path(tmp) / "input"
+            # Only a source preparation fixture; no Linux privilege on Win.
+            with patch.object(fixture.os, "getuid", lambda: 1000, create=True):
+                fixture.prepare(
+                    inp, polkit_action="org.god13emad.directinternetmethod.r940fixture")
+            meta = json.loads((inp / "contract.json").read_bytes())
+            result = fixture.verify_pinned_native_contract(inp, meta)
+            self.assertFalse(result["native_installation_accepted"])
+            self.assertEqual(result["native_intent_sha256"],
+                             meta["native_intent_sha256"])
+            good_bytes = (inp / "native-intent.json").read_bytes()
+            native = json.loads(good_bytes)
+            native["request_id"] = "22" * 16
+            (inp / "native-intent.json").write_bytes(fixture.canonical(native))
+            meta["native_intent_sha256"] = fixture.digest(
+                fixture.canonical(native))
+            with self.assertRaisesRegex(
+                    EngineError, "BROKER_NATIVE_REQUEST_ID_DRIFT"):
+                fixture.verify_pinned_native_contract(inp, meta)
+            # A separately re-pinned yet different scope plan is also denied.
+            (inp / "native-intent.json").write_bytes(good_bytes)
+            meta["native_intent_sha256"] = fixture.digest(good_bytes)
+            plan = json.loads((inp / "native-plan.json").read_bytes())
+            plan["scopes"][0]["manifest"]["files"][0]["sha256"] = "f" * 64
+            changed_plan = fixture.canonical(plan)
+            (inp / "native-plan.json").write_bytes(changed_plan)
+            meta["native_plan_sha256"] = fixture.digest(changed_plan)
+            with self.assertRaisesRegex(
+                    EngineError, "BROKER_POLICY_REQUEST_PLAN_SCOPE_PIN_DRIFT"):
+                fixture.verify_pinned_native_contract(inp, meta)
+
     def test_cli_is_synthetic_not_a_second_product_installer(self):
         source = SCRIPT.read_text(encoding="utf8")
         self.assertIn("native_product_installation_accepted\": False", source)
