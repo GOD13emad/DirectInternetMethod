@@ -46,6 +46,17 @@ class NativeInnoReceiptContract(unittest.TestCase):
         self.assertLess(completion.index("RenameFile(TempPath, ReceiptPath)"),
                         completion.index("DIMUpdateReceiptCompleted := True"))
 
+    def test_native_handoff_hash_rejected_before_install(self):
+        init = INNO.split('function InitializeSetup(): Boolean;', 1)[1].split(
+            'procedure DIMWriteSuccessfulNativeCompletion', 1)[0]
+        marker = "if UpperCase(GetSHA256OfFile(ExpandConstant('{srcexe}'))) <> DIMExpectedInstallerSHA then"
+        self.assertIn(marker, init)
+        self.assertLess(init.index('ExpectedStage) then'), init.index(marker))
+        self.assertLess(init.index(marker), init.index('DIMUpdateReceiptExpected := True;'))
+        rejection = init.split(marker, 1)[1].split('DIMUpdateReceiptExpected := True;', 1)[0]
+        self.assertIn("Log('DIM_UPDATE_SOURCE_SHA_MISMATCH_BEFORE_INSTALL');", rejection)
+        self.assertIn('exit;', rejection)
+
     def test_service_receipt_binds_protected_nonce_and_hash_before_cleanup(self):
         final = PROGRAM.split("static void FinalizePendingUpdate()", 1)[1].split("static async Task RunActionAsync(", 1)[0]
         self.assertIn('GetProperty("schema").GetInt32() != 2', final)

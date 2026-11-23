@@ -99,6 +99,34 @@ try {
  New-Item -ItemType Directory -Path (Split-Path $Evidence -Parent) -Force|Out-Null
  [IO.File]::WriteAllText($Evidence,'R846_USER_UNKNOWN_EVIDENCE_KEEP')
  $evidenceSha=FileSha $Evidence
+ if($reviewedCandidate){
+  # Exercise the real Inno InitializeSetup rejection in this disposable VM.
+  # The executable is the pinned candidate; only the expected digest is wrong.
+  $updateDir=Join-Path $Priv 'UpdateTransactions'
+  $stage=Join-Path $updateDir 'DirectInternetMethod-update-stage.exe'
+  $log=Join-Path $Dir 'R954_rejected_handoff.log'
+  Require (!(Test-Path -LiteralPath $stage) -and !(Test-Path -LiteralPath $log)) 'R954_EMPTY_TEST_STAGE'
+  $createdDir=!(Test-Path -LiteralPath $updateDir)
+  if($createdDir){[void](New-Item -ItemType Directory -Path $updateDir)}
+  Require (((Get-Item -LiteralPath $updateDir).Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) 'R954_STAGE_NOT_REPARSE'
+  Copy-Item -LiteralPath $New -Destination $stage
+  Require ((FileSha $stage) -ceq $build.installerSha) 'R954_EXACT_TEST_STAGE'
+  $serviceBefore=(Get-Service -Name 'DirectInternetMethodSvc').Status
+  $invalidPin=if($build.installerSha -ceq ('0'*64)){'1'*64}else{'0'*64}
+  $attempt=[guid]::NewGuid().ToString('N')+[guid]::NewGuid().ToString('N')
+  $args=@('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NORESTARTAPPLICATIONS','/SP-',('/LOG="'+$log+'"'),('/DIMTXN='+$attempt),('/DIMSHA256='+$invalidPin))
+  $p=Start-Process -FilePath $stage -ArgumentList $args -Wait -PassThru -NoNewWindow
+  Require ($p.ExitCode -ne 0 -and (Test-Path -LiteralPath $log)) 'R954_INVALID_PIN_EXIT_NONZERO'
+  Require ((Get-Content -LiteralPath $log -Raw).Contains('DIM_UPDATE_SOURCE_SHA_MISMATCH_BEFORE_INSTALL')) 'R954_EARLY_HASH_REJECTION_LOG'
+  [void](Registered '1.5.4')
+  Require ((FileSha $Gui) -ceq $PublicGui -and (FileSha $Svc) -ceq $PublicSvc -and (Get-Service -Name 'DirectInternetMethodSvc').Status -eq $serviceBefore) 'R954_BASELINE_CODE_AND_SERVICE_UNCHANGED'
+  Require ((FileSha $Config) -ceq $configSha -and (FileSha $Provider) -ceq $providerSha -and (FileSha $Evidence) -ceq $evidenceSha) 'R954_OWNER_DATA_UNCHANGED'
+  Require (@(Get-ChildItem -LiteralPath $updateDir -Filter 'completion-*.receipt' -File).Count -eq 0) 'R954_NO_COMPLETION_RECEIPT'
+  Require ((FileSha $stage) -ceq $build.installerSha -and ((Get-Item -LiteralPath $stage).Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) 'R954_TEST_STAGE_STILL_OWNED'
+  Remove-Item -LiteralPath $stage
+  if($createdDir -and @(Get-ChildItem -LiteralPath $updateDir -Force).Count -eq 0){Remove-Item -LiteralPath $updateDir}
+  $report.rejectedNativeHandoff=[ordered]@{exitCode=$p.ExitCode;reason='DIM_UPDATE_SOURCE_SHA_MISMATCH_BEFORE_INSTALL';baselinePreserved=$true}
+ }
  Install $New 'RC1_IN_PLACE'
  [void](Registered '1.5.7')
  Require ((FileSha $Gui) -ceq $build.guiSha -and (FileSha $Svc) -ceq $build.serviceSha) 'RC1_GUI_SERVICE_PIN'

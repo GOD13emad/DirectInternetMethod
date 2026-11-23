@@ -204,6 +204,13 @@ begin
     ExpectedStage := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\UpdateTransactions\DirectInternetMethod-update-stage.exe');
     if not PathSame(ExpandConstant('{srcexe}'), ExpectedStage) then
       exit;
+    // Verify the updater handoff before PrepareToInstall can stop services.
+    // Recheck the source again at ssDone.
+    if UpperCase(GetSHA256OfFile(ExpandConstant('{srcexe}'))) <> DIMExpectedInstallerSHA then
+    begin
+      Log('DIM_UPDATE_SOURCE_SHA_MISMATCH_BEFORE_INSTALL');
+      exit;
+    end;
     DIMUpdateReceiptExpected := True;
   end;
   Result := True;
