@@ -111,6 +111,41 @@ class LinuxRootOwnedTwoScopeProductFixture(unittest.TestCase):
                 row["path"], row["sha256"], row["bytes"])
             self.assertEqual(attestation["sha256"], row["sha256"])
 
+        # Real kernel DAC negative check, not just UID metadata comparison:
+        # an unprivileged fork must be unable to modify root code or journal,
+        # but must be able to read its own installed user code.
+        user_exe = self.fx.roots["user"] / "current" / "direct_internet_method.py"
+        pid = os.fork()
+        if pid == 0:
+            try:
+                os.setgroups([])
+                os.setgid(self.owner[1])
+                os.setuid(self.owner[0])
+                forbidden_checks = (
+                    (privileged_exe, os.O_WRONLY | os.O_APPEND),
+                    (self.fx.engine.journal, os.O_RDONLY),
+                    (self.fx.engine.journal, os.O_WRONLY | os.O_APPEND),
+                )
+                for forbidden, flags in forbidden_checks:
+                    try:
+                        handle = os.open(forbidden, flags)
+                    except PermissionError:
+                        pass
+                    else:
+                        os.close(handle)
+                        os._exit(91)
+                with user_exe.open("rb") as owner_file:
+                    if not owner_file.read(1):
+                        os._exit(92)
+                os._exit(0)
+            except BaseException:
+                os._exit(93)
+        child, outcome = os.waitpid(pid, 0)
+        self.assertEqual(child, pid)
+        self.assertTrue(os.WIFEXITED(outcome))
+        self.assertEqual(os.WEXITSTATUS(outcome), 0,
+                         "R948_KERNEL_DAC_PROTECTED_CODE_OR_OWNER_ACCESS_FAILED")
+
         # A real OS uid mutation is detected even when file bytes and
         # manifest digest remain valid.
         os.chown(privileged_exe, *self.owner)
