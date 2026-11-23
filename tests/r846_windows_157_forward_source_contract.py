@@ -83,6 +83,23 @@ class ForwardWindows157(unittest.TestCase):
                 self.assertIn(token,source,rel)
 
 
+
+    def test_native_restart_uses_actual_receipt_and_releases_owned_lock(self):
+        source=(R/"tests/r846_windows_native_rollback.ps1").read_text("utf-8")
+        scope=source.split("# R957:",1)[1].split("$report.completedNativeHandoff=",1)[0]
+        steps=("[IO.FileShare]::Read)", "R955_REAL_HANDOFF_EXIT_ZERO",
+               "R957_REAL_NATIVE_EVIDENCE_RETAINED", "Stop-Service -Name",
+               "R957_EVIDENCE_SURVIVES_STOP", "Start-Service -Name",
+               "R957_NEW_NATIVE_SERVICE_PROCESS",
+               "R957_EVIDENCE_SURVIVES_RESTART_WHILE_LOCKED",
+               "$held.Dispose()", "R955_NATIVE_SERVICE_CONSUMED_TRANSACTION")
+        indexes=[scope.index(step) for step in steps]
+        self.assertEqual(indexes, sorted(indexes))
+        self.assertIn("$afterPid -ne $beforePid",scope)
+        self.assertNotIn("WriteAllText($receipt",scope)
+        self.assertNotIn("Remove-Item -LiteralPath $pending",scope)
+
+
 if __name__=="__main__":
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(ForwardWindows157))
     raise SystemExit(0 if result.wasSuccessful() else 1)

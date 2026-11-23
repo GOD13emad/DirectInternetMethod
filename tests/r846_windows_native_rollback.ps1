@@ -147,8 +147,34 @@ try {
   [IO.File]::Move($tmp,$pending)
   $log=Join-Path $Dir 'R955_native_handoff.log'
   $args=@('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NORESTARTAPPLICATIONS','/CLOSEAPPLICATIONS','/SP-',('/DIR="'+$App+'"'),('/LOG="'+$log+'"'),('/DIMTXN='+$txn),('/DIMSHA256='+$build.installerSha))
-  $p=Start-Process -FilePath $stage -ArgumentList $args -Wait -PassThru -NoNewWindow
-  Require ($p.ExitCode -eq 0) 'R955_REAL_HANDOFF_EXIT_ZERO'
+  # R957: hold an OS read handle without delete sharing so genuine
+  # ssDone evidence survives a real SCM service restart. No fake receipt.
+  $held=[IO.File]::Open($stage,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  try {
+   $p=Start-Process -FilePath $stage -ArgumentList $args -Wait -PassThru -NoNewWindow
+   Require ($p.ExitCode -eq 0) 'R955_REAL_HANDOFF_EXIT_ZERO'
+   $serviceLog=Join-Path $env:ProgramData 'DirectInternetMethod\service.log'
+   $deadline=[DateTime]::UtcNow.AddSeconds(60)
+   do {
+    if((Test-Path -LiteralPath $serviceLog) -and (Get-Content -LiteralPath $serviceLog -Raw).Contains('update-stage-file-locked-preserving-single-pending-slot')){break}
+    Start-Sleep -Seconds 2
+   } while([DateTime]::UtcNow -lt $deadline)
+   Require ((Get-Content -LiteralPath $serviceLog -Raw).Contains('update-stage-file-locked-preserving-single-pending-slot')) 'R957_REAL_SERVICE_DEFERRED_LOCKED_STAGE'
+   Require ((Test-Path -LiteralPath $pending) -and (Test-Path -LiteralPath $receipt) -and (Test-Path -LiteralPath $stage)) 'R957_REAL_NATIVE_EVIDENCE_RETAINED'
+   $beforePid=(Get-CimInstance Win32_Service -Filter "Name='DirectInternetMethodSvc'").ProcessId
+   Require ($beforePid -gt 0) 'R957_PRE_RESTART_PID'
+   Stop-Service -Name 'DirectInternetMethodSvc' -ErrorAction Stop
+   (Get-Service -Name 'DirectInternetMethodSvc').WaitForStatus('Stopped',[TimeSpan]::FromSeconds(30))
+   Require ((Test-Path -LiteralPath $pending) -and (Test-Path -LiteralPath $receipt) -and (Test-Path -LiteralPath $stage)) 'R957_EVIDENCE_SURVIVES_STOP'
+   Start-Service -Name 'DirectInternetMethodSvc' -ErrorAction Stop
+   (Get-Service -Name 'DirectInternetMethodSvc').WaitForStatus('Running',[TimeSpan]::FromSeconds(30))
+   $afterPid=(Get-CimInstance Win32_Service -Filter "Name='DirectInternetMethodSvc'").ProcessId
+   Require ($afterPid -gt 0 -and $afterPid -ne $beforePid) 'R957_NEW_NATIVE_SERVICE_PROCESS'
+   Require ((Test-Path -LiteralPath $pending) -and (Test-Path -LiteralPath $receipt) -and (Test-Path -LiteralPath $stage)) 'R957_EVIDENCE_SURVIVES_RESTART_WHILE_LOCKED'
+   $report.nativeServiceRestart=[ordered]@{beforePid=$beforePid;afterPid=$afterPid;lockedStagePreserved=$true;osReboot=$false}
+  } finally {
+   $held.Dispose()
+  }
   $deadline=[DateTime]::UtcNow.AddSeconds(90)
   do {
    if(!(Test-Path -LiteralPath $pending)){break}
