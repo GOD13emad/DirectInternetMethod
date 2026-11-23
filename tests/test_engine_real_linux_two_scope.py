@@ -118,7 +118,8 @@ class RealLinuxTwoScopeIntegration(unittest.TestCase):
         expected_uid = ({"privileged": os.getuid(), "user": os.getuid()}
                         if os.name == "posix" else None)
         result = two_scope_code_postflight(
-            plan, self.roots, native, expected_uids=expected_uid)
+            plan, self.roots, native, journal_path=self.engine.journal,
+            expected_uids=expected_uid)
         self.assertEqual({row["scope"]: row["files"] for row in result["scopes"]},
                          {"privileged": 13, "user": 8})
         self.assertFalse(result["native_installation_accepted"])
@@ -131,6 +132,7 @@ class RealLinuxTwoScopeIntegration(unittest.TestCase):
             output.write(b"R947_FORBIDDEN_AFTER_ACTIVATION")
         with self.assertRaisesRegex(EngineError, "INSTALLED_MANAGED_FILE_CHANGED"):
             two_scope_code_postflight(plan, self.roots, native,
+                                      journal_path=self.engine.journal,
                                       expected_uids=expected_uid)
         code.write_bytes(saved)
         if os.name == "posix":
@@ -138,20 +140,24 @@ class RealLinuxTwoScopeIntegration(unittest.TestCase):
             code.chmod(0o666)
             with self.assertRaisesRegex(EngineError, "R947_MANAGED_FILE_MODE_DRIFT"):
                 two_scope_code_postflight(plan, self.roots, native,
+                                      journal_path=self.engine.journal,
                                           expected_uids=expected_uid)
             code.chmod(0o755)
             with self.assertRaisesRegex(EngineError, "R947_MANAGED_FILE_OWNER_DRIFT"):
                 two_scope_code_postflight(plan, self.roots, native,
+                                      journal_path=self.engine.journal,
                     expected_uids={"privileged": os.getuid() + 1,
                                    "user": os.getuid()})
 
         different = json.loads(json.dumps(native))
         different["scope_pins"][0]["manifest_sha256"] = "f" * 64
-        with self.assertRaisesRegex(EngineError, "R947_TRANSACTION_MANIFEST_PIN_DRIFT"):
-            two_scope_code_postflight(plan, self.roots, different)
+        with self.assertRaisesRegex(EngineError, "R947_LIVE_JOURNAL_INTENT_DRIFT"):
+            two_scope_code_postflight(plan, self.roots, different,
+                                      journal_path=self.engine.journal)
         with self.assertRaisesRegex(EngineError, "R947_ACTIVE_REGISTRATION_OR_MANIFEST_DRIFT"):
             two_scope_code_postflight(plan, {"privileged": self.roots["user"],
-                                              "user": self.roots["privileged"]}, native)
+                                              "user": self.roots["privileged"]}, native,
+                                      journal_path=self.engine.journal)
         self.engine.commit()
         self.assertEqual(data.read_bytes(), b"R947_UNOWNED_OWNER_SETTINGS_KEEP")
 

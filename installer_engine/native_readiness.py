@@ -133,19 +133,21 @@ def linux_readiness(protected_root: Path | str, units: list[str] | tuple[str, ..
 
 def two_scope_code_postflight(plan: object, roots: dict,
                               native_intent: dict,
-                              *, expected_uids: dict | None = None) -> dict:
+                              *, journal_path: Path | str,
+                              expected_uids: dict | None = None) -> dict:
     """R947: read the exact 2 active code scopes BEFORE native receipt/commit.
 
     This verifies the real managed on-disk bytes against the existing pinned
-    NativePlan and R926 transaction identity, including POSIX file modes.
+    NativePlan, durable transaction journal and R926 identity, including POSIX file modes.
     It MUST be called under an independently OS-authorized broker's transaction
     lock with roots/pins supplied from trusted installed policy, NOT a client.
     It does not check systemd/SCM, publisher origin, privilege, reboot,
     journal authenticity or native completion. It CANNOT authorize commit.
     """
     import stat
+    import base64
     from .broker_intent import _plan_pins
-    from .engine import Engine, no_links, load_json, validate_slot
+    from .engine import Engine, no_links, load_json, validate_slot, hash_bytes
     from .native_plan import NativePlan
     from .native_receipt import validate_intent, intent_sha256
 
@@ -158,6 +160,35 @@ def two_scope_code_postflight(plan: object, roots: dict,
             native_intent["platform"] == plan.platform and
             native_intent["new"] == plan.version,
             "R947_TRANSACTION_TARGET_DRIFT")
+    # A file digest and caller-supplied native_intent are insufficient:
+    # bind both to the independently identified live durable transaction.
+    # The caller MUST supply an OS-protected journal location; this function
+    # observes its bytes but cannot certify its UID/ACL or publisher origin.
+    jpath = Path(journal_path).absolute()
+    no_links(jpath)
+    require(jpath.is_file(), "R947_LIVE_JOURNAL_REQUIRED")
+    checkpoint = load_json(jpath)
+    require(type(checkpoint) is dict and
+            set(checkpoint) == {"schema", "platform", "phase", "old", "new",
+                                "preimage_b64", "preimage_sha256",
+                                "request_id", "scope_pins"} and
+            type(checkpoint["schema"]) is int and checkpoint["schema"] == 2 and
+            checkpoint["phase"] in ("activated", "finalizing"),
+            "R947_LIVE_JOURNAL_NOT_ACTIVATED")
+    try:
+        original = base64.b64decode(
+            checkpoint["preimage_b64"].encode("ascii"), validate=True)
+    except (ValueError, AttributeError, UnicodeError) as exc:
+        raise EngineError("R947_LIVE_JOURNAL_PREIMAGE_INVALID") from exc
+    require(len(original) <= 65536 and
+            hash_bytes(original) == checkpoint["preimage_sha256"],
+            "R947_LIVE_JOURNAL_PREIMAGE_INVALID")
+    require(all(checkpoint[field] == native_intent[field] for field in
+                ("platform", "old", "new", "request_id",
+                 "scope_pins", "preimage_sha256")) and
+            native_intent["operation"] ==
+                ("upgrade" if checkpoint["old"] is not None else "install"),
+            "R947_LIVE_JOURNAL_INTENT_DRIFT")
     pins = list(_plan_pins(plan))
     require(native_intent["scope_pins"] == pins,
             "R947_TRANSACTION_MANIFEST_PIN_DRIFT")
