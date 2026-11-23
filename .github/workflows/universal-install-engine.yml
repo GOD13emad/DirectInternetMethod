@@ -248,3 +248,26 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
           R940_POLKIT_NATIVE: '1'
         run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
+      - name: Verify real DIM 21-file scopes under root and owner custody
+        # Isolated /run fixture on a trusted feature-PUSH runner; NEVER a
+        # real user or production product installation.
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = push
+          test "$GITHUB_REF" = refs/heads/feature/universal-install-engine
+          test "$(id -u)" != 0
+          sudo -n env \
+            GITHUB_ACTIONS="$GITHUB_ACTIONS" \
+            GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" \
+            GITHUB_REF="$GITHUB_REF" \
+            CI="$CI" \
+            RUNNER_TEMP="$RUNNER_TEMP" \
+            R948_ROOT_ISOLATED=1 \
+            SUDO_UID="$(id -u)" \
+            SUDO_GID="$(id -g)" \
+            PYTHONPATH="$GITHUB_WORKSPACE" \
+            PYTHONDONTWRITEBYTECODE=1 \
+            /usr/bin/python3 -m unittest tests.test_engine_r948_linux_root_ownership -v

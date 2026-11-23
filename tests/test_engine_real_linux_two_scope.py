@@ -23,7 +23,8 @@ from tests.test_engine_universal_install import FileNativeFixture
 
 class RealLinuxTwoScopeIntegration(unittest.TestCase):
     def setUp(self):
-        self.t = tempfile.TemporaryDirectory(prefix="dim-real-linux-scopes-")
+        self.t = tempfile.TemporaryDirectory(prefix="dim-real-linux-scopes-",
+                                             dir=getattr(self, "_temp_parent", None))
         self.addCleanup(self.t.cleanup)
         self.base = Path(self.t.name)
         self.repo = Path(__file__).resolve().parents[1]
