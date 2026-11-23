@@ -129,3 +129,91 @@ def linux_readiness(protected_root: Path | str, units: list[str] | tuple[str, ..
             "protected_root": observation["protected_root"],
             "units": observation["units"],
             "native_installation_or_rollback_accepted": False}
+
+
+def two_scope_code_postflight(plan: object, roots: dict,
+                              native_intent: dict,
+                              *, expected_uids: dict | None = None) -> dict:
+    """R947: read the exact 2 active code scopes BEFORE native receipt/commit.
+
+    This verifies the real managed on-disk bytes against the existing pinned
+    NativePlan and R926 transaction identity, including POSIX file modes.
+    It MUST be called under an independently OS-authorized broker's transaction
+    lock with roots/pins supplied from trusted installed policy, NOT a client.
+    It does not check systemd/SCM, publisher origin, privilege, reboot,
+    journal authenticity or native completion. It CANNOT authorize commit.
+    """
+    import stat
+    from .broker_intent import _plan_pins
+    from .engine import Engine, no_links, load_json, validate_slot
+    from .native_plan import NativePlan
+    from .native_receipt import validate_intent, intent_sha256
+
+    require(isinstance(plan, NativePlan) and
+            plan.platform in ("linux-x86_64", "windows-x86_64") and
+            len(plan.scopes) == 2,
+            "R947_TWO_SCOPE_PLAN_REQUIRED")
+    validate_intent(native_intent)
+    require(native_intent["operation"] in ("install", "upgrade") and
+            native_intent["platform"] == plan.platform and
+            native_intent["new"] == plan.version,
+            "R947_TRANSACTION_TARGET_DRIFT")
+    pins = list(_plan_pins(plan))
+    require(native_intent["scope_pins"] == pins,
+            "R947_TRANSACTION_MANIFEST_PIN_DRIFT")
+    names = {name for name, _ in plan.scopes}
+    require(type(roots) is dict and set(roots) == names,
+            "R947_SCOPE_ROOTS_REQUIRED")
+    if expected_uids is not None:
+        require(os.name == "posix" and type(expected_uids) is dict and
+                set(expected_uids) == names and
+                all(type(uid) is int and uid >= 0 for uid in expected_uids.values()),
+                "R947_EXPECTED_OWNER_IDS_INVALID")
+    locations = {name: Path(roots[name]).absolute() for name in names}
+    require(len(set(locations.values())) == 2 and
+            all(x != y and x not in y.parents and y not in x.parents
+                for x in locations.values() for y in locations.values() if x != y),
+            "R947_SCOPE_ROOT_OVERLAP")
+    rows = []
+    for name, manifest in sorted(plan.scopes):
+        root = locations[name]
+        no_links(root)
+        require(root.is_dir(), "R947_INSTALLED_SCOPE_MISSING")
+        engine = Engine(root, plan.platform)
+        no_links(engine.installed)
+        no_links(engine.current)
+        require(engine.installed.is_file(), "R947_MANAGED_REGISTRATION_MISSING")
+        installed = load_json(engine.installed)
+        require(type(installed) is dict and
+                set(installed) == {"schema", "manifest", "manifest_sha256"} and
+                installed["schema"] == 1 and
+                installed["manifest_sha256"] == next(
+                    row["manifest_sha256"] for row in pins if row["name"] == name) and
+                installed["manifest"] == manifest,
+                "R947_ACTIVE_REGISTRATION_OR_MANIFEST_DRIFT")
+        # Unlike Engine.verify(), this is safe while an update is activated
+        # and awaiting native completion: previous and pending still exist.
+        validate_slot(engine.current, manifest)
+        for entry in manifest["files"]:
+            member = engine.current / entry["path"]
+            no_links(member)
+            info = member.lstat()
+            if os.name == "posix":
+                require(stat.S_IMODE(info.st_mode) == entry["mode"],
+                        "R947_MANAGED_FILE_MODE_DRIFT")
+            if expected_uids is not None:
+                require(info.st_uid == expected_uids[name],
+                        "R947_MANAGED_FILE_OWNER_DRIFT")
+        if expected_uids is not None:
+            require(root.lstat().st_uid == expected_uids[name] and
+                    engine.current.lstat().st_uid == expected_uids[name],
+                    "R947_SCOPE_ROOT_OWNER_DRIFT")
+        rows.append({"scope": name, "files": len(manifest["files"]),
+                     "manifest_sha256": installed["manifest_sha256"]})
+    return {"status": "R947_READONLY_ACTIVATED_CODE_POSTFLIGHT_ONLY",
+            "platform": plan.platform, "version": plan.version,
+            "native_intent_sha256": intent_sha256(native_intent),
+            "scopes": rows,
+            "native_installation_accepted": False,
+            "publisher_authenticated": False,
+            "os_native_registration_verified": False}

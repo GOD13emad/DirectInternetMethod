@@ -92,6 +92,69 @@ class RealLinuxTwoScopeIntegration(unittest.TestCase):
         return {scope: Engine(path, "linux-x86_64").verify()
                 for scope, path in self.roots.items()}
 
+    def test_r947_exact_real_code_activated_postflight_blocks_tamper_and_false_owner(self):
+        """21 tracked files, one live transaction, before native completion."""
+        import os
+        import stat
+        from installer_engine.engine import PRODUCT
+        from installer_engine.native_plan import NativePlan
+        from installer_engine.native_readiness import two_scope_code_postflight
+
+        actual = self._build("1.5.7")
+        manifests = {
+            name: json.loads((directory / "manifest.json").read_text("utf-8"))
+            for name, (directory, _) in actual.items()
+        }
+        plan = NativePlan(
+            PRODUCT, "1.5.7", "linux-x86_64",
+            "PINNED_CODE_LAYOUT_REQUIRES_TRUSTED_NATIVE_ADAPTER",
+            tuple((name, manifests[name]) for name in ("privileged", "user")))
+        data = self.roots["user"] / "data" / "settings.json"
+        data.parent.mkdir(parents=True)
+        data.write_bytes(b"R947_UNOWNED_OWNER_SETTINGS_KEEP")
+        self.engine.begin(actual)
+        self.engine.activate()
+        native = self.engine._intent(self.engine._load())
+        expected_uid = ({"privileged": os.getuid(), "user": os.getuid()}
+                        if os.name == "posix" else None)
+        result = two_scope_code_postflight(
+            plan, self.roots, native, expected_uids=expected_uid)
+        self.assertEqual({row["scope"]: row["files"] for row in result["scopes"]},
+                         {"privileged": 13, "user": 8})
+        self.assertFalse(result["native_installation_accepted"])
+        self.assertFalse(result["os_native_registration_verified"])
+        self.assertEqual(data.read_bytes(), b"R947_UNOWNED_OWNER_SETTINGS_KEEP")
+
+        code = (self.roots["privileged"] / "current" / "runtime/usr/bin/ctrld")
+        saved = code.read_bytes()
+        with code.open("ab") as output:
+            output.write(b"R947_FORBIDDEN_AFTER_ACTIVATION")
+        with self.assertRaisesRegex(EngineError, "INSTALLED_MANAGED_FILE_CHANGED"):
+            two_scope_code_postflight(plan, self.roots, native,
+                                      expected_uids=expected_uid)
+        code.write_bytes(saved)
+        if os.name == "posix":
+            code.chmod(0o755)
+            code.chmod(0o666)
+            with self.assertRaisesRegex(EngineError, "R947_MANAGED_FILE_MODE_DRIFT"):
+                two_scope_code_postflight(plan, self.roots, native,
+                                          expected_uids=expected_uid)
+            code.chmod(0o755)
+            with self.assertRaisesRegex(EngineError, "R947_MANAGED_FILE_OWNER_DRIFT"):
+                two_scope_code_postflight(plan, self.roots, native,
+                    expected_uids={"privileged": os.getuid() + 1,
+                                   "user": os.getuid()})
+
+        different = json.loads(json.dumps(native))
+        different["scope_pins"][0]["manifest_sha256"] = "f" * 64
+        with self.assertRaisesRegex(EngineError, "R947_TRANSACTION_MANIFEST_PIN_DRIFT"):
+            two_scope_code_postflight(plan, self.roots, different)
+        with self.assertRaisesRegex(EngineError, "R947_ACTIVE_REGISTRATION_OR_MANIFEST_DRIFT"):
+            two_scope_code_postflight(plan, {"privileged": self.roots["user"],
+                                              "user": self.roots["privileged"]}, native)
+        self.engine.commit()
+        self.assertEqual(data.read_bytes(), b"R947_UNOWNED_OWNER_SETTINGS_KEEP")
+
     def test_real_privileged_binary_tamper_denied_before_any_scope_mutation(self):
         # A corrupted REAL tracked executable in the privileged bundle is
         # rejected before even the user scope is staged; no OS authorization.
