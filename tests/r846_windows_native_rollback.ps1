@@ -127,7 +127,42 @@ try {
   if($createdDir -and @(Get-ChildItem -LiteralPath $updateDir -Force).Count -eq 0){Remove-Item -LiteralPath $updateDir}
   $report.rejectedNativeHandoff=[ordered]@{exitCode=$p.ExitCode;reason='DIM_UPDATE_SOURCE_SHA_MISMATCH_BEFORE_INSTALL';baselinePreserved=$true}
  }
- Install $New 'RC1_IN_PLACE'
+ if($reviewedCandidate){
+  # Positive native handoff: the disposable VM's elevated test operator
+  # stages the exact verified package and the existing pending schema v2.
+  # Only the real Inno ssDone and installed SYSTEM service may complete it.
+  $updateDir=Join-Path $Priv 'UpdateTransactions'
+  $stage=Join-Path $updateDir 'DirectInternetMethod-update-stage.exe'
+  $pending=Join-Path $updateDir 'pending-update.json'
+  $txn=([guid]::NewGuid().ToString('N')+[guid]::NewGuid().ToString('N')).ToUpperInvariant()
+  $receipt=Join-Path $updateDir ('completion-'+$txn+'.receipt')
+  if(!(Test-Path -LiteralPath $updateDir)){[void](New-Item -ItemType Directory -Path $updateDir)}
+  Require (((Get-Item -LiteralPath $updateDir).Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) 'R955_PROTECTED_STAGE_NOT_REPARSE'
+  Require (@(Get-ChildItem -LiteralPath $updateDir -Force).Count -eq 0) 'R955_EMPTY_TRANSACTION_DIRECTORY'
+  Copy-Item -LiteralPath $New -Destination $stage
+  Require ((FileSha $stage) -ceq $build.installerSha) 'R955_PINNED_STAGE'
+  $record=[ordered]@{schema=2;transactionId=$txn;targetVersion='1.5.7';tag='v1.5.7';installer=$stage;sha256=$build.installerSha;installDir=$App;preparedUtc=[DateTimeOffset]::UtcNow.ToString('O')}
+  $tmp=$pending+'.tmp'
+  [IO.File]::WriteAllText($tmp,($record|ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))
+  [IO.File]::Move($tmp,$pending)
+  $log=Join-Path $Dir 'R955_native_handoff.log'
+  $args=@('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/NORESTARTAPPLICATIONS','/CLOSEAPPLICATIONS','/SP-',('/DIR="'+$App+'"'),('/LOG="'+$log+'"'),('/DIMTXN='+$txn),('/DIMSHA256='+$build.installerSha))
+  $p=Start-Process -FilePath $stage -ArgumentList $args -Wait -PassThru -NoNewWindow
+  Require ($p.ExitCode -eq 0) 'R955_REAL_HANDOFF_EXIT_ZERO'
+  $deadline=[DateTime]::UtcNow.AddSeconds(90)
+  do {
+   if(!(Test-Path -LiteralPath $pending)){break}
+   Start-Sleep -Seconds 2
+  } while([DateTime]::UtcNow -lt $deadline)
+  Require (!(Test-Path -LiteralPath $pending) -and !(Test-Path -LiteralPath $stage) -and !(Test-Path -LiteralPath $receipt)) 'R955_NATIVE_SERVICE_CONSUMED_TRANSACTION'
+  Require (@(Get-ChildItem -LiteralPath $updateDir -Force).Count -eq 0) 'R955_NO_DUPLICATE_CACHE_OR_RECEIPT'
+  Require ((Get-Service -Name 'DirectInternetMethodSvc').Status -eq 'Running') 'R955_REAL_SERVICE_RUNNING'
+  $serviceLog=Join-Path $env:ProgramData 'DirectInternetMethod\service.log'
+  Require ((Get-Content -LiteralPath $serviceLog -Raw).Contains('update-complete:1.5.7:no-cache-duplicate')) 'R955_NATIVE_SERVICE_COMPLETION_LOG'
+  $report.completedNativeHandoff=[ordered]@{exitCode=$p.ExitCode;nativeServiceCleanup=$true;stageRetained=$false;pendingRetained=$false;receiptRetained=$false;installerSha=$build.installerSha}
+ }else{
+  Install $New 'RC1_IN_PLACE'
+ }
  [void](Registered '1.5.7')
  Require ((FileSha $Gui) -ceq $build.guiSha -and (FileSha $Svc) -ceq $build.serviceSha) 'RC1_GUI_SERVICE_PIN'
  Require ((FileSha (Join-Path $App 'manifest.json')) -ceq $build.manifestSha) 'RC1_MANIFEST_PIN'
