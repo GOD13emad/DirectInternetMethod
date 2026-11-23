@@ -259,6 +259,11 @@ class LinuxRootOwnedTwoScopeProductFixture(unittest.TestCase):
         self.assertEqual(user_data.read_bytes(),
                          b"R948_PRIVATE_USER_SETTINGS_UNCHANGED")
         self.fx.engine.begin_uninstall()
+        if native_gate:
+            # Native uninstall is deliberately outside R950 install-postflight
+            # acceptance. Restore the existing synthetic fixture-only receipt
+            # behavior here; NEVER present this as a native uninstall proof.
+            self.fx.adapter.complete_on_apply = True
         self.fx.engine.apply_uninstall()
         uninstalled = self.fx.engine.finish_uninstall()
         self.assertFalse(uninstalled["native_product_uninstall_accepted"])
