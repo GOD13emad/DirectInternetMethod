@@ -300,6 +300,7 @@ jobs:
             --setenv=CI=true \
             --setenv=R948_ROOT_ISOLATED=1 \
             --setenv=R949_NATIVE_SYSTEMD=1 \
+            --setenv=R950_NATIVE_POSTFLIGHT=1 \
             --setenv="R949_SYSTEMD_UNIT=$unit.service" \
             --setenv="SUDO_UID=$(id -u)" \
             --setenv="SUDO_GID=$(id -g)" \

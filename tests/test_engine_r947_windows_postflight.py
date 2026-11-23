@@ -4,13 +4,16 @@ This exercises the SAME cross-platform read-only postflight with Windows
 manifest/pin identity on Windows/Linux CI, not genuine SCM/UAC/Inno custody.
 """
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from installer_engine.engine import EngineError, PRODUCT, hash_bytes
 from installer_engine.native_plan import NativePlan
-from installer_engine.native_readiness import two_scope_code_postflight
+from installer_engine.native_readiness import (two_scope_code_postflight,
+                                              two_scope_native_postflight)
 from installer_engine.universal_install import UniversalFixtureInstaller
 from tests.test_engine_universal_install import FileNativeFixture
 
@@ -55,6 +58,31 @@ class WindowsTwoScopePostflightFixture(unittest.TestCase):
             self.assertEqual([r["files"] for r in ok["scopes"]], [1, 1])
             self.assertFalse(ok["os_native_registration_verified"])
             self.assertFalse(ok["native_installation_accepted"])
+            if os.name == "nt":
+                # Windows parity: the same shared code+journal gate requires
+                # a separately observed SCM/Inno registration. The observation
+                # is mocked here; this is NOT native Windows acceptance.
+                params = dict(journal_path=core.journal,
+                              windows_app_id="{00000000-0000-0000-0000-000000000001}",
+                              windows_service_name="DIMR950Sandbox",
+                              windows_expected_binary_command="C:\\Test\\dim-r950.exe")
+                with patch("installer_engine.native_readiness.windows_readiness",
+                           side_effect=EngineError("SCM_SERVICE_MISSING")):
+                    with self.assertRaisesRegex(EngineError, "SCM_SERVICE_MISSING"):
+                        two_scope_native_postflight(plan, roots, native, **params)
+                with patch("installer_engine.native_readiness.windows_readiness",
+                           return_value={"native_installation_or_rollback_accepted": False,
+                                         "service": {"state": "RUNNING"},
+                                         "registrations": [{"display_version": "1.5.7"}]}):
+                    composed = two_scope_native_postflight(
+                        plan, roots, native, **params)
+                    self.assertFalse(composed["native_installation_accepted"])
+                    self.assertEqual(composed["native"]["service"]["state"], "RUNNING")
+                with patch("installer_engine.native_readiness.windows_readiness",
+                           return_value={"native_installation_or_rollback_accepted": True}):
+                    with self.assertRaisesRegex(
+                            EngineError, "R950_NATIVE_OBSERVATION_MUST_NOT_AUTHORIZE"):
+                        two_scope_native_postflight(plan, roots, native, **params)
             path = roots["user"] / "current" / "app" / "code.bin"
             before = path.read_bytes()
             path.write_bytes(b"R947_CORRUPT")

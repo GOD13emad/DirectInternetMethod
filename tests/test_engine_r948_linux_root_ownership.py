@@ -18,7 +18,8 @@ import unittest
 from installer_engine.engine import EngineError, PRODUCT
 from installer_engine.linux_trusted_fd import TrustedLinuxRootFD
 from installer_engine.native_plan import NativePlan
-from installer_engine.native_readiness import two_scope_code_postflight
+from installer_engine.native_readiness import (two_scope_code_postflight,
+                                              two_scope_native_postflight)
 from tests import test_engine_real_linux_two_scope as real_linux
 
 
@@ -111,6 +112,12 @@ class LinuxRootOwnedTwoScopeProductFixture(unittest.TestCase):
 
     def test_exact_real_product_root_and_user_ownership_postflight_and_recovery(self):
         self.assert_r949_native_systemd_process()
+        # In the transient root systemd run, the fixture adapter deliberately
+        # cannot mint a receipt before the independently observed OS postflight.
+        native_gate = os.environ.get("R950_NATIVE_POSTFLIGHT") == "1"
+        if native_gate:
+            self.assertEqual(os.environ.get("R949_NATIVE_SYSTEMD"), "1")
+            self.fx.adapter.complete_on_apply = False
         sources = self.fx._build("1.5.7")
         user_data = self.fx.roots["user"] / "data" / "settings.json"
         user_data.parent.mkdir(parents=True, exist_ok=True)
@@ -124,6 +131,28 @@ class LinuxRootOwnedTwoScopeProductFixture(unittest.TestCase):
                          {"privileged": 13, "user": 8})
         self.assertFalse(report["native_installation_accepted"])
         self.assertFalse(report["os_native_registration_verified"])
+        if native_gate:
+            unit = os.environ["R949_SYSTEMD_UNIT"]
+            # Wrong systemd registration is rejected despite 21 correct code
+            # bytes and a correct active journal.
+            with self.assertRaisesRegex(
+                    EngineError, "SYSTEMD_UNIT_NOT_LOADED"):
+                two_scope_native_postflight(
+                    plan, self.fx.roots, native,
+                    journal_path=self.fx.engine.journal,
+                    expected_uids={"privileged": 0, "user": self.owner[0]},
+                    linux_units=("dim-r950-missing-registration.service",),
+                    linux_required_active_units=(
+                        "dim-r950-missing-registration.service",))
+            observed = two_scope_native_postflight(
+                plan, self.fx.roots, native,
+                journal_path=self.fx.engine.journal,
+                expected_uids={"privileged": 0, "user": self.owner[0]},
+                linux_units=(unit,), linux_required_active_units=(unit,))
+            self.assertEqual(observed["native"]["units"][0]["ActiveState"],
+                             "active")
+            self.assertFalse(observed["native_installation_accepted"])
+            self.assertFalse(self.fx.adapter.receipt.exists())
         protected_code = self.fx.roots["privileged"] / "current"
         privileged_exe = protected_code / "runtime/usr/bin/ctrld"
         row = next(x for x in docs["privileged"]["files"]
@@ -208,6 +237,21 @@ class LinuxRootOwnedTwoScopeProductFixture(unittest.TestCase):
         self.assign_user_ownership()
         plan, native, _ = self.plan_and_intent(sources)
         self.checked_postflight(plan, native)
+        if native_gate:
+            unit = os.environ["R949_SYSTEMD_UNIT"]
+            with self.assertRaisesRegex(
+                    EngineError, "UNIVERSAL_NATIVE_COMPLETION_RECEIPT_MISSING"):
+                self.fx.engine.commit()
+            observed = two_scope_native_postflight(
+                plan, self.fx.roots, native,
+                journal_path=self.fx.engine.journal,
+                expected_uids={"privileged": 0, "user": self.owner[0]},
+                linux_units=(unit,), linux_required_active_units=(unit,))
+            self.assertFalse(observed["native_installation_accepted"])
+            # TEST-ONLY synthetic receipt, never a publisher/production grant.
+            self.fx.adapter.receipt.write_bytes(
+                self.fx.adapter._fixture_receipt(native))
+            print("R950_CODE_JOURNAL_AND_REAL_SYSTEMD_OBSERVED_BEFORE_SYNTHETIC_RECEIPT")
         committed = self.fx.engine.commit()
         self.assertFalse(committed["native_product_installation_accepted"])
         self.assertEqual({x["version"] for x in self.fx._states().values()},

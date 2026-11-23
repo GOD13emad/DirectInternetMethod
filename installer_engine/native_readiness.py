@@ -248,3 +248,68 @@ def two_scope_code_postflight(plan: object, roots: dict,
             "native_installation_accepted": False,
             "publisher_authenticated": False,
             "os_native_registration_verified": False}
+
+
+def two_scope_native_postflight(
+    plan: object, roots: dict, native_intent: dict, *,
+    journal_path: Path | str, expected_uids: dict | None = None,
+    linux_units: tuple[str, ...] = (),
+    linux_required_active_units: tuple[str, ...] = (),
+    windows_app_id: str | None = None,
+    windows_service_name: str | None = None,
+    windows_expected_binary_command: str | None = None,
+    windows_required_service_state: str = "RUNNING",
+) -> dict:
+    """R950: combine *independent OS observations* with active code/journal.
+
+    Neither OS registration nor matching code confers an installer authority.
+    A future protected broker must own all inputs, journal, policy and receipt
+    storage, observe state under its transaction lock, and authorize its
+    publisher independently before considering native completion.
+    """
+    from .native_plan import NativePlan
+    require(isinstance(plan, NativePlan), "R950_PINNED_NATIVE_PLAN_REQUIRED")
+    if plan.platform == "linux-x86_64":
+        require(os.name == "posix" and type(linux_units) is tuple and
+                bool(linux_units) and
+                windows_app_id is None and windows_service_name is None and
+                windows_expected_binary_command is None,
+                "R950_LINUX_NATIVE_PARAMETERS_INVALID")
+    elif plan.platform == "windows-x86_64":
+        require(os.name == "nt" and not linux_units and
+                not linux_required_active_units and
+                all(isinstance(value, str) and value for value in
+                    (windows_app_id, windows_service_name,
+                     windows_expected_binary_command)),
+                "R950_WINDOWS_NATIVE_PARAMETERS_INVALID")
+    else:
+        raise EngineError("R950_UNSUPPORTED_NATIVE_PLATFORM")
+
+    code = two_scope_code_postflight(
+        plan, roots, native_intent, journal_path=journal_path,
+        expected_uids=expected_uids)
+    if plan.platform == "linux-x86_64":
+        protected = "privileged" if "privileged" in roots else "protected"
+        require(protected in roots, "R950_PROTECTED_SCOPE_REQUIRED")
+        observed = linux_readiness(
+            roots[protected], list(linux_units),
+            required_active_units=linux_required_active_units)
+    else:
+        observed = windows_readiness(
+            windows_app_id, windows_service_name,
+            expected_version=plan.version,
+            expected_binary_command=windows_expected_binary_command,
+            required_service_state=windows_required_service_state)
+    require(code["native_installation_accepted"] is False and
+            observed.get("native_installation_or_rollback_accepted") is False,
+            "R950_NATIVE_OBSERVATION_MUST_NOT_AUTHORIZE")
+    return {
+        "status": "R950_COMBINED_CODE_AND_OS_POSTFLIGHT_READONLY_ONLY",
+        "platform": plan.platform,
+        "version": plan.version,
+        "native_intent_sha256": code["native_intent_sha256"],
+        "code": code,
+        "native": observed,
+        "native_installation_accepted": False,
+        "publisher_authenticated": False,
+    }
