@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import stat
+import subprocess
 import sys
 import unittest
 
@@ -57,6 +58,26 @@ class LinuxRootOwnedTwoScopeProductFixture(unittest.TestCase):
         # parents remain root-owned and not group/world writable.
         self.fx.base.chmod(0o711)
 
+    def assert_r949_native_systemd_process(self):
+        """Extra requirement only for the isolated systemd-run R949 invocation."""
+        if os.environ.get("R949_NATIVE_SYSTEMD") != "1":
+            return
+        unit = os.environ.get("R949_SYSTEMD_UNIT", "")
+        self.assertRegex(unit, r"^dim-r949-g[0-9]+-a[0-9]+-scopes\.service$")
+        result = subprocess.run(
+            ["/usr/bin/systemctl", "show", unit,
+             "--property=MainPID", "--value"],
+            capture_output=True, text=True, timeout=8, check=True)
+        self.assertEqual(result.stdout.strip(), str(os.getpid()),
+                         "R949_TRANSIENT_SYSTEMD_MAINPID_NOT_THIS_EXECUTOR")
+        hardening = subprocess.run(
+            ["/usr/bin/systemctl", "show", unit,
+             "--property=NoNewPrivileges", "--property=ProtectSystem"],
+            capture_output=True, text=True, timeout=8, check=True)
+        self.assertIn("NoNewPrivileges=yes", hardening.stdout)
+        self.assertIn("ProtectSystem=strict", hardening.stdout)
+        print("R949_REAL_SYSTEMD_ROOT_MAINPID_SANDBOX_VERIFIED_FIXTURE_ONLY")
+
     def assign_user_ownership(self):
         """Test native os.chown on ONLY the freshly created fixture user tree."""
         uid, gid = self.owner
@@ -89,6 +110,7 @@ class LinuxRootOwnedTwoScopeProductFixture(unittest.TestCase):
             expected_uids={"privileged": 0, "user": self.owner[0]})
 
     def test_exact_real_product_root_and_user_ownership_postflight_and_recovery(self):
+        self.assert_r949_native_systemd_process()
         sources = self.fx._build("1.5.7")
         user_data = self.fx.roots["user"] / "data" / "settings.json"
         user_data.parent.mkdir(parents=True, exist_ok=True)

@@ -271,3 +271,38 @@ jobs:
             PYTHONPATH="$GITHUB_WORKSPACE" \
             PYTHONDONTWRITEBYTECODE=1 \
             /usr/bin/python3 -m unittest tests.test_engine_r948_linux_root_ownership -v
+      - name: Execute same real-file transaction inside isolated root systemd unit
+        # Reuse R948 and ONE common engine. Transient ephemeral CI service,
+        # writable /run only. No DIM production service, publisher or receipt.
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_EVENT_NAME" = push
+          test "$GITHUB_REF" = refs/heads/feature/universal-install-engine
+          test "$(id -u)" != 0
+          test -n "${GITHUB_RUN_ID:-}"
+          test -n "${GITHUB_RUN_ATTEMPT:-}"
+          unit="dim-r949-g${GITHUB_RUN_ID}-a${GITHUB_RUN_ATTEMPT}-scopes"
+          sudo -n systemd-run --system --wait --collect --pipe \
+            --unit="$unit" \
+            --property=Type=exec \
+            --property=Restart=no \
+            --property=NoNewPrivileges=yes \
+            --property=PrivateTmp=yes \
+            --property=ProtectSystem=strict \
+            --property=ProtectHome=no \
+            --property=ReadWritePaths=/run \
+            --property=RuntimeMaxSec=120s \
+            --setenv=GITHUB_ACTIONS=true \
+            --setenv=GITHUB_EVENT_NAME=push \
+            --setenv="GITHUB_REF=$GITHUB_REF" \
+            --setenv=CI=true \
+            --setenv=R948_ROOT_ISOLATED=1 \
+            --setenv=R949_NATIVE_SYSTEMD=1 \
+            --setenv="R949_SYSTEMD_UNIT=$unit.service" \
+            --setenv="SUDO_UID=$(id -u)" \
+            --setenv="SUDO_GID=$(id -g)" \
+            --setenv="PYTHONPATH=$GITHUB_WORKSPACE" \
+            --setenv=PYTHONDONTWRITEBYTECODE=1 \
+            /usr/bin/python3 -m unittest tests.test_engine_r948_linux_root_ownership -v
