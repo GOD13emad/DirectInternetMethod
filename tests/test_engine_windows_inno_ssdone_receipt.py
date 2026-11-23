@@ -57,6 +57,17 @@ class NativeInnoReceiptContract(unittest.TestCase):
         self.assertIn("Log('DIM_UPDATE_SOURCE_SHA_MISMATCH_BEFORE_INSTALL');", rejection)
         self.assertIn('exit;', rejection)
 
+    def test_inno_main_service_keeps_literal_quotes_in_scm_binary_path(self):
+        body = INNO.split("procedure InstallOrUpdateService();", 1)[1].split(
+            "function PrepareToInstall", 1)[0]
+        argument = r'''binPath= "\"' + ServiceExe + '\""'''
+        self.assertEqual(body.count(argument), 2)
+        for action in ('create', 'config'):
+            command = next(line for line in body.splitlines()
+                           if "Params := '" + action + " " in line)
+            self.assertIn(argument, command)
+        self.assertNotIn('''binPath= "' + ServiceExe + '"''', body)
+
     def test_service_receipt_binds_protected_nonce_and_hash_before_cleanup(self):
         final = PROGRAM.split("static void FinalizePendingUpdate()", 1)[1].split("static async Task RunActionAsync(", 1)[0]
         self.assertIn('GetProperty("schema").GetInt32() != 2', final)

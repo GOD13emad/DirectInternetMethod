@@ -175,6 +175,8 @@ try {
   Require ($LASTEXITCODE -eq 0) 'R952_SHARED_NATIVE_POSTFLIGHT_EXIT'
   $native=$observed|ConvertFrom-Json
   Require ($native.status -ceq 'R952_WINDOWS_FLAT_NATIVE_READONLY' -and $native.verified_immutable_files.privileged -eq 674 -and $native.verified_immutable_files.user -eq 6 -and @($native.mutable_owner_members_not_hashed_to_source).Count -eq 1 -and !$native.native_installation_accepted) 'R952_SHARED_NATIVE_IMMUTABLE_680_AND_SCM'
+  # The actual SCM must preserve literal quotes around the complete exe path.
+  Require ($native.native.scm_config.binary_command -ceq ('"'+$Svc+'"')) 'R956_SCM_EXACT_QUOTED_BINARY_PATH'
   $report.sharedEngineNativeObservation=$native
  }
  Require ((Get-Content (Join-Path $App 'RELEASE.json') -Raw|ConvertFrom-Json).version -ceq '1.5.7') 'RC1_INSTALLED_VERSION'

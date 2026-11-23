@@ -408,13 +408,13 @@ begin
 
   if not ServiceExists() then
   begin
-    Params := 'create "' + ServiceName + '" binPath= "' + ServiceExe + '" start= auto DisplayName= "Direct Internet Method Service"';
+    Params := 'create "' + ServiceName + '" binPath= "\"' + ServiceExe + '\"" start= auto DisplayName= "Direct Internet Method Service"';
     if (not RunSc(Params, ResultCode)) or (ResultCode <> 0) then
       RaiseException('Unable to create Direct Internet Method service. sc.exe exit=' + IntToStr(ResultCode));
   end
   else
   begin
-    Params := 'config "' + ServiceName + '" binPath= "' + ServiceExe + '" start= auto DisplayName= "Direct Internet Method Service"';
+    Params := 'config "' + ServiceName + '" binPath= "\"' + ServiceExe + '\"" start= auto DisplayName= "Direct Internet Method Service"';
     if (not RunSc(Params, ResultCode)) or (ResultCode <> 0) then
       RaiseException('Unable to update Direct Internet Method service. sc.exe exit=' + IntToStr(ResultCode));
   end;
