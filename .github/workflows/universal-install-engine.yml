@@ -246,6 +246,18 @@ jobs:
           python -B -m unittest tests.test_engine_windows_native_held_receipt -v
           if ($LASTEXITCODE -ne 0) { throw 'R977_REAL_NATIVE_RECEIPT_PROBE_FAILED' }
           Write-Host 'R977_WINDOWS_PRODUCTION_HELD_RECEIPT_OS_PROBE_PASS_NO_INSTALL'
+      - name: Execute compiled production Win32 durable pending writer
+        # No product install or private user files. Mandatory Windows
+        # CreateNew, Flush(true) and MoveFileEx(WITH_WRITE_THROUGH) tests.
+        shell: pwsh
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          R978_REQUIRE_NATIVE: '1'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -B -m unittest tests.test_engine_windows_native_journal_durability -v
+          if ($LASTEXITCODE -ne 0) { throw 'R978_REAL_WINDOWS_PENDING_JOURNAL_NATIVE_TEST_FAILED' }
+          Write-Host 'R978_REAL_WIN32_DURABLE_PENDING_WRITE_HARNESS_PASS_NO_POWERCUT_CLAIM'
   linux-root-systemd-synthetic-broker:
     name: Linux / real root systemd + kernel peer receipt/replay (synthetic only)
     # Only trusted feature PUSH source is executed under real root on

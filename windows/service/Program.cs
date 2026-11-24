@@ -238,10 +238,7 @@ internal static class Program
 
     static void WriteJsonAtomic(string path, object payload)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        var temp = path + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(payload), new UTF8Encoding(false));
-        File.Move(temp, path, true);
+        NativeProtectedUpdateJournal.WriteJsonAtomic(path, payload);
     }
 
 
