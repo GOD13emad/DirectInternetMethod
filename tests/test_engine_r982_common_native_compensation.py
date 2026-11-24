@@ -151,6 +151,24 @@ class R982CommonBrokerNativeScope(unittest.TestCase):
         self.assertIn("native_broker_native_preimage:", workflow)
         self.assertIn("R984_NATIVE_PREIMAGE:", workflow)
 
+    def test_r994_os_task_survives_registrar_crash_mode_gated(self):
+        vm = VM.read_text("utf-8")
+        ps = R980.read_text("utf-8-sig")
+        ci = CI.read_text("utf-8")
+        for token in ("R994_REGISTRAR_EXIT", "--r994-register-exit",
+                      "R994_REGISTRAR_DIED_BEFORE_OS_TRIGGER",
+                      "R994_OS_TASK_RECOVERY_AFTER_REGISTRAR_EXIT",
+                      "def _run_r994_registrar_exit("):
+            self.assertIn(token, vm)
+        for token in ("R994_REGISTRAR_EXIT",
+                      "R994_REAL_NATIVE_REGISTRAR_EXIT_RECOVERY"):
+            self.assertIn(token, ps)
+        self.assertIn("native_broker_registrar_exit:", ci)
+        self.assertIn("R994_REGISTRAR_EXIT:", ci)
+        self.assertNotIn("Start-ScheduledTask", (
+            ROOT / "tests/r993_windows_os_scheduled_recovery_vm.ps1"
+        ).read_text("utf-8-sig"))
+
     def test_r993_os_scheduled_native_recovery_requires_exact_vm_mode(self):
         vm=VM.read_text("utf-8")
         ps=R980.read_text("utf-8-sig")

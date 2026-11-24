@@ -40,6 +40,10 @@ if($r993Mode -and (!$r992Mode -or !$CommonBrokerRecovery -or
                    $env:R983_CRASH_RECOVERY -cne 'true')){
  throw 'R993_REQUIRES_R992_PROTECTED_MEDIA'
 }
+$r994Mode=($env:R994_REGISTRAR_EXIT -ceq 'true')
+if($r994Mode -and !$r993Mode){
+ throw 'R994_REQUIRES_REVIEWED_R993_OS_SCHEDULED_RECOVERY'
+}
 $Root=$env:GITHUB_WORKSPACE
 $Sha=$env:GITHUB_SHA
 $BuildDir=Join-Path $env:RUNNER_TEMP 'DIM_R846_NATIVE'
@@ -391,6 +395,17 @@ try {
           $result.r993_os_supervisor_accepted -eq $false -and
           $result.r993_reboot_accepted -eq $false) 'R993_REAL_NATIVE_OS_SCHEDULED_RECOVERY'
     $observed['r993OsScheduledS4uRecoveryObserved']=$true
+    if($r994Mode){
+     Need ($result.r994_registrar_exit -eq 81 -and
+           $result.r994_os_trigger_after_registrar_exit -eq $true -and
+           $result.r994_registrar_pid -gt 0 -and
+           $result.r994_registrar_pid -ne $result.r993_task_launcher_pid -and
+           $result.r994_registrar_pid -ne $result.r986_recovery_worker_pid -and
+           $result.r994_registrar_pid -ne $result.r986_observer_pid -and
+           $result.r994_production_authority_accepted -eq $false -and
+           $result.r994_reboot_accepted -eq $false) 'R994_REAL_NATIVE_REGISTRAR_EXIT_RECOVERY'
+     $observed['r994OsTaskRecoveryAfterRegistrarExitObserved']=$true
+    }
    }
   }
   $observed.realProductPostinstallFailureObserved=$true

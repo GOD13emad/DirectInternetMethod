@@ -33,6 +33,11 @@ on:
         required: false
         type: boolean
         default: false
+      native_broker_registrar_exit:
+        description: 'R994 QA-only: separate registrar exits after OS Task Scheduler registers protected recovery'
+        required: false
+        type: boolean
+        default: false
       native_broker_os_scheduled_recovery:
         description: 'R993 QA-only: Windows Task Scheduler S4U starts exact native recovery with prior-media pin, never physical'
         required: false
@@ -858,6 +863,7 @@ jobs:
       R984_NATIVE_PREIMAGE: ${{ inputs.native_broker_native_preimage }}
       R992_PROTECTED_RECOVERY_MEDIA: ${{ inputs.native_broker_protected_recovery_media }}
       R993_OS_SCHEDULED_RECOVERY: ${{ inputs.native_broker_os_scheduled_recovery }}
+      R994_REGISTRAR_EXIT: ${{ inputs.native_broker_registrar_exit }}
     permissions:
       contents: read
       actions: read

@@ -417,6 +417,57 @@ def _run_recovery_worker(qa: Path, cfg: dict, name: str,
 
 
 
+
+def _run_r994_registrar_exit(workspace: Path, qa: Path, source: str,
+                             name: str, dispatch_pin: str) -> int:
+    """Reviewed VM-only task registration in a disposable *separate* process.
+
+    Crash exit is intentional AFTER OS Task Scheduler acknowledges registration.
+    No native restore or privileged installer launch occurs in this process.
+    """
+    require(os.environ.get("R994_REGISTRAR_EXIT") == "true" and
+            os.environ.get("R993_OS_SCHEDULED_RECOVERY") == "true" and
+            os.environ.get("R992_PROTECTED_RECOVERY_MEDIA") == "true",
+            "R994_HOSTED_OS_REGISTRAR_MODE_REQUIRED")
+    base, *_ = _read_crash_dispatch(qa, name, dispatch_pin)
+    protected = (Path(os.environ["ProgramFiles"]) /
+                 "DirectInternetMethod" / "Privileged" / "UpdateTransactions")
+    script = workspace / "tests" / "r993_windows_os_scheduled_recovery_vm.ps1"
+    config = protected / "R993RecoveryConfig.json"
+    require(protected.is_dir() and not protected.is_symlink() and
+            config.is_file() and not config.is_symlink() and
+            100 < config.stat().st_size <= 8192 and
+            script.is_file() and not script.is_symlink(),
+            "R994_PROTECTED_HANDBACK_IDENTITY_REQUIRED")
+    record = json.loads(config.read_text(encoding="utf-8"))
+    require(type(record) is dict and
+            record.get("schema") == 1 and
+            record.get("source") == source and
+            record.get("name") == base.name and
+            record.get("dispatchPin") == dispatch_pin and
+            record.get("taskName") == "DIMR993VM-" + source[:12] and
+            record.get("scriptSha") == _sha(script).lower() and
+            record.get("pythonScriptSha") == _sha(Path(__file__)).lower() and
+            record.get("workspace") == str(workspace) and
+            record.get("runnerTemp") ==
+                str(Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)) and
+            record.get("python") == sys.executable and
+            record.get("localAppData") == os.environ["LOCALAPPDATA"],
+            "R994_REGISTRAR_CONFIGURATION_PIN_DRIFT")
+    cmd = ["pwsh", "-NoProfile", "-NonInteractive", "-File",
+           str(script), "-Mode", "Register", "-Config", str(config)]
+    proc = subprocess.run(cmd, cwd=workspace, text=True,
+                          capture_output=True, timeout=120)
+    require(proc.returncode == 0 and
+            "R993_TASK_CREATED" in proc.stdout,
+            "R994_OS_TASK_REGISTRATION_UNVERIFIED:" + proc.stderr[-800:])
+    # No finally-block, supervisor callback, or direct worker invocation:
+    # the OS-owned Task Scheduler must trigger the recovery on its own.
+    print("R994_OS_TASK_REGISTERED_BEFORE_REGISTRAR_EXIT",
+          flush=True)
+    os._exit(81)
+
+
 def _run_os_scheduled_recovery(workspace: Path, qa: Path, base: Path,
                                dispatch_pin: str, source: str) -> dict:
     """One-shot original-user Windows scheduler VM probe, NOT a production broker.
@@ -472,12 +523,28 @@ def _run_os_scheduled_recovery(workspace: Path, qa: Path, base: Path,
                               cwd=workspace, text=True, capture_output=True,
                               timeout=timeout)
     success = False
+    registrar_pid = None
     try:
-        registration = task_call("Register", 120)
-        require(registration.returncode == 0 and
-                "R993_TASK_CREATED" in registration.stdout,
-                "R993_TASK_REGISTRATION_FAILED:" +
-                registration.stderr[-1200:])
+        if os.environ.get("R994_REGISTRAR_EXIT") == "true":
+            registrar = subprocess.Popen(
+                [sys.executable, str(Path(__file__).resolve()),
+                 "--r994-register-exit", base.name, dispatch_pin],
+                cwd=workspace, text=True, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            registrar_pid = registrar.pid
+            stdout, stderr = registrar.communicate(timeout=120)
+            require(registrar.returncode == 81 and
+                    "R994_OS_TASK_REGISTERED_BEFORE_REGISTRAR_EXIT" in stdout and
+                    registrar_pid != os.getpid() and
+                    not receipt.exists(),
+                    "R994_REGISTRAR_DIED_BEFORE_OS_TRIGGER:" + stderr[-1000:])
+            print("R994_REGISTRAR_DIED_BEFORE_OS_TRIGGER", flush=True)
+        else:
+            registration = task_call("Register", 120)
+            require(registration.returncode == 0 and
+                    "R993_TASK_CREATED" in registration.stdout,
+                    "R993_TASK_REGISTRATION_FAILED:" +
+                    registration.stderr[-1200:])
         deadline = time.monotonic() + 540
         result = None
         while time.monotonic() < deadline:
@@ -519,6 +586,11 @@ def _run_os_scheduled_recovery(workspace: Path, qa: Path, base: Path,
                 observed["action"] == "R986_COMMON_RECOVER_BY_OS_TASK_S4U",
                 "R993_OS_TASK_NOT_SAME_AS_OBSERVER")
         success = True
+        if registrar_pid is not None:
+            require(observed["launcherPid"] != registrar_pid,
+                    "R994_LAUNCHER_MUST_OUTLIVE_REGISTRAR")
+            observed["r994_registrar_pid"] = registrar_pid
+            print("R994_OS_TASK_RECOVERY_AFTER_REGISTRAR_EXIT", flush=True)
         print("R993_SCHEDULED_OS_RECEIPT_VERIFIED")
         return observed
     except Exception as exc:
@@ -640,12 +712,23 @@ def main() -> int:
     require(scheduler_mode != "true" or
             (media_mode == "true" and crash_mode == "true"),
             "R993_REQUIRES_R992_PROTECTED_MEDIA")
+    registrar_mode = os.environ.get("R994_REGISTRAR_EXIT", "false")
+    require(registrar_mode in ("true", "false", ""), "R994_MODE_INVALID")
+    require(registrar_mode != "true" or
+            (scheduler_mode == "true" and media_mode == "true" and
+             crash_mode == "true"),
+            "R994_REQUIRES_R993_OS_TASK_AND_PROTECTED_MEDIA")
     if len(sys.argv) != 1:
         require(crash_mode == "true", "R983_CHILD_MODE_DENIED")
         if len(sys.argv) == 3 and sys.argv[1] == "--r983-child":
             return _run_crash_child(qa, cfg, sys.argv[2])
         if len(sys.argv) == 4 and sys.argv[1] == "--r986-recover":
             return _run_recovery_worker(qa, cfg, sys.argv[2], sys.argv[3])
+        if len(sys.argv) == 4 and sys.argv[1] == "--r994-register-exit":
+            require(registrar_mode == "true",
+                    "R994_REGISTRAR_MODE_NOT_REVIEWED")
+            return _run_r994_registrar_exit(
+                workspace, qa, source, sys.argv[2], sys.argv[3])
         raise EngineError("R983_CHILD_MODE_DENIED")
     adapter = RealInnoVmAdapter(
         qa, new_gui=cfg["new_gui"],
@@ -754,6 +837,17 @@ def main() -> int:
                 data["r993_task_worker_exit"] = task["workerExit"]
                 data["r993_os_supervisor_accepted"] = False
                 data["r993_reboot_accepted"] = False
+                if registrar_mode == "true":
+                    require(type(task.get("r994_registrar_pid")) is int and
+                            task["r994_registrar_pid"] !=
+                            task["launcherPid"] and
+                            task["r994_registrar_pid"] != os.getpid(),
+                            "R994_REGISTRAR_PROCESS_ISOLATION_DRIFT")
+                    data["r994_registrar_exit"] = 81
+                    data["r994_registrar_pid"] = task["r994_registrar_pid"]
+                    data["r994_os_trigger_after_registrar_exit"] = True
+                    data["r994_production_authority_accepted"] = False
+                    data["r994_reboot_accepted"] = False
         report.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
         print("R982_REAL_NATIVE_STATUS=" + STATUS)
         return 0
