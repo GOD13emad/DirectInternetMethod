@@ -151,6 +151,107 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
             for name, p in self.roots.items()
         }
 
+
+    def expected_intent(self, operation, old, new, pins):
+        return {"schema": 1, "request_id": "a" * 32,
+                "platform": self.platform, "operation": operation,
+                "old": old, "new": new,
+                "preimage_sha256": hashlib.sha256(self.adapter.snapshot()).hexdigest(),
+                "scope_pins": [{"name": name, "manifest_sha256": pins[name]}
+                               for name in sorted(pins)]}
+
+    def test_broker_reserved_intent_exact_install_upgrade_and_uninstall(self):
+        for old, new in ((None, "1.5.6"), ("1.5.6", "1.5.7")):
+            sources = self.sources(new)
+            intent = self.expected_intent("install" if old is None else "upgrade",
+                                          old, new, {n: p[1] for n, p in sources.items()})
+            self.core.begin(sources, expected_intent=intent)
+            self.assertEqual(self.core._intent(self.core._load()), intent)
+            self.core.activate()
+            self.assertTrue(self.core._native_complete(self.core._load()))
+            self.core.commit()
+        pins = {n: self.core.code._snapshot(n)["pin"] for n in self.roots}
+        intent = self.expected_intent("uninstall", "1.5.7", None, pins)
+        self.core.begin_uninstall(expected_intent=intent)
+        self.assertEqual(self.core._intent(self.core._load()), intent)
+        self.core.apply_uninstall()
+        self.core.finish_uninstall()
+        self.assertEqual(set(self.state().values()), {None})
+
+
+    def test_policy_bound_request_survives_real_coordinator_journal(self):
+        from installer_engine.broker_intent import compare_native_transaction_policy_intent
+        from installer_engine.native_plan import NativePlan
+        sources = self.sources("1.5.7")
+        manifests = []
+        for name, (root, _) in sources.items():
+            path = root / "manifest.json"
+            manifest = json.loads(path.read_bytes())
+            raw = (json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            path.write_bytes(raw)
+            sources[name] = root, hashlib.sha256(raw).hexdigest()
+            manifests.append((name, manifest))
+        plan = NativePlan("Direct Internet Method", "1.5.7", self.platform,
+                          "PINNED_CODE_LAYOUT_REQUIRES_TRUSTED_NATIVE_ADAPTER",
+                          tuple(sorted(manifests)))
+        intent = self.expected_intent("install", None, "1.5.7",
+                                      {n: p[1] for n, p in sources.items()})
+        request = {"schema": 1, "product": plan.product, "platform": plan.platform,
+                   "version": plan.version, "operation": "install",
+                   "request_id": intent["request_id"], "scopes": intent["scope_pins"]}
+        rb = json.dumps(request, sort_keys=True).encode()
+        policy = {k: request[k] for k in ("schema", "product", "platform", "version", "operation")}
+        policy["request_sha256"] = hashlib.sha256(rb).hexdigest()
+        policy["scopes"] = [dict(row, role=row["name"]) for row in request["scopes"]]
+        pb = json.dumps(policy, sort_keys=True).encode()
+        policy_pin = hashlib.sha256(pb).hexdigest()
+        preflight = compare_native_transaction_policy_intent(plan, pb, policy_pin, rb, intent)
+        self.core.begin(sources, expected_intent=intent)
+        reopened = self.new_engine()
+        recorded = reopened._intent(reopened._load())
+        postflight = compare_native_transaction_policy_intent(plan, pb, policy_pin, rb, recorded)
+        self.assertEqual(preflight["native_intent_sha256"], postflight["native_intent_sha256"])
+        self.assertFalse(postflight["native_installation_accepted"])
+        self.assertFalse(postflight["publisher_authenticated"])
+        reopened.activate()
+        reopened.commit()
+
+    def test_intent_drift_rejected_before_journal_and_native_mutation(self):
+        import copy
+        self.cycle("1.5.6")
+        sources = self.sources("1.5.7")
+        before = self.adapter.snapshot()
+        valid = self.expected_intent("upgrade", "1.5.6", "1.5.7",
+                                     {n: p[1] for n, p in sources.items()})
+        variants = [
+            {"preimage_sha256": "0" * 64},
+            {"old": "1.5.5"},
+            {"new": "1.5.8"},
+            {"platform": "linux-x86_64" if self.platform == "windows-x86_64" else "windows-x86_64"},
+            {"operation": "install", "old": None},
+            {"scope_pins": [dict(valid["scope_pins"][0], manifest_sha256="0" * 64),
+                            valid["scope_pins"][1]]},
+        ]
+        for changes in variants:
+            with self.subTest(changes=changes):
+                invalid = copy.deepcopy(valid)
+                invalid.update(changes)
+                with self.assertRaisesRegex(EngineError, "UNIVERSAL_EXPECTED_INTENT_DRIFT"):
+                    self.core.begin(sources, expected_intent=invalid)
+                self.assertFalse(self.core.journal.exists())
+                self.assertFalse(self.core.code.path.exists())
+                self.assertEqual(self.adapter.snapshot(), before)
+                self.assertEqual(set(self.state().values()), {"1.5.6"})
+        pins = {n: self.core.code._snapshot(n)["pin"] for n in self.roots}
+        invalid = self.expected_intent("uninstall", "1.5.6", None, pins)
+        invalid["preimage_sha256"] = "0" * 64
+        with self.assertRaisesRegex(EngineError, "UNIVERSAL_EXPECTED_INTENT_DRIFT"):
+            self.core.begin_uninstall(expected_intent=invalid)
+        self.assertFalse(self.core.journal.exists())
+        self.assertFalse(self.core.uninstall.uninstall_path.exists())
+        self.assertEqual(self.adapter.snapshot(), before)
+        self.assertEqual(set(self.state().values()), {"1.5.6"})
+
     def test_single_contract_fresh_install_and_upgrade_preserves_owner_data(self):
         self.assertEqual(self.cycle("1.5.6")["status"],
                          "UNIVERSAL_TWO_SCOPE_COMMIT_FIXTURE_ONLY")

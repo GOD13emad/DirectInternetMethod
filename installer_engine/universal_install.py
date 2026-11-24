@@ -208,8 +208,26 @@ class UniversalFixtureInstaller:
                 not self.uninstall.uninstall_path.is_symlink(),
                 "UNIVERSAL_UNRESOLVED_TRANSACTION")
 
+    def _bind_expected_intent(self, record: dict, expected_intent: dict | None) -> None:
+        """Bind the broker-reserved identity before journaling or mutation.
+
+        Caller supplies an independently established intent; equality is not
+        authorization or replay prevention. The adapter/broker remains
+        responsible for trusted policy, locking its inputs and reserving IDs.
+        Legacy fixture callers can still request a random local identity.
+        """
+        if expected_intent is not None:
+            validate_intent(expected_intent)
+            record["request_id"] = expected_intent["request_id"]
+            require(self._intent(record) == expected_intent,
+                    "UNIVERSAL_EXPECTED_INTENT_DRIFT")
+        else:
+            record["request_id"] = secrets.token_hex(16)
+            self._intent(record)
+
     @_serialized
-    def begin(self, sources: Mapping[str, tuple[Path | str, str]]) -> dict:
+    def begin(self, sources: Mapping[str, tuple[Path | str, str]], *,
+              expected_intent: dict | None = None) -> dict:
         self._no_active()
         old = self._consistent_old()
         raw_b64, sha = self._capture(old)
@@ -226,12 +244,11 @@ class UniversalFixtureInstaller:
                 "UNIVERSAL_PACKAGE_NOT_NEWER")
         record = {"schema": 2, "platform": self.platform,
                   "phase": "preparing", "old": old, "new": new,
-                  "request_id": secrets.token_hex(16),
                   "scope_pins": [{"name": name,
                                   "manifest_sha256": sources[name][1].lower()}
                                  for name in self.code.names],
                   "preimage_b64": raw_b64, "preimage_sha256": sha}
-        self._intent(record)
+        self._bind_expected_intent(record, expected_intent)
         self._write(record)
         self.code.prepare(sources)
         record["phase"] = "staged"
@@ -318,7 +335,7 @@ class UniversalFixtureInstaller:
                 "native_product_rollback_accepted": False}
 
     @_serialized
-    def begin_uninstall(self) -> dict:
+    def begin_uninstall(self, *, expected_intent: dict | None = None) -> dict:
         self._no_active()
         old = self._consistent_old()
         require(old is not None, "UNIVERSAL_NOT_INSTALLED")
@@ -332,10 +349,9 @@ class UniversalFixtureInstaller:
                                "manifest_sha256": snapshot["pin"]})
         record = {"schema": 2, "platform": self.platform,
                   "phase": "uninstall-preparing", "old": old, "new": None,
-                  "request_id": secrets.token_hex(16),
                   "scope_pins": scope_pins,
                   "preimage_b64": raw_b64, "preimage_sha256": sha}
-        self._intent(record)
+        self._bind_expected_intent(record, expected_intent)
         self._write(record)
         # Capture native running/stopped state BEFORE stopping the runtime.
         self.adapter.quiesce()
