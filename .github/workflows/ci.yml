@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: ''
+      native_broker_recovery_candidate_sha:
+        description: 'Reviewed exact SHA: R982 actual Inno failure + common broker native restoration (ephemeral VM only)'
+        required: false
+        type: string
+        default: ''
       linux_bootstrap_candidate_sha:
         description: 'Exact reviewed feature HEAD for isolated Linux bootstrap and lifecycle QA (no release)'
         required: false
@@ -809,6 +814,54 @@ jobs:
         with:
           name: r980-real-product-inno-failure-${{ github.run_id }}
           path: ${{ runner.temp }}/DIM_R980_REAL_POSTFAIL/R980_REAL_POSTFAIL.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  windows-r982-common-broker-native-compensation:
+    name: windows-r982-real-product-common-broker-vm
+    # VM-only first integration of actual DIM Inno into the SAME shared
+    # R981 transaction coordinator. Owner physical products are never touched.
+    if: github.repository == 'GOD13emad/DirectInternetMethod' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.native_broker_recovery_candidate_sha != '' && inputs.native_broker_recovery_candidate_sha == github.sha
+    needs: windows-source
+    runs-on: windows-2025
+    timeout-minutes: 65
+    env:
+      R951_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
+      R980_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
+      R982_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Build native exact-SHA private v1.5.7 (not public)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r846_windows_candidate_hosted_build.ps1
+          if($LASTEXITCODE -ne 0){throw 'R982_EXACT_CANDIDATE_NOT_BUILT'}
+      - name: R982 real Inno failure with one shared broker VM compensation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r980_windows_real_product_postfailure_vm.ps1 -CommonBrokerRecovery
+          if($LASTEXITCODE -ne 0){throw 'R982_COMMON_BROKER_VM_ACCEPTANCE_FAILED'}
+      - name: Preserve raw VM evidence without releasing binaries
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: r982-common-broker-real-inno-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/DIM_R980_REAL_POSTFAIL/R980_REAL_POSTFAIL.json
+            ${{ runner.temp }}/DIM_R980_REAL_POSTFAIL/R982_REAL_NATIVE_BROKER_VM_RESULT.json
           if-no-files-found: warn
           retention-days: 14
 

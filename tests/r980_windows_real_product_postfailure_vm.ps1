@@ -2,7 +2,7 @@
 # Production Inno and installer are NEVER modified; the failure is injected
 # ONLY into a private Inno script copy inside this ephemeral VM checkout.
 [CmdletBinding()]
-param()
+param([switch]$CommonBrokerRecovery)
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 
@@ -24,6 +24,9 @@ if((git -C $env:GITHUB_WORKSPACE rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){
  throw 'R980_EXACT_SOURCE_SHA_REQUIRED'
 }
 
+if($CommonBrokerRecovery -and $env:R982_EXPECTED_SHA -cne $env:GITHUB_SHA){
+ throw 'R982_DISPOSABLE_REVIEWED_VM_ONLY'
+}
 $Root=$env:GITHUB_WORKSPACE
 $Sha=$env:GITHUB_SHA
 $BuildDir=Join-Path $env:RUNNER_TEMP 'DIM_R846_NATIVE'
@@ -148,6 +151,7 @@ try {
  $ownerHash=ShaFile $OwnerFile
  $evidenceHash=ShaFile $UserEvidence
 
+ if(-not $CommonBrokerRecovery){
  $exitCode=Setup $QaInstaller
  $observed['failingInstallerExitCode']=$exitCode
  Need ($exitCode -ne 0) 'REAL_PRODUCT_POSTINSTALL_EXPLICIT_FAILURE'
@@ -182,11 +186,39 @@ try {
  Need (!(Test-Path -LiteralPath ('HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}_is1'))) 'NO_DUPLICATE_HKCU_APPID'
  Need ((ShaFile $OwnerFile) -ceq $ownerHash -and
        (ShaFile $UserEvidence) -ceq $evidenceHash) 'EXPLICIT_REINSTALL_PRESERVED_OWNER_DATA'
+ } else {
+  # Exact restored source must be present and pinned BEFORE the first native mutation.
+  $r982input=Join-Path $QaDir 'R982_RECOVERY_INPUTS.json'
+  $r982out=Join-Path $QaDir 'R982_REAL_NATIVE_BROKER_VM_RESULT.json'
+  $r982plan=@{source=$Sha;new_gui=[string]$build.guiSha;new_service=[string]$build.serviceSha;failed_setup_sha=(ShaFile $QaInstaller)}
+  [IO.File]::WriteAllText($r982input,($r982plan|ConvertTo-Json -Compress),[Text.UTF8Encoding]::new($false))
+  $script=Join-Path $Root 'tests/r982_windows_real_native_compensation_vm.py'
+  & python $script
+  if($LASTEXITCODE -ne 0){throw 'R982_COMMON_BROKER_NATIVE_COMPENSATION_UNRESOLVED'}
+  $result=Get-Content -LiteralPath $r982out -Raw|ConvertFrom-Json
+  Need ($result.status -ceq 'R982_REAL_INNO_FAILED_OLD_RESTORED_VIA_COMMON_BROKER' -and
+        $result.real_inno_native_restore_invoked_by_common_fixture -eq $true -and
+        $result.native_production_broker_accepted -eq $false -and
+        $result.real_product_failed_setup_exit -eq 67) 'R982_REAL_COMMON_BROKER_VM_EVIDENCE'
+  Need ((NativeVersion) -ceq '1.5.4' -and (ShaFile $Gui) -ceq $OldGuiSha -and
+        (ShaFile $ServiceExe) -ceq $OldSvcSha -and
+        (Get-Service DirectInternetMethodSvc).Status -eq 'Running') 'R982_REAL_NATIVE_RETURNED_TO_OLD'
+  Need ((ShaFile $OwnerFile) -ceq $ownerHash -and
+        (ShaFile $UserEvidence) -ceq $evidenceHash) 'R982_UNTOUCHED_OWNER_DATA'
+  $observed.realProductPostinstallFailureObserved=$true
+  $observed['r982CommonBrokerVm']=$result
+  $observed['vmFixtureAutomaticCompensationObserved']=$true
+ }
  $afterNetwork=Network
  $observed['networkAfter']=$afterNetwork
  Need ($afterNetwork.dns -ceq $netBefore.dns -and
        $afterNetwork.routes -ceq $netBefore.routes) 'NO_NETWORK_DNS_ROUTE_DRIFT'
- $observed.status='PASS_REAL_PRODUCT_INNO_POSTINSTALL_FAILURE_REQUIRES_EXTERNAL_RECOVERY'
+ if($CommonBrokerRecovery){
+  $observed.revision='R982'
+  $observed.status='PASS_R982_REAL_PRODUCT_NATIVE_COMPENSATION_VM_ONLY'
+ } else {
+  $observed.status='PASS_REAL_PRODUCT_INNO_POSTINSTALL_FAILURE_REQUIRES_EXTERNAL_RECOVERY'
+ }
 } catch {
  $observed.errors=@($observed.errors)+@($_.Exception.Message)
  $observed.status='FAIL_CLOSED_REAL_POSTINSTALL_EXPERIMENT'
