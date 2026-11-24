@@ -12,6 +12,13 @@ command -v sudo >/dev/null
 sudo -n true
 R940_POLKIT_NATIVE="${R940_POLKIT_NATIVE:-0}"
 [[ "$R940_POLKIT_NATIVE" == 0 || "$R940_POLKIT_NATIVE" == 1 ]] || { echo R940_INVALID_MODE; exit 82; }
+R975_ROOT_RESERVED_CRASH="$(printenv R975_ROOT_RESERVED_CRASH 2>/dev/null || printf 0)"
+[[ "$R975_ROOT_RESERVED_CRASH" == 0 || "$R975_ROOT_RESERVED_CRASH" == 1 ]] || {
+  echo R975_INVALID_ROOT_FAULT_MODE; exit 82;
+}
+[[ "$R975_ROOT_RESERVED_CRASH" != 1 || "$R940_POLKIT_NATIVE" == 0 ]] || {
+  echo R975_POLKIT_COMBINED_FAULT_MODE_UNSUPPORTED; exit 82;
+}
 ACTION='org.god13emad.directinternetmethod.r940fixture'
 POLICY='/usr/share/polkit-1/actions/org.god13emad.directinternetmethod.r940fixture.policy'
 RULE='/etc/polkit-1/rules.d/49-dim-r940-isolated-scope.rules'
@@ -51,6 +58,7 @@ cleanup() {
                 "$ROOT/installer_engine/linux_peer_credential.py" \
                 "$ROOT/installer_engine/linux_polkit_authorization.py" \
                 "$ROOT/installer_engine/broker_intent.py" \
+                "$ROOT/installer_engine/broker_replay.py" \
                 "$ROOT/installer_engine/native_plan.py" \
                 "$ROOT/installer_engine/native_receipt.py" \
                 "$ROOT/inputs/native-plan.json" \
@@ -60,9 +68,7 @@ cleanup() {
                 "$ROOT/inputs/contract.json"; do
       sudo -n rm -f -- "$file" || true
     done
-    if [[ "$R940_POLKIT_NATIVE" == 1 ]]; then
-      sudo -n rmdir -- "$ROOT/installer_engine" || true
-    fi
+    sudo -n rmdir -- "$ROOT/installer_engine" || true
     sudo -n rmdir -- "$ROOT/public/foreign" "$ROOT/public" "$ROOT/state" "$ROOT/inputs" "$ROOT" || true
   fi
   rm -rf -- "$tmp"
@@ -105,15 +111,15 @@ created=1
 sudo -n install -d -m 0700 -o root -g root "$ROOT/state" "$ROOT/inputs"
 sudo -n install -d -m 0711 -o root -g root "$ROOT/public"
 sudo -n install -o root -g root -m 0500 "$SCRIPT" "$ROOT/RunR938SystemdReceiptFixture.py"
-if [[ "$R940_POLKIT_NATIVE" == 1 ]]; then
-  sudo -n install -d -o root -g root -m 0700 "$ROOT/installer_engine"
-  for f in __init__.py engine.py linux_peer_credential.py linux_polkit_authorization.py broker_intent.py native_plan.py native_receipt.py; do
-    sudo -n install -o root -g root -m 0400 "installer_engine/$f" "$ROOT/installer_engine/$f"
-    cmp -s "installer_engine/$f" <(sudo -n cat "$ROOT/installer_engine/$f") || {
-      echo "R940_ROOT_OWNED_ADAPTER_SHA_CHANGED_$f"; exit 81;
-    }
-  done
-fi
+# The genuine root process uses the SAME R901 strict replay validator;
+# install the existing pinned engine under OS Root in BOTH test modes.
+sudo -n install -d -o root -g root -m 0700 "$ROOT/installer_engine"
+for f in __init__.py engine.py linux_peer_credential.py linux_polkit_authorization.py broker_intent.py broker_replay.py native_plan.py native_receipt.py; do
+  sudo -n install -o root -g root -m 0400 "installer_engine/$f" "$ROOT/installer_engine/$f"
+  cmp -s "installer_engine/$f" <(sudo -n cat "$ROOT/installer_engine/$f") || {
+    echo "R975_ROOT_OWNED_COMMON_ENGINE_SHA_CHANGED_$f"; exit 81;
+  }
+done
 sudo -n install -d -o root -g root -m 0755 "$ROOT/public/foreign"
 sudo -n install -o root -g root -m 0555 "$SCRIPT" "$ROOT/public/R938Client.py"
 sudo -n install -o root -g root -m 0644 "$input/broker-request.json" "$ROOT/public/foreign/broker-request.json"
@@ -127,6 +133,11 @@ fi
   echo R938_ROOT_LEDGER_MODE_WRONG; exit 86;
 }
 start_unit() {
+  if [[ "$R975_ROOT_RESERVED_CRASH" == 1 ]]; then
+    set -- --setenv=R975_ROOT_CUT_AFTER_RESERVE=1
+  else
+    set --
+  fi
   sudo -n systemd-run --system --unit=dim-r938-synthetic-broker \
     --property=Type=exec \
     --property=Restart=no \
@@ -137,6 +148,7 @@ start_unit() {
     --property=ProtectHome=yes \
     --property=RuntimeMaxSec=90s \
     --setenv=PYTHONDONTWRITEBYTECODE=1 \
+    "$@" \
     /usr/bin/python3 "$ROOT/RunR938SystemdReceiptFixture.py" serve --root "$ROOT"
 }
 start_unit
@@ -158,6 +170,44 @@ wait_socket() {
   return 1
 }
 wait_socket
+if [[ "$R975_ROOT_RESERVED_CRASH" == 1 ]]; then
+  # Real systemd-managed root process exits after fsync of reservation,
+  # before the native applying boundary and BEFORE even synthetic receipt.
+  python "$SCRIPT" client --input "$input" --root "$ROOT" --mode expect-cut |
+    tee "$output/expect-cut.json"
+  observed_status=''
+  observed_result=''
+  for i in $(seq 1 50); do
+    observed_status=$(systemctl show -p ExecMainStatus --value "$UNIT" 2>/dev/null || true)
+    observed_result=$(systemctl show -p Result --value "$UNIT" 2>/dev/null || true)
+    [[ "$observed_status" == 75 && "$observed_result" == exit-code ]] && break
+    sleep 0.2
+  done
+  [[ "$observed_status" == 75 && "$observed_result" == exit-code ]] || {
+    echo R975_ACTUAL_SYSTEMD_ROOT_PID_DID_NOT_EXIT_75; exit 89;
+  }
+  sudo -n test ! -e "$ROOT/state/native-completed-receipt.json" || {
+    echo R975_PRE_NATIVE_CRASH_FABRICATED_RECEIPT; exit 89;
+  }
+  [[ "$(sudo -n stat -c '%u:%a' "$ROOT/state")" == 0:700 ]] || {
+    echo R975_ROOT_STATE_CUSTODY_MISSING; exit 89;
+  }
+  sudo -n install -o "$(id -u)" -g "$(id -g)" -m 0600 \
+    "$ROOT/state/broker-replay.json" "$output/before-ledger.json"
+  python "$SCRIPT" verify-reserved --input "$input" --output "$output" --phase before
+  sudo -n systemctl restart "$UNIT"
+  wait_socket
+  python "$SCRIPT" client --input "$input" --root "$ROOT" --mode replay-postrestart |
+    tee "$output/replay-postrestart.json"
+  sudo -n test ! -e "$ROOT/state/native-completed-receipt.json" || {
+    echo R975_RECOVERED_RESERVED_CREATED_NATIVE_RECEIPT; exit 89;
+  }
+  sudo -n install -o "$(id -u)" -g "$(id -g)" -m 0600 \
+    "$ROOT/state/broker-replay.json" "$output/after-ledger.json"
+  python "$SCRIPT" verify-reserved --input "$input" --output "$output" --phase after
+  echo R975_REAL_ROOT_SYSTEMD_RESERVED_CRASH_RECOVERED_NO_NATIVE_PASS
+  exit 0
+fi
 if [[ "$R940_POLKIT_NATIVE" == 1 ]]; then
   python "$SCRIPT" client --input "$input" --root "$ROOT" --mode polkit-denied |
     tee "$output/polkit-denied.json"

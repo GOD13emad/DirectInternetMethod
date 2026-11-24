@@ -61,6 +61,10 @@ class R938FixtureContracts(unittest.TestCase):
         self.assertIn("GITHUB_EVENT_NAME", shell)
         self.assertIn("refs/heads/feature/universal-install-engine", shell)
         self.assertNotIn("rm -rf -- \"$ROOT\"", shell)
+        self.assertIn("R975_ROOT_RESERVED_CRASH", shell)
+        self.assertIn("R975_REAL_ROOT_SYSTEMD_RESERVED_CRASH_RECOVERED_NO_NATIVE_PASS", shell)
+        self.assertIn("retire_root_reserved_before_native", script)
+        self.assertIn("from installer_engine.broker_replay import parse_replay_snapshot", script)
 
     def test_r946_root_policy_plan_binds_native_intent_and_rejects_repin(self):
         from installer_engine.engine import EngineError
@@ -135,6 +139,77 @@ class R938FixtureContracts(unittest.TestCase):
                 compare_pinned_policy_intent(
                     fixture_plan("linux-x86_64"), changed_policy_bytes,
                     hash_bytes(changed_policy_bytes), changed_bytes)
+
+    def test_r975_root_reserved_restart_retires_without_native_and_never_replays(self):
+        """Unit contract only; real root+systemd service runs in push-only CI."""
+        from unittest.mock import patch
+        from installer_engine.broker_replay import parse_replay_snapshot
+        with tempfile.TemporaryDirectory(prefix="dim-r975-reserved-") as tmp:
+            base = Path(tmp)
+            inp = base / "input"
+            with patch.object(fixture.os, "getuid", lambda: 1000, create=True):
+                fixture.prepare(inp)
+            meta = json.loads((inp / "contract.json").read_bytes())
+            state = {
+                "schema": 1, "platform": "linux-x86_64",
+                "used_request_ids": [meta["request_id"]],
+                "active": {
+                    "request_id": meta["request_id"],
+                    "request_sha256": meta["request_sha256"],
+                    "policy_sha256": meta["policy_sha256"],
+                    "version": "1.5.7", "operation": "upgrade",
+                    "phase": "reserved",
+                },
+            }
+            ledger = base / "ledger.json"
+            receipt = base / "receipt.json"
+            ledger.write_bytes(fixture.canonical(state))
+            def fixture_only_atomic(path, doc):
+                path.write_bytes(fixture.canonical(doc))
+            with patch.object(fixture, "atomic_root_json",
+                              side_effect=fixture_only_atomic) as mocked:
+                result = fixture.retire_root_reserved_before_native(
+                    ledger, receipt, meta)
+            self.assertEqual(result, "R975_RESERVED_TOMBSTONED_NO_NATIVE")
+            self.assertEqual(mocked.call_count, 1)
+            final = parse_replay_snapshot(ledger.read_bytes(), "linux-x86_64")
+            self.assertIsNone(final["active"])
+            self.assertEqual(final["used_request_ids"], [meta["request_id"]])
+            self.assertFalse(receipt.exists())
+            # No double-retire or second writer on normal restart.
+            with patch.object(fixture, "atomic_root_json",
+                              side_effect=AssertionError("REWRITE_FORBIDDEN")):
+                self.assertEqual(fixture.retire_root_reserved_before_native(
+                    ledger, receipt, meta), "R975_NO_PENDING_RESERVATION")
+            for bad in ("wrong-request", "wrong-policy", "receipt-present"):
+                with self.subTest(reason=bad):
+                    ledger.write_bytes(fixture.canonical(state))
+                    wrong = dict(meta)
+                    if bad == "wrong-request":
+                        wrong["request_sha256"] = "0" * 64
+                    elif bad == "wrong-policy":
+                        wrong["policy_sha256"] = "0" * 64
+                    else:
+                        receipt.write_bytes(b"STAGED_FORGERY")
+                    unchanged = ledger.read_bytes()
+                    with patch.object(fixture, "atomic_root_json",
+                                      side_effect=AssertionError("WRITER_CALLED")):
+                        with self.assertRaisesRegex(
+                            ValueError, "R975_RESERVED_IDENTITY_OR_RECEIPT_DRIFT"):
+                            fixture.retire_root_reserved_before_native(
+                                ledger, receipt, wrong)
+                    self.assertEqual(ledger.read_bytes(), unchanged)
+                    receipt.unlink(missing_ok=True)
+            # Once native applying might have begun, NEVER auto-abort.
+            state["active"]["phase"] = "applying"
+            ledger.write_bytes(fixture.canonical(state))
+            old = ledger.read_bytes()
+            with patch.object(fixture, "atomic_root_json",
+                              side_effect=AssertionError("APPLYING_REWRITE_FORBIDDEN")):
+                self.assertEqual(fixture.retire_root_reserved_before_native(
+                    ledger, receipt, meta),
+                    "R975_APPLYING_REQUIRES_NATIVE_RECONCILIATION")
+            self.assertEqual(ledger.read_bytes(), old)
 
     def test_cli_is_synthetic_not_a_second_product_installer(self):
         source = SCRIPT.read_text(encoding="utf8")

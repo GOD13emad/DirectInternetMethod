@@ -214,6 +214,15 @@ jobs:
               throw 'R974_NATIVE_INVALID_ID_ACCEPTED'
             }
           }
+          # All eight rejects intentionally return 3. GitHub's pwsh wrapper
+          # propagates a stale LASTEXITCODE even after a later Write-Host.
+          # Execute one final real compiled-binary positive probe (exit 0)
+          # rather than masking a native nonzero status in the runner.
+          $finalProbe = dotnet $validator --version
+          if ($LASTEXITCODE -ne 0 -or
+              $finalProbe -cne 'R937-SYNTHETIC-SCM-BROKER-NO-PRODUCT') {
+            throw 'R974_NATIVE_FINAL_PROBE_EXIT_STATUS_INVALID'
+          }
           Write-Host 'R974_COMPILED_WINDOWS_SCM_ID32_ID64_REPLAY_PARITY_PASS_FIXTURE_ONLY'
           $tokens = $null
           $errors = $null
@@ -246,6 +255,14 @@ jobs:
         shell: bash
         env:
           PYTHONDONTWRITEBYTECODE: '1'
+        run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
+      - name: Root-owned durable reserved crash, new PID, exact ID64 tombstone
+        # Fail-closed real systemd process exit code 75 BEFORE any native
+        # product callback; no powercut or production installation claim.
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          R975_ROOT_RESERVED_CRASH: '1'
         run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
 
   linux-root-systemd-polkit-native:

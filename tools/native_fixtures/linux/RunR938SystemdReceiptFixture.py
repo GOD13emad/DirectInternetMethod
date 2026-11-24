@@ -71,6 +71,37 @@ def atomic_root_json(path: Path, document: dict) -> None:
             os.unlink(tmp)
 
 
+def retire_root_reserved_before_native(ledger: Path, receipt: Path,
+                                       meta: dict) -> str:
+    """Reuse the ONE strict common replay schema under root-owned custody.
+
+    R975 can retire ONLY a reservation, where this specific test root broker
+    has not called native or staged product code. Keep its used ID tombstoned.
+    Applying (or later) is an unknown native outcome: NEVER auto-rollback.
+    Not a general broker authorization, production recovery or powercut proof.
+    """
+    from installer_engine.broker_replay import parse_replay_snapshot
+    if ledger.is_symlink() or receipt.is_symlink():
+        raise ValueError("R975_UNSAFE_ROOT_STATE_PATH")
+    document = parse_replay_snapshot(ledger.read_bytes(), "linux-x86_64")
+    active = document["active"]
+    if active is None:
+        return "R975_NO_PENDING_RESERVATION"
+    if active["phase"] != "reserved":
+        return "R975_APPLYING_REQUIRES_NATIVE_RECONCILIATION"
+    expected = {
+        "request_id": meta["request_id"],
+        "request_sha256": meta["request_sha256"],
+        "policy_sha256": meta["policy_sha256"],
+        "version": "1.5.7", "operation": "upgrade", "phase": "reserved",
+    }
+    if active != expected or receipt.exists():
+        raise ValueError("R975_RESERVED_IDENTITY_OR_RECEIPT_DRIFT")
+    document["active"] = None
+    atomic_root_json(ledger, document)
+    return "R975_RESERVED_TOMBSTONED_NO_NATIVE"
+
+
 def recv_exact(conn: socket.socket, size: int) -> bytes:
     out = bytearray()
     while len(out) < size:
@@ -283,6 +314,10 @@ def serve(root: Path) -> None:
     if not ledger.exists():
         atomic_root_json(ledger, {"schema": 1, "platform": "linux-x86_64",
                                   "used_request_ids": [], "active": None})
+    else:
+        outcome = retire_root_reserved_before_native(ledger, receipt, meta)
+        # Print only a test status, never the protected source or credential.
+        print(outcome, flush=True)
     sock_path = root / "public/broker.sock"
     if sock_path.exists() or sock_path.is_symlink():
         previous = os.lstat(sock_path)
@@ -340,6 +375,10 @@ def serve(root: Path) -> None:
                     }
                     state["active"] = identity
                     atomic_root_json(ledger, state)
+                    # INDEPENDENT root-only CI fault, never a client JSON field.
+                    # No native work or receipt happened when this exits.
+                    if os.environ.get("R975_ROOT_CUT_AFTER_RESERVE") == "1":
+                        os._exit(75)
                     identity["phase"] = "applying"
                     atomic_root_json(ledger, state)
                     check_service_identity()
@@ -369,7 +408,18 @@ def client(directory: Path, root: Path, mode: str) -> None:
         conn.settimeout(8)
         conn.connect(str(root / "public/broker.sock"))
         conn.sendall(struct.pack("<I", len(raw)) + raw)
-        response = json.loads(request(conn))
+        try:
+            wire = request(conn)
+        except (ValueError, ConnectionResetError) as exc:
+            if mode == "expect-cut" and (isinstance(exc, ConnectionResetError) or
+                                         str(exc) == "R938_TRUNCATED_PACKET"):
+                print(canonical({"mode": mode, "status":
+                    "R975_EXPECTED_ROOT_EXIT_AFTER_RESERVED_NOT_ACCEPTED"}).decode())
+                return
+            raise
+        if mode == "expect-cut":
+            raise ValueError("R975_ROOT_CUT_NOT_OBSERVED")
+        response = json.loads(wire)
     if mode == "good":
         expected = "COMPLETED_SYNTHETIC_SYSTEMD_POSTFLIGHT"
     else:
@@ -387,6 +437,46 @@ def client(directory: Path, root: Path, mode: str) -> None:
                            or response["native_product_installation_accepted"]):
         raise ValueError("R938_OS_CLIENT_SERVICE_IDENTITY_MISMATCH")
     print(canonical({"mode": mode, **response}).decode())
+
+
+def verify_reserved_crash(directory: Path, output: Path, phase: str) -> None:
+    """Independent unprivileged check of copied OS-custodied root ledger."""
+    from installer_engine.broker_replay import parse_replay_snapshot
+    if phase not in ("before", "after"):
+        raise ValueError("R975_CRASH_PHASE_INVALID")
+    meta = read_json(directory / "contract.json")
+    state = parse_replay_snapshot(
+        (output / (phase + "-ledger.json")).read_bytes(), "linux-x86_64")
+    if state["used_request_ids"] != [meta["request_id"]]:
+        raise ValueError("R975_ROOT_TOMBSTONE_MISSING")
+    active = state["active"]
+    if phase == "before":
+        if active != {
+            "request_id": meta["request_id"],
+            "request_sha256": meta["request_sha256"],
+            "policy_sha256": meta["policy_sha256"],
+            "version": "1.5.7", "operation": "upgrade",
+            "phase": "reserved",
+        }:
+            raise ValueError("R975_DURABLE_ROOT_RESERVED_DRIFT")
+        cut = read_json(output / "expect-cut.json")
+        if cut.get("status") != "R975_EXPECTED_ROOT_EXIT_AFTER_RESERVED_NOT_ACCEPTED":
+            raise ValueError("R975_ACTUAL_ROOT_PROCESS_NOT_INTERRUPTED")
+    else:
+        if active is not None:
+            raise ValueError("R975_ROOT_RESERVED_NOT_RETIRED")
+        denial = read_json(output / "replay-postrestart.json")
+        if (denial.get("status") != "DENIED" or
+                denial.get("reason") != "R938_REQUEST_REPLAY_DENIED"):
+            raise ValueError("R975_OLD_ID_ACCEPTED_TWICE")
+    print(canonical({
+        "status": ("R975_ROOT_RESERVED_DURABLY_PINNED_PRE_NATIVE_PASS" if
+                   phase == "before" else
+                   "R975_ROOT_RESERVED_RECOVERED_REPLAY_DENIED_PASS"),
+        "phase": phase, "id64": len(meta["request_id"]) == 64,
+        "native_product_installation_accepted": False,
+        "hard_powercut_accepted": False,
+    }).decode())
 
 
 def verify(directory: Path, output: Path) -> None:
@@ -440,9 +530,9 @@ def verify(directory: Path, output: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     modes = parser.add_subparsers(dest="action", required=True)
-    for name in ("prepare", "serve", "client", "verify"):
+    for name in ("prepare", "serve", "client", "verify", "verify-reserved"):
         p = modes.add_parser(name)
-        if name in ("prepare", "client", "verify"):
+        if name in ("prepare", "client", "verify", "verify-reserved"):
             p.add_argument("--input", type=Path, required=True)
         if name in ("serve", "client"):
             p.add_argument("--root", type=Path, required=True)
@@ -450,10 +540,13 @@ def main() -> None:
             p.add_argument("--polkit-action")
         if name == "client":
             p.add_argument("--mode", choices=("good", "tampered", "replay", "wrong-uid",
-                                              "polkit-denied"),
+                                              "polkit-denied", "expect-cut",
+                                              "replay-postrestart"),
                            required=True)
-        if name == "verify":
+        if name in ("verify", "verify-reserved"):
             p.add_argument("--output", type=Path, required=True)
+        if name == "verify-reserved":
+            p.add_argument("--phase", choices=("before", "after"), required=True)
     args = parser.parse_args()
     if args.action == "prepare":
         prepare(args.input, args.polkit_action)
@@ -461,6 +554,8 @@ def main() -> None:
         serve(args.root)
     elif args.action == "client":
         client(args.input, args.root, args.mode)
+    elif args.action == "verify-reserved":
+        verify_reserved_crash(args.input, args.output, args.phase)
     else:
         verify(args.input, args.output)
 
