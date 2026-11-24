@@ -21,6 +21,29 @@ function Assert-R993Identity([object]$c) {
  Need ([string]$c.ownerSid -cmatch '^S-1-5-21-(?:[0-9]+-){3}[0-9]+$') 'R993_OWNER_SID_DRIFT'
  Need (![string]::IsNullOrWhiteSpace([string]$c.ownerName)) 'R993_OWNER_NAME_MISSING'
 }
+function Test-R993OwnerPrincipal([string]$principal,[object]$c) {
+ if([string]::IsNullOrWhiteSpace($principal)){return $false}
+ if($principal -ieq [string]$c.ownerSid){return $true}
+ if($principal -ieq [string]$c.ownerName){return $true}
+ try {
+  $sid=[Security.Principal.NTAccount]::new($principal).Translate(
+       [Security.Principal.SecurityIdentifier]).Value
+  return ($sid -ceq [string]$c.ownerSid)
+ }catch [Security.Principal.IdentityNotMappedException] {
+  return $false
+ }
+}
+function Test-R993OwnedAction([object]$task,[object]$c,[string]$script,[string]$config) {
+ $exe=Join-Path $PSHOME 'pwsh.exe'
+ $args='-NoLogo -NoProfile -NonInteractive -File "'+$script+'" -Mode Recover -Config "'+$config+'"'
+ return (Test-R993OwnerPrincipal ([string]$task.Principal.UserId) $c) -and
+        [string]$task.Principal.LogonType -ceq 'S4U' -and
+        [string]$task.Principal.RunLevel -ceq 'Highest' -and
+        @($task.Actions).Count -eq 1 -and
+        [string]$task.Actions[0].Execute -ieq $exe -and
+        [string]$task.Actions[0].Arguments -ceq $args -and
+        @($task.Triggers).Count -eq 1
+}
 function Check-R993Config {
  Need ([IO.Path]::IsPathFullyQualified($Config) -and
         [IO.Path]::GetFullPath($Config) -ceq $Config -and
@@ -92,7 +115,7 @@ if($Mode -ceq 'Register'){
  $account=New-ScheduledTaskPrincipal -UserId ([string]$c.ownerName) -LogonType S4U -RunLevel Highest
  $settings=New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 10) -MultipleInstances IgnoreNew -StartWhenAvailable
  Register-ScheduledTask -TaskName $c.taskName -Action $action -Trigger $trigger -Principal $account -Settings $settings -Description 'VM-only R993 observed common broker recovery; never production' -ErrorAction Stop|Out-Null
- Need ((Get-ScheduledTask -TaskName $c.taskName).Principal.UserId -ieq $c.ownerName) 'R993_TASK_NOT_OWNER'
+ Need (Test-R993OwnerPrincipal ([string](Get-ScheduledTask -TaskName $c.taskName).Principal.UserId) $c) 'R993_TASK_NOT_OWNER'
  Write-Output ('R993_TASK_CREATED '+$c.taskName)
  exit 0
 }
@@ -131,23 +154,16 @@ if($Mode -ceq 'Recover'){
 if($Mode -ceq 'Inspect'){
  $task=Get-ScheduledTask -TaskName $c.taskName -ErrorAction Stop
  Verify-ScriptPins
- Need ($task.Principal.UserId -ieq $c.ownerName -and $task.Principal.LogonType -ceq 'S4U' -and
-       $task.Principal.RunLevel -ceq 'Highest' -and
-       @($task.Actions).Count -eq 1 -and
-       $task.Actions[0].Execute -ieq (Join-Path $PSHOME 'pwsh.exe') -and
-       $task.Actions[0].Arguments.Contains($script) -and
-       @($task.Triggers).Count -eq 1) 'R993_FIXED_ACTION_ONLY'
+ Need (Test-R993OwnedAction $task $c $script $Config) 'R993_FIXED_ACTION_ONLY'
  $info=Get-ScheduledTaskInfo -TaskName $c.taskName
- [ordered]@{task=$c.taskName;identity=$task.Principal.UserId;logonType=[string]$task.Principal.LogonType;runLevel=[string]$task.Principal.RunLevel;state=[string]$task.State;lastTaskResult=[int]$info.LastTaskResult;lastRunTime=$info.LastRunTime.ToString('o');lastTrigger=$task.Triggers[0].StartBoundary}|ConvertTo-Json -Compress
+ [ordered]@{task=$c.taskName;identity=$c.ownerSid;logonType=[string]$task.Principal.LogonType;runLevel=[string]$task.Principal.RunLevel;state=[string]$task.State;lastTaskResult=[int]$info.LastTaskResult;lastRunTime=$info.LastRunTime.ToString('o');lastTrigger=$task.Triggers[0].StartBoundary}|ConvertTo-Json -Compress
  Write-Output 'R993_TASK_STATUS'
  exit 0
 }
 if($Mode -ceq 'Remove'){
  $task=Get-ScheduledTask -TaskName $c.taskName -ErrorAction SilentlyContinue
  if($null -ne $task){
-  Need ($task.Principal.UserId -ieq $c.ownerName -and $task.Principal.LogonType -ceq 'S4U' -and
-        @($task.Actions).Count -eq 1 -and
-        $task.Actions[0].Arguments.Contains($script)) 'R993_REFUSE_FOREIGN_TASK'
+  Need (Test-R993OwnedAction $task $c $script $Config) 'R993_REFUSE_FOREIGN_TASK'
   Unregister-ScheduledTask -TaskName $c.taskName -Confirm:$false -ErrorAction Stop
  }
  if(Test-Path -LiteralPath $script){

@@ -494,7 +494,7 @@ def _run_os_scheduled_recovery(workspace: Path, qa: Path, base: Path,
                             break
             time.sleep(1)
         require(result is not None, "R993_OS_TIMED_TASK_DID_NOT_RECOVER")
-        require(result["identity"].lower() == owner.lower() and
+        require(result["identity"] == owner_sid and
                 result["logonType"] == "S4U" and
                 result["runLevel"] == "Highest",
                 "R993_TASK_PRINCIPAL_DRIFT")
@@ -521,14 +521,20 @@ def _run_os_scheduled_recovery(workspace: Path, qa: Path, base: Path,
         success = True
         print("R993_SCHEDULED_OS_RECEIPT_VERIFIED")
         return observed
+    except Exception as exc:
+        # Always preserve the root failure even if a cleanup guard also fails.
+        print("R993_ORIGINAL_VM_FAILURE=" + str(exc), file=sys.stderr)
+        raise
     finally:
-        # No orphaned privileged task on the test runner. An unsuccessful
-        # restore remains a failed gate and does not authorize public use.
+        # No orphaned task on the runner. Never silently remove a task with
+        # a different SID or action to conceal a failed registration.
         cleanup = task_call("Remove", 55)
-        require(cleanup.returncode == 0 and
-                "R993_TASK_OWNED_CLEANUP_PASS" in cleanup.stdout and
-                not cfg.exists() and not task_script.exists(),
-                "R993_TASK_CLEANUP_FAILED:" + cleanup.stderr[-1200:])
+        if (cleanup.returncode != 0 or
+                "R993_TASK_OWNED_CLEANUP_PASS" not in cleanup.stdout or
+                cfg.exists() or task_script.exists()):
+            print("R993_TASK_CLEANUP_FAILED:" + cleanup.stderr[-1200:],
+                  file=sys.stderr)
+            raise EngineError("R993_TASK_CLEANUP_FAILED")
 
 
 def _recover_after_child_exit(workspace: Path, qa: Path, cfg: dict,

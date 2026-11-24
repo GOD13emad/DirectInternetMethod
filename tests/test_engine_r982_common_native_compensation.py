@@ -222,6 +222,56 @@ foreach($case in @(
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         self.assertIn("R993_WIN32_TEMPFILE_UNDERSCORE_AND_5_NEGATIVE_PASS",result.stdout)
 
+    @unittest.skipUnless(sys.platform == "win32", "native task principal normalization needs Windows")
+    def test_r993_native_task_sid_normalization_and_exact_action(self):
+        path = ROOT / "tests/r993_windows_os_scheduled_recovery_vm.ps1"
+        command = "$p='" + str(path).replace("'", "''") + "';" + r"""
+$ErrorActionPreference='Stop'
+$tok=$null;$errors=$null
+$ast=[System.Management.Automation.Language.Parser]::ParseFile($p,[ref]$tok,[ref]$errors)
+if($errors.Count){throw 'R993_SOURCE_PARSE'}
+foreach($name in @('Test-R993OwnerPrincipal','Test-R993OwnedAction')){
+ $f=@($ast.FindAll({param($n)
+   $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name
+ },$true))
+ if($f.Count -ne 1){throw ('FUNCTION_'+$name)}
+ . ([scriptblock]::Create($f[0].Extent.Text))
+}
+$identity=[Security.Principal.WindowsIdentity]::GetCurrent()
+$owner=$identity.User.Value
+$c=[pscustomobject]@{ownerSid=$owner;ownerName=$identity.Name}
+$script='C:\VM\DirectInternetMethod\Privileged\UpdateTransactions\R993ProtectedRecoveryHarness.ps1'
+$config='C:\VM\DirectInternetMethod\Privileged\UpdateTransactions\R993RecoveryConfig.json'
+$execute=Join-Path $PSHOME 'pwsh.exe'
+$args='-NoLogo -NoProfile -NonInteractive -File "'+$script+'" -Mode Recover -Config "'+$config+'"'
+$task=[pscustomobject]@{
+ Principal=[pscustomobject]@{UserId=$owner;LogonType='S4U';RunLevel='Highest'}
+ Actions=@([pscustomobject]@{Execute=$execute;Arguments=$args})
+ Triggers=@([pscustomobject]@{StartBoundary='2026-11-24T19:20:00'})
+}
+if(!(Test-R993OwnerPrincipal $owner $c) -or
+   !(Test-R993OwnerPrincipal $identity.Name $c) -or
+   !(Test-R993OwnedAction $task $c $script $config)){throw 'R993_VALID_NORMALIZED_TASK_REJECTED'}
+foreach($field in @('UserId','LogonType','RunLevel')){
+ $copy=($task|ConvertTo-Json -Depth 8|ConvertFrom-Json)
+ $copy.Principal.$field=if($field -eq 'UserId'){'S-1-5-18'}else{'Invalid'}
+ if(Test-R993OwnedAction $copy $c $script $config){throw ('R993_INVALID_'+$field+'_ACCEPTED')}
+}
+foreach($field in @('Execute','Arguments')){
+ $copy=($task|ConvertTo-Json -Depth 8|ConvertFrom-Json)
+ $copy.Actions[0].$field='C:\Windows\not-reviewed.exe'
+ if(Test-R993OwnedAction $copy $c $script $config){throw ('R993_INVALID_'+$field+'_ACCEPTED')}
+}
+$copy=($task|ConvertTo-Json -Depth 8|ConvertFrom-Json)
+$copy.Triggers=@()
+if(Test-R993OwnedAction $copy $c $script $config){throw 'R993_NO_TRIGGER_ACCEPTED'}
+'R993_NATIVE_SID_ORIGINAL_OWNER_AND_EXACT_ACTION_PASS'
+"""
+        result=subprocess.run(["pwsh","-NoProfile","-NonInteractive","-Command",command],
+                              cwd=ROOT,capture_output=True,text=True,timeout=15)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn("R993_NATIVE_SID_ORIGINAL_OWNER_AND_EXACT_ACTION_PASS",result.stdout)
+
     def test_r992_recovery_media_uses_actual_protected_store(self):
         ps = R980.read_text("utf-8-sig")
         vm = VM.read_text("utf-8")
