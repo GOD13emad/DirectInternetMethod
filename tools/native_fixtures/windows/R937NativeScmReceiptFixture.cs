@@ -139,6 +139,14 @@ internal static class R937NativeScmReceiptFixture
     private static byte[] Canonical(object content) =>
         Encoding.UTF8.GetBytes(JsonSerializer.Serialize(content));
 
+    // Same exact R972/R901 cross-OS request identity as the common Python
+    // engine: legacy 128-bit ID32 OR original Inno/SCM 256-bit ID64.
+    // NEVER truncate the 64-digit native identifier or accept uppercase,
+    // odd length, path separators, prefixes or whitespace.
+    private static bool ValidBrokerRequestId(string? value) =>
+        value is not null && (value.Length==32 || value.Length==64) &&
+        value.All(c=>c is >= '0' and <= '9' or >= 'a' and <= 'f');
+
     private static Dictionary<string,string> Pins() {
         using var doc = Strict(Bounded(Path.Combine(Root,"pins.json")));
         var result=new Dictionary<string,string>(StringComparer.Ordinal);
@@ -184,7 +192,7 @@ internal static class R937NativeScmReceiptFixture
         string id=req.GetProperty("request_id").GetString()??"";
         string ver=req.GetProperty("version").GetString()??"";
         string act=req.GetProperty("operation").GetString()??"";
-        Require(id.Length==32 && id.All(c=>c is >= '0' and <= '9' or >= 'a' and <= 'f') &&
+        Require(ValidBrokerRequestId(id) &&
                 ver=="1.5.7" && act=="upgrade" &&
                 req.GetProperty("platform").GetString()=="windows-x86_64" &&
                 pol.GetProperty("platform").GetString()=="windows-x86_64" &&
@@ -308,7 +316,7 @@ internal static class R937NativeScmReceiptFixture
         var ids=obj.GetProperty("used_request_ids").EnumerateArray()
             .Select(x=>x.GetString()??"").ToList();
         Require(ids.Count<=256 && ids.Distinct(StringComparer.Ordinal).Count()==ids.Count &&
-                ids.All(x=>x.Length==32),
+                ids.All(ValidBrokerRequestId),
                 "R937_R901_REPLAY_USED_IDS_INVALID");
         return (ids,obj.GetProperty("active").ValueKind!=JsonValueKind.Null);
     }
@@ -565,6 +573,13 @@ internal static class R937NativeScmReceiptFixture
     }
 
     private static int Main(string[] args) {
+        // Pure cross-OS native code parity test: no SCM, filesystem or trust.
+        if(args.Length==2 && args[0]=="--validate-id") {
+            bool good=ValidBrokerRequestId(args[1]);
+            Console.WriteLine(good ? "R974_NATIVE_ID_FORMAT_PASS_NO_AUTHORITY"
+                                   : "R974_NATIVE_ID_FORMAT_REJECTED");
+            return good ? 0 : 3;
+        }
         if(args.Length==2 && args[0]=="--client")
             return Client(args[1]);
         if(args.Length==1 && args[0]=="--version") {

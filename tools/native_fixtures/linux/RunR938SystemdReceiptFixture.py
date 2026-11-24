@@ -145,7 +145,9 @@ def prepare(directory: Path, polkit_action: str | None = None) -> None:
     from installer_engine.broker_intent import compare_native_transaction_policy_intent
     from installer_engine.engine import hash_bytes
     from installer_engine.native_receipt import validate_intent, intent_sha256
-    from tests.test_engine_broker_intent import fixture_contract, fixture_plan
+    from tests.test_engine_broker_intent import (
+        fixture_contract, fixture_plan, canonical as broker_canonical,
+    )
     if directory.exists():
         raise ValueError("R938_PREPARE_FRESH_DIRECTORY_REQUIRED")
     directory.mkdir(mode=0o700)
@@ -154,7 +156,14 @@ def prepare(directory: Path, polkit_action: str | None = None) -> None:
         if (not isinstance(polkit_action, str) or
                 ACTION_RE.fullmatch(polkit_action) is None):
             raise ValueError("R940_OS_POLKIT_ACTION_INVALID")
-    plan, policy, req, pb, rb = fixture_contract(fixture_plan("linux-x86_64"))
+    plan, policy, req, _, _ = fixture_contract(fixture_plan("linux-x86_64"))
+    # Exactly the SAME full native 256-bit request identifier used by Inno
+    # and the existing Windows SCM broker. This is a deterministic isolated
+    # test identity, NOT independent installed publisher authorization.
+    req["request_id"] = "0123456789abcdef" * 4
+    rb = broker_canonical(req)
+    policy["request_sha256"] = digest(rb)
+    pb = broker_canonical(policy)
     native = {
         "schema": 1, "request_id": req["request_id"],
         "platform": "linux-x86_64", "operation": "upgrade",

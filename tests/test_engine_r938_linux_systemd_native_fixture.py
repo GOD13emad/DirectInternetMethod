@@ -97,6 +97,45 @@ class R938FixtureContracts(unittest.TestCase):
                     EngineError, "BROKER_POLICY_REQUEST_PLAN_SCOPE_PIN_DRIFT"):
                 fixture.verify_pinned_native_contract(inp, meta)
 
+    def test_r974_existing_systemd_root_broker_uses_exact_id64_policy(self):
+        from unittest.mock import patch
+        from installer_engine.broker_intent import compare_pinned_policy_intent
+        from installer_engine.engine import EngineError, hash_bytes
+        with tempfile.TemporaryDirectory(prefix="dim-r974-linux-id64-") as tmp:
+            inp = Path(tmp) / "inputs"
+            with patch.object(fixture.os, "getuid", lambda: 1000, create=True):
+                fixture.prepare(
+                    inp, polkit_action="org.god13emad.directinternetmethod.r940fixture")
+            req_bytes = (inp / "broker-request.json").read_bytes()
+            policy_bytes = (inp / "broker-policy.json").read_bytes()
+            request = json.loads(req_bytes)
+            policy = json.loads(policy_bytes)
+            meta = json.loads((inp / "contract.json").read_bytes())
+            native = json.loads((inp / "native-intent.json").read_bytes())
+            self.assertEqual(request["request_id"], "0123456789abcdef" * 4)
+            self.assertEqual(len(request["request_id"]), 64)
+            self.assertEqual(native["request_id"], request["request_id"])
+            self.assertEqual(meta["request_id"], request["request_id"])
+            self.assertEqual(policy["request_sha256"], hash_bytes(req_bytes))
+            self.assertEqual(meta["request_sha256"], hash_bytes(req_bytes))
+            result = fixture.verify_pinned_native_contract(inp, meta)
+            self.assertEqual(result["request_id"], request["request_id"])
+            self.assertFalse(result["native_installation_accepted"])
+            self.assertFalse(meta["production_privileged_broker_implemented"])
+            self.assertFalse(meta["publisher_authenticated"])
+            from tests.test_engine_broker_intent import fixture_plan
+            changed = dict(request, request_id=request["request_id"][:-1])
+            changed_bytes = (json.dumps(changed, sort_keys=True,
+                                        separators=(",", ":")) + "\n").encode()
+            from tests.test_engine_broker_intent import canonical
+            changed_policy = dict(
+                policy, request_sha256=hash_bytes(changed_bytes))
+            changed_policy_bytes = canonical(changed_policy)
+            with self.assertRaisesRegex(EngineError, "BROKER_REQUEST_ID_INVALID"):
+                compare_pinned_policy_intent(
+                    fixture_plan("linux-x86_64"), changed_policy_bytes,
+                    hash_bytes(changed_policy_bytes), changed_bytes)
+
     def test_cli_is_synthetic_not_a_second_product_installer(self):
         source = SCRIPT.read_text(encoding="utf8")
         self.assertIn("native_product_installation_accepted\": False", source)

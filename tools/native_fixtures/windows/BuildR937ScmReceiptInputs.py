@@ -29,6 +29,22 @@ def sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def pinned_native_id64_contract():
+    """Reuse ONE R899 plan/policy with real Inno-sized native identity.
+
+    This remains deterministic SYNTHETIC VM input, not a caller-defined
+    publisher pin. Native OS SCM and R901 replay must keep all 256 bits.
+    Earlier archived R937 32-digit receipts remain immutable evidence.
+    """
+    plan, policy, request, _, _ = fixture_contract(
+        fixture_plan("windows-x86_64"))
+    request["request_id"] = "0123456789abcdef" * 4
+    request_bytes = canonical(request)
+    policy["request_sha256"] = sha(request_bytes)
+    policy_bytes = canonical(policy)
+    return plan, policy, request, policy_bytes, request_bytes
+
+
 def build(test_root: Path, binary_sha256: str) -> dict:
     test_root = test_root.absolute()
     temp = Path(tempfile.gettempdir()).resolve()
@@ -46,8 +62,7 @@ def build(test_root: Path, binary_sha256: str) -> dict:
     allowed = {NAME}
     if any(p.name not in allowed for p in input_root.iterdir()):
         raise ValueError("R937_GUEST_SOURCE_INPUT_NOT_EMPTY")
-    plan, policy, request, pb, rb = fixture_contract(
-        fixture_plan("windows-x86_64"))
+    plan, policy, request, pb, rb = pinned_native_id64_contract()
     native = {
         "schema": 1,
         "request_id": request["request_id"],

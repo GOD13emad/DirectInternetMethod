@@ -325,5 +325,67 @@ class BrokerIntentNoPrivilegeTests(unittest.TestCase):
                 plan, pb, hash_bytes(pb), rb, altered)
 
 
+class NativeWindowsScmId64SourceParity(unittest.TestCase):
+    """No native OS authorization: compare shared broker ID with SCM source."""
+
+    def test_existing_scm_fixture_can_receive_full_inno_id64(self):
+        from pathlib import Path
+        path = (Path(__file__).resolve().parents[1] /
+                "tools/native_fixtures/windows/R937NativeScmReceiptFixture.cs")
+        source = path.read_text(encoding="utf-8")
+        self.assertIn("private static bool ValidBrokerRequestId(", source)
+        self.assertIn("ValidBrokerRequestId(id)", source)
+        self.assertIn("ids.All(ValidBrokerRequestId)", source)
+        self.assertIn('args[0]=="--validate-id"', source)
+        self.assertNotIn("id.Length==32", source)
+        self.assertNotIn("ids.All(x=>x.Length==32)", source)
+
+    def test_scm_fixture_source_identity_keeps_exact_256_bit_request(self):
+        from tools.native_fixtures.windows.BuildR937ScmReceiptInputs import (
+            pinned_native_id64_contract,
+        )
+        from installer_engine.broker_intent import (
+            compare_native_transaction_policy_intent,
+        )
+        from installer_engine.native_receipt import validate_intent
+        from installer_engine.broker_replay import parse_replay_snapshot
+        plan, policy, request, pb, rb = pinned_native_id64_contract()
+        self.assertEqual(request["request_id"], "0123456789abcdef" * 4)
+        self.assertEqual(len(request["request_id"]), 64)
+        self.assertEqual(policy["request_sha256"], hash_bytes(rb))
+        native = {
+            "schema": 1, "request_id": request["request_id"],
+            "platform": "windows-x86_64", "operation": "upgrade",
+            "old": "1.5.6", "new": "1.5.7",
+            "preimage_sha256": hash_bytes(b"R937_SYNTHETIC_PREIMAGE_156"),
+            "scope_pins": request["scopes"],
+        }
+        validate_intent(native)
+        matched = compare_native_transaction_policy_intent(
+            plan, pb, hash_bytes(pb), rb, native)
+        self.assertEqual(matched["request_id"], request["request_id"])
+        self.assertFalse(matched["native_installation_accepted"])
+        self.assertFalse(matched["publisher_authenticated"])
+        ledger = canonical({
+            "schema": 1, "platform": "windows-x86_64",
+            "used_request_ids": [request["request_id"]],
+            "active": None,
+        })
+        self.assertEqual(parse_replay_snapshot(ledger, "windows-x86_64")
+                         ["used_request_ids"], [request["request_id"]])
+        for malformed in (
+            "0" * 31, "0" * 33, "0" * 63, "0" * 65,
+            ("0123456789abcdef" * 4).upper(),
+            "0123456789abcdef" * 2 + "-" + "0123456789abcdef" * 2,
+        ):
+            candidate = dict(request, request_id=malformed)
+            request_bytes = canonical(candidate)
+            candidate_policy = dict(policy, request_sha256=hash_bytes(request_bytes))
+            with self.subTest(malformed=malformed), self.assertRaisesRegex(
+                    EngineError, "BROKER_REQUEST_ID_INVALID"):
+                compare_pinned_policy_intent(
+                    plan, canonical(candidate_policy),
+                    hash_bytes(canonical(candidate_policy)), request_bytes)
+
 if __name__ == "__main__":
     unittest.main()
