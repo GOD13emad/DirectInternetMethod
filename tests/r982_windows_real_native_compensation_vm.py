@@ -16,6 +16,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from unittest.mock import patch
 if os.name == "nt":
     import winreg
 
@@ -23,8 +24,9 @@ if os.name == "nt":
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from installer_engine.broker_replay import BrokerReplayFixtureLedger
-from installer_engine.engine import EngineError, require
+from installer_engine.engine import EngineError, atomic_json, require
 from installer_engine.native_receipt import intent_sha256
+from installer_engine.native_plan import NativePlan
 from installer_engine.universal_install import UniversalFixtureInstaller
 from tests.test_engine_universal_install import UniversalInstallCrossPlatform
 
@@ -141,7 +143,7 @@ class RealInnoVmAdapter:
     """No added native authority. Only pinned test-VM SCM/Inno callbacks."""
 
     def __init__(self, qa: Path, *, new_gui: str, new_service: str,
-                 failed_setup_sha: str):
+                 failed_setup_sha: str, recovery_observation: dict | None = None):
         self.qa = qa
         self.old_setup = qa / "DirectInternetMethod_1.5.4_Windows_Setup.exe"
         self.failed_setup = qa / "R980_FAILED_PRODUCT_SETUP.exe"
@@ -157,11 +159,26 @@ class RealInnoVmAdapter:
         # Exact public old Setup is independently pinned at two read boundaries.
         _pin(self.old_setup, OLD_SETUP_SHA)
         _pin(self.failed_setup, failed_setup_sha)
-        require(_version() == "1.5.4" and
-                _sha(self.gui) == OLD_GUI_SHA and
-                _sha(self.service) == OLD_SVC_SHA and
-                _service_state() == "RUNNING",
-                "R982_NATIVE_BASELINE_IDENTITY_INVALID")
+        if recovery_observation is None:
+            require(_version() == "1.5.4" and
+                    _sha(self.gui) == OLD_GUI_SHA and
+                    _sha(self.service) == OLD_SVC_SHA and
+                    _service_state() == "RUNNING",
+                    "R982_NATIVE_BASELINE_IDENTITY_INVALID")
+        else:
+            # The recovery process never executed the failed installation.
+            # Its live native observations must match the durable failure
+            # observation checked against the existing transaction intent.
+            require(_version() == "1.5.7" and
+                    _sha(self.gui) == self.new_gui and
+                    _sha(self.service) == self.new_service,
+                    "R983_NATIVE_STATE_CHANGED_AFTER_CHILD_EXIT")
+            self.failed_exit = recovery_observation["installer_exit_code"]
+            self.after_failure = {
+                key: recovery_observation[key] for key in (
+                    "registered_version", "gui_sha256", "service_sha256",
+                    "installer_exit_code")
+            }
 
     def snapshot(self) -> bytes:
         # Bounded metadata preimage, NOT complete SCM/ACL/Inno OS preimage.
@@ -251,6 +268,142 @@ class RealInnoVmAdapter:
         return None
 
 
+def _validate_crash_observation(observation: dict, identity: str,
+                                cfg: dict) -> dict:
+    """Test-only durable observation; this is NOT an OS-authenticated receipt."""
+    expected = {
+        "schema": 1, "intent_sha256": identity,
+        "failed_setup_sha": cfg["failed_setup_sha"],
+        "registered_version": "1.5.7",
+        "gui_sha256": cfg["new_gui"],
+        "service_sha256": cfg["new_service"],
+        "installer_exit_code": 67,
+    }
+    require(type(observation) is dict and
+            type(observation.get("schema")) is int and
+            type(observation.get("installer_exit_code")) is int and
+            observation == expected, "R983_CRASH_OBSERVATION_INVALID")
+    return observation
+
+
+class CrashAfterApplyAdapter(RealInnoVmAdapter):
+    """Exit this QA child without unwinding the broker's transaction stack."""
+
+    def __init__(self, qa: Path, base: Path, **kwargs):
+        super().__init__(qa, **kwargs)
+        self.base = base
+
+    def apply(self, target_version: str, intent: dict) -> None:
+        try:
+            super().apply(target_version, intent)
+        except EngineError as exc:
+            if str(exc) != "R982_EXPECTED_INNO_POSTINSTALL_FAILURE":
+                raise
+            observation = dict(self.after_failure, schema=1,
+                               intent_sha256=intent_sha256(intent),
+                               failed_setup_sha=self.failed_setup_sha)
+            _validate_crash_observation(observation, intent_sha256(intent), {
+                "new_gui": self.new_gui, "new_service": self.new_service,
+                "failed_setup_sha": self.failed_setup_sha,
+            })
+            atomic_json(self.base / "r983-native-failure.json", observation)
+            # Deliberately bypass Python exception handlers and finally
+            # blocks, only after the real installer has already exited.
+            os._exit(79)
+        raise EngineError("R983_CHILD_NATIVE_FAILURE_NOT_OBSERVED")
+
+
+def _run_crash_child(qa: Path, cfg: dict, name: str) -> int:
+    require(name.startswith("dim-universal-") and Path(name).name == name,
+            "R983_CHILD_BASE_INVALID")
+    base = qa / name
+    require(base.is_dir() and not base.is_symlink() and
+            base.resolve().parent == qa.resolve(), "R983_CHILD_BASE_INVALID")
+    inp = base / "r983-dispatch.json"
+    require(inp.is_file() and not inp.is_symlink(),
+            "R983_CHILD_DISPATCH_MISSING")
+    payload = json.loads(inp.read_text(encoding="utf-8"))
+    require(payload["platform"] == "windows-x86_64" and
+            payload["product"] == "Direct Internet Method" and
+            payload["version"] == "1.5.7" and
+            set(payload["sources"]) == {"protected", "user"},
+            "R983_CHILD_PLAN_INVALID")
+    sources = {}
+    for scope, row in payload["sources"].items():
+        folder, digest = row
+        require(folder == f"bundle-{scope}-1.5.7",
+                "R983_CHILD_SOURCE_NAME_DRIFT")
+        sources[scope] = (base / folder, digest)
+    plan = NativePlan(payload["product"], payload["version"],
+                      payload["platform"],
+                      "PINNED_CODE_LAYOUT_REQUIRES_TRUSTED_NATIVE_ADAPTER",
+                      tuple((name, manifest) for name, manifest in payload["scopes"]))
+    adapter = CrashAfterApplyAdapter(qa, base,
+        new_gui=cfg["new_gui"], new_service=cfg["new_service"],
+        failed_setup_sha=cfg["failed_setup_sha"])
+    core = UniversalFixtureInstaller(base / "managed-journal", payload["platform"],
+        {"protected": base / "managed-protected", "user": base / "managed-user"},
+        adapter)
+    ledger = BrokerReplayFixtureLedger(base / "r982-ledger", payload["platform"])
+    core.execute_broker_bound(
+        ledger, plan, bytes.fromhex(payload["pb"]), payload["pin"],
+        bytes.fromhex(payload["rb"]), payload["intent"], sources)
+    raise EngineError("R983_CHILD_DID_NOT_EXIT_AT_NATIVE_FAILURE")
+
+
+def _recover_after_child_exit(workspace: Path, qa: Path, cfg: dict,
+                              fixture, plan, pb, pin, rb, intent,
+                              sources, ledger):
+    base = fixture.base
+    require(base.resolve().parent == qa.resolve(),
+            "R983_CHILD_BASE_INVALID")
+    atomic_json(base / "r983-dispatch.json", {
+        "platform": plan.platform, "product": plan.product,
+        "version": plan.version, "scopes": list(plan.scopes),
+        "pb": pb.hex(), "pin": pin, "rb": rb.hex(), "intent": intent,
+        "sources": {name: [folder.name, digest]
+                    for name, (folder, digest) in sources.items()},
+    })
+    child = subprocess.run(
+        [sys.executable, str(Path(__file__).resolve()), "--r983-child", base.name],
+        cwd=workspace, timeout=720)
+    require(child.returncode == 79, "R983_CHILD_DID_NOT_EXIT_AT_NATIVE_FAILURE")
+    # No native call is replayed until the existing durable request is read.
+    pending = fixture.core._load()
+    require(pending["phase"] == "activated" and
+            fixture.core._intent(pending) == intent and
+            ledger.inspect_fixture()["active_phase"] == "applying",
+            "R983_PERSISTED_INTENT_DRIFT")
+    observation_path = base / "r983-native-failure.json"
+    require(observation_path.is_file() and not observation_path.is_symlink(),
+            "R983_CRASH_OBSERVATION_MISSING")
+    observation = _validate_crash_observation(
+        json.loads(observation_path.read_text(encoding="utf-8")),
+        intent_sha256(intent), cfg)
+    recovery = RealInnoVmAdapter(qa, new_gui=cfg["new_gui"],
+                                 new_service=cfg["new_service"],
+                                 failed_setup_sha=cfg["failed_setup_sha"],
+                                 recovery_observation=observation)
+    # Reopen both common state machines from disk; no child adapter state
+    # survives or is reused. Use the EXISTING broker recovery entry point.
+    reopened = UniversalFixtureInstaller(fixture.control, fixture.platform,
+                                        fixture.roots, recovery)
+    reopened_ledger = BrokerReplayFixtureLedger(base / "r982-ledger",
+                                               fixture.platform)
+    require(reopened._native_complete(pending) is False,
+            "R983_UNEXPECTED_NATIVE_COMPLETION_RECEIPT")
+    result = reopened.recover_broker_bound(reopened_ledger, plan, pb, pin, rb)
+    require(result["version"] == "1.5.4" and
+            not reopened.journal.exists() and
+            reopened_ledger.inspect_fixture()["active_phase"] is None and
+            reopened_ledger.inspect_fixture()["used_ids"] == 1,
+            "R983_RECOVERY_NOT_FINAL")
+    fixture.core = reopened
+    fixture.adapter = recovery
+    print("R983_REAL_NATIVE_CHILD_EXIT_RESTORED")
+    return recovery
+
+
 def main() -> int:
     workspace, qa, source = _guard()
     report = qa / REPORT_NAME
@@ -270,6 +423,12 @@ def main() -> int:
                 all(c in "0123456789ABCDEF" for c in cfg[x])
                 for x in ("new_gui", "new_service", "failed_setup_sha")),
             "R982_NATIVE_CANDIDATE_PINS_DRIFT")
+    crash_mode = os.environ.get("R983_CRASH_RECOVERY", "false")
+    require(crash_mode in ("true", "false"), "R983_CRASH_MODE_INVALID")
+    if len(sys.argv) != 1:
+        require(crash_mode == "true" and len(sys.argv) == 3 and
+                sys.argv[1] == "--r983-child", "R983_CHILD_MODE_DENIED")
+        return _run_crash_child(qa, cfg, sys.argv[2])
     adapter = RealInnoVmAdapter(
         qa, new_gui=cfg["new_gui"],
         new_service=cfg["new_service"],
@@ -278,7 +437,12 @@ def main() -> int:
     # are used only by the already accepted R981 single-writer broker.
     fixture = UniversalInstallCrossPlatform(
         "test_policy_bound_request_survives_real_coordinator_journal")
-    fixture.setUp()
+    if crash_mode == "true":
+        # Child paths are restricted to one disposable, existing QA root.
+        with patch.object(tempfile, "tempdir", str(qa)):
+            fixture.setUp()
+    else:
+        fixture.setUp()
     try:
         fixture.cycle("1.5.4")
         require(isinstance(fixture.core, UniversalFixtureInstaller),
@@ -301,14 +465,20 @@ def main() -> int:
         ledger = BrokerReplayFixtureLedger(fixture.base / "r982-ledger",
                                            fixture.platform)
         fail_closed = False
-        try:
-            fixture.core.execute_broker_bound(
-                ledger, plan, pb, pin, rb, intent, sources)
-        except EngineError as exc:
-            if str(exc) == "UNIVERSAL_BROKER_NATIVE_FAILURE_AUTO_ABORTED_FIXTURE_ONLY":
-                fail_closed = True
-            else:
-                raise
+        if crash_mode == "true":
+            adapter = _recover_after_child_exit(
+                workspace, qa, cfg, fixture, plan, pb, pin, rb, intent,
+                sources, ledger)
+            fail_closed = True
+        else:
+            try:
+                fixture.core.execute_broker_bound(
+                    ledger, plan, pb, pin, rb, intent, sources)
+            except EngineError as exc:
+                if str(exc) == "UNIVERSAL_BROKER_NATIVE_FAILURE_AUTO_ABORTED_FIXTURE_ONLY":
+                    fail_closed = True
+                else:
+                    raise
         require(fail_closed and adapter.old_setup_run and
                 adapter.failed_exit == 67 and
                 adapter.after_failure is not None and
@@ -339,6 +509,12 @@ def main() -> int:
             "powercut_accepted": False,
             "physical_host_tested": False,
         }
+        if crash_mode == "true":
+            data["r983_child_exit"] = 79
+            data["r983_reopened_common_broker_recovered"] = True
+            data["r983_crash_scope"] = "AFTER_REAL_INNO_EXIT_BEFORE_COMPENSATION"
+            data["r983_os_service_supervisor_accepted"] = False
+            data["r983_reboot_accepted"] = False
         report.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
         print("R982_REAL_NATIVE_STATUS=" + STATUS)
         return 0

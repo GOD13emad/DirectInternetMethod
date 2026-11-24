@@ -23,6 +23,11 @@ on:
         required: false
         type: string
         default: ''
+      native_broker_crash_recovery:
+        description: 'R983: abrupt broker child exit after actual Inno failure, then cold recovery (VM-only)'
+        required: false
+        type: boolean
+        default: false
       linux_bootstrap_candidate_sha:
         description: 'Exact reviewed feature HEAD for isolated Linux bootstrap and lifecycle QA (no release)'
         required: false
@@ -829,6 +834,7 @@ jobs:
       R951_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
       R980_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
       R982_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
+      R983_CRASH_RECOVERY: ${{ inputs.native_broker_crash_recovery }}
     permissions:
       contents: read
       actions: read

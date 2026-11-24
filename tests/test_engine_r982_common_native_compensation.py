@@ -54,6 +54,45 @@ class R982CommonBrokerNativeScope(unittest.TestCase):
         self.assertIn("if($CommonBrokerRecovery){", source)
         self.assertIn("nativeAutomaticRollbackAccepted=$false", source)
 
+    def test_crash_recovery_is_separate_reviewed_vm_mode(self):
+        source=VM.read_text("utf-8")
+        workflow=CI.read_text("utf-8")
+        for marker in ("R983_CRASH_RECOVERY", "--r983-child",
+                       "os._exit(79)", "recover_broker_bound",
+                       "R983_CHILD_DID_NOT_EXIT_AT_NATIVE_FAILURE",
+                       "R983_PERSISTED_INTENT_DRIFT",
+                       "R983_REAL_NATIVE_CHILD_EXIT_RESTORED"):
+            self.assertIn(marker,source)
+        self.assertIn("native_broker_crash_recovery:",workflow)
+        self.assertIn("R983_CRASH_RECOVERY:",workflow)
+        self.assertIn("default: false",workflow)
+
+    def test_crash_observation_rejects_wrong_identity_and_bytes(self):
+        from tests import r982_windows_real_native_compensation_vm as vm
+        from installer_engine.engine import EngineError
+        identity = "a" * 64
+        cfg = {"new_gui": "B" * 64, "new_service": "C" * 64,
+               "failed_setup_sha": "D" * 64}
+        observation = {"schema": 1, "intent_sha256": identity,
+                       "failed_setup_sha": cfg["failed_setup_sha"],
+                       "registered_version": "1.5.7",
+                       "gui_sha256": cfg["new_gui"],
+                       "service_sha256": cfg["new_service"],
+                       "installer_exit_code": 67}
+        self.assertEqual(vm._validate_crash_observation(
+            observation, identity, cfg), observation)
+        for key, wrong in (("intent_sha256", "f"*64),
+                           ("failed_setup_sha", "E"*64),
+                           ("gui_sha256", "A"*64),
+                           ("service_sha256", "A"*64),
+                           ("registered_version", "1.5.4"),
+                           ("installer_exit_code", 0),
+                           ("schema", True)):
+            with self.subTest(key=key):
+                with self.assertRaisesRegex(EngineError,"R983_CRASH_OBSERVATION_INVALID"):
+                    vm._validate_crash_observation(
+                        dict(observation, **{key: wrong}), identity, cfg)
+
     def test_explicit_hosted_exact_source_dispatch_only(self):
         s=CI.read_text("utf-8")
         self.assertIn("native_broker_recovery_candidate_sha:",s)

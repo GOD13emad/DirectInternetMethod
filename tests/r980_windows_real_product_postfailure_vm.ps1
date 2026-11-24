@@ -205,6 +205,14 @@ try {
         (Get-Service DirectInternetMethodSvc).Status -eq 'Running') 'R982_REAL_NATIVE_RETURNED_TO_OLD'
   Need ((ShaFile $OwnerFile) -ceq $ownerHash -and
         (ShaFile $UserEvidence) -ceq $evidenceHash) 'R982_UNTOUCHED_OWNER_DATA'
+  if($env:R983_CRASH_RECOVERY -ceq 'true'){
+   Need ($result.r983_child_exit -eq 79 -and
+         $result.r983_reopened_common_broker_recovered -eq $true -and
+         $result.r983_crash_scope -ceq 'AFTER_REAL_INNO_EXIT_BEFORE_COMPENSATION' -and
+         $result.r983_os_service_supervisor_accepted -eq $false -and
+         $result.r983_reboot_accepted -eq $false) 'R983_REAL_NATIVE_CHILD_EXIT_RECOVERED'
+   $observed['r983AbruptChildRecoveryObserved']=$true
+  }
   $observed.realProductPostinstallFailureObserved=$true
   $observed['r982CommonBrokerVm']=$result
   $observed['vmFixtureAutomaticCompensationObserved']=$true
