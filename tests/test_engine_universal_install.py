@@ -225,7 +225,8 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
     def test_windows_native_id64_enters_single_broker_journal_and_tombstones(self):
         from installer_engine.broker_replay import BrokerReplayFixtureLedger
         from installer_engine.native_receipt import correlate_windows_inno_ssdone
-        self.assertEqual(self.platform, "windows-x86_64")
+        # The ONE replay/journal identity must accept full native ID64 on
+        # BOTH platforms; only Inno receipt syntax is Windows-specific.
         plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
         intent = dict(intent, request_id="fe12" * 16)
         request = json.loads(rb)
@@ -235,10 +236,12 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         policy["request_sha256"] = hashlib.sha256(rb).hexdigest()
         pb = json.dumps(policy, sort_keys=True).encode()
         pin = hashlib.sha256(pb).hexdigest()
-        native_receipt = ("DIM-INNO-V1|" + intent["request_id"].upper() +
-                          "|" + ("a" * 64).upper()).encode()
-        observed = correlate_windows_inno_ssdone(intent, "a" * 64, native_receipt)
-        self.assertFalse(observed["native_installation_accepted"])
+        if self.platform == "windows-x86_64":
+            native_receipt = ("DIM-INNO-V1|" + intent["request_id"].upper() +
+                              "|" + ("a" * 64).upper()).encode()
+            observed = correlate_windows_inno_ssdone(
+                intent, "a" * 64, native_receipt)
+            self.assertFalse(observed["native_installation_accepted"])
         ledger = BrokerReplayFixtureLedger(self.base / "native-id64", self.platform)
         result = self.core.execute_broker_bound(
             ledger, plan, pb, pin, rb, intent, sources)
