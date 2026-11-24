@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace DirectInternetMethod.Service;
 
@@ -24,7 +25,16 @@ internal static class NativeProtectedUpdateJournal
     private static extern bool MoveFileExW(
         string existingPath, string newPath, uint flags);
 
-    internal static void WriteJsonAtomic(string path, object payload)
+    internal static void WriteJsonAtomic(string path, object payload) =>
+        WriteCore(path, payload, resumeCleanup: false);
+
+    // Caller has reverified the live ssDone receipt, matching native
+    // registration and the retired stage while holding the service ActionGate.
+    // An initial/prepared transaction is NEVER resumed through this method.
+    internal static void CommitReceiptConsumed(string path, JsonObject payload) =>
+        WriteCore(path, payload, resumeCleanup: true);
+
+    private static void WriteCore(string path, object payload, bool resumeCleanup)
     {
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException(
@@ -53,12 +63,32 @@ internal static class NativeProtectedUpdateJournal
         if (raw.Length is < 1 or > MaximumPendingBytes)
             throw new InvalidDataException("Native pending record size invalid.");
         var temp = target + ".tmp";
-        // The fixed temp name is created EXCLUSIVELY. A prior crash's temp
-        // cannot be overwritten or mistaken for a successful journal state.
-        using (var output = new FileStream(
-            temp, FileMode.CreateNew, FileAccess.Write, FileShare.None,
-            bufferSize: 4096, options: FileOptions.WriteThrough))
+        if (resumeCleanup)
         {
+            // Re-derive the only legal transition from the actual current
+            // protected pending record; never promote a temp on its own.
+            using var source = File.OpenRead(target);
+            if (source.Length is < 1 or > MaximumPendingBytes)
+                throw new InvalidDataException("Protected pending preimage length invalid.");
+            using var previous = JsonDocument.Parse(source);
+            var exact = JsonSerializer.SerializeToUtf8Bytes(
+                NativeUpdateCleanupJournal.MarkReceiptConsumed(previous.RootElement));
+            if (!raw.AsSpan().SequenceEqual(exact))
+                throw new InvalidDataException("Protected cleanup transition identity drift.");
+        }
+        if (resumeCleanup && File.Exists(temp))
+        {
+            // Reuse the R977 no-follow, single-link, final-path handle check;
+            // compare bytes before re-flushing. Only the service's protected
+            // directory and single writer permit the subsequent path rename.
+            NativeInnoCompletionReceipt.VerifyAndFlushJournalTemp(temp, raw);
+        }
+        else
+        {
+            // Initial writes retain R978's exclusive CreateNew refusal.
+            using var output = new FileStream(
+                temp, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                bufferSize: 4096, options: FileOptions.WriteThrough);
             output.Write(raw);
             output.Flush(flushToDisk: true);
         }

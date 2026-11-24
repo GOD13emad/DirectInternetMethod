@@ -99,32 +99,66 @@ internal static class NativeInnoCompletionReceipt
             !string.Equals(Path.GetFileName(receiptPath), FileName(transactionId),
                            StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("Native completion receipt path drift.");
-        // FILE_FLAG_OPEN_REPARSE_POINT opens the link itself, never follows it.
-        // FILE_SHARE_READ blocks concurrent rename/deletion/new writes until
-        // the byte read has completed; keep that handle open throughout.
-        using var held = CreateFileW(expectedPath, 0x80000000, FILE_SHARE_READ,
-                                     IntPtr.Zero, 3,
-                                     FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
-        if (held.IsInvalid)
-            throw new IOException("Cannot open protected native completion receipt.");
-        if (!GetFileInformationByHandle(held, out var info) ||
-            (info.Attributes & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)) != 0 ||
-            info.NumberOfLinks != 1 ||
-            info.FileSizeHigh != 0 || info.FileSizeLow != ExactReceiptBytes)
-            throw new InvalidDataException("Native receipt held-file metadata invalid.");
-        var final = new StringBuilder(8192);
-        var count = GetFinalPathNameByHandleW(held, final, (uint)final.Capacity, 0);
-        var expectedFinal = @"\\?\" + expectedPath;
-        if (count == 0 || count >= final.Capacity ||
-            !string.Equals(final.ToString(), expectedFinal,
-                           StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("Native receipt final handle path mismatch.");
+        using var held = OpenHeldExact(expectedPath, ExactReceiptBytes, writable: false);
         using var reader = new FileStream(held, FileAccess.Read);
         var bytes = new byte[ExactReceiptBytes];
         reader.ReadExactly(bytes);
         if (reader.ReadByte() != -1 || bytes.Any(x => x > 127))
             throw new InvalidDataException("Native receipt bytes are not exact ASCII.");
         return Encoding.ASCII.GetString(bytes);
+    }
+
+    // Same held-file metadata checks for the one protected journal temp.
+    // No caller-controlled filename or permission grant.
+    internal static void VerifyAndFlushJournalTemp(string path, byte[] expected)
+    {
+        if (!OperatingSystem.IsWindows() || !Path.IsPathFullyQualified(path) ||
+            !string.Equals(path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase) ||
+            Path.GetFileName(path) != "pending-update.json.tmp" ||
+            Path.GetFileName(Path.GetDirectoryName(path)) != "UpdateTransactions" ||
+            expected.Length is < 1 or > 65536)
+            throw new InvalidDataException("Protected cleanup temp identity invalid.");
+        using var held = OpenHeldExact(path, expected.Length, writable: true);
+        using var reader = new FileStream(held, FileAccess.ReadWrite);
+        var actual = new byte[expected.Length];
+        reader.ReadExactly(actual);
+        if (reader.ReadByte() != -1 || !actual.AsSpan().SequenceEqual(expected))
+            throw new InvalidDataException("Interrupted cleanup temp differs from exact authorized transition.");
+        reader.Flush(flushToDisk: true);
+    }
+
+    private static SafeFileHandle OpenHeldExact(string expectedPath, int exactBytes, bool writable)
+    {
+        // FILE_FLAG_OPEN_REPARSE_POINT opens the link itself, never follows it.
+        // FILE_SHARE_READ blocks concurrent rename/deletion/new writes until
+        // the byte read has completed; keep that handle open throughout.
+        var held = CreateFileW(expectedPath, writable ? 0xC0000000u : 0x80000000u,
+                               writable ? 0u : FILE_SHARE_READ,
+                               IntPtr.Zero, 3,
+                               FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
+        try
+        {
+            if (held.IsInvalid)
+                throw new IOException("Cannot open protected native file.");
+            if (!GetFileInformationByHandle(held, out var info) ||
+                (info.Attributes & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)) != 0 ||
+                info.NumberOfLinks != 1 ||
+                info.FileSizeHigh != 0 || info.FileSizeLow != exactBytes)
+                throw new InvalidDataException("Native held-file metadata invalid.");
+            var final = new StringBuilder(8192);
+            var count = GetFinalPathNameByHandleW(held, final, (uint)final.Capacity, 0);
+            var expectedFinal = @"\\?\" + expectedPath;
+            if (count == 0 || count >= final.Capacity ||
+                !string.Equals(final.ToString(), expectedFinal,
+                               StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Native final handle path mismatch.");
+            return held;
+        }
+        catch
+        {
+            held.Dispose();
+            throw;
+        }
     }
 
     internal static bool SelfTest()

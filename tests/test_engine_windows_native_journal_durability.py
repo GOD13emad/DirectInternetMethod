@@ -23,6 +23,8 @@ using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Runtime.InteropServices;
 
 namespace DirectInternetMethod.Service;
 
@@ -33,14 +35,44 @@ internal static class NativeJournalProbe
         if (!ok) throw new Exception(label);
     }
 
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CreateHardLinkW(string newName, string oldName, IntPtr unused);
+
+    private static void CheckRejected(Action call, string label)
+    {
+        try { call(); }
+        catch (InvalidDataException) { return; }
+        catch (IOException) { return; }
+        throw new Exception(label);
+    }
+
     public static int Main(string[] args)
     {
-        if (!OperatingSystem.IsWindows() || args.Length != 1)
+        if (!OperatingSystem.IsWindows() || args.Length < 1 || args.Length > 2)
             return 91;
         var dir = Path.Combine(Path.GetFullPath(args[0]), "UpdateTransactions");
         Directory.CreateDirectory(dir);
         var pending = Path.Combine(dir, "pending-update.json");
         var temp = pending + ".tmp";
+        if (args.Length == 2)
+        {
+            Need(args[1] == "--resume-cleanup", "R979_UNKNOWN_PROBE_MODE");
+            // This is an independent OS process. Reconstruct the expected
+            // transition from the still-committed on-disk pending record.
+            using var original = JsonDocument.Parse(File.ReadAllBytes(pending));
+            var next = NativeUpdateCleanupJournal.MarkReceiptConsumed(original.RootElement);
+            var exact = JsonSerializer.SerializeToUtf8Bytes(next);
+            Need(File.Exists(temp), "R979_DURABLE_TEMP_MISSING_ON_RESTART");
+            NativeProtectedUpdateJournal.CommitReceiptConsumed(pending, next);
+            Need(!File.Exists(temp), "R979_RECOVERED_TEMP_NOT_RETIRED");
+            Need(Convert.ToHexString(File.ReadAllBytes(pending)) == Convert.ToHexString(exact),
+                 "R979_RECOVERED_COMMITTED_RECORD_MISMATCH");
+            CheckRejected(() => NativeProtectedUpdateJournal.CommitReceiptConsumed(pending, next),
+                          "R979_DOUBLE_COMMIT_ACCEPTED");
+            Console.WriteLine("R979_REAL_WIN32_NEW_PROCESS_RECOVERED_EXACT_CLEANUP_ONLY");
+            return 0;
+        }
         NativeProtectedUpdateJournal.WriteJsonAtomic(pending,
             new { schema = 2, transactionId = "FIRST" });
         Need(!File.Exists(temp), "R978_TEMP_LEFT_AFTER_FIRST_WRITE");
@@ -79,7 +111,52 @@ internal static class NativeJournalProbe
         catch (InvalidDataException) { }
         Need(!File.Exists(unrelated), "R978_FOREIGN_RECORD_WRITTEN");
         Console.WriteLine("R978_REAL_WIN32_WRITE_THROUGH_PENDING_JOURNAL_PASS_NO_PRODUCT");
-        return 0;
+
+        // Actual production writer fails its real Win32 rename while the old
+        // pending file is open without delete sharing. No production fault
+        // injection switch, no installed service or installer is involved.
+        NativeProtectedUpdateJournal.WriteJsonAtomic(pending,
+            new { schema = 2, transactionId = new string('A', 64),
+                  sha256 = new string('B', 64), targetVersion = "1.5.7" });
+        var baseline = File.ReadAllBytes(pending);
+        using var prepared = JsonDocument.Parse(baseline);
+        var consumed = NativeUpdateCleanupJournal.MarkReceiptConsumed(prepared.RootElement);
+        var intended = JsonSerializer.SerializeToUtf8Bytes(consumed);
+        using (var locked = new FileStream(pending, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            CheckRejected(() => NativeProtectedUpdateJournal.CommitReceiptConsumed(pending, consumed),
+                          "R979_LOCKED_RENAME_UNEXPECTEDLY_SUCCEEDED");
+        }
+        Need(File.Exists(temp), "R979_INTERRUPTED_TEMP_MISSING");
+        Need(Convert.ToHexString(File.ReadAllBytes(temp)) == Convert.ToHexString(intended),
+             "R979_FLUSHED_TEMP_NOT_EXACT");
+        Need(Convert.ToHexString(File.ReadAllBytes(pending)) == Convert.ToHexString(baseline),
+             "R979_PREIMAGE_CHANGED_ON_RENAME_FAILURE");
+        var altered = JsonNode.Parse(consumed.ToJsonString())!.AsObject();
+        altered["transactionId"] = new string('C', 64);
+        CheckRejected(() => NativeProtectedUpdateJournal.CommitReceiptConsumed(pending, altered),
+                      "R979_WRONG_TRANSACTION_ACCEPTED");
+        var wrong = (byte[])intended.Clone();
+        wrong[0] = (byte)'!';
+        File.WriteAllBytes(temp, wrong);
+        CheckRejected(() => NativeProtectedUpdateJournal.CommitReceiptConsumed(pending, consumed),
+                      "R979_TAMPERED_TEMP_ACCEPTED");
+        Need(Convert.ToHexString(File.ReadAllBytes(temp)) == Convert.ToHexString(wrong),
+             "R979_BAD_TEMP_OVERWRITTEN");
+        File.WriteAllBytes(temp, intended);
+        var alias = Path.Combine(dir, "hardlink.tmp");
+        Need(CreateHardLinkW(alias, temp, IntPtr.Zero), "R979_HARDLINK_SETUP_FAILED");
+        CheckRejected(() => NativeProtectedUpdateJournal.CommitReceiptConsumed(pending, consumed),
+                      "R979_HARDLINK_TEMP_ACCEPTED");
+        File.Delete(alias);
+        Need(Convert.ToHexString(File.ReadAllBytes(pending)) == Convert.ToHexString(baseline),
+             "R979_NEGATIVES_CHANGED_PREIMAGE");
+        Need(Convert.ToHexString(File.ReadAllBytes(temp)) == Convert.ToHexString(intended),
+             "R979_NEGATIVES_CHANGED_EXACT_TEMP");
+        Console.WriteLine("R979_REAL_WIN32_RENAME_FAILURE_DURABLE_TEMP_PRESERVED");
+        // Deliberately exit without cleanup, emulating process termination
+        // after a failed native rename; the next invocation has no memory.
+        return 78;
     }
 }
 """
@@ -100,6 +177,22 @@ class NativeJournalDurabilityContract(unittest.TestCase):
                         "FileMode.CreateNew", "Flush(flushToDisk: true)"):
             self.assertIn(keyword, source)
         self.assertIn('pending-update.json', source)
+
+    def test_r979_only_verified_cleanup_can_resume_exact_flushed_temp(self):
+        program = SERVICE.read_text(encoding="utf-8-sig")
+        final = program.split("static void FinalizePendingUpdate()", 1)[1].split(
+            "static async Task RunActionAsync(", 1)[0]
+        self.assertIn("NativeProtectedUpdateJournal.CommitReceiptConsumed(", final)
+        self.assertLess(final.index("NativeInnoCompletionReceipt.Matches("),
+                        final.index("NativeProtectedUpdateJournal.CommitReceiptConsumed("))
+        self.assertLess(final.index("File.Delete(stage)"),
+                        final.index("NativeProtectedUpdateJournal.CommitReceiptConsumed("))
+        self.assertLess(final.index("NativeProtectedUpdateJournal.CommitReceiptConsumed("),
+                        final.index("File.Delete(receiptPath)"))
+        self.assertIn("VerifyAndFlushJournalTemp", HELPER.read_text(encoding="utf-8-sig"))
+        update = program.split("static async Task RunUpdateAsync()", 1)[1]
+        self.assertLess(update.index('File.Exists(PendingUpdatePath + ".tmp")'),
+                        update.index("GetLatestUpdateAsync("))
 
     @unittest.skipUnless(os.name == "nt", "real Win32 file APIs require Windows")
     def test_actual_product_writer_win32_atomic_replace_and_stale_temp(self):
@@ -126,6 +219,8 @@ class NativeJournalDurabilityContract(unittest.TestCase):
                 '</PropertyGroup><ItemGroup>'
                 f'<Compile Include="{helper_path}" '
                 'Link="NativeProtectedUpdateJournal.cs"/>'
+                f'<Compile Include="{escape(str(HELPER.with_name("NativeInnoCompletionReceipt.cs")))}"/>'
+                f'<Compile Include="{escape(str(HELPER.with_name("NativeUpdateCleanupJournal.cs")))}"/>'
                 '<Compile Include="NativeJournalProbe.cs"/>'
                 '</ItemGroup></Project>', encoding="utf-8")
             (t / "NativeJournalProbe.cs").write_text(PROBE, encoding="utf-8")
@@ -137,9 +232,24 @@ class NativeJournalDurabilityContract(unittest.TestCase):
             dll = t / "bin/Release/net10.0-windows/NativeJournalProbe.dll"
             run = subprocess.run([dotnet, str(dll), str(t)],
                                  capture_output=True, text=True, timeout=30)
-            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+            self.assertEqual(run.returncode, 78, run.stdout + run.stderr)
             self.assertIn("R978_REAL_WIN32_WRITE_THROUGH_PENDING_JOURNAL_PASS_NO_PRODUCT",
                           run.stdout)
+            self.assertIn("R979_REAL_WIN32_RENAME_FAILURE_DURABLE_TEMP_PRESERVED",
+                          run.stdout)
+            pending = t / "UpdateTransactions" / "pending-update.json"
+            temp = pending.with_name(pending.name + ".tmp")
+            self.assertTrue(temp.is_file())
+            self.assertNotIn(b'"cleanupPhase"', pending.read_bytes())
+            self.assertIn(b'"cleanupPhase":"receipt-consumed"', temp.read_bytes())
+            resumed = subprocess.run(
+                [dotnet, str(dll), str(t), "--resume-cleanup"],
+                capture_output=True, text=True, timeout=30)
+            self.assertEqual(resumed.returncode, 0, resumed.stdout + resumed.stderr)
+            self.assertIn("R979_REAL_WIN32_NEW_PROCESS_RECOVERED_EXACT_CLEANUP_ONLY",
+                          resumed.stdout)
+            self.assertFalse(temp.exists())
+            self.assertIn(b'"cleanupPhase":"receipt-consumed"', pending.read_bytes())
 
 
 if __name__ == "__main__":

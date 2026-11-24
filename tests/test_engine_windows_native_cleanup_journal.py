@@ -60,7 +60,7 @@ class NativeUpdateRestartJournalContract(unittest.TestCase):
         self.assertIn("if (!File.Exists(receiptPath) && !cleanupCommitted)", f)
         self.assertIn("NativeUpdateCleanupJournal.RequireSafeStageAfterCommit(cleanupCommitted, File.Exists(stage))", f)
         self.assertIn("if (!cleanupCommitted)", f)
-        self.assertIn("WriteJsonAtomic(PendingUpdatePath,", f)
+        self.assertIn("NativeProtectedUpdateJournal.CommitReceiptConsumed(PendingUpdatePath,", f)
         self.assertIn("File.Delete(PendingUpdatePath)", f)
         self.assertIn("Orphan native completion evidence requires reconciliation", self.update)
 

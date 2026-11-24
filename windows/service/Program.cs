@@ -333,6 +333,9 @@ internal static class Program
                 Directory.EnumerateFiles(UpdatesDir, "completion-*.receipt").Any())
                 throw new IOException("Orphan native completion evidence requires reconciliation; refusing another update.");
 
+            if (File.Exists(PendingUpdatePath + ".tmp"))
+                throw new IOException("Interrupted native pending journal requires reconciliation; refusing another download.");
+
             Log("action-begin:update");
             WriteActionStatus(action, "running", null, "Checking official GitHub release.");
             using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(4));
@@ -583,7 +586,7 @@ internal static class Program
                 // A process crash after receipt deletion can now recover from
                 // the committed protected journal (not from a forged receipt).
                 if (!cleanupCommitted)
-                    WriteJsonAtomic(PendingUpdatePath,
+                    NativeProtectedUpdateJournal.CommitReceiptConsumed(PendingUpdatePath,
                         NativeUpdateCleanupJournal.MarkReceiptConsumed(doc.RootElement));
                 try
                 {
