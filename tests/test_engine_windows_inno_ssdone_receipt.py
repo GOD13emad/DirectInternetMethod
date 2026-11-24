@@ -110,7 +110,7 @@ class NativeInnoReceiptContract(unittest.TestCase):
         installer_sha = "EEDD1234" * 8
         baseline_service_sha = "FFEE4567" * 8
         contents = ("DIM-INNO-V1|" + native_id + "|" + installer_sha).encode()
-        with tempfile.TemporaryDirectory(prefix="dim-r972-real-handle-") as temp:
+        with tempfile.TemporaryDirectory(prefix="dim-r972-real-handle-", dir=ROOT) as temp:
             observed = Path(temp) / ("completion-" + native_id + ".receipt")
             observed.write_bytes(contents)
             out = correlate_existing_vm_receipt(
