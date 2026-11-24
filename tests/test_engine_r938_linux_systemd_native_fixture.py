@@ -152,6 +152,17 @@ class R938FixtureContracts(unittest.TestCase):
         self.assertIn("R976_REAL_ROOT_SYSTEMD_FAILED_PROCESS_STATUS_PASS", shell)
         self.assertIn("R975_ROOT_RESERVED_CRASH", shell)
 
+    def test_r988_automatic_systemd_restart_is_bounded_and_not_manual(self):
+        shell = HARNESS.read_text(encoding="utf8")
+        workflow = (ROOT / ".github/workflows/universal-install-engine.yml").read_text("utf8")
+        for marker in ("R988_AUTO_RESTART", "Restart=on-failure",
+                       "RestartSec=20s", "StartLimitBurst=2",
+                       "NRestarts", "R988_REAL_OS_AUTOMATIC_RESTART_PASS",
+                       "R988_RESTART_PID_OR_COUNT_INVALID"):
+            self.assertIn(marker, shell)
+        self.assertIn("R988_AUTO_RESTART: '1'", workflow)
+        self.assertIn("if [[ \"$R988_AUTO_RESTART\" == 1 ]]; then", shell)
+
     def test_r975_root_reserved_restart_retires_without_native_and_never_replays(self):
         """Unit contract only; real root+systemd service runs in push-only CI."""
         from unittest.mock import patch

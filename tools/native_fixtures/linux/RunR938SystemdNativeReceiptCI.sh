@@ -19,6 +19,18 @@ R975_ROOT_RESERVED_CRASH="$(printenv R975_ROOT_RESERVED_CRASH 2>/dev/null || pri
 [[ "$R975_ROOT_RESERVED_CRASH" != 1 || "$R940_POLKIT_NATIVE" == 0 ]] || {
   echo R975_POLKIT_COMBINED_FAULT_MODE_UNSUPPORTED; exit 82;
 }
+R988_AUTO_RESTART="${R988_AUTO_RESTART:-0}"
+[[ "$R988_AUTO_RESTART" == 0 || "$R988_AUTO_RESTART" == 1 ]] || {
+  echo R988_INVALID_AUTO_RESTART_MODE; exit 82;
+}
+if [[ "$R988_AUTO_RESTART" == 1 ]]; then
+  [[ "$R975_ROOT_RESERVED_CRASH" == 1 &&
+      "$R940_POLKIT_NATIVE" == 0 &&
+      "${GITHUB_REPOSITORY:-}" == GOD13emad/DirectInternetMethod &&
+      "${RUNNER_ENVIRONMENT:-}" == github-hosted ]] || {
+    echo R988_REQUIRES_DISPOSABLE_ORIGINAL_FEATURE_VM; exit 82;
+  }
+fi
 ACTION='org.god13emad.directinternetmethod.r940fixture'
 POLICY='/usr/share/polkit-1/actions/org.god13emad.directinternetmethod.r940fixture.policy'
 RULE='/etc/polkit-1/rules.d/49-dim-r940-isolated-scope.rules'
@@ -138,9 +150,14 @@ start_unit() {
   else
     set --
   fi
+  local -a restart_flags=(--property=Restart=no)
+  if [[ "$R988_AUTO_RESTART" == 1 ]]; then
+    restart_flags=(--property=Restart=on-failure --property=RestartSec=20s
+                   --property=StartLimitIntervalSec=120s --property=StartLimitBurst=2)
+  fi
   sudo -n systemd-run --system --unit=dim-r938-synthetic-broker \
     --property=Type=exec \
-    --property=Restart=no \
+    "${restart_flags[@]}" \
     --property=NoNewPrivileges=yes \
     --property=PrivateTmp=yes \
     --property=ProtectSystem=strict \
@@ -173,6 +190,8 @@ wait_socket
 if [[ "$R975_ROOT_RESERVED_CRASH" == 1 ]]; then
   # Real systemd-managed root process exits after fsync of reservation,
   # before the native applying boundary and BEFORE even synthetic receipt.
+  first_pid=$(systemctl show -p MainPID --value "$UNIT")
+  [[ "$first_pid" =~ ^[1-9][0-9]*$ ]] || { echo R988_INITIAL_PID_INVALID; exit 89; }
   python "$SCRIPT" client --input "$input" --root "$ROOT" --mode expect-cut |
     tee "$output/expect-cut.json"
   observed_status=''
@@ -196,7 +215,28 @@ if [[ "$R975_ROOT_RESERVED_CRASH" == 1 ]]; then
   sudo -n install -o "$(id -u)" -g "$(id -g)" -m 0600 \
     "$ROOT/state/broker-replay.json" "$output/before-ledger.json"
   python "$SCRIPT" verify-reserved --input "$input" --output "$output" --phase before
-  sudo -n systemctl restart "$UNIT"
+  if [[ "$R988_AUTO_RESTART" == 1 ]]; then
+    # No systemctl start/restart here: the OS manager alone must recover.
+    # Delay allows the independent pre-recovery ledger snapshot above.
+    second_pid=''
+    restart_count=''
+    for i in $(seq 1 160); do
+      restart_count=$(systemctl show -p NRestarts --value "$UNIT" 2>/dev/null || true)
+      second_pid=$(systemctl show -p MainPID --value "$UNIT" 2>/dev/null || true)
+      if [[ "$restart_count" == 1 && "$second_pid" =~ ^[1-9][0-9]*$ &&
+            "$second_pid" != "$first_pid" ]]; then
+        break
+      fi
+      sleep 0.25
+    done
+    [[ "$restart_count" == 1 && "$second_pid" =~ ^[1-9][0-9]*$ &&
+        "$second_pid" != "$first_pid" ]] || {
+      sudo -n journalctl --no-pager -n 30 -u "$UNIT" || true
+      echo R988_RESTART_PID_OR_COUNT_INVALID; exit 89;
+    }
+  else
+    sudo -n systemctl restart "$UNIT"
+  fi
   wait_socket
   python "$SCRIPT" client --input "$input" --root "$ROOT" --mode replay-postrestart |
     tee "$output/replay-postrestart.json"
@@ -206,6 +246,14 @@ if [[ "$R975_ROOT_RESERVED_CRASH" == 1 ]]; then
   sudo -n install -o "$(id -u)" -g "$(id -g)" -m 0600 \
     "$ROOT/state/broker-replay.json" "$output/after-ledger.json"
   python "$SCRIPT" verify-reserved --input "$input" --output "$output" --phase after
+  if [[ "$R988_AUTO_RESTART" == 1 ]]; then
+    [[ "$(systemctl show -p NRestarts --value "$UNIT")" == 1 &&
+        "$(systemctl show -p MainPID --value "$UNIT")" == "$second_pid" ]] || {
+      echo R988_RESTART_PID_OR_COUNT_INVALID; exit 89;
+    }
+    printf 'R988_REAL_OS_AUTOMATIC_RESTART_PASS old_pid=%s new_pid=%s restarts=%s\n' \
+      "$first_pid" "$second_pid" "$restart_count"
+  fi
   echo R975_REAL_ROOT_SYSTEMD_RESERVED_CRASH_RECOVERED_NO_NATIVE_PASS
   exit 0
 fi

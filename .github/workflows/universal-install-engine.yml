@@ -292,6 +292,7 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: '1'
           R975_ROOT_RESERVED_CRASH: '1'
+          R988_AUTO_RESTART: '1'
         run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
 
   linux-root-systemd-polkit-native:
