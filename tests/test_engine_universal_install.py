@@ -9,6 +9,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -303,6 +305,241 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
                 self.assertFalse(self.core.journal.exists())
                 self.assertEqual(set(self.state().values()), {"1.5.7"})
                 self.assertEqual(self.adapter.observed_version(), "1.5.7")
+
+    def test_broker_real_child_exit_after_stage_before_apply(self):
+        from unittest.mock import patch
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        before = self.adapter.snapshot()
+        inputs = {
+            "platform": self.platform, "product": plan.product,
+            "version": plan.version, "scopes": list(plan.scopes),
+            "pb": pb.hex(), "pin": pin, "rb": rb.hex(),
+            "intent": intent,
+            "sources": {name: [str(folder), digest]
+                        for name, (folder, digest) in sources.items()},
+        }
+        path = self.base / "r970-subprocess-inputs.json"
+        path.write_text(json.dumps(inputs), encoding="utf-8")
+        child = r"""
+import json, os, sys
+from pathlib import Path
+from installer_engine.broker_replay import BrokerReplayFixtureLedger
+from installer_engine.native_plan import NativePlan
+from installer_engine.universal_install import UniversalFixtureInstaller
+from tests.test_engine_universal_install import FileNativeFixture
+base = Path(sys.argv[1])
+c = json.loads((base / "r970-subprocess-inputs.json").read_text())
+plan = NativePlan(c["product"], c["version"], c["platform"],
+                  "PINNED_CODE_LAYOUT_REQUIRES_TRUSTED_NATIVE_ADAPTER",
+                  tuple((name, manifest) for name, manifest in c["scopes"]))
+adapter = FileNativeFixture(base)
+core = UniversalFixtureInstaller(base / "managed-journal", c["platform"],
+    {"protected": base / "managed-protected", "user": base / "managed-user"},
+    adapter)
+ledger = BrokerReplayFixtureLedger(base / "broker-hard", c["platform"])
+ledger.mark_applying_fixture = lambda *a, **kw: os._exit(78)
+core.execute_broker_bound(
+    ledger, plan, bytes.fromhex(c["pb"]), c["pin"],
+    bytes.fromhex(c["rb"]), c["intent"],
+    {key: (Path(folder), digest) for key, (folder, digest) in c["sources"].items()})
+raise RuntimeError("CHILD_DID_NOT_HARD_EXIT")
+"""
+        root = Path(__file__).resolve().parents[1]
+        run = subprocess.run(
+            [sys.executable, "-c", child, str(self.base)],
+            cwd=str(root), timeout=15, capture_output=True, text=True,
+            env=dict(os.environ, PYTHONPATH=str(root),
+                     PYTHONDONTWRITEBYTECODE="1"))
+        self.assertEqual(run.returncode, 78, run.stderr)
+        ledger = BrokerReplayFixtureLedger(self.base / "broker-hard", self.platform)
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "staging")
+        self.assertEqual(self.core._load()["phase"], "staged")
+        self.assertEqual(self.adapter.snapshot(), before)
+        with patch.object(self.adapter, "quiesce",
+                          side_effect=AssertionError("NATIVE_QUIESCE_FORBIDDEN")), \
+             patch.object(self.adapter, "restore",
+                          side_effect=AssertionError("NATIVE_RESTORE_FORBIDDEN")):
+            report = self.new_engine().recover_broker_bound(ledger, plan, pb, pin, rb)
+        self.assertEqual(report["status"],
+                         "UNIVERSAL_BROKER_RESERVED_STAGE_ABORTED_FIXTURE_ONLY")
+        self.assertFalse(self.core.journal.exists())
+        self.assertEqual(ledger.inspect_fixture()["used_ids"], 1)
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertEqual(set(self.state().values()), {None})
+        self.assertEqual(self.adapter.snapshot(), before)
+
+    def test_broker_reserved_rejects_nonstaging_inner_journal(self):
+        from unittest.mock import patch
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.base / "broker-invalid-inner", self.platform)
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        with patch.object(ledger, "mark_applying_fixture",
+                          side_effect=EngineError("CUT")):
+            with self.assertRaisesRegex(EngineError, "CUT"):
+                self.core.execute_broker_bound(
+                    ledger, plan, pb, pin, rb, intent, sources)
+        prior = self.core.code.path.read_bytes()
+        mutated = json.loads(prior)
+        mutated["phase"] = "activated"
+        self.core.code.path.write_text(json.dumps(mutated), encoding="utf-8")
+        with self.assertRaisesRegex(EngineError, "RESERVED_CODE_NOT_STAGING"):
+            self.new_engine().recover_broker_bound(ledger, plan, pb, pin, rb)
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "staging")
+        self.assertTrue(self.core.journal.exists())
+        self.core.code.path.write_bytes(prior)
+        self.new_engine().recover_broker_bound(ledger, plan, pb, pin, rb)
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+    def test_broker_staging_upgrade_reverts_without_native_callback(self):
+        from unittest.mock import patch
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        self.cycle("1.5.6")
+        before = self.adapter.snapshot()
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        intent = dict(intent, old="1.5.6", operation="upgrade",
+                      preimage_sha256=hashlib.sha256(before).hexdigest())
+        request = json.loads(rb)
+        request["operation"] = "upgrade"
+        rb = json.dumps(request, sort_keys=True).encode()
+        policy = json.loads(pb)
+        policy["operation"] = "upgrade"
+        policy["request_sha256"] = hashlib.sha256(rb).hexdigest()
+        pb = json.dumps(policy, sort_keys=True).encode()
+        pin = hashlib.sha256(pb).hexdigest()
+        ledger = BrokerReplayFixtureLedger(self.base / "broker-upgrade-stage",
+                                           self.platform)
+        owner_data = self.roots["user"] / "data" / "my-configuration.ini"
+        owner_data.parent.mkdir(parents=True, exist_ok=True)
+        owner_data.write_bytes(b"USER-OWNED-FOREVER")
+        with patch.object(ledger, "mark_applying_fixture",
+                          side_effect=EngineError("CUT_PRE_NATIVE_UPGRADE")):
+            with self.assertRaisesRegex(EngineError, "CUT_PRE_NATIVE_UPGRADE"):
+                self.core.execute_broker_bound(
+                    ledger, plan, pb, pin, rb, intent, sources)
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "staging")
+        self.assertEqual(self.core._load()["phase"], "staged")
+        with patch.object(self.adapter, "quiesce",
+                          side_effect=AssertionError("NO_NATIVE_QUIESCE")), \
+             patch.object(self.adapter, "restore",
+                          side_effect=AssertionError("NO_NATIVE_RESTORE")), \
+             patch.object(self.adapter, "resume_restored",
+                          side_effect=AssertionError("NO_NATIVE_RESTART")):
+            result = self.new_engine().recover_broker_bound(ledger, plan, pb, pin, rb)
+        self.assertEqual(result["version"], "1.5.6")
+        self.assertEqual(set(self.state().values()), {"1.5.6"})
+        self.assertEqual(self.adapter.snapshot(), before)
+        self.assertEqual(owner_data.read_bytes(), b"USER-OWNED-FOREVER")
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertEqual(ledger.inspect_fixture()["used_ids"], 1)
+        self.assertFalse(self.core.journal.exists())
+
+    def test_broker_staging_without_journal_is_safe_tombstone(self):
+        from unittest.mock import patch
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.base / "broker-empty-stage", self.platform)
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        baseline = self.adapter.snapshot()
+        with patch.object(self.core, "_begin_locked",
+                          side_effect=EngineError("CUT_AFTER_STAGE_MARKER")):
+            with self.assertRaisesRegex(EngineError, "CUT_AFTER_STAGE_MARKER"):
+                self.core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
+        self.assertFalse(self.core.journal.exists())
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "staging")
+        result = self.new_engine().recover_broker_bound(ledger, plan, pb, pin, rb)
+        self.assertEqual(result["outcome"], "aborted_synthetic")
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertEqual(ledger.inspect_fixture()["used_ids"], 1)
+        self.assertEqual(set(self.state().values()), {None})
+        self.assertEqual(self.adapter.snapshot(), baseline)
+
+    def test_broker_reserved_staged_journal_crash_is_code_only_recoverable(self):
+        from unittest.mock import patch
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.base / "broker-stage", self.platform)
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        baseline = self.adapter.snapshot()
+        owner_data = self.roots["user"] / "data" / "my-settings.json"
+        owner_data.parent.mkdir(parents=True)
+        owner_data.write_bytes(b"OWNER-SETTINGS-UNCHANGED")
+        with patch.object(ledger, "mark_applying_fixture",
+                          side_effect=EngineError("CUT_AFTER_DURABLE_STAGE")):
+            with self.assertRaisesRegex(EngineError, "CUT_AFTER_DURABLE_STAGE"):
+                self.core.execute_broker_bound(
+                    ledger, plan, pb, pin, rb, intent, sources)
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "staging")
+        self.assertEqual(self.core._load()["phase"], "staged")
+        self.assertTrue(self.core.code.path.exists())
+        self.assertEqual(self.adapter.snapshot(), baseline)
+        with patch.object(self.adapter, "quiesce",
+                          side_effect=AssertionError("NATIVE_QUIESCE_FORBIDDEN")), \
+             patch.object(self.adapter, "restore",
+                          side_effect=AssertionError("NATIVE_RESTORE_FORBIDDEN")), \
+             patch.object(self.adapter, "resume_restored",
+                          side_effect=AssertionError("NATIVE_RESTART_FORBIDDEN")):
+            result = self.new_engine().recover_broker_bound(
+                ledger, plan, pb, pin, rb)
+        self.assertEqual(result["status"],
+                         "UNIVERSAL_BROKER_RESERVED_STAGE_ABORTED_FIXTURE_ONLY")
+        self.assertFalse(result["native_product_rollback_accepted"])
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertEqual(ledger.inspect_fixture()["used_ids"], 1)
+        self.assertFalse(self.core.journal.exists())
+        self.assertFalse(self.core.code.path.exists())
+        self.assertEqual(self.adapter.snapshot(), baseline)
+        self.assertEqual(set(self.state().values()), {None})
+        self.assertEqual(owner_data.read_bytes(), b"OWNER-SETTINGS-UNCHANGED")
+        with self.assertRaisesRegex(EngineError, "REQUEST_ID_ALREADY_USED"):
+            self.core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
+
+    def test_broker_reserved_partial_prepare_journal_recovers_code_only(self):
+        from unittest.mock import patch
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.base / "broker-partial", self.platform)
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        prepare = self.core.code.prepare
+        baseline = self.adapter.snapshot()
+        with patch.object(self.core.code, "prepare",
+                          side_effect=lambda items: prepare(
+                              items, fault_after="protected")):
+            with self.assertRaisesRegex(EngineError, "INJECTED_AFTER_STAGE"):
+                self.core.execute_broker_bound(
+                    ledger, plan, pb, pin, rb, intent, sources)
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "staging")
+        self.assertEqual(self.core._load()["phase"], "preparing")
+        with patch.object(self.adapter, "quiesce",
+                          side_effect=AssertionError("NATIVE_QUIESCE_FORBIDDEN")), \
+             patch.object(self.adapter, "restore",
+                          side_effect=AssertionError("NATIVE_RESTORE_FORBIDDEN")):
+            result = self.new_engine().recover_broker_bound(
+                ledger, plan, pb, pin, rb)
+        self.assertIsNone(result["version"])
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertFalse(self.core.journal.exists())
+        self.assertFalse(self.core.code.path.exists())
+        self.assertEqual(set(self.state().values()), {None})
+        self.assertEqual(self.adapter.snapshot(), baseline)
+
+    def test_broker_reserved_stage_refuses_external_native_drift(self):
+        from unittest.mock import patch
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.base / "broker-drift", self.platform)
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        baseline = self.adapter.snapshot()
+        with patch.object(ledger, "mark_applying_fixture",
+                          side_effect=EngineError("CUT")):
+            with self.assertRaisesRegex(EngineError, "CUT"):
+                self.core.execute_broker_bound(
+                    ledger, plan, pb, pin, rb, intent, sources)
+        journal = self.core.journal.read_bytes()
+        self.adapter.write("1.5.6")
+        with self.assertRaisesRegex(EngineError, "RESERVED_NATIVE_PREIMAGE_DRIFT"):
+            self.new_engine().recover_broker_bound(ledger, plan, pb, pin, rb)
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "staging")
+        self.assertEqual(self.core.journal.read_bytes(), journal)
+        self.assertTrue(self.core.code.path.exists())
+        self.adapter.path.write_bytes(baseline)
+        self.new_engine().recover_broker_bound(ledger, plan, pb, pin, rb)
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
 
     def test_broker_reserved_before_apply_can_retire_without_native_mutation(self):
         from installer_engine.broker_replay import BrokerReplayFixtureLedger

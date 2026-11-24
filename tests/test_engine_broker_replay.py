@@ -85,6 +85,32 @@ class ReplayJournalFixtureTests(unittest.TestCase):
         result=self.close(other=fresh)
         self.assertFalse(result["native_installation_accepted"])
 
+    def test_corrupt_staging_uninstall_phase_refused(self):
+        self.reserve()
+        doc = json.loads(self.ledger.path.read_text())
+        doc["active"]["phase"] = "staging"
+        doc["active"]["operation"] = "uninstall"
+        self.ledger.path.write_text(json.dumps(doc), encoding="utf-8")
+        with self.assertRaisesRegex(EngineError, "STAGE_OPERATION_INVALID"):
+            self.ledger.inspect_fixture()
+
+    def test_staging_transition_is_exact_one_time_and_abortable(self):
+        self.reserve()
+        state = self.ledger.mark_staging_fixture(
+            self.rid, self.reqpin, self.pin)
+        self.assertEqual(state["phase"], "staging")
+        self.assertEqual(self.recover()["phase"], "staging")
+        with self.assertRaisesRegex(EngineError, "CODE_STAGE_NOT_RESERVED"):
+            self.ledger.mark_staging_fixture(
+                self.rid, self.reqpin, self.pin)
+        with self.assertRaisesRegex(EngineError, "BROKER_REPLAY_CLOSE_PHASE_DRIFT"):
+            self.ledger.close_fixture(
+                self.rid, self.reqpin, self.pin,
+                outcome="aborted_synthetic", expected_phase="reserved")
+        self.close("aborted_synthetic")
+        self.assertEqual(self.ledger.inspect_fixture()["used_ids"], 1)
+        self.assertIsNone(self.ledger.inspect_fixture()["active_phase"])
+
     def test_completed_id_tombstoned_forever_within_fixture_epoch(self):
         self.reserve()
         self.apply()

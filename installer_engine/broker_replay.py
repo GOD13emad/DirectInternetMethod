@@ -29,7 +29,7 @@ MAX_USED_REQUEST_IDS = 256
 _ID = re.compile(r"[a-f0-9]{32}\Z")
 _SHA = re.compile(r"[a-f0-9]{64}\Z")
 _TERMINAL_PHASES = frozenset(("completed_synthetic", "aborted_synthetic"))
-_PHASES = frozenset(("reserved", "applying")) | _TERMINAL_PHASES
+_PHASES = frozenset(("reserved", "staging", "applying")) | _TERMINAL_PHASES
 STATUS = "REPLAY_FIXTURE_STATE_ONLY_NO_OS_AUTHORIZATION"
 
 
@@ -71,6 +71,9 @@ def validate_replay_document(doc: object, platform: str) -> dict:
         require(type(active["version"]) is str,
                 "BROKER_REPLAY_VERSION_INVALID")
         version(active["version"])
+        require(active["phase"] != "staging" or
+                active["operation"] in ("install", "upgrade"),
+                "BROKER_REPLAY_STAGE_OPERATION_INVALID")
 
     return doc
 
@@ -175,6 +178,24 @@ class BrokerReplayFixtureLedger:
             return self._report("RECOVERY_REQUIRED_NOT_NEW_PRIVILEGED_WORK",
                                 request_id, active["phase"])
 
+    def mark_staging_fixture(self, request_id: str, request_sha256: str,
+                             policy_sha256: str) -> dict:
+        """Claim broker-owned CODE staging before any native operation.
+
+        Phase ownership distinguishes a fixture-dispatched stage from an
+        unrelated reserved ID with a matching journal. This is not OS trust.
+        """
+        with self.control.locked():
+            doc = self._load()
+            active = self._active_exact(
+                doc, request_id, request_sha256, policy_sha256)
+            require(active["phase"] == "reserved" and
+                    active["operation"] in ("install", "upgrade"),
+                    "BROKER_REPLAY_CODE_STAGE_NOT_RESERVED")
+            active["phase"] = "staging"
+            atomic_json(self.path, doc)
+            return self._report(STATUS, request_id, "staging")
+
     def mark_applying_fixture(self, request_id: str, request_sha256: str,
                               policy_sha256: str, *,
                               fault_after_save: bool = False) -> dict:
@@ -182,7 +203,7 @@ class BrokerReplayFixtureLedger:
             doc = self._load()
             active = self._active_exact(
                 doc, request_id, request_sha256, policy_sha256)
-            require(active["phase"] == "reserved",
+            require(active["phase"] in ("reserved", "staging"),
                     "BROKER_REPLAY_ALREADY_APPLYING_USE_RECOVER")
             active["phase"] = "applying"
             atomic_json(self.path, doc)
@@ -230,7 +251,7 @@ class BrokerReplayFixtureLedger:
                     "BROKER_REPLAY_CLOSE_PHASE_DRIFT")
             require(active["phase"] == "applying" or
                     active["phase"] == outcome or
-                    (active["phase"] == "reserved" and outcome == "aborted_synthetic"),
+                    (active["phase"] in ("reserved", "staging") and outcome == "aborted_synthetic"),
                     "BROKER_REPLAY_SYNTHETIC_COMPLETION_NOT_APPLYING")
             doc["active"] = None
             atomic_json(self.path, doc)

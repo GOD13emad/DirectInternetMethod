@@ -582,21 +582,60 @@ class UniversalFixtureInstaller:
             ledger.close_fixture(*identity, outcome="aborted_synthetic",
                                  expected_phase="reserved")
             raise
-        ledger.mark_applying_fixture(*identity)
         def terminal(outcome):
             ledger.mark_terminal_fixture(*identity, outcome=outcome)
-        # Never close or automatically retry on an exception. The journal
-        # and reservation must remain available to exact recovery.
+        # For install/upgrade, persist a broker-owned staging marker,
+        # then stage the durable journal and code BEFORE marking applying.
+        # A crash here leaves a recoverable staging marker, not ambiguous
+        # applying-without-journal. Uninstall quiesces during begin, so it
+        # must retain the pre-begin applying transition.
         if action == "uninstall":
+            ledger.mark_applying_fixture(*identity)
             self._begin_uninstall_locked(expected_intent=expected_intent)
             self._apply_uninstall_locked()
             result = self._finish_uninstall_locked(before_remove=terminal)
         else:
+            ledger.mark_staging_fixture(*identity)
             self._begin_locked(sources, expected_intent=expected_intent)
+            ledger.mark_applying_fixture(*identity)
             self._activate_locked()
             result = self._commit_locked(before_remove=terminal)
         ledger.close_fixture(*identity, outcome="completed_synthetic")
         return result
+
+    def _abort_reserved_stage_only_locked(self, doc: dict) -> dict:
+        """Retire a pre-native stage with CODE rollback only.
+
+        This phase cannot have touched native registration. Do not quiesce,
+        restore, resume or issue a native receipt; check the pinned preimage
+        on either side of code rollback. Any divergence remains fail-closed.
+        """
+        require(doc["phase"] in ("preparing", "staged") and
+                self._intent(doc)["operation"] != "uninstall",
+                "UNIVERSAL_BROKER_RESERVED_JOURNAL_PHASE_DRIFT")
+        baseline = base64.b64decode(doc["preimage_b64"].encode("ascii"))
+        require(self.adapter.snapshot() == baseline and
+                self.adapter.observed_version() == doc["old"],
+                "UNIVERSAL_BROKER_RESERVED_NATIVE_PREIMAGE_DRIFT")
+        require(not self.code.path.is_symlink() and
+                not self.uninstall.uninstall_path.exists() and
+                not self.uninstall.uninstall_path.is_symlink(),
+                "UNIVERSAL_BROKER_RESERVED_CODE_JOURNAL_DRIFT")
+        if self.code.path.exists():
+            inner = self.code._journal()
+            require(inner["phase"] in ("staging", "staged"),
+                    "UNIVERSAL_BROKER_RESERVED_CODE_NOT_STAGING")
+            # Only a proven staged-code state may use constant quiescence:
+            # never roll back active code while native service may be live.
+            self.code.abort(lambda: True)
+        require(self._consistent_old() == doc["old"] and
+                self.adapter.snapshot() == baseline and
+                self.adapter.observed_version() == doc["old"],
+                "UNIVERSAL_BROKER_RESERVED_RESTORE_DRIFT")
+        self._remove()
+        return {"status": "UNIVERSAL_BROKER_RESERVED_STAGE_ABORTED_FIXTURE_ONLY",
+                "version": doc["old"],
+                "native_product_rollback_accepted": False}
 
     @_serialized
     def recover_broker_bound(self, ledger, plan, policy_bytes: bytes,
@@ -623,15 +662,15 @@ class UniversalFixtureInstaller:
         phase = active["phase"]
         terminals = ("completed_synthetic", "aborted_synthetic")
         if not self.journal.exists():
-            require(phase in terminals or phase == "reserved",
+            require(phase in terminals or phase in ("reserved", "staging"),
                     "UNIVERSAL_BROKER_NO_JOURNAL_RECONCILE")
             self._no_active()
-            if phase == "reserved":
+            if phase in ("reserved", "staging"):
                 # The serialized dispatcher has not crossed mark_applying.
                 # Compare-and-close under the ledger lock, never invoke native
                 # callbacks and retain the request ID in replay history.
                 ledger.close_fixture(*identity, outcome="aborted_synthetic",
-                                     expected_phase="reserved")
+                                     expected_phase=phase)
                 return {"status": "UNIVERSAL_BROKER_RESERVED_ABORTED_FIXTURE_ONLY",
                         "outcome": "aborted_synthetic",
                         "native_product_installation_accepted": False}
@@ -643,6 +682,18 @@ class UniversalFixtureInstaller:
             plan, policy_bytes, policy_pin, request_bytes, self._intent(doc))
         forward = doc["phase"] in ("finalizing", "uninstall-finalizing")
         outcome = "completed_synthetic" if forward else "aborted_synthetic"
+        # A broker-staging install/upgrade may have a staged journal, but
+        # cannot have crossed the native-applying boundary. Roll
+        # back code under the same coordinator guard; then retire the
+        # reservation without fabricating a native terminal receipt.
+        if phase == "staging":
+            require(doc["phase"] in ("preparing", "staged") and
+                    self._intent(doc)["operation"] != "uninstall",
+                    "UNIVERSAL_BROKER_RESERVED_JOURNAL_PHASE_DRIFT")
+            result = self._abort_reserved_stage_only_locked(doc)
+            ledger.close_fixture(*identity, outcome="aborted_synthetic",
+                                 expected_phase="staging")
+            return result
         require(phase in ("applying", outcome),
                 "UNIVERSAL_BROKER_RECOVERY_PHASE_DRIFT")
         def terminal(observed):
