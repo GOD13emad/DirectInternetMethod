@@ -674,7 +674,7 @@ jobs:
           if [ "$GITHUB_REF" = refs/heads/feature/universal-install-engine ]; then
             test "$GITHUB_EVENT_NAME" = workflow_dispatch
             test "$R962_EXPECTED_SHA" = "$GITHUB_SHA"
-            printf '%s  %s\n' '346D99B8D0745C2F42D24EE835FC3C6A8646AE705E04C41640BDFC6BA196B4C5' 'tools/security/privileged_entry.py' | sha256sum --check --status
+            printf '%s  %s\n' '452D7BF28865A376B25EA7B87BDDCD73BA66A406BE1C90B6A45B7AD09F5ACBA4' 'tools/security/privileged_entry.py' | sha256sum --check --status
           else
           printf '%s  %s\n' 'D0181C15C54B90A3B6E03FBFBE32148341037AB60CF4D6788B6A72140304340F' 'tools/security/privileged_entry.py' | sha256sum --check --status
           fi
@@ -702,7 +702,7 @@ jobs:
           install -m 0644 delivery/DirectInternetMethod_1.5.7_Linux_x86_64.zip "$candidate/DirectInternetMethod_1.5.7_Linux_x86_64.zip"
           install -m 0644 docs/SECURITY_TRUSTED_ENTRY_R781.md "$candidate/BOOTSTRAP-ADMIN.md"
           cd "$candidate"
-          printf '%s  %s\n' '346D99B8D0745C2F42D24EE835FC3C6A8646AE705E04C41640BDFC6BA196B4C5' privileged_entry.py '298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD' DirectInternetMethod_1.5.7_Linux_x86_64.zip > SHA256SUMS.txt
+          printf '%s  %s\n' '452D7BF28865A376B25EA7B87BDDCD73BA66A406BE1C90B6A45B7AD09F5ACBA4' privileged_entry.py '298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD' DirectInternetMethod_1.5.7_Linux_x86_64.zip > SHA256SUMS.txt
           sha256sum --check SHA256SUMS.txt
           printf '%s\n' "$GITHUB_SHA" > SOURCE_COMMIT.txt
           echo "R965_CANDIDATE_DIR=$candidate" >> "$GITHUB_ENV"

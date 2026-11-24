@@ -5,7 +5,7 @@
 The exact private CI delivery comprises the frozen Linux ZIP, the separately reviewed bootstrap source, SHA256SUMS.txt and SOURCE_COMMIT.txt. Verify these against independently approved source and digests, not merely a checksum included with an untrusted download:
 
 - ZIP SHA256: 298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD
-- Bootstrap SHA256: 346D99B8D0745C2F42D24EE835FC3C6A8646AE705E04C41640BDFC6BA196B4C5
+- Bootstrap SHA256: 452D7BF28865A376B25EA7B87BDDCD73BA66A406BE1C90B6A45B7AD09F5ACBA4
 - Manifest SHA256 pinned inside bootstrap: B43D98BEA4403094969BC47A5C4C1A60CA5E27981101F55BC442F9F23BF736C7
 
 For a fresh administrator-approved host, the native provisioning recipe is: independently verify the exact reviewed source; confirm all destination ancestors are real root:root directories without group/world write access and the final entry does not exist (including dangling links); create a new dedicated root-owned directory and private 0700 staging directory on the same filesystem; use GNU install -o root -g root -m 0500 to copy into staging; verify staged bytes against the independent pin; fsync; publish with GNU ln -T without -f, which refuses an occupied destination; remove only the owned staging link; verify final root:root, regular type, 0500, one link and exact digest. Never execute a downloaded user-writable provisioning script as root. Existing or drifted anchors require separately approved migration, not overwrite. The subsequent product install remains the existing owner install.sh and legitimate native Polkit approval. No credential or authorization policy change. The R965 VM test exercises these native tools and the existing fresh lifecycle; its simulated PKEXEC_UID does not prove actual interactive Polkit consent.

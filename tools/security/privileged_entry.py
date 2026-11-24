@@ -260,7 +260,7 @@ def bootstrap_lock():
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as exc:
             raise AdmissionError("R781_REJECT_BOOTSTRAP_BUSY") from exc
-        yield
+        yield fd
     finally:
         os.close(fd)
 
@@ -273,12 +273,12 @@ def main():
     uid=int(os.environ["PKEXEC_UID"])
     require(0<uid<2**31 and pwd.getpwuid(uid).pw_uid==uid,
             "CALLING_ACCOUNT_IDENTITY")
-    with bootstrap_lock():
+    with bootstrap_lock() as lock_fd:
         if opts.action == "install":
             require_fresh_backend()
-        run_frozen_action(opts, uid)
+        run_frozen_action(opts, uid, lock_fd)
 
-def run_frozen_action(opts, uid):
+def run_frozen_action(opts, uid, lock_fd):
     temp=Path(tempfile.mkdtemp(prefix="dim-trusted-root-",dir="/run"))
     try:
         require(temp.stat().st_uid==0 and
@@ -291,8 +291,12 @@ def run_frozen_action(opts, uid):
                 "ROOT_FROZEN_SCRIPT")
         safe_env={"PATH":"/usr/sbin:/usr/bin:/sbin:/bin","HOME":"/root",
                   "LANG":"C","PYTHONDONTWRITEBYTECODE":"1"}
+        # The kernel lock follows the open file description across exec.
+        # If the bootstrap dies while the native script survives, that
+        # script must retain the lock until its own descriptors close.
         done=subprocess.run(["/bin/bash",str(script),str(source),str(uid)],
-                            cwd="/",env=safe_env,check=False,timeout=900)
+                            cwd="/",env=safe_env,check=False,timeout=900,
+                            pass_fds=(lock_fd,))
         raise SystemExit(done.returncode)
     finally:
         # The independent Root watchdog owns its persistent rollback copy.

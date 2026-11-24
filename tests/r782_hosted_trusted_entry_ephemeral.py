@@ -55,7 +55,7 @@ def guard():
     # its own independently checked frozen package and bootstrap digest.
     global PIN_ENTRY, PIN_ZIP, PKG, ARCHIVE
     if reviewed:
-        PIN_ENTRY = "346D99B8D0745C2F42D24EE835FC3C6A8646AE705E04C41640BDFC6BA196B4C5"
+        PIN_ENTRY = "452D7BF28865A376B25EA7B87BDDCD73BA66A406BE1C90B6A45B7AD09F5ACBA4"
         PIN_ZIP = "298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD"
         PKG = "DirectInternetMethod_1.5.7_Linux_x86_64"
         ARCHIVE = BASE / "delivery" / (PKG + ".zip")
@@ -286,6 +286,29 @@ def reviewed_fresh_lifecycle(package: Path, uid: int, helper):
                  "R964_CONCURRENT_BOOTSTRAP_NOT_REJECTED")
         print("R964_REAL_BOOTSTRAP_FOREIGN_REGISTRATION_PRESERVED")
         print("R964_REAL_BOOTSTRAP_CONCURRENT_REQUEST_REJECTED")
+        # R966: close the parent's descriptor while a harmless native
+        # child holds the inherited open file description. This reproduces
+        # the lock-lifetime boundary without killing an actual installer.
+        child = None
+        try:
+            with helper.bootstrap_lock() as lock_fd:
+                child = subprocess.Popen(["/bin/sleep", "30"],
+                                         pass_fds=(lock_fd,), cwd="/", env=env)
+            need(child.poll() is None, "R966_NATIVE_CHILD_NOT_ALIVE")
+            busy = subprocess.run(
+                ["/usr/bin/python3", "-I", str(ENTRY), "--action", "install",
+                 "--source", str(package)], cwd="/", env=env,
+                capture_output=True, text=True, timeout=15)
+            need(busy.returncode == 86 and
+                 "R781_REJECT_BOOTSTRAP_BUSY" in busy.stderr and not root.exists(),
+                 "R966_CHILD_HELD_LOCK_NOT_ENFORCED")
+        finally:
+            if child is not None:
+                child.terminate()
+                child.wait(timeout=10)
+        with helper.bootstrap_lock():
+            pass
+        print("R966_NATIVE_CHILD_LOCK_SURVIVES_PARENT_DESCRIPTOR_CLOSE")
         # Same protected executable, same frozen package, simulated authorization
         # identity ONLY in this VM. The production install_system.sh is unmodified.
         output = checked(["/usr/bin/python3", "-I", str(ENTRY), "--action", "install",
