@@ -146,6 +146,13 @@ class RealInnoVmAdapter:
                  failed_setup_sha: str, recovery_observation: dict | None = None):
         self.qa = qa
         self.old_setup = qa / "DirectInternetMethod_1.5.4_Windows_Setup.exe"
+        if os.environ.get("R992_PROTECTED_RECOVERY_MEDIA") == "true":
+            require(not self.old_setup.exists() and not self.old_setup.is_symlink(),
+                    "R992_DUPLICATE_UNPROTECTED_PRIOR_MEDIA")
+            self.old_setup = (Path(os.environ["ProgramFiles"]) /
+                              "DirectInternetMethod" / "Privileged" /
+                              "UpdateTransactions" /
+                              "DirectInternetMethod-recovery-1.5.4.exe")
         self.failed_setup = qa / "R980_FAILED_PRODUCT_SETUP.exe"
         self.gui = Path(os.environ["LOCALAPPDATA"]) / "Programs" / "DirectInternetMethod" / "app" / "DirectInternetMethod.exe"
         self.service = Path(os.environ["ProgramFiles"]) / "DirectInternetMethod" / "Privileged" / "app" / "DirectInternetMethod.Service.exe"
@@ -495,6 +502,11 @@ def main() -> int:
             "R982_NATIVE_CANDIDATE_PINS_DRIFT")
     crash_mode = os.environ.get("R983_CRASH_RECOVERY", "false")
     require(crash_mode in ("true", "false"), "R983_CRASH_MODE_INVALID")
+    media_mode = os.environ.get("R992_PROTECTED_RECOVERY_MEDIA", "false")
+    require(media_mode in ("true", "false", ""), "R992_MEDIA_MODE_INVALID")
+    require(media_mode != "true" or
+            (crash_mode == "true" and os.environ.get("R984_NATIVE_PREIMAGE") == "true"),
+            "R992_REQUIRES_REVIEWED_R983_R984_NATIVE_MODE")
     if len(sys.argv) != 1:
         require(crash_mode == "true", "R983_CHILD_MODE_DENIED")
         if len(sys.argv) == 3 and sys.argv[1] == "--r983-child":
@@ -574,6 +586,7 @@ def main() -> int:
             "real_product_failed_setup_exit": after_failure["installer_exit_code"],
             "after_failure": after_failure,
             "old_restore_setup_sha256": OLD_SETUP_SHA,
+            "r992_protected_recovery_media": media_mode == "true",
             "old_restored_version": _version(),
             "old_restored_gui_sha256": _sha(adapter.gui),
             "old_restored_service_sha256": _sha(adapter.service),

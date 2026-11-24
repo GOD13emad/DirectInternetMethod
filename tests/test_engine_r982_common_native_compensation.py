@@ -151,6 +151,20 @@ class R982CommonBrokerNativeScope(unittest.TestCase):
         self.assertIn("native_broker_native_preimage:", workflow)
         self.assertIn("R984_NATIVE_PREIMAGE:", workflow)
 
+    def test_r992_recovery_media_uses_actual_protected_store(self):
+        ps = R980.read_text("utf-8-sig")
+        vm = VM.read_text("utf-8")
+        workflow = CI.read_text("utf-8")
+        for marker in ("R992_PROTECTED_RECOVERY_MEDIA", "PrepareProtectedTransactionDirectory",
+                       "NativeProtectedUpdateAcl.cs", "Get-R992MediaAcl",
+                       "R992_PROTECTED_PRIOR_MEDIA_PIN", "R992_PROTECTED_PRIOR_MEDIA_UNCHANGED",
+                       "R992_PROTECTED_MEDIA_SOURCE_RETIRED"):
+            self.assertIn(marker, ps)
+        self.assertIn('DirectInternetMethod-recovery-1.5.4.exe', vm)
+        self.assertIn("R992_PROTECTED_RECOVERY_MEDIA", vm)
+        self.assertIn("native_broker_protected_recovery_media:", workflow)
+        self.assertIn("R992_PROTECTED_RECOVERY_MEDIA:", workflow)
+
     def test_explicit_hosted_exact_source_dispatch_only(self):
         s=CI.read_text("utf-8")
         self.assertIn("native_broker_recovery_candidate_sha:",s)

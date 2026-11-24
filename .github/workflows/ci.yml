@@ -33,6 +33,11 @@ on:
         required: false
         type: boolean
         default: false
+      native_broker_protected_recovery_media:
+        description: 'R992: use exact protected prior installer in real recovery VM (requires crash and metadata modes)'
+        required: false
+        type: boolean
+        default: false
       linux_guard_partial_candidate_sha:
         description: 'Exact reviewed feature SHA: real production Linux guard timer after partial protected update (VM only)'
         required: false
@@ -846,6 +851,7 @@ jobs:
       R982_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
       R983_CRASH_RECOVERY: ${{ inputs.native_broker_crash_recovery }}
       R984_NATIVE_PREIMAGE: ${{ inputs.native_broker_native_preimage }}
+      R992_PROTECTED_RECOVERY_MEDIA: ${{ inputs.native_broker_protected_recovery_media }}
     permissions:
       contents: read
       actions: read

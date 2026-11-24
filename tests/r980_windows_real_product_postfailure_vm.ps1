@@ -31,6 +31,10 @@ $r984Mode=($env:R984_NATIVE_PREIMAGE -ceq 'true')
 if($r984Mode -and (!$CommonBrokerRecovery -or $env:R983_CRASH_RECOVERY -cne 'true')){
  throw 'R984_REQUIRES_REVIEWED_R983_NATIVE_CRASH_MODE'
 }
+$r992Mode=($env:R992_PROTECTED_RECOVERY_MEDIA -ceq 'true')
+if($r992Mode -and (!$r984Mode -or !$CommonBrokerRecovery -or $env:R983_CRASH_RECOVERY -cne 'true')){
+ throw 'R992_REQUIRES_REVIEWED_R983_R984_NATIVE_MODE'
+}
 $Root=$env:GITHUB_WORKSPACE
 $Sha=$env:GITHUB_SHA
 $BuildDir=Join-Path $env:RUNNER_TEMP 'DIM_R846_NATIVE'
@@ -119,6 +123,84 @@ function Get-R984HeldMediaSha([IO.FileStream]$stream) {
  try { return [Convert]::ToHexString($hasher.ComputeHash($stream)) }
  finally { $hasher.Dispose();$stream.Position=0 }
 }
+# QA only: exercise the unmodified production protected store policy.
+# Do not add ACEs or relax ACLs to make the check pass.
+function Get-R992MediaAcl([string]$Path) {
+ $item=Get-Item -LiteralPath $Path -ErrorAction Stop
+ if(($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0){throw 'R992_REPARSE_DENIED'}
+ $acl=Get-Acl -LiteralPath $Path -ErrorAction Stop
+ $trusted=@('S-1-5-18','S-1-5-32-544','S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')
+ $owner=$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value
+ if($owner -cnotin $trusted){throw 'R992_UNTRUSTED_OWNER'}
+ $rights=[Security.AccessControl.FileSystemRights]
+ $danger=($rights::WriteData -bor $rights::AppendData -bor $rights::WriteExtendedAttributes -bor
+          $rights::WriteAttributes -bor $rights::DeleteSubdirectoriesAndFiles -bor $rights::Delete -bor
+          $rights::ChangePermissions -bor $rights::TakeOwnership)
+ foreach($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){
+  if($rule.AccessControlType -eq 'Allow' -and ($rule.FileSystemRights -band $danger) -ne 0 -and
+     $rule.IdentityReference.Value -cnotin $trusted){throw 'R992_UNTRUSTED_WRITE_ACE'}
+ }
+ return [ordered]@{owner=$owner;sddl=$acl.Sddl}
+}
+function Initialize-R992ProtectedMedia {
+ $transactions=Join-Path $Priv 'UpdateTransactions'
+ $media=Join-Path $transactions 'DirectInternetMethod-recovery-1.5.4.exe'
+ Need (!(Test-Path -LiteralPath $transactions) -and !(Test-Path -LiteralPath $media)) 'R992_FRESH_PROTECTED_SLOT'
+ # Compile only the exact already-reviewed ACL policy into a disposable QA
+ # probe, so the production store selection is not reimplemented here.
+ $probe=Join-Path $QaDir 'R992AclProbe'
+ Need (!(Test-Path -LiteralPath $probe)) 'R992_FRESH_POLICY_PROBE'
+ [void](New-Item -ItemType Directory -Path $probe)
+ $helper=Join-Path $Root 'windows\service\NativeProtectedUpdateAcl.cs'
+ $project=Join-Path $probe 'AclProbe.csproj'
+ $source=Join-Path $probe 'Program.cs'
+ $escaped=[Security.SecurityElement]::Escape($helper)
+ $xml='<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0-windows</TargetFramework><Nullable>enable</Nullable></PropertyGroup><ItemGroup><Compile Include="'+$escaped+'" Link="NativeProtectedUpdateAcl.cs" /></ItemGroup></Project>'
+ [IO.File]::WriteAllText($project,$xml,[Text.UTF8Encoding]::new($false))
+ $code=@'
+using System;
+using System.IO;
+using DirectInternetMethod.Service;
+internal static class Probe
+{
+    public static int Main(string[] args)
+    {
+        if (!OperatingSystem.IsWindows() || args.Length != 1) return 90;
+        var p = NativeProtectedUpdateAcl.PrepareProtectedTransactionDirectory(args[0]);
+        Console.WriteLine(p);
+        return 0;
+    }
+}
+'@
+ [IO.File]::WriteAllText($source,$code,[Text.UTF8Encoding]::new($false))
+ & dotnet build $project --configuration Release --nologo --verbosity quiet -p:NuGetAudit=false | Out-Host
+ Need ($LASTEXITCODE -eq 0) 'R992_PRODUCTION_ACL_POLICY_COMPILED'
+ $dll=Join-Path $probe 'bin\Release\net10.0-windows\AclProbe.dll'
+ $result=& dotnet $dll (Join-Path $Priv 'app')
+ Need ($LASTEXITCODE -eq 0 -and ([string]$result).Trim() -ceq $transactions) 'R992_ACTUAL_PRODUCTION_STORE_SELECTED'
+ $directoryAcl=Get-R992MediaAcl $transactions
+ $free=[IO.DriveInfo]::new([IO.Path]::GetPathRoot($transactions)).AvailableFreeSpace
+ Need ($free -ge 220000000) 'R992_BOUNDED_STORAGE_AVAILABLE'
+ # Exclusive destination creation inherits the already-verified directory ACL.
+ # Retire ONLY the download owned by this fixture, after verifying the copy.
+ $input=$null;$output=$null
+ try{
+  $input=[IO.File]::Open($Old,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  Need ($input.Length -eq 154270907 -and (Get-R984HeldMediaSha $input) -ceq $OldSetupSha) 'R992_SOURCE_PIN_BEFORE_COPY'
+  $output=[IO.File]::Open($media,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+  $input.CopyTo($output)
+  $output.Flush($true)
+ }finally{
+  if($null -ne $output){$output.Dispose()}
+  if($null -ne $input){$input.Dispose()}
+ }
+ $fileAcl=Get-R992MediaAcl $media
+ Need ((Get-Item -LiteralPath $media).Length -eq 154270907 -and
+       (ShaFile $media) -ceq $OldSetupSha -and (ShaFile $Old) -ceq $OldSetupSha) 'R992_PROTECTED_PRIOR_MEDIA_PIN'
+ Remove-Item -LiteralPath $Old -Force
+ Need (!(Test-Path -LiteralPath $Old)) 'R992_PROTECTED_MEDIA_SOURCE_RETIRED'
+ return [ordered]@{path=$media;directoryAcl=$directoryAcl;fileAcl=$fileAcl}
+}
 function Network {
  return [ordered]@{
   dns=(@(Get-DnsClientServerAddress -AddressFamily IPv4 |
@@ -161,6 +243,7 @@ $LF=[string][char]10
 $normalized=$original.Replace(([string][char]13+$LF),$LF)
 $script:modified=$normalized
 $heldOldSetup=$null
+$r992Record=$null
 function ReplaceOnce([string]$old,[string]$new) {
  $count=[regex]::Matches($script:modified,[regex]::Escape($old)).Count
  if($count -ne 1){throw ('R980_ISS_SOURCE_ANCHOR_'+$count)}
@@ -199,6 +282,12 @@ try {
  [IO.File]::WriteAllText($UserEvidence,'R980_UNKNOWN_USER_EVIDENCE_KEEP')
  $ownerHash=ShaFile $OwnerFile
  $evidenceHash=ShaFile $UserEvidence
+ if($r992Mode){
+  $r992Record=Initialize-R992ProtectedMedia
+  $Old=$r992Record.path
+  $observed['r992Scope']='ACTUAL_PRODUCTION_STORE_POLICY_VM_ONLY'
+  $observed['r992Before']=$r992Record
+ }
  if($r984Mode){
   $observed['r984Scope']='R984_NATIVE_METADATA_OBSERVED_NOT_FULL_PREIMAGE'
   $observed['r984Before']=Get-R984NativePreimage
@@ -298,6 +387,16 @@ try {
   Need ((Get-R984HeldMediaSha $heldOldSetup) -ceq $OldSetupSha -and (ShaFile $Old) -ceq $OldSetupSha) 'R984_HELD_OLD_SETUP_SHA_UNCHANGED'
   $observed['r984HeldMediaThroughRecovery']=$true
  }
+ if($r992Mode){
+  $afterDir=Get-R992MediaAcl (Split-Path -Parent $Old)
+  $afterFile=Get-R992MediaAcl $Old
+  Need ($afterDir.sddl -ceq $r992Record.directoryAcl.sddl -and
+        $afterFile.sddl -ceq $r992Record.fileAcl.sddl -and
+        (ShaFile $Old) -ceq $OldSetupSha -and
+        $result.r992_protected_recovery_media -eq $true) 'R992_PROTECTED_PRIOR_MEDIA_UNCHANGED'
+  $observed['r992ProtectedMediaRecovered']=$true
+  $observed['r992After']=[ordered]@{directoryAcl=$afterDir;fileAcl=$afterFile}
+ }
  $afterNetwork=Network
  $observed['networkAfter']=$afterNetwork
  Need ($afterNetwork.dns -ceq $netBefore.dns -and
@@ -313,6 +412,20 @@ try {
  $observed.status='FAIL_CLOSED_REAL_POSTINSTALL_EXPERIMENT'
 } finally {
  if($null -ne $heldOldSetup){$heldOldSetup.Dispose()}
+ # Preserve failed evidence; retire only the exact known media in this
+ # disposable VM after all scoped acceptance controls succeeded.
+ if($r992Mode -and $observed.status -ceq 'PASS_R982_REAL_PRODUCT_NATIVE_COMPENSATION_VM_ONLY'){
+  try{
+   if((ShaFile $Old) -cne $OldSetupSha){throw 'R992_RETIRE_SHA_DRIFT'}
+   Remove-Item -LiteralPath $Old -Force
+   $dir=Split-Path -Parent $Old
+   if(@(Get-ChildItem -LiteralPath $dir -Force).Count -eq 0){[IO.Directory]::Delete($dir)}
+   Need (!(Test-Path -LiteralPath $Old)) 'R992_OWNED_PRIOR_MEDIA_RETIRED'
+  }catch{
+   $observed.errors=@($observed.errors)+@($_.Exception.Message)
+   $observed.status='FAIL_CLOSED_REAL_POSTINSTALL_EXPERIMENT'
+  }
+ }
  $observed.checks=$steps.ToArray()
  $observed|ConvertTo-Json -Depth 9 |Set-Content -LiteralPath $Report -Encoding utf8
  if(Test-Path -LiteralPath $QaScript -PathType Leaf) {
