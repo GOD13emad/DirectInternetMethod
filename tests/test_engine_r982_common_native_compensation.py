@@ -93,6 +93,21 @@ class R982CommonBrokerNativeScope(unittest.TestCase):
                     vm._validate_crash_observation(
                         dict(observation, **{key: wrong}), identity, cfg)
 
+    def test_r984_opt_in_native_metadata_and_held_media_gate(self):
+        source=R980.read_text("utf-8-sig")
+        workflow=CI.read_text("utf-8")
+        for marker in ("R984_NATIVE_PREIMAGE", "Get-R984NativePreimage",
+                       "Compare-R984NativePreimage", "Win32_Service",
+                       "Get-Acl -LiteralPath", "sdshow",
+                       "[IO.FileShare]::Read",
+                       "R984_HELD_OLD_SETUP_WRITE_DENIED",
+                       "R984_HELD_OLD_SETUP_SHA_UNCHANGED",
+                       "R984_SELECTED_NATIVE_PREIMAGE_EQUAL",
+                       "R984_NATIVE_METADATA_OBSERVED_NOT_FULL_PREIMAGE"):
+            self.assertIn(marker, source)
+        self.assertIn("native_broker_native_preimage:", workflow)
+        self.assertIn("R984_NATIVE_PREIMAGE:", workflow)
+
     def test_explicit_hosted_exact_source_dispatch_only(self):
         s=CI.read_text("utf-8")
         self.assertIn("native_broker_recovery_candidate_sha:",s)

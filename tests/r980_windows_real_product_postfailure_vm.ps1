@@ -27,6 +27,10 @@ if((git -C $env:GITHUB_WORKSPACE rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){
 if($CommonBrokerRecovery -and $env:R982_EXPECTED_SHA -cne $env:GITHUB_SHA){
  throw 'R982_DISPOSABLE_REVIEWED_VM_ONLY'
 }
+$r984Mode=($env:R984_NATIVE_PREIMAGE -ceq 'true')
+if($r984Mode -and (!$CommonBrokerRecovery -or $env:R983_CRASH_RECOVERY -cne 'true')){
+ throw 'R984_REQUIRES_REVIEWED_R983_NATIVE_CRASH_MODE'
+}
 $Root=$env:GITHUB_WORKSPACE
 $Sha=$env:GITHUB_SHA
 $BuildDir=Join-Path $env:RUNNER_TEMP 'DIM_R846_NATIVE'
@@ -71,6 +75,50 @@ function Setup([string]$p) {
   '/NORESTARTAPPLICATIONS','/CLOSEAPPLICATIONS','/SP-') -Wait -PassThru -NoNewWindow
  return [int]$process.ExitCode
 }
+# Observe stable, selected native metadata. No ACL/registry writes or repair
+# are performed here. This is a VM acceptance comparison, not a full backup.
+function Get-R984NativePreimage {
+ $svc=Get-CimInstance -ClassName Win32_Service -Filter "Name='DirectInternetMethodSvc'"
+ if($null -eq $svc){throw 'R984_NATIVE_SCM_MISSING'}
+ $sd=@(& sc.exe sdshow DirectInternetMethodSvc)
+ if($LASTEXITCODE -ne 0){throw 'R984_NATIVE_SCM_SDDL_UNAVAILABLE'}
+ $sddl=@($sd|ForEach-Object{$_.Trim()}|Where-Object{$_ -match '^[OGDS]:'})
+ if($sddl.Count -ne 1){throw 'R984_NATIVE_SCM_SDDL_INVALID'}
+ $key=Get-Item -LiteralPath $Reg -ErrorAction Stop
+ $regValues=[ordered]@{}
+ foreach($name in @('DisplayName','DisplayVersion','InstallLocation','UninstallString','QuietUninstallString','Publisher','DisplayIcon','NoModify','NoRepair')){
+  if($key.GetValueNames() -ccontains $name){
+   $regValues[$name]=[ordered]@{kind=[string]$key.GetValueKind($name);value=$key.GetValue($name,$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)}
+  }else{$regValues[$name]=$null}
+ }
+ $acl=[ordered]@{}
+ $paths=[ordered]@{app=$App;privileged=$Priv;gui=$Gui;service=$ServiceExe;uninstallKey=$Reg;serviceKey='HKLM:\SYSTEM\CurrentControlSet\Services\DirectInternetMethodSvc'}
+ foreach($name in $paths.Keys){
+  $entry=Get-Acl -LiteralPath $paths[$name] -ErrorAction Stop
+  if([string]::IsNullOrWhiteSpace($entry.Sddl)){throw ('R984_NATIVE_ACL_UNAVAILABLE_'+$name)}
+  $acl[$name]=[string]$entry.Sddl
+ }
+ $deps=@((Get-Service -Name DirectInternetMethodSvc -ErrorAction Stop).RequiredServices|ForEach-Object{$_.Name}|Sort-Object)
+ return [ordered]@{
+  scm=[ordered]@{name=[string]$svc.Name;displayName=[string]$svc.DisplayName;pathName=[string]$svc.PathName;startMode=[string]$svc.StartMode;startName=[string]$svc.StartName;serviceType=[string]$svc.ServiceType;errorControl=[string]$svc.ErrorControl;dependencies=$deps;sddl=$sddl[0]}
+  registry=$regValues;acl=$acl
+ }
+}
+function Compare-R984NativePreimage($before,$after) {
+ $different=@()
+ foreach($section in @('scm','registry','acl')){
+  if(($before[$section]|ConvertTo-Json -Compress -Depth 8) -cne ($after[$section]|ConvertTo-Json -Compress -Depth 8)){
+   $different += $section
+  }
+ }
+ return $different
+}
+function Get-R984HeldMediaSha([IO.FileStream]$stream) {
+ $stream.Position=0
+ $hasher=[Security.Cryptography.SHA256]::Create()
+ try { return [Convert]::ToHexString($hasher.ComputeHash($stream)) }
+ finally { $hasher.Dispose();$stream.Position=0 }
+}
 function Network {
  return [ordered]@{
   dns=(@(Get-DnsClientServerAddress -AddressFamily IPv4 |
@@ -112,6 +160,7 @@ $originalHash=ShaFile $ScriptSource
 $LF=[string][char]10
 $normalized=$original.Replace(([string][char]13+$LF),$LF)
 $script:modified=$normalized
+$heldOldSetup=$null
 function ReplaceOnce([string]$old,[string]$new) {
  $count=[regex]::Matches($script:modified,[regex]::Escape($old)).Count
  if($count -ne 1){throw ('R980_ISS_SOURCE_ANCHOR_'+$count)}
@@ -150,6 +199,23 @@ try {
  [IO.File]::WriteAllText($UserEvidence,'R980_UNKNOWN_USER_EVIDENCE_KEEP')
  $ownerHash=ShaFile $OwnerFile
  $evidenceHash=ShaFile $UserEvidence
+ if($r984Mode){
+  $observed['r984Scope']='R984_NATIVE_METADATA_OBSERVED_NOT_FULL_PREIMAGE'
+  $observed['r984Before']=Get-R984NativePreimage
+  Need (((Get-Item -LiteralPath $Old).Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) 'R984_OLD_SETUP_NOT_REPARSE'
+  # Hold the exact prior asset across the existing broker's native child exit
+  # and rollback; no extra copy and no ordinary write/delete sharing.
+  $heldOldSetup=[IO.File]::Open($Old,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  Need ($heldOldSetup.Length -eq 154270907 -and (Get-R984HeldMediaSha $heldOldSetup) -ceq $OldSetupSha) 'R984_HELD_OLD_SETUP_SHA_PIN'
+  $writeDenied=$false
+  try{
+   $unexpected=[IO.File]::Open($Old,[IO.FileMode]::Open,[IO.FileAccess]::Write,([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
+   $unexpected.Dispose()
+  }catch [IO.IOException]{
+   $writeDenied=(($_.Exception.HResult -band 0xffff) -eq 32)
+  }
+  Need $writeDenied 'R984_HELD_OLD_SETUP_WRITE_DENIED'
+ }
 
  if(-not $CommonBrokerRecovery){
  $exitCode=Setup $QaInstaller
@@ -217,6 +283,13 @@ try {
   $observed['r982CommonBrokerVm']=$result
   $observed['vmFixtureAutomaticCompensationObserved']=$true
  }
+ if($r984Mode){
+  $observed['r984After']=Get-R984NativePreimage
+  $observed['r984MetadataDifferences']=@(Compare-R984NativePreimage $observed.r984Before $observed.r984After)
+  Need ($observed.r984MetadataDifferences.Count -eq 0) 'R984_SELECTED_NATIVE_PREIMAGE_EQUAL'
+  Need ((Get-R984HeldMediaSha $heldOldSetup) -ceq $OldSetupSha -and (ShaFile $Old) -ceq $OldSetupSha) 'R984_HELD_OLD_SETUP_SHA_UNCHANGED'
+  $observed['r984HeldMediaThroughRecovery']=$true
+ }
  $afterNetwork=Network
  $observed['networkAfter']=$afterNetwork
  Need ($afterNetwork.dns -ceq $netBefore.dns -and
@@ -231,6 +304,7 @@ try {
  $observed.errors=@($observed.errors)+@($_.Exception.Message)
  $observed.status='FAIL_CLOSED_REAL_POSTINSTALL_EXPERIMENT'
 } finally {
+ if($null -ne $heldOldSetup){$heldOldSetup.Dispose()}
  $observed.checks=$steps.ToArray()
  $observed|ConvertTo-Json -Depth 9 |Set-Content -LiteralPath $Report -Encoding utf8
  if(Test-Path -LiteralPath $QaScript -PathType Leaf) {

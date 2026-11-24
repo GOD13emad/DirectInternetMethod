@@ -28,6 +28,11 @@ on:
         required: false
         type: boolean
         default: false
+      native_broker_native_preimage:
+        description: 'R984: compare selected native SCM/registry/ACL metadata and hold exact old media during crash recovery (VM only)'
+        required: false
+        type: boolean
+        default: false
       linux_bootstrap_candidate_sha:
         description: 'Exact reviewed feature HEAD for isolated Linux bootstrap and lifecycle QA (no release)'
         required: false
@@ -835,6 +840,7 @@ jobs:
       R980_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
       R982_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
       R983_CRASH_RECOVERY: ${{ inputs.native_broker_crash_recovery }}
+      R984_NATIVE_PREIMAGE: ${{ inputs.native_broker_native_preimage }}
     permissions:
       contents: read
       actions: read
