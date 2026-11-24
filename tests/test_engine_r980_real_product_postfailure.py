@@ -51,6 +51,19 @@ class RealProductPostfailureSafety(unittest.TestCase):
         self.assertIn("    InstallOrUpdateService();", original)
         self.assertNotIn("R980_FAILED_PRODUCT_SETUP", original)
 
+    def test_stable_gui_and_service_pins_are_exactly_r846_accepted(self):
+        from re import search
+        accepted = (ROOT / "tests/r846_windows_native_rollback.ps1").read_text(
+            encoding="utf-8-sig")
+        probe = PROBE.read_text(encoding="utf-8-sig")
+        for old_key, probe_key in (("PublicSha", "OldSetupSha"),
+                                   ("PublicGui", "OldGuiSha"),
+                                   ("PublicSvc", "OldSvcSha")):
+            def pin(raw, key):
+                match = search(r"(?m)^\$" + key + r"='([A-F0-9]{64})'$", raw)
+                self.assertIsNotNone(match, f"{key} SHA-256 length and syntax")
+                return match.group(1)
+            self.assertEqual(pin(accepted, old_key), pin(probe, probe_key))
     def test_reviewed_workflow_isolated_and_no_unprompted_release(self):
         flow = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("native_failure_candidate_sha:", flow)
