@@ -193,6 +193,28 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'R937_NATIVE_SCM_SOURCE_COMPILE_FAILED' }
           $binary = 'tools/native_fixtures/windows/bin/Release/net10.0-windows/R937NativeScmReceiptFixture.exe'
           if (-not (Test-Path -LiteralPath $binary)) { throw 'R937_NATIVE_SCM_BUILT_EXE_MISSING' }
+          # Test the ACTUAL compiled existing SCM fixture's full native
+          # ID64/replay identity; never start or install a service.
+          $validator = 'tools/native_fixtures/windows/bin/Release/net10.0-windows/R937NativeScmReceiptFixture.dll'
+          if (-not (Test-Path -LiteralPath $validator)) { throw 'R974_NATIVE_DLL_NOT_BUILT' }
+          $good = @(('0' * 32), ('0123456789abcdef' * 4))
+          foreach ($id in $good) {
+            $observed = dotnet $validator --validate-id $id
+            if ($LASTEXITCODE -ne 0 -or $observed -cne 'R974_NATIVE_ID_FORMAT_PASS_NO_AUTHORITY') {
+              throw 'R974_NATIVE_VALID_ID_DENIED'
+            }
+          }
+          $bad = @(('0' * 31), ('0' * 33), ('0' * 63), ('0' * 65),
+                   (('0123456789abcdef' * 4).ToUpperInvariant()),
+                   ('0x' + ('0' * 62)), (('0' * 32) + '-' + ('0' * 32)),
+                   (('0' * 64) + ' '))
+          foreach ($id in $bad) {
+            $observed = dotnet $validator --validate-id $id
+            if ($LASTEXITCODE -ne 3 -or $observed -cne 'R974_NATIVE_ID_FORMAT_REJECTED') {
+              throw 'R974_NATIVE_INVALID_ID_ACCEPTED'
+            }
+          }
+          Write-Host 'R974_COMPILED_WINDOWS_SCM_ID32_ID64_REPLAY_PARITY_PASS_FIXTURE_ONLY'
           $tokens = $null
           $errors = $null
           [System.Management.Automation.Language.Parser]::ParseFile('tools/native_fixtures/windows/RunR937ScmReceiptSandboxFixture.ps1', [ref]$tokens, [ref]$errors) | Out-Null
