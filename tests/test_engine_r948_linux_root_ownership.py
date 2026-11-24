@@ -274,5 +274,115 @@ class LinuxRootOwnedTwoScopeProductFixture(unittest.TestCase):
         print("R948_EPHEMERAL_ROOT_USER_ACTUAL_21_FILES_PASS_FIXTURE_ONLY")
 
 
+    def test_broker_bound_actual_linux_bytes_root_ledger_and_owner_postflight(self):
+        """R961: existing root CI, actual code, synthetic native adapter only."""
+        import hashlib
+        from unittest.mock import patch
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        from installer_engine.broker_trust_observe import observe_linux_policy_replay_snapshot
+        from installer_engine.engine import hash_bytes
+        from installer_engine.native_receipt import intent_sha256
+
+        self.assert_r949_native_systemd_process()
+        sources = self.fx._build("1.5.7")
+        # Reuse exact source manifests; no caller-provided code/root paths.
+        manifests = tuple((name, json.loads((directory / "manifest.json").read_bytes()))
+                          for name, (directory, _) in sorted(sources.items()))
+        plan = NativePlan(PRODUCT, "1.5.7", "linux-x86_64",
+                          "PINNED_CODE_LAYOUT_REQUIRES_TRUSTED_NATIVE_ADAPTER", manifests)
+        pins = [{"name": name, "manifest_sha256": pin}
+                for name, (_, pin) in sorted(sources.items())]
+        intent = {"schema": 1, "request_id": "96" * 16,
+                  "platform": plan.platform, "operation": "install",
+                  "old": None, "new": plan.version,
+                  "preimage_sha256": hashlib.sha256(self.fx.adapter.snapshot()).hexdigest(),
+                  "scope_pins": pins}
+        def canonical(value):
+            return (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
+        request = {"schema": 1, "product": PRODUCT, "platform": plan.platform,
+                   "version": plan.version, "operation": "install",
+                   "request_id": intent["request_id"], "scopes": pins}
+        rb = canonical(request)
+        policy = {k: request[k] for k in ("schema", "product", "platform", "version", "operation")}
+        policy["request_sha256"] = hash_bytes(rb)
+        policy["scopes"] = [dict(row, role="protected" if row["name"] == "privileged" else "user")
+                            for row in pins]
+        pb = canonical(policy)
+        ledger = BrokerReplayFixtureLedger(self.fx.base / "broker-control", plan.platform)
+        # Existing Engine state is root-owned 0700 in this guarded test.
+        with ledger.control.locked():
+            policy_path = ledger.control.state / "policy.json"
+            policy_path.write_bytes(pb)
+            policy_path.chmod(0o400)
+        data = self.fx.roots["user"] / "data" / "settings.json"
+        data.parent.mkdir(parents=True)
+        data.write_bytes(b"R961_OWNER_DATA")
+        apply = self.fx.adapter.apply
+        seen = []
+        self.fx.adapter.complete_on_apply = False
+
+        def checked_apply(target, actual_intent):
+            self.assertEqual(intent_sha256(actual_intent), intent_sha256(intent))
+            self.assign_user_ownership()
+            snapshot = ledger.path.read_bytes()
+            with TrustedLinuxRootFD(ledger.control.state) as root:
+                observed = observe_linux_policy_replay_snapshot(
+                    plan, root, policy_path.name, hash_bytes(pb), len(pb),
+                    ledger.path.name, hash_bytes(snapshot), len(snapshot), rb)
+            self.assertEqual(observed["phase"], "applying")
+            self.assertFalse(observed["native_installation_accepted"])
+            report = self.checked_postflight(plan, actual_intent)
+            self.assertEqual({x["scope"]: x["files"] for x in report["scopes"]},
+                             {"privileged": 13, "user": 8})
+            if os.environ.get("R950_NATIVE_POSTFLIGHT") == "1":
+                unit = os.environ["R949_SYSTEMD_UNIT"]
+                os_report = two_scope_native_postflight(
+                    plan, self.fx.roots, actual_intent,
+                    journal_path=self.fx.engine.journal,
+                    expected_uids={"privileged": 0, "user": self.owner[0]},
+                    linux_units=(unit,), linux_required_active_units=(unit,))
+                self.assertEqual(os_report["native"]["units"][0]["ActiveState"], "active")
+                self.assertFalse(os_report["native_installation_accepted"])
+            apply(target, actual_intent)
+            self.assertFalse(self.fx.adapter.receipt.exists())
+            # Explicitly synthetic: the test is NOT a product service adapter.
+            self.fx.adapter.receipt.write_bytes(self.fx.adapter._fixture_receipt(actual_intent))
+            seen.append(intent_sha256(actual_intent))
+
+        with patch.object(self.fx.adapter, "apply", side_effect=checked_apply):
+            result = self.fx.engine.execute_broker_bound(
+                ledger, plan, pb, hash_bytes(pb), rb, intent, sources)
+        self.assertFalse(result["native_product_installation_accepted"])
+        self.assertEqual(seen, [intent_sha256(intent)])
+        self.assertEqual(ledger.inspect_fixture()["used_ids"], 1)
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertFalse(self.fx.engine.journal.exists())
+        self.assertEqual({x["version"] for x in self.fx._states().values()}, {"1.5.7"})
+        self.assertEqual(data.read_bytes(), b"R961_OWNER_DATA")
+        with self.assertRaisesRegex(EngineError, "REQUEST_ID_ALREADY_USED"):
+            self.fx.engine.execute_broker_bound(ledger, plan, pb, hash_bytes(pb), rb, intent, sources)
+        # The unprivileged account must not open either protected input for writing.
+        pid = os.fork()
+        if pid == 0:
+            try:
+                os.setgroups([])
+                os.setgid(self.owner[1])
+                os.setuid(self.owner[0])
+                for node in (policy_path, ledger.path):
+                    try:
+                        fd = os.open(node, os.O_WRONLY | os.O_APPEND)
+                    except PermissionError:
+                        continue
+                    os.close(fd)
+                    os._exit(91)
+                os._exit(0)
+            except BaseException:
+                os._exit(92)
+        _, status = os.waitpid(pid, 0)
+        self.assertTrue(os.WIFEXITED(status))
+        self.assertEqual(os.WEXITSTATUS(status), 0)
+        print("R961_ROOT_POLICY_REPLAY_BOUND_21_REAL_CODE_FILES_PASS_SYNTHETIC_NATIVE_ONLY")
+
+
 if __name__ == "__main__":
     unittest.main()
