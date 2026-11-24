@@ -9,6 +9,18 @@ $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 function Need([bool]$ok,[string]$label){if(!$ok){throw $label}}
 function Hex([string]$value,[int]$size){return $value -cmatch ('^[a-f0-9]{'+$size+'}$')}
+function Assert-R993Identity([object]$c) {
+ Need ($c.schema -eq 1) 'R993_SCHEMA_DRIFT'
+ Need (Hex ([string]$c.source) 40) 'R993_SOURCE_PIN_DRIFT'
+ Need (Hex ([string]$c.dispatchPin) 64) 'R993_DISPATCH_PIN_DRIFT'
+ Need (Hex ([string]$c.scriptSha) 64) 'R993_SCRIPT_PIN_DRIFT'
+ Need (Hex ([string]$c.pythonScriptSha) 64) 'R993_PYTHON_PIN_DRIFT'
+ # Python tempfile's safe random alphabet contains underscores.
+ Need ([string]$c.name -cmatch '^dim-universal-[a-zA-Z0-9_-]+$') 'R993_TEMP_BASE_NAME_DRIFT'
+ Need ($c.taskName -ceq ('DIMR993VM-'+$c.source.Substring(0,12))) 'R993_TASK_NAME_DRIFT'
+ Need ([string]$c.ownerSid -cmatch '^S-1-5-21-(?:[0-9]+-){3}[0-9]+$') 'R993_OWNER_SID_DRIFT'
+ Need (![string]::IsNullOrWhiteSpace([string]$c.ownerName)) 'R993_OWNER_NAME_MISSING'
+}
 function Check-R993Config {
  Need ([IO.Path]::IsPathFullyQualified($Config) -and
         [IO.Path]::GetFullPath($Config) -ceq $Config -and
@@ -18,13 +30,7 @@ function Check-R993Config {
  Need (!$cFile.PSIsContainer -and $cFile.Length -gt 100 -and $cFile.Length -le 8192 -and
         ($cFile.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) 'R993_CONFIG_NOT_BOUND'
  $c=Get-Content -LiteralPath $Config -Raw|ConvertFrom-Json
- Need ($c.schema -eq 1 -and (Hex ([string]$c.source) 40) -and
-        (Hex ([string]$c.dispatchPin) 64) -and (Hex ([string]$c.scriptSha) 64) -and
-        (Hex ([string]$c.pythonScriptSha) 64) -and
-        [string]$c.name -cmatch '^dim-universal-[0-9a-zA-Z-]+$' -and
-        $c.taskName -ceq ('DIMR993VM-'+$c.source.Substring(0,12)) -and
-        [string]$c.ownerSid -cmatch '^S-1-5-21-(?:[0-9]+-){3}[0-9]+$' -and
-        ![string]::IsNullOrWhiteSpace([string]$c.ownerName)) 'R993_CONFIG_IDENTITY_DRIFT'
+ Assert-R993Identity $c
  Need ((Split-Path -Leaf $c.workspace) -ceq 'DirectInternetMethod' -or
         (Test-Path -LiteralPath (Join-Path $c.workspace '.git'))) 'R993_WORKSPACE_UNRESOLVED'
  Need ([IO.Path]::IsPathFullyQualified([string]$c.runnerTemp) -and

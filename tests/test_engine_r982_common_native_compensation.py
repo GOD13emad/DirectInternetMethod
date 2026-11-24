@@ -176,6 +176,52 @@ class R982CommonBrokerNativeScope(unittest.TestCase):
         self.assertIn("native_broker_os_scheduled_recovery:",ci)
         self.assertIn("R993_OS_SCHEDULED_RECOVERY:",ci)
 
+    @unittest.skipUnless(sys.platform == "win32", "PowerShell native identity validator needs Windows")
+    def test_r993_windows_actual_powershell_temp_identity_and_negatives(self):
+        path = ROOT / "tests/r993_windows_os_scheduled_recovery_vm.ps1"
+        command = "$p='" + str(path).replace("'", "''") + "';" + r"""
+$ErrorActionPreference='Stop'
+$t=$null;$err=$null
+$ast=[System.Management.Automation.Language.Parser]::ParseFile($p,[ref]$t,[ref]$err)
+if($err.Count){throw 'PS_PARSE'}
+foreach($name in @('Need','Hex','Assert-R993Identity')){
+  $nodes=@($ast.FindAll({param($n)
+    $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name
+  },$true))
+  if($nodes.Count -ne 1){throw ('FUNCTION_'+$name)}
+  . ([scriptblock]::Create($nodes[0].Extent.Text))
+}
+$sha='a'*40
+$obj=[pscustomobject]@{
+  schema=1;source=$sha;dispatchPin='b'*64;scriptSha='c'*64;pythonScriptSha='d'*64;
+  name='dim-universal-test_ab12';taskName=('DIMR993VM-'+$sha.Substring(0,12));
+  ownerSid='S-1-5-21-3414932011-3134797172-3625386099-513';
+  ownerName='RUNNER\runneradmin'
+}
+if(($obj.name -cmatch '^dim-universal-[0-9a-zA-Z-]+$') -or
+   !($obj.name -cmatch '^dim-universal-[a-zA-Z0-9_-]+$')){throw 'ROOT_NOT_REPRODUCED'}
+Assert-R993Identity $obj
+foreach($case in @(
+  @('name','dim-universal-test/../bad','R993_TEMP_BASE_NAME_DRIFT'),
+  @('name','dim-universal','R993_TEMP_BASE_NAME_DRIFT'),
+  @('ownerSid','S-1-5-18','R993_OWNER_SID_DRIFT'),
+  @('scriptSha',('z'*64),'R993_SCRIPT_PIN_DRIFT'),
+  @('taskName','DIMR993VM-another','R993_TASK_NAME_DRIFT')
+)){
+  $copy=($obj|ConvertTo-Json -Compress|ConvertFrom-Json)
+  $copy.PSObject.Properties[$case[0]].Value=$case[1]
+  $denied=$false
+  try{Assert-R993Identity $copy}
+  catch{$denied=$_.Exception.Message -ceq $case[2]}
+  if(!$denied){throw ('NEGATIVE_MISSED_'+$case[0])}
+}
+'R993_WIN32_TEMPFILE_UNDERSCORE_AND_5_NEGATIVE_PASS'
+"""
+        result=subprocess.run(["pwsh","-NoProfile","-NonInteractive","-Command",command],
+                              cwd=ROOT,capture_output=True,text=True,timeout=15)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn("R993_WIN32_TEMPFILE_UNDERSCORE_AND_5_NEGATIVE_PASS",result.stdout)
+
     def test_r992_recovery_media_uses_actual_protected_store(self):
         ps = R980.read_text("utf-8-sig")
         vm = VM.read_text("utf-8")
