@@ -34,7 +34,7 @@ _ALLOWED_SOURCE_KINDS = frozenset((
     "PINNED_CODE_LAYOUT_REQUIRES_TRUSTED_NATIVE_ADAPTER",
 ))
 _NAME_RE = re.compile(r"[a-z][a-z0-9_-]{0,23}\Z")
-_REQUEST_ID_RE = re.compile(r"[a-f0-9]{32}\Z")
+_REQUEST_ID_RE = re.compile(r"[a-f0-9]{32}(?:[a-f0-9]{32})?\Z")
 
 
 def _unique_pairs(items: list[tuple[str, Any]]) -> dict:

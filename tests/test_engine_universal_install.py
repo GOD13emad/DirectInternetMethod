@@ -222,6 +222,33 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         reopened.activate()
         reopened.commit()
 
+    def test_windows_native_id64_enters_single_broker_journal_and_tombstones(self):
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        from installer_engine.native_receipt import correlate_windows_inno_ssdone
+        self.assertEqual(self.platform, "windows-x86_64")
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        intent = dict(intent, request_id="fe12" * 16)
+        request = json.loads(rb)
+        request["request_id"] = intent["request_id"]
+        rb = json.dumps(request, sort_keys=True).encode()
+        policy = json.loads(pb)
+        policy["request_sha256"] = hashlib.sha256(rb).hexdigest()
+        pb = json.dumps(policy, sort_keys=True).encode()
+        pin = hashlib.sha256(pb).hexdigest()
+        native_receipt = ("DIM-INNO-V1|" + intent["request_id"].upper() +
+                          "|" + ("a" * 64).upper()).encode()
+        observed = correlate_windows_inno_ssdone(intent, "a" * 64, native_receipt)
+        self.assertFalse(observed["native_installation_accepted"])
+        ledger = BrokerReplayFixtureLedger(self.base / "native-id64", self.platform)
+        result = self.core.execute_broker_bound(
+            ledger, plan, pb, pin, rb, intent, sources)
+        self.assertEqual(result["version"], "1.5.7")
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertEqual(ledger.inspect_fixture()["used_ids"], 1)
+        self.assertEqual(set(self.state().values()), {"1.5.7"})
+        with self.assertRaisesRegex(EngineError, "REQUEST_ID_ALREADY_USED"):
+            self.core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
+
     def test_broker_bound_dispatch_tombstones_and_denies_replay(self):
         from installer_engine.broker_replay import BrokerReplayFixtureLedger
         ledger = BrokerReplayFixtureLedger(self.base / "broker", self.platform)

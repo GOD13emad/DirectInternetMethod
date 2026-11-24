@@ -16,7 +16,7 @@ import re
 from .engine import EngineError, PLATFORMS, require, version
 
 _SHA = re.compile(r"[a-f0-9]{64}\Z")
-_RID = re.compile(r"[a-f0-9]{32}\Z")
+_RID = re.compile(r"[a-f0-9]{32}(?:[a-f0-9]{32})?\Z")
 _NAME = re.compile(r"[a-z][a-z0-9_-]{0,23}\Z")
 MAX_RECEIPT_BYTES = 2048
 
@@ -117,6 +117,47 @@ def verify_native_receipt(intent: dict, receipt: bytes | None,
                                 intent_sha256(intent)),
             "NATIVE_RECEIPT_INTENT_MISMATCH")
     return True
+
+
+def correlate_windows_inno_ssdone(
+    intent: dict, installer_sha256: str, receipt: bytes
+) -> dict:
+    """Compare exact EXISTING Inno ssDone bytes to a 64-hex broker ID.
+
+    Windows Service generates 32 random bytes (64 uppercase hex characters).
+    It gives that same ID to Inno through /DIMTXN; Inno writes
+    DIM-INNO-V1|UPPERCASE_TRANSACTION|UPPERCASE_INSTALLER_SHA at ssDone.
+    The common broker uses canonical lowercase hex, retaining all 256 bits.
+
+    This is a read-only CORRELATION primitive, not an authorization boundary:
+    a privileged caller MUST first obtain the receipt and installer SHA from
+    independently protected OS-owned handles, validate publisher and
+    registration/service health and preserve replay/cleanup semantics.
+    Never convert this observation into a generic native completion receipt.
+    """
+    validate_intent(intent)
+    require(intent["platform"] == "windows-x86_64" and
+            len(intent["request_id"]) == 64,
+            "NATIVE_INNO_EXACT_WINDOWS_ID64_REQUIRED")
+    require(type(installer_sha256) is str and
+            _SHA.fullmatch(installer_sha256) is not None,
+            "NATIVE_INNO_INSTALLER_PIN_REQUIRED")
+    require(type(receipt) is bytes and len(receipt) == 141,
+            "NATIVE_INNO_EXACT_RECEIPT_SIZE_REQUIRED")
+    expected = ("DIM-INNO-V1|" + intent["request_id"].upper() + "|" +
+                installer_sha256.upper()).encode("ascii")
+    require(hmac.compare_digest(receipt, expected),
+            "NATIVE_INNO_RECEIPT_ID_OR_PIN_DRIFT")
+    return {
+        "status": "NATIVE_INNO_SSDONE_CORRELATED_NOT_NATIVE_AUTHORITY",
+        "request_id": intent["request_id"],
+        "intent_sha256": intent_sha256(intent),
+        "installer_sha256": installer_sha256,
+        "source_receipt_bytes_match": True,
+        "native_installation_accepted": False,
+        "publisher_authenticated": False,
+        "privileged_broker_implemented": False,
+    }
 
 
 def verify_completion_receipt(intent: dict, receipt: bytes | None) -> bool:

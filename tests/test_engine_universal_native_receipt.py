@@ -94,6 +94,54 @@ class UniversalNativeReceiptContract(unittest.TestCase):
                 with self.assertRaises(EngineError):
                     validate_intent(bad)
 
+    def test_real_windows_native_id64_correlates_ssdone_but_never_authorizes(self):
+        from installer_engine.native_receipt import correlate_windows_inno_ssdone
+        intent = dict(self.intent, platform="windows-x86_64",
+                      request_id="ab" * 32)
+        setup_pin = "e7" * 32
+        signed_by_inno = ("DIM-INNO-V1|" + intent["request_id"].upper() +
+                          "|" + setup_pin.upper()).encode("ascii")
+        out = correlate_windows_inno_ssdone(intent, setup_pin, signed_by_inno)
+        self.assertEqual(out["request_id"], intent["request_id"])
+        self.assertEqual(out["intent_sha256"], intent_sha256(intent))
+        self.assertTrue(out["source_receipt_bytes_match"])
+        self.assertFalse(out["native_installation_accepted"])
+        self.assertFalse(out["publisher_authenticated"])
+        self.assertFalse(out["privileged_broker_implemented"])
+        with self.assertRaisesRegex(EngineError, "NATIVE_RECEIPT_PARSE_INVALID"):
+            verify_completion_receipt(intent, signed_by_inno)
+
+    def test_windows_inno_ssdone_must_be_exact_and_no_cross_os_grant(self):
+        from installer_engine.native_receipt import correlate_windows_inno_ssdone
+        intent = dict(self.intent, platform="windows-x86_64",
+                      request_id="12" * 32)
+        pin = "cd" * 32
+        raw = ("DIM-INNO-V1|" + intent["request_id"].upper() +
+               "|" + pin.upper()).encode()
+        for modified, given_sha, match in (
+            (raw + b"\n", pin, "EXACT_RECEIPT_SIZE_REQUIRED"),
+            (raw[:-1], pin, "EXACT_RECEIPT_SIZE_REQUIRED"),
+            (raw.replace(b"DIM-INNO-V1|", b"DIM-INNO-V0|"), pin, "RECEIPT_ID_OR_PIN_DRIFT"),
+            (raw.lower(), pin, "RECEIPT_ID_OR_PIN_DRIFT"),
+            (raw, "ab" * 32, "RECEIPT_ID_OR_PIN_DRIFT"),
+            (raw.replace(b"1212", b"1313", 1), pin, "RECEIPT_ID_OR_PIN_DRIFT"),
+            (b"x" * len(raw), pin, "RECEIPT_ID_OR_PIN_DRIFT"),
+        ):
+            with self.subTest(match=match, raw=modified[:15]):
+                with self.assertRaisesRegex(EngineError, match):
+                    correlate_windows_inno_ssdone(intent, given_sha, modified)
+        for changed in (
+            dict(intent, platform="linux-x86_64"),
+            dict(intent, request_id="12" * 16),
+        ):
+            with self.assertRaisesRegex(EngineError, "EXACT_WINDOWS_ID64_REQUIRED"):
+                correlate_windows_inno_ssdone(changed, pin, raw)
+        with self.assertRaisesRegex(EngineError, "INSTALLER_PIN_REQUIRED"):
+            correlate_windows_inno_ssdone(intent, "X"*64, raw)
+        with self.assertRaisesRegex(EngineError, "NATIVE_INTENT_REQUEST_ID_INVALID"):
+            correlate_windows_inno_ssdone(
+                dict(intent, request_id="AB" * 32), pin, raw)
+
     def test_digest_independent_of_input_dict_insertion_order(self):
         original = intent_sha256(self.intent)
         reversed_doc = dict(reversed(list(self.intent.items())))

@@ -161,6 +161,24 @@ try {
    } while([DateTime]::UtcNow -lt $deadline)
    Require ((Get-Content -LiteralPath $serviceLog -Raw).Contains('update-stage-file-locked-preserving-single-pending-slot')) 'R957_REAL_SERVICE_DEFERRED_LOCKED_STAGE'
    Require ((Test-Path -LiteralPath $pending) -and (Test-Path -LiteralPath $receipt) -and (Test-Path -LiteralPath $stage)) 'R957_REAL_NATIVE_EVIDENCE_RETAINED'
+   # R972: compare the actual protected Inno ssDone receipt to the ONE
+   # common engine's FULL 64-hex native request ID using a held Win32 handle.
+   # This is read-only evidence, NOT a complete preimage or OS authorization.
+   $correlationArgs=@('-B','-m','tools.native_fixtures.windows.RunCommonInnoReceiptCorrelation',
+       '--manifest',(Join-Path $Root 'windows/manifest.json'),
+       '--manifest-sha',$build.manifestSha,'--receipt',$receipt,
+       '--transaction-id',$txn,'--installer-sha',$build.installerSha,
+       '--baseline-service-sha',$PublicSvc)
+   $correlation= & python @correlationArgs
+   Require ($LASTEXITCODE -eq 0) 'R972_COMMON_INNO_RECEIPT_CORRELATION_EXIT'
+   $bridge=$correlation | ConvertFrom-Json
+   Require ($bridge.status -ceq 'R972_REAL_INNO_RECEIPT_CORRELATION_READONLY_PASS' -and
+            $bridge.native_receipt_exact_handle_read -and
+            $bridge.source_scopes -eq 2 -and
+            !$bridge.native_preimage_complete -and
+            !$bridge.native_installation_accepted -and
+            !$bridge.os_authorized_common_broker) 'R972_NO_FALSE_BROKER_AUTHORIZATION'
+   $report.commonBrokerInnoReadOnlyBridge=$bridge
    $beforePid=(Get-CimInstance Win32_Service -Filter "Name='DirectInternetMethodSvc'").ProcessId
    Require ($beforePid -gt 0) 'R957_PRE_RESTART_PID'
    Stop-Service -Name 'DirectInternetMethodSvc' -ErrorAction Stop

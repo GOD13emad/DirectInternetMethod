@@ -47,6 +47,30 @@ class ReplayJournalFixtureTests(unittest.TestCase):
         return (other or self.ledger).close_fixture(
             self.rid,self.reqpin,self.pin,outcome=outcome)
 
+    def test_native_id64_exact_staging_recovery_and_tombstone(self):
+        from tests.test_engine_broker_intent import canonical
+        request = dict(self.req, request_id="ab12" * 16)
+        req_bytes = canonical(request)
+        policy = dict(self.policy, request_sha256=hash_bytes(req_bytes))
+        policy_bytes = canonical(policy)
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.root / "win64",
+                                           "linux-x86_64")
+        pin = hash_bytes(policy_bytes)
+        rpin = hash_bytes(req_bytes)
+        ledger.reserve(self.plan, policy_bytes, pin, req_bytes)
+        ledger.mark_staging_fixture(request["request_id"], rpin, pin)
+        reopened = BrokerReplayFixtureLedger(self.root / "win64",
+                                              "linux-x86_64")
+        self.assertEqual(reopened.recover(request["request_id"], rpin, pin)["phase"],
+                         "staging")
+        reopened.close_fixture(request["request_id"], rpin, pin,
+                               outcome="aborted_synthetic",
+                               expected_phase="staging")
+        self.assertEqual(reopened.inspect_fixture()["used_ids"], 1)
+        with self.assertRaisesRegex(EngineError, "REQUEST_ID_ALREADY_USED"):
+            reopened.reserve(self.plan, policy_bytes, pin, req_bytes)
+
     def test_empty_ledger_is_not_native_acceptance(self):
         report=self.ledger.inspect_fixture()
         self.assertEqual(report["used_ids"],0)

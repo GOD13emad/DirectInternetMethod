@@ -26,7 +26,7 @@ from .engine import Engine, EngineError, SHA_RE, atomic_json, load_json, require
 from .native_plan import NativePlan
 
 MAX_USED_REQUEST_IDS = 256
-_ID = re.compile(r"[a-f0-9]{32}\Z")
+_ID = re.compile(r"[a-f0-9]{32}(?:[a-f0-9]{32})?\Z")
 _SHA = re.compile(r"[a-f0-9]{64}\Z")
 _TERMINAL_PHASES = frozenset(("completed_synthetic", "aborted_synthetic"))
 _PHASES = frozenset(("reserved", "staging", "applying")) | _TERMINAL_PHASES

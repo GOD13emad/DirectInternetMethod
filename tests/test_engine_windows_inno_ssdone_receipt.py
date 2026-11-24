@@ -4,6 +4,9 @@ Source-order checks only; paired actual Windows guest install/error injection is
 a separate gate. No production updater/rollback acceptance from these tests.
 """
 from pathlib import Path
+import hashlib
+import os
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -94,6 +97,44 @@ class NativeInnoReceiptContract(unittest.TestCase):
         self.assertIn("DIMPostInstallCompleted", body)
         self.assertIn("DIMUpdateReceiptExpected) or DIMUpdateReceiptCompleted", body)
         self.assertIn("Result := 67;", body)
+
+    @unittest.skipUnless(os.name == "nt", "real Windows file handles required")
+    def test_r972_common_id64_actual_win32_handle_read_cannot_grant_native_authority(self):
+        from installer_engine.native_receipt import correlate_windows_inno_ssdone
+        from tools.native_fixtures.windows.RunCommonInnoReceiptCorrelation import (
+            correlate_existing_vm_receipt,
+        )
+        manifest = ROOT / "windows/manifest.json"
+        pin = hashlib.sha256(manifest.read_bytes()).hexdigest()
+        native_id = "ABCD1234" * 8
+        installer_sha = "EEDD1234" * 8
+        baseline_service_sha = "FFEE4567" * 8
+        contents = ("DIM-INNO-V1|" + native_id + "|" + installer_sha).encode()
+        with tempfile.TemporaryDirectory(prefix="dim-r972-real-handle-") as temp:
+            observed = Path(temp) / ("completion-" + native_id + ".receipt")
+            observed.write_bytes(contents)
+            out = correlate_existing_vm_receipt(
+                manifest, pin, observed, native_id,
+                installer_sha, baseline_service_sha)
+            self.assertEqual(out["status"],
+                             "R972_REAL_INNO_RECEIPT_CORRELATION_READONLY_PASS")
+            self.assertEqual(out["request_id"], native_id.lower())
+            self.assertTrue(out["native_receipt_exact_handle_read"])
+            self.assertEqual(out["source_scopes"], 2)
+            self.assertFalse(out["native_preimage_complete"])
+            self.assertFalse(out["os_authorized_common_broker"])
+            self.assertFalse(out["native_installation_accepted"])
+            self.assertFalse(out["publisher_authenticated"])
+            observed.write_bytes(contents + b"\n")
+            with self.assertRaisesRegex(Exception, "WIN32_HANDLE_SIZE_MISMATCH"):
+                correlate_existing_vm_receipt(
+                    manifest, pin, observed, native_id,
+                    installer_sha, baseline_service_sha)
+            observed.write_bytes(contents)
+            with self.assertRaisesRegex(Exception, "R972_SOURCE_MANIFEST_SHA_DRIFT"):
+                correlate_existing_vm_receipt(
+                    manifest, "0" * 64, observed, native_id,
+                    installer_sha, baseline_service_sha)
 
     def test_native_validator_requires_exact_payload_and_negative_cases(self):
         for term in ("DIM-INNO-V1|", "value.All(Uri.IsHexDigit)", "string.Equals(content, expected, StringComparison.Ordinal)",

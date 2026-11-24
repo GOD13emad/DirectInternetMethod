@@ -80,6 +80,29 @@ class BrokerIntentNoPrivilegeTests(unittest.TestCase):
         self.assertEqual(result["request_id"], "10" * 16)
         self.assertEqual(result["request_sha256"], hash_bytes(rb))
 
+    def test_existing_windows_native_id64_preserved_across_policy_and_request(self):
+        plan, policy, request, _, _ = fixture_contract(
+            fixture_plan(platform="windows-x86_64"))
+        request["request_id"] = "01ab" * 16
+        rb = canonical(request)
+        policy["request_sha256"] = hash_bytes(rb)
+        pb = canonical(policy)
+        result = compare_pinned_policy_intent(
+            plan, pb, hash_bytes(pb), rb)
+        self.assertEqual(result["request_id"], request["request_id"])
+        self.assertFalse(result["native_installation_accepted"])
+        self.assertFalse(result["publisher_authenticated"])
+        for wrong in ("01ab" * 15 + "01a", ("01ab" * 16).upper(),
+                      "01ab" * 17, "01ab" * 8 + "-" + "01ab" * 8):
+            request["request_id"] = wrong
+            rb = canonical(request)
+            policy["request_sha256"] = hash_bytes(rb)
+            pb = canonical(policy)
+            with self.subTest(wrong=wrong), self.assertRaisesRegex(
+                    EngineError, "BROKER_REQUEST_ID_INVALID"):
+                compare_pinned_policy_intent(
+                    plan, pb, hash_bytes(pb), rb)
+
     def test_pinned_policy_tamper_is_rejected(self):
         plan, policy, request, pb, rb = fixture_contract()
         wrong = bytearray(pb)
