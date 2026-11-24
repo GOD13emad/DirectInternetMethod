@@ -1,5 +1,9 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace DirectInternetMethod.Service;
 
@@ -30,6 +34,97 @@ internal static class NativeInnoCompletionReceipt
         var expected = Prefix + transactionId!.ToUpperInvariant() +
                        "|" + sha256!.ToUpperInvariant();
         return string.Equals(content, expected, StringComparison.Ordinal);
+    }
+
+    // Win32 native receipt must be read FROM THE SAME HANDLE checked below.
+    // The update directory ACL was checked separately by the SYSTEM service;
+    // these OS checks close the leaf path/attribute/read TOCTOU window.
+    // This validates existing Inno ssDone evidence, NEVER OS publisher trust.
+    private const uint FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400;
+    private const uint FILE_ATTRIBUTE_DIRECTORY = 0x00000010;
+    private const uint FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000;
+    private const uint FILE_SHARE_READ = 0x00000001;
+    private const int ExactReceiptBytes = 141;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeFileTime
+    {
+        public uint Low;
+        public uint High;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeFileInfo
+    {
+        public uint Attributes;
+        public NativeFileTime Created;
+        public NativeFileTime Accessed;
+        public NativeFileTime Modified;
+        public uint VolumeSerial;
+        public uint FileSizeHigh;
+        public uint FileSizeLow;
+        public uint NumberOfLinks;
+        public uint FileIndexHigh;
+        public uint FileIndexLow;
+    }
+
+    [DllImport("kernel32.dll", EntryPoint = "CreateFileW",
+        CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern SafeFileHandle CreateFileW(
+        string name, uint desiredAccess, uint shareMode,
+        IntPtr securityAttributes, uint creationDisposition,
+        uint flagsAndAttributes, IntPtr templateFile);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetFileInformationByHandle(
+        SafeFileHandle handle, out NativeFileInfo info);
+
+    [DllImport("kernel32.dll", EntryPoint = "GetFinalPathNameByHandleW",
+        CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern uint GetFinalPathNameByHandleW(
+        SafeFileHandle handle, StringBuilder name, uint capacity, uint flags);
+
+    internal static string ReadHeldExact(string receiptPath, string transactionId)
+    {
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("Windows native receipt handle required.");
+        if (receiptPath is null || !Path.IsPathFullyQualified(receiptPath) ||
+            !Hex64(transactionId))
+            throw new InvalidDataException("Native completion path or ID invalid.");
+        // Only the literal per-transaction receipt leaf can be read.
+        // Path must already come from trusted UpdateTransactions scope.
+        var expectedPath = Path.GetFullPath(receiptPath);
+        if (!string.Equals(receiptPath, expectedPath, StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(Path.GetFileName(receiptPath), FileName(transactionId),
+                           StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("Native completion receipt path drift.");
+        // FILE_FLAG_OPEN_REPARSE_POINT opens the link itself, never follows it.
+        // FILE_SHARE_READ blocks concurrent rename/deletion/new writes until
+        // the byte read has completed; keep that handle open throughout.
+        using var held = CreateFileW(expectedPath, 0x80000000, FILE_SHARE_READ,
+                                     IntPtr.Zero, 3,
+                                     FILE_FLAG_OPEN_REPARSE_POINT, IntPtr.Zero);
+        if (held.IsInvalid)
+            throw new IOException("Cannot open protected native completion receipt.");
+        if (!GetFileInformationByHandle(held, out var info) ||
+            (info.Attributes & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)) != 0 ||
+            info.NumberOfLinks != 1 ||
+            info.FileSizeHigh != 0 || info.FileSizeLow != ExactReceiptBytes)
+            throw new InvalidDataException("Native receipt held-file metadata invalid.");
+        var final = new StringBuilder(8192);
+        var count = GetFinalPathNameByHandleW(held, final, (uint)final.Capacity, 0);
+        var expectedFinal = @"\\?\" + expectedPath;
+        if (count == 0 || count >= final.Capacity ||
+            !string.Equals(final.ToString(), expectedFinal,
+                           StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("Native receipt final handle path mismatch.");
+        using var reader = new FileStream(held, FileAccess.Read);
+        var bytes = new byte[ExactReceiptBytes];
+        reader.ReadExactly(bytes);
+        if (reader.ReadByte() != -1 || bytes.Any(x => x > 127))
+            throw new InvalidDataException("Native receipt bytes are not exact ASCII.");
+        return Encoding.ASCII.GetString(bytes);
     }
 
     internal static bool SelfTest()

@@ -71,6 +71,23 @@ class NativeInnoReceiptContract(unittest.TestCase):
             self.assertIn(argument, command)
         self.assertNotIn('''binPath= "' + ServiceExe + '"''', body)
 
+    def test_r977_production_service_reads_ssdone_through_one_os_held_handle(self):
+        # Test the real production finalize path, not another fixture.
+        final = PROGRAM.split("static void FinalizePendingUpdate()", 1)[1].split(
+            "static async Task RunActionAsync(", 1)[0]
+        self.assertIn("NativeInnoCompletionReceipt.ReadHeldExact(", final)
+        self.assertNotIn("File.ReadAllText(receiptPath)", final)
+        self.assertIn("NativeInnoCompletionReceipt.Matches(", final)
+        self.assertLess(final.index("NativeInnoCompletionReceipt.ReadHeldExact("),
+                        final.index("NativeUpdateCleanupJournal.MarkReceiptConsumed("))
+        for marker in ("CreateFileW", "GetFileInformationByHandle",
+                       "GetFinalPathNameByHandleW",
+                       "FILE_FLAG_OPEN_REPARSE_POINT",
+                       "FILE_SHARE_READ", "SafeFileHandle",
+                       "ReadExactly", "FILE_ATTRIBUTE_REPARSE_POINT"):
+            self.assertIn(marker, HELPER)
+        self.assertNotIn("File.ReadAllText(", HELPER)
+
     def test_service_receipt_binds_protected_nonce_and_hash_before_cleanup(self):
         final = PROGRAM.split("static void FinalizePendingUpdate()", 1)[1].split("static async Task RunActionAsync(", 1)[0]
         self.assertIn('GetProperty("schema").GetInt32() != 2', final)

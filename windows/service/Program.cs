@@ -529,11 +529,11 @@ internal static class Program
                     return;
                 }
                 if (File.Exists(receiptPath) &&
-                    ((File.GetAttributes(receiptPath) & FileAttributes.ReparsePoint) != 0 ||
-                     !NativeInnoCompletionReceipt.Matches(
-                         File.ReadAllText(receiptPath),
-                         transactionId,
-                         doc.RootElement.GetProperty("sha256").GetString())))
+                    !NativeInnoCompletionReceipt.Matches(
+                        NativeInnoCompletionReceipt.ReadHeldExact(
+                            receiptPath, transactionId),
+                        transactionId,
+                        doc.RootElement.GetProperty("sha256").GetString()))
                     throw new CryptographicException("Native completion receipt does not match protected pending identity.");
                 // Setup can still be running from this EXE while the service restarts.
                 // Keep one pending record until the verified file can be removed.

@@ -172,6 +172,10 @@ jobs:
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: '10.0.x'
+      - name: Set up pinned Python for production C# receipt harness
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
       - name: Compile isolated Windows native token/pipe OS adapter only
         shell: pwsh
         run: |
@@ -229,6 +233,19 @@ jobs:
           [System.Management.Automation.Language.Parser]::ParseFile('tools/native_fixtures/windows/RunR937ScmReceiptSandboxFixture.ps1', [ref]$tokens, [ref]$errors) | Out-Null
           if ($errors.Count -ne 0) { throw 'R937_NATIVE_SCM_GUEST_RUNNER_PARSE_FAILED' }
           Write-Host 'R937_NATIVE_SCM_RECEIPT_FIXTURE_SOURCE_ONLY_COMPILED_NOT_OS_AUTHORIZED'
+      - name: Compile and run actual production Inno held-receipt reader
+        # Existing service helper is linked into a user-local .NET 10 native
+        # probe: positive ssDone, wrong ID/bytes/length, hardlink and reparse.
+        # No service registration, privilege or real product update here.
+        shell: pwsh
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          R977_REQUIRE_NATIVE: '1'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -B -m unittest tests.test_engine_windows_native_held_receipt -v
+          if ($LASTEXITCODE -ne 0) { throw 'R977_REAL_NATIVE_RECEIPT_PROBE_FAILED' }
+          Write-Host 'R977_WINDOWS_PRODUCTION_HELD_RECEIPT_OS_PROBE_PASS_NO_INSTALL'
   linux-root-systemd-synthetic-broker:
     name: Linux / real root systemd + kernel peer receipt/replay (synthetic only)
     # Only trusted feature PUSH source is executed under real root on
@@ -257,7 +274,7 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
         run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
       - name: Root-owned durable reserved crash, new PID, exact ID64 tombstone
-        # Fail-closed real systemd process exit code 75 BEFORE any native
+        # Fail-closed real systemd process exit code 78 BEFORE any native
         # product callback; no powercut or production installation claim.
         shell: bash
         env:
