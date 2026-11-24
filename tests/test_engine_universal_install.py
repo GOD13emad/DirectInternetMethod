@@ -343,13 +343,101 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         self.assertEqual(self.adapter.snapshot(), baseline)
         self.core.abort()
 
-    def test_broker_bound_missing_journal_keeps_ambiguous_reservation(self):
+    def test_broker_drift_preflight_tombstones_without_ambiguity(self):
         from installer_engine.broker_replay import BrokerReplayFixtureLedger
         ledger = BrokerReplayFixtureLedger(self.base / "broker", self.platform)
         plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        baseline = self.adapter.snapshot()
         intent["preimage_sha256"] = "0" * 64
-        with self.assertRaisesRegex(EngineError, "EXPECTED_INTENT_DRIFT"):
+        with self.assertRaisesRegex(EngineError, "UNIVERSAL_BROKER_PREIMAGE_DRIFT"):
             self.core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
+        self.assertFalse(self.core.journal.exists())
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertEqual(self.adapter.snapshot(), baseline)
+        self.assertEqual(ledger.inspect_fixture()["used_ids"], 1)
+        self.assertEqual(set(self.state().values()), {None})
+        with self.assertRaisesRegex(EngineError, "REQUEST_ID_ALREADY_USED"):
+            self.core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
+
+    def test_broker_source_digest_preflight_keeps_native_untouched(self):
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.base / "broker", self.platform)
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        bad_sources = dict(sources)
+        scope = next(iter(bad_sources))
+        bad_sources[scope] = bad_sources[scope][0], "0" * 64
+        baseline = self.adapter.snapshot()
+        with self.assertRaises(EngineError):
+            self.core.execute_broker_bound(
+                ledger, plan, pb, pin, rb, intent, bad_sources)
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertFalse(self.core.journal.exists())
+        self.assertEqual(self.adapter.snapshot(), baseline)
+        self.assertEqual(ledger.inspect_fixture()["used_ids"], 1)
+        self.assertEqual(set(self.state().values()), {None})
+
+    def test_broker_uninstall_preflight_and_native_lifecycle(self):
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        from installer_engine.native_plan import NativePlan
+        source = self.sources("1.5.6")
+        for name, (folder, _) in source.items():
+            path = folder / "manifest.json"
+            manifest = json.loads(path.read_bytes())
+            canonical = (json.dumps(manifest, sort_keys=True,
+                                    separators=(",", ":")) + "\n").encode()
+            path.write_bytes(canonical)
+            source[name] = (folder, hashlib.sha256(canonical).hexdigest())
+        self.core.begin(source)
+        self.core.activate()
+        self.core.commit()
+        original = self.adapter.snapshot()
+        manifests = tuple(sorted(
+            (name, json.loads((folder / "manifest.json").read_bytes()))
+            for name, (folder, _) in source.items()))
+        plan = NativePlan("Direct Internet Method", "1.5.6", self.platform,
+                          "PINNED_CODE_LAYOUT_REQUIRES_TRUSTED_NATIVE_ADAPTER",
+                          manifests)
+        pins = {name: self.core.code._snapshot(name)["pin"]
+                for name in self.core.code.names}
+        intent = self.expected_intent("uninstall", "1.5.6", None, pins)
+        request = {"schema": 1, "product": plan.product, "platform": plan.platform,
+                   "version": plan.version, "operation": "uninstall",
+                   "request_id": intent["request_id"],
+                   "scopes": intent["scope_pins"]}
+        rb = json.dumps(request, sort_keys=True).encode()
+        policy = {key: request[key] for key in (
+            "schema", "product", "platform", "version", "operation")}
+        policy["request_sha256"] = hashlib.sha256(rb).hexdigest()
+        policy["scopes"] = [dict(row, role=row["name"])
+                            for row in request["scopes"]]
+        pb = json.dumps(policy, sort_keys=True).encode()
+        pin = hashlib.sha256(pb).hexdigest()
+        ledger = BrokerReplayFixtureLedger(self.base / "bad-uninstall", self.platform)
+        bad_intent = dict(intent, preimage_sha256="0" * 64)
+        with self.assertRaisesRegex(EngineError, "UNIVERSAL_BROKER_PREIMAGE_DRIFT"):
+            self.core.execute_broker_bound(
+                ledger, plan, pb, pin, rb, bad_intent)
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertEqual(self.adapter.snapshot(), original)
+        self.assertFalse(self.core.journal.exists())
+        self.assertEqual(ledger.inspect_fixture()["used_ids"], 1)
+        self.assertEqual(set(self.state().values()), {"1.5.6"})
+        valid_ledger = BrokerReplayFixtureLedger(
+            self.base / "valid-uninstall", self.platform)
+        self.core.execute_broker_bound(valid_ledger, plan, pb, pin, rb, intent)
+        self.assertIsNone(valid_ledger.inspect_fixture()["active_phase"])
+        self.assertIsNone(self.adapter.observed_version())
+        self.assertEqual(set(self.state().values()), {None})
+
+    def test_broker_bound_missing_journal_keeps_ambiguous_reservation(self):
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        from installer_engine.engine import hash_bytes
+        ledger = BrokerReplayFixtureLedger(self.base / "broker", self.platform)
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        ledger.reserve(plan, pb, pin, rb)
+        # Simulate real process death after durable applying, before begin.
+        # Without a journal this is UNKNOWN, not an abort or a second apply.
+        ledger.mark_applying_fixture(intent["request_id"], hash_bytes(rb), pin)
         self.assertFalse(self.core.journal.exists())
         self.assertEqual(ledger.inspect_fixture()["active_phase"], "applying")
         with self.assertRaisesRegex(EngineError, "NO_JOURNAL_RECONCILE"):

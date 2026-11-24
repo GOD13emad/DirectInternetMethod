@@ -502,6 +502,48 @@ class UniversalFixtureInstaller:
             return self._commit_locked(before_remove=before_remove)
         return self._abort_locked(before_remove=before_remove)
 
+    def _broker_admission_readonly(self, action: str,
+                                   expected_intent: dict, sources) -> None:
+        """Preflight BEFORE durable replay moves to applying.
+
+        This cannot authenticate a policy, installed broker, or publisher.
+        Re-run all state/source checks in the ordinary transaction afterward
+        to reject any intervening package or native state drift.
+        """
+        old = self._consistent_old()
+        _, preimage_sha = self._capture(old)
+        require(expected_intent["old"] == old and
+                expected_intent["preimage_sha256"] == preimage_sha,
+                "UNIVERSAL_BROKER_PREIMAGE_DRIFT")
+        if action == "uninstall":
+            require(old is not None and expected_intent["new"] is None,
+                    "UNIVERSAL_BROKER_UNINSTALL_BASELINE_INVALID")
+            pins = []
+            for name in self.code.names:
+                item = self.code._snapshot(name)
+                require(item is not None and item["version"] == old,
+                        "UNIVERSAL_BROKER_UNINSTALL_SCOPE_DRIFT")
+                pins.append({"name": name,
+                             "manifest_sha256": item["pin"]})
+            require(pins == expected_intent["scope_pins"],
+                    "UNIVERSAL_BROKER_UNINSTALL_SCOPE_DRIFT")
+        else:
+            from .engine import read_package
+            require(type(sources) is dict and
+                    set(sources) == set(self.code.names),
+                    "UNIVERSAL_BROKER_SOURCE_MAP_INVALID")
+            packages = [read_package(Path(sources[name][0]).absolute(),
+                                     sources[name][1], self.platform)
+                        for name in self.code.names]
+            target = expected_intent["new"]
+            require(all(doc["version"] == target for doc in packages) and
+                    (old is None or version(target) > version(old)),
+                    "UNIVERSAL_BROKER_TARGET_VERSION_DRIFT")
+            pins = [{"name": name, "manifest_sha256": sources[name][1].lower()}
+                    for name in self.code.names]
+            require(pins == expected_intent["scope_pins"],
+                    "UNIVERSAL_BROKER_SOURCE_PIN_DRIFT")
+
     @_serialized
     def execute_broker_bound(self, ledger, plan, policy_bytes: bytes,
                              policy_pin: str, request_bytes: bytes,
@@ -531,6 +573,15 @@ class UniversalFixtureInstaller:
         identity = (binding["request_id"], binding["request_sha256"],
                     binding["policy_sha256"])
         ledger.reserve(plan, policy_bytes, policy_pin, request_bytes)
+        # Preserve replay/tombstone precedence, then preflight before
+        # applying. On ordinary rejection, tombstone the reserved request
+        # without native calls. A hard crash preserves R967 recovery.
+        try:
+            self._broker_admission_readonly(action, expected_intent, sources)
+        except Exception:
+            ledger.close_fixture(*identity, outcome="aborted_synthetic",
+                                 expected_phase="reserved")
+            raise
         ledger.mark_applying_fixture(*identity)
         def terminal(outcome):
             ledger.mark_terminal_fixture(*identity, outcome=outcome)
