@@ -598,7 +598,33 @@ class UniversalFixtureInstaller:
             ledger.mark_staging_fixture(*identity)
             self._begin_locked(sources, expected_intent=expected_intent)
             ledger.mark_applying_fixture(*identity)
-            self._activate_locked()
+            try:
+                self._activate_locked()
+            except Exception as native_error:
+                # Native apply may have replaced both code scopes before an
+                # Inno postinstall error. A normal raised error is not a
+                # completion receipt. When the native adapter explicitly
+                # reports NO valid completion receipt, restore the pinned
+                # preimage now under the SAME broker/engine writer. The
+                # interrupted rollback remains replayable if it fails.
+                # An authenticated completion receipt makes the outcome
+                # ambiguous: retain applying+journal for reconciliation.
+                if self.journal.exists() and not self.journal.is_symlink():
+                    pending = self._load()
+                    if (pending["phase"] == "activated" and
+                            not self._native_complete(pending)):
+                        try:
+                            self._abort_locked(before_remove=terminal)
+                        except Exception as restore_error:
+                            raise EngineError(
+                                "UNIVERSAL_BROKER_AUTO_ROLLBACK_UNRESOLVED"
+                            ) from restore_error
+                        ledger.close_fixture(*identity,
+                                             outcome="aborted_synthetic")
+                        raise EngineError(
+                            "UNIVERSAL_BROKER_NATIVE_FAILURE_AUTO_ABORTED_FIXTURE_ONLY"
+                        ) from native_error
+                raise
             result = self._commit_locked(before_remove=terminal)
         ledger.close_fixture(*identity, outcome="completed_synthetic")
         return result
