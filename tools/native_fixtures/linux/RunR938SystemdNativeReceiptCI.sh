@@ -180,12 +180,13 @@ if [[ "$R975_ROOT_RESERVED_CRASH" == 1 ]]; then
   for i in $(seq 1 50); do
     observed_status=$(systemctl show -p ExecMainStatus --value "$UNIT" 2>/dev/null || true)
     observed_result=$(systemctl show -p Result --value "$UNIT" 2>/dev/null || true)
-    [[ "$observed_status" == 75 && "$observed_result" == exit-code ]] && break
+    [[ "$observed_status" == 78 && "$observed_result" == exit-code ]] && break
     sleep 0.2
   done
-  [[ "$observed_status" == 75 && "$observed_result" == exit-code ]] || {
-    echo R975_ACTUAL_SYSTEMD_ROOT_PID_DID_NOT_EXIT_75; exit 89;
+  [[ "$observed_status" == 78 && "$observed_result" == exit-code ]] || {
+    echo R976_ACTUAL_SYSTEMD_ROOT_PID_NOT_FAILED_78; exit 89;
   }
+  echo R976_REAL_ROOT_SYSTEMD_FAILED_PROCESS_STATUS_PASS
   sudo -n test ! -e "$ROOT/state/native-completed-receipt.json" || {
     echo R975_PRE_NATIVE_CRASH_FABRICATED_RECEIPT; exit 89;
   }

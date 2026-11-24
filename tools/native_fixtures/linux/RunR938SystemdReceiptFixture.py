@@ -378,7 +378,10 @@ def serve(root: Path) -> None:
                     # INDEPENDENT root-only CI fault, never a client JSON field.
                     # No native work or receipt happened when this exits.
                     if os.environ.get("R975_ROOT_CUT_AFTER_RESERVE") == "1":
-                        os._exit(75)
+                        # systemd treats EX_TEMPFAIL/75 as success.
+                        # EX_CONFIG/78 is a failure in its native state
+                        # machine, preserving the real crash evidence.
+                        os._exit(78)
                     identity["phase"] = "applying"
                     atomic_root_json(ledger, state)
                     check_service_identity()

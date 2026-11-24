@@ -140,6 +140,18 @@ class R938FixtureContracts(unittest.TestCase):
                     fixture_plan("linux-x86_64"), changed_policy_bytes,
                     hash_bytes(changed_policy_bytes), changed_bytes)
 
+    def test_r976_real_systemd_root_cut_is_failure_status_not_tempfail(self):
+        # systemd.service documents EX_TEMPFAIL/75 as a successful exit;
+        # expecting Result=exit-code with 75 misclassifies our real test.
+        source = SCRIPT.read_text(encoding="utf-8")
+        shell = HARNESS.read_text(encoding="utf-8")
+        self.assertIn("os._exit(78)", source)
+        self.assertIn('"$observed_status" == 78', shell)
+        self.assertIn('"$observed_result" == exit-code', shell)
+        self.assertNotIn("os._exit(75)", source)
+        self.assertIn("R976_REAL_ROOT_SYSTEMD_FAILED_PROCESS_STATUS_PASS", shell)
+        self.assertIn("R975_ROOT_RESERVED_CRASH", shell)
+
     def test_r975_root_reserved_restart_retires_without_native_and_never_replays(self):
         """Unit contract only; real root+systemd service runs in push-only CI."""
         from unittest.mock import patch
