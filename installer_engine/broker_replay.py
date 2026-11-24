@@ -212,8 +212,12 @@ class BrokerReplayFixtureLedger:
             return self._report(STATUS, request_id, outcome)
 
     def close_fixture(self, request_id: str, request_sha256: str,
-                      policy_sha256: str, *, outcome: str) -> dict:
-        """Tombstone request ID in bounded synthetic history; no native PASS."""
+                      policy_sha256: str, *, outcome: str,
+                      expected_phase: str | None = None) -> dict:
+        """Tombstone request ID in bounded synthetic history; no native PASS.
+
+        When provided, expected_phase is checked under the ledger lock.
+        """
         require(type(outcome) is str and
                 outcome in ("completed_synthetic", "aborted_synthetic"),
                 "BROKER_REPLAY_FIXTURE_OUTCOME_INVALID")
@@ -221,6 +225,9 @@ class BrokerReplayFixtureLedger:
             doc = self._load()
             active = self._active_exact(
                 doc, request_id, request_sha256, policy_sha256)
+            require(expected_phase is None or
+                    (type(expected_phase) is str and expected_phase in _PHASES and active["phase"] == expected_phase),
+                    "BROKER_REPLAY_CLOSE_PHASE_DRIFT")
             require(active["phase"] == "applying" or
                     active["phase"] == outcome or
                     (active["phase"] == "reserved" and outcome == "aborted_synthetic"),

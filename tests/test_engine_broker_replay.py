@@ -135,6 +135,16 @@ class ReplayJournalFixtureTests(unittest.TestCase):
                                     "BROKER_REPLAY_FIXTURE_OUTCOME_INVALID"):
             self.close("native_accepted")
 
+    def test_compare_and_close_reserved_refuses_concurrent_phase_change(self):
+        self.reserve()
+        self.apply()
+        with self.assertRaisesRegex(EngineError, "BROKER_REPLAY_CLOSE_PHASE_DRIFT"):
+            self.ledger.close_fixture(self.rid, self.reqpin, self.pin,
+                                      outcome="aborted_synthetic",
+                                      expected_phase="reserved")
+        self.assertEqual(self.recover()["phase"], "applying")
+        self.assertEqual(self.ledger.inspect_fixture()["used_ids"], 1)
+
     def test_complete_requires_applying_but_abort_from_reserved_allowed(self):
         self.reserve()
         with self.assertRaisesRegex(EngineError,

@@ -552,8 +552,9 @@ class UniversalFixtureInstaller:
                              policy_pin: str, request_bytes: bytes) -> dict:
         """Reconcile ONLY the matching active reservation and durable journal.
 
-        Without a journal, only an already persisted terminal ledger result
-        can close the reservation. Otherwise preserve ambiguity and refuse.
+        Without a journal, a never-applied reservation can be aborted, or
+        an already persisted terminal result can be retired. An applying
+        reservation remains ambiguous and must not be inferred or retried.
         """
         from .broker_replay import BrokerReplayFixtureLedger
         from .broker_intent import compare_native_transaction_policy_intent
@@ -571,9 +572,19 @@ class UniversalFixtureInstaller:
         phase = active["phase"]
         terminals = ("completed_synthetic", "aborted_synthetic")
         if not self.journal.exists():
-            require(phase in terminals, "UNIVERSAL_BROKER_NO_JOURNAL_RECONCILE")
+            require(phase in terminals or phase == "reserved",
+                    "UNIVERSAL_BROKER_NO_JOURNAL_RECONCILE")
             self._no_active()
-            ledger.close_fixture(*identity, outcome=phase)
+            if phase == "reserved":
+                # The serialized dispatcher has not crossed mark_applying.
+                # Compare-and-close under the ledger lock, never invoke native
+                # callbacks and retain the request ID in replay history.
+                ledger.close_fixture(*identity, outcome="aborted_synthetic",
+                                     expected_phase="reserved")
+                return {"status": "UNIVERSAL_BROKER_RESERVED_ABORTED_FIXTURE_ONLY",
+                        "outcome": "aborted_synthetic",
+                        "native_product_installation_accepted": False}
+            ledger.close_fixture(*identity, outcome=phase, expected_phase=phase)
             return {"status": "UNIVERSAL_BROKER_TERMINAL_RECONCILED_FIXTURE_ONLY",
                     "outcome": phase, "native_product_installation_accepted": False}
         doc = self._load()
