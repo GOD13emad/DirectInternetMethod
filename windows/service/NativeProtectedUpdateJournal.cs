@@ -59,6 +59,11 @@ internal static class NativeProtectedUpdateJournal
             (File.GetAttributes(target) & FileAttributes.ReparsePoint) != 0)
             throw new InvalidDataException("Native pending target cannot be a reparse point.");
 
+        // Initial publication is exclusive even if a second writer or an
+        // interrupted transaction appeared after the service preflight.
+        if (!resumeCleanup && File.Exists(target))
+            throw new IOException("Initial pending record already exists; evidence preserved.");
+
         var raw = JsonSerializer.SerializeToUtf8Bytes(payload);
         if (raw.Length is < 1 or > MaximumPendingBytes)
             throw new InvalidDataException("Native pending record size invalid.");
@@ -92,8 +97,12 @@ internal static class NativeProtectedUpdateJournal
         // Same-directory, same-volume Win32 rename; the WRITE_THROUGH flag
         // requests a stronger flush than the previous bare File.Move.
         // This remains NOT an independently power-cut-proven guarantee.
-        if (!MoveFileExW(temp, target,
-                         MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+        // Never replace a prior pending identity during initial publication.
+        // The Win32 rename itself enforces this even if the precheck races.
+        // Only the verified receipt-consumed transition can replace it.
+        var flags = MOVEFILE_WRITE_THROUGH |
+                    (resumeCleanup ? MOVEFILE_REPLACE_EXISTING : 0u);
+        if (!MoveFileExW(temp, target, flags))
             throw new IOException("Native pending journal MoveFileExW failed.",
                 new Win32Exception(Marshal.GetLastWin32Error()));
     }

@@ -79,13 +79,26 @@ internal static class NativeJournalProbe
         Need(JsonDocument.Parse(File.ReadAllBytes(pending)).RootElement
             .GetProperty("transactionId").GetString() == "FIRST",
             "R978_FIRST_WRITE_INVALID");
-        NativeProtectedUpdateJournal.WriteJsonAtomic(pending,
-            new { schema = 2, transactionId = "SECOND", cleanupPhase = "receipt-consumed" });
+        var first = File.ReadAllBytes(pending);
+        CheckRejected(() => NativeProtectedUpdateJournal.WriteJsonAtomic(pending,
+            new { schema = 2, transactionId = "SECOND" }),
+            "R987_INITIAL_OVERWRITE_ACCEPTED");
+        Need(!File.Exists(temp) && File.ReadAllBytes(pending).AsSpan().SequenceEqual(first),
+            "R987_EXISTING_PENDING_NOT_PRESERVED");
+        using var firstDoc = JsonDocument.Parse(first);
+        NativeProtectedUpdateJournal.CommitReceiptConsumed(pending,
+            NativeUpdateCleanupJournal.MarkReceiptConsumed(firstDoc.RootElement));
         Need(!File.Exists(temp), "R978_TEMP_LEFT_AFTER_REPLACE");
         var old = File.ReadAllBytes(pending);
         Need(JsonDocument.Parse(old).RootElement
             .GetProperty("cleanupPhase").GetString() == "receipt-consumed",
             "R978_COMMITTED_WRITE_MISSING");
+        CheckRejected(() => NativeProtectedUpdateJournal.WriteJsonAtomic(pending,
+            new { schema = 2, transactionId = "THIRD" }),
+            "R987_COMMITTED_OVERWRITE_ACCEPTED");
+        Need(!File.Exists(temp) && File.ReadAllBytes(pending).AsSpan().SequenceEqual(old),
+            "R987_COMMITTED_PENDING_NOT_PRESERVED");
+        Console.WriteLine("R987_INITIAL_AND_COMMITTED_RECORD_OVERWRITE_DENIED");
 
         File.WriteAllText(temp, "R978_OWNED_STALE_TEMP_PRESERVE",
                           new UTF8Encoding(false));
@@ -112,6 +125,16 @@ internal static class NativeJournalProbe
         Need(!File.Exists(unrelated), "R978_FOREIGN_RECORD_WRITTEN");
         Console.WriteLine("R978_REAL_WIN32_WRITE_THROUGH_PENDING_JOURNAL_PASS_NO_PRODUCT");
 
+        // Only the disposable test owns this completed fixture record.
+        File.Delete(pending);
+        File.WriteAllText(temp, "R987_INTERRUPTED_INITIAL_TEMP", new UTF8Encoding(false));
+        CheckRejected(() => NativeProtectedUpdateJournal.WriteJsonAtomic(pending,
+            new { schema = 2, transactionId = "UNSAFE_RETRY" }),
+            "R987_STALE_INITIAL_TEMP_ACCEPTED");
+        Need(!File.Exists(pending) &&
+             File.ReadAllText(temp) == "R987_INTERRUPTED_INITIAL_TEMP",
+             "R987_STALE_INITIAL_EVIDENCE_NOT_PRESERVED");
+        File.Delete(temp);
         // Actual production writer fails its real Win32 rename while the old
         // pending file is open without delete sharing. No production fault
         // injection switch, no installed service or installer is involved.
@@ -177,6 +200,12 @@ class NativeJournalDurabilityContract(unittest.TestCase):
                         "FileMode.CreateNew", "Flush(flushToDisk: true)"):
             self.assertIn(keyword, source)
         self.assertIn('pending-update.json', source)
+
+    def test_r987_initial_publication_is_exclusive_and_only_cleanup_replaces(self):
+        source = HELPER.read_text(encoding="utf-8-sig")
+        self.assertIn("!resumeCleanup && File.Exists(target)", source)
+        self.assertIn("resumeCleanup ? MOVEFILE_REPLACE_EXISTING : 0u", source)
+        self.assertIn("Initial pending record already exists", source)
 
     def test_r979_only_verified_cleanup_can_resume_exact_flushed_temp(self):
         program = SERVICE.read_text(encoding="utf-8-sig")
