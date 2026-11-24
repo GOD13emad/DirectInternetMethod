@@ -55,7 +55,7 @@ def guard():
     # its own independently checked frozen package and bootstrap digest.
     global PIN_ENTRY, PIN_ZIP, PKG, ARCHIVE
     if reviewed:
-        PIN_ENTRY = "02F6D40EB083F238122CD0B1FCCE65FCBF7D802A4B67445CBA484340F54902CB"
+        PIN_ENTRY = "346D99B8D0745C2F42D24EE835FC3C6A8646AE705E04C41640BDFC6BA196B4C5"
         PIN_ZIP = "298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD"
         PKG = "DirectInternetMethod_1.5.7_Linux_x86_64"
         ARCHIVE = BASE / "delivery" / (PKG + ".zip")
@@ -229,6 +229,40 @@ def reviewed_fresh_lifecycle(package: Path, uid: int, helper):
                 owner=True)
         checked(["/bin/bash", "-c", "for c in python3 sha256sum pkexec systemctl nft busctl ip curl getent; do command -v \"$c\" || exit 3; done"],
                 owner=True)
+        # R964: an orphaned native registration is not a fresh host.
+        # Create ONLY a disposable sentinel in the already verified empty VM.
+        sentinel = b"R964_QA_FOREIGN_UID_RECORD\n"
+        fd = os.open(uid_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+                     os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "wb") as out:
+            out.write(sentinel)
+        try:
+            rejected = subprocess.run(
+                ["/usr/bin/python3", "-I", str(ENTRY), "--action", "install",
+                 "--source", str(package)], cwd="/", env=env,
+                capture_output=True, text=True, timeout=30)
+            need(rejected.returncode == 86 and
+                 "R781_REJECT_FRESH_TARGET_OCCUPIED:" in rejected.stderr,
+                 "R964_FOREIGN_TARGET_NOT_REJECTED")
+            need(uid_file.read_bytes() == sentinel and not root.exists() and
+                 not metadata.parent.exists() and
+                 all(not p.exists() for p in unit_paths),
+                 "R964_FOREIGN_TARGET_OR_BACKEND_MUTATED")
+        finally:
+            need(not uid_file.is_symlink() and uid_file.read_bytes() == sentinel,
+                 "R964_SENTINEL_IDENTITY")
+            uid_file.unlink()
+        # Kernel flock must reject a second real bootstrap invocation.
+        with helper.bootstrap_lock():
+            busy = subprocess.run(
+                ["/usr/bin/python3", "-I", str(ENTRY), "--action", "install",
+                 "--source", str(package)], cwd="/", env=env,
+                capture_output=True, text=True, timeout=15)
+            need(busy.returncode == 86 and
+                 "R781_REJECT_BOOTSTRAP_BUSY" in busy.stderr and not root.exists(),
+                 "R964_CONCURRENT_BOOTSTRAP_NOT_REJECTED")
+        print("R964_REAL_BOOTSTRAP_FOREIGN_REGISTRATION_PRESERVED")
+        print("R964_REAL_BOOTSTRAP_CONCURRENT_REQUEST_REJECTED")
         # Same protected executable, same frozen package, simulated authorization
         # identity ONLY in this VM. The production install_system.sh is unmodified.
         output = checked(["/usr/bin/python3", "-I", str(ENTRY), "--action", "install",

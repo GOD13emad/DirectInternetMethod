@@ -674,7 +674,7 @@ jobs:
           if [ "$GITHUB_REF" = refs/heads/feature/universal-install-engine ]; then
             test "$GITHUB_EVENT_NAME" = workflow_dispatch
             test "$R962_EXPECTED_SHA" = "$GITHUB_SHA"
-            printf '%s  %s\n' '02F6D40EB083F238122CD0B1FCCE65FCBF7D802A4B67445CBA484340F54902CB' 'tools/security/privileged_entry.py' | sha256sum --check --status
+            printf '%s  %s\n' '346D99B8D0745C2F42D24EE835FC3C6A8646AE705E04C41640BDFC6BA196B4C5' 'tools/security/privileged_entry.py' | sha256sum --check --status
           else
           printf '%s  %s\n' 'D0181C15C54B90A3B6E03FBFBE32148341037AB60CF4D6788B6A72140304340F' 'tools/security/privileged_entry.py' | sha256sum --check --status
           fi
