@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: ''
+      native_failure_candidate_sha:
+        description: 'Reviewed exact SHA: real native Windows Inno postinstall failure, ephemeral VM only'
+        required: false
+        type: string
+        default: ''
       linux_bootstrap_candidate_sha:
         description: 'Exact reviewed feature HEAD for isolated Linux bootstrap and lifecycle QA (no release)'
         required: false
@@ -763,6 +768,49 @@ jobs:
           path: delivery/DirectInternetMethod_1.5.7_Windows_Setup.exe
           if-no-files-found: error
           retention-days: 7
+
+  windows-r980-real-postinstall-failure:
+    name: windows-r980-real-product-postfailure-ephemeral
+    # This test actually installs DIM, but ONLY in a fresh original-repo
+    # hosted runner, on explicit workflow_dispatch for reviewed exact HEAD.
+    # No release, PR, push, self-hosted or physical host invocation.
+    if: github.repository == 'GOD13emad/DirectInternetMethod' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.native_failure_candidate_sha != '' && inputs.native_failure_candidate_sha == github.sha
+    needs: windows-source
+    runs-on: windows-2025
+    timeout-minutes: 65
+    env:
+      R951_EXPECTED_SHA: ${{ inputs.native_failure_candidate_sha }}
+      R980_EXPECTED_SHA: ${{ inputs.native_failure_candidate_sha }}
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build exact unchanged private v1.5.7 source installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r846_windows_candidate_hosted_build.ps1
+          if($LASTEXITCODE -ne 0){throw 'R980_EXACT_PRIVATE_BUILD_FAILED'}
+      - name: Force real Inno postinstall failure in separate QA script copy
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r980_windows_real_product_postfailure_vm.ps1
+          if($LASTEXITCODE -ne 0){throw 'R980_REAL_NATIVE_POSTFAILURE_EVIDENCE_FAILED'}
+      - name: Preserve negative real product evidence (not rollback acceptance)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: r980-real-product-inno-failure-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIM_R980_REAL_POSTFAIL/R980_REAL_POSTFAIL.json
+          if-no-files-found: warn
+          retention-days: 14
 
   windows-private-r848-v156-forward:
     name: windows-private-r848-v156-forward-one-time
