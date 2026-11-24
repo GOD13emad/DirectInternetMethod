@@ -46,6 +46,14 @@ class R982CommonBrokerNativeScope(unittest.TestCase):
         self.assertIn("PASS_REAL_PRODUCT_INNO_POSTINSTALL_FAILURE_REQUIRES_EXTERNAL_RECOVERY",src)
         self.assertIn("nativeAutomaticRollbackAccepted=$false",src)
 
+    def test_vm_final_exit_condition_accepts_only_matching_mode_success(self):
+        source=R980.read_text("utf-8-sig")
+        self.assertIn("$expectedStatus=if($CommonBrokerRecovery){", source)
+        self.assertIn("'PASS_R982_REAL_PRODUCT_NATIVE_COMPENSATION_VM_ONLY'", source)
+        self.assertIn("if($observed.status -cne $expectedStatus){exit 31}", source)
+        self.assertIn("if($CommonBrokerRecovery){", source)
+        self.assertIn("nativeAutomaticRollbackAccepted=$false", source)
+
     def test_explicit_hosted_exact_source_dispatch_only(self):
         s=CI.read_text("utf-8")
         self.assertIn("native_broker_recovery_candidate_sha:",s)

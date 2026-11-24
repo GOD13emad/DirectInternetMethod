@@ -231,4 +231,9 @@ try {
 }
 Write-Output ('R980_REAL_NATIVE_FAILURE_STATUS='+$observed.status)
 Write-Output ('R980_PROBE_REPORT='+$Report)
-if($observed.status -cne 'PASS_REAL_PRODUCT_INNO_POSTINSTALL_FAILURE_REQUIRES_EXTERNAL_RECOVERY'){exit 31}
+$expectedStatus=if($CommonBrokerRecovery){
+ 'PASS_R982_REAL_PRODUCT_NATIVE_COMPENSATION_VM_ONLY'
+}else{
+ 'PASS_REAL_PRODUCT_INNO_POSTINSTALL_FAILURE_REQUIRES_EXTERNAL_RECOVERY'
+}
+if($observed.status -cne $expectedStatus){exit 31}
