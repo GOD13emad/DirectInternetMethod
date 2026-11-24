@@ -371,6 +371,11 @@ internal static class Program
                 throw new CryptographicException("Downloaded installer failed SHA-256 verification.");
             }
             File.Move(partPath, finalPath); // Never overwrite a pending/foreign installer.
+            // Reverify the exact final inode and hold it through journal publication
+            // and native launch; preserve the stage on any identity mismatch.
+            if (!NativeProtectedUpdateAcl.IsProtectedExistingDirectory(UpdatesDir))
+                throw new UnauthorizedAccessException("Protected update root changed before handoff.");
+            using var verifiedInstaller = NativeInnoCompletionReceipt.HoldVerifiedStage(finalPath, expected);
 
             var installDir = GetRegisteredInstallDirectory();
             var transactionId = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));

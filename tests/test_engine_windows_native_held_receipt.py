@@ -22,6 +22,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace DirectInternetMethod.Service;
 
@@ -135,6 +136,37 @@ internal static class HeldProbe
         using (var doc = NativeInnoCompletionReceipt.ReadHeldPendingJson(pending))
             Need(doc.RootElement.GetProperty("schema").GetInt32() == 2, "R985_PENDING_REOPEN_FAILED");
         Console.WriteLine("R985_REAL_NATIVE_WINDOWS_HELD_PENDING_PASS");
+        var stage = Path.Combine(transactions, "DirectInternetMethod-update-stage.exe");
+        // Harmless data, not executable; exercise the actual Win32 helper.
+        var fixture = Encoding.ASCII.GetBytes("R991_NON_EXECUTABLE_STAGE_FIXTURE");
+        File.WriteAllBytes(stage, fixture);
+        var expected = Convert.ToHexString(SHA256.HashData(fixture));
+        using (var heldStage = NativeInnoCompletionReceipt.HoldVerifiedStage(stage, expected))
+        {
+            Need(heldStage.Position == 0, "R991_STAGE_POSITION");
+            Denied(() => { using var writer = File.OpenWrite(stage); },
+                   "stage-concurrent-write");
+            Denied(() => File.Move(stage, stage + ".other"), "stage-concurrent-rename");
+            Need(Convert.ToHexString(SHA256.HashData(heldStage)) == expected,
+                 "R991_HELD_STAGE_HASH_DRIFT");
+        }
+        Denied(() => NativeInnoCompletionReceipt.HoldVerifiedStage(stage, new string('0',64)).Dispose(),
+               "stage-bad-digest");
+        var stageLink = Path.Combine(transactions, "stage-link.bin");
+        Need(CreateHardLinkW(stageLink, stage, IntPtr.Zero), "R991_LINK_SETUP");
+        Denied(() => NativeInnoCompletionReceipt.HoldVerifiedStage(stage, expected).Dispose(),
+               "stage-hardlink");
+        File.Delete(stageLink);
+        using (var writer = new FileStream(stage, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            Denied(() => NativeInnoCompletionReceipt.HoldVerifiedStage(stage, expected).Dispose(),
+                   "stage-open-writer");
+        File.Move(stage, stage + ".other");
+        Denied(() => NativeInnoCompletionReceipt.HoldVerifiedStage(stage + ".other", expected).Dispose(),
+               "stage-wrong-leaf");
+        File.Move(stage + ".other", stage);
+        using (var heldStage = NativeInnoCompletionReceipt.HoldVerifiedStage(stage, expected))
+            Need(heldStage.Length == fixture.Length, "R991_STAGE_REOPEN");
+        Console.WriteLine("R991_REAL_NATIVE_HELD_STAGE_PASS");
         Console.WriteLine("R977_REAL_NATIVE_WINDOWS_HELD_RECEIPT_PASS");
         return 0;
     }
@@ -157,6 +189,18 @@ class NativeProductionHeldWin32Receipt(unittest.TestCase):
         self.assertIn("NativeInnoCompletionReceipt.ReadHeldPendingJson(target)", journal)
         self.assertNotIn("File.ReadAllText(PendingUpdatePath)", service)
         self.assertNotIn("File.OpenRead(target)", journal)
+
+    def test_r991_protected_stage_handle_spans_actual_handoff(self):
+        service = (ROOT / "windows/service/Program.cs").read_text("utf-8-sig")
+        update = service.split("static async Task RunUpdateAsync()", 1)[1].split(
+            "static bool PendingNativeRegistrationMatches", 1)[0]
+        move = update.index("File.Move(partPath, finalPath)")
+        hold = update.index("using var verifiedInstaller = NativeInnoCompletionReceipt.HoldVerifiedStage(finalPath, expected)")
+        journal = update.index("WriteJsonAtomic(PendingUpdatePath")
+        launch = update.index("Process.Start(psi)")
+        self.assertLess(move, hold)
+        self.assertLess(hold, journal)
+        self.assertLess(journal, launch)
 
     @unittest.skipUnless(os.name == "nt", "real Win32 handles require Windows")
     def test_actual_compiled_production_receipt_helper_native_win32(self):
@@ -202,6 +246,7 @@ class NativeProductionHeldWin32Receipt(unittest.TestCase):
             self.assertIn("R977_REAL_NATIVE_WINDOWS_HELD_RECEIPT_PASS",
                           run.stdout)
             self.assertIn("R985_REAL_NATIVE_WINDOWS_HELD_PENDING_PASS", run.stdout)
+            self.assertIn("R991_REAL_NATIVE_HELD_STAGE_PASS", run.stdout)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 namespace DirectInternetMethod.Service;
@@ -143,6 +144,37 @@ internal static class NativeInnoCompletionReceipt
         // The size bound is enforced on the SAME non-reparse, single-link
         // handle. No secondary pathname open or unbounded read.
         return JsonDocument.Parse(reader);
+    }
+
+    // Caller already verified the protected directory ACL and release SHA.
+    // Return the same verified, single-link read handle to keep the fixed
+    // stage immutable through Process.Start. No authority to execute here.
+    internal static FileStream HoldVerifiedStage(string path, string expectedSha)
+    {
+        if (!OperatingSystem.IsWindows() || string.IsNullOrWhiteSpace(path) ||
+            !Path.IsPathFullyQualified(path) ||
+            !string.Equals(path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase) ||
+            Path.GetFileName(path) != "DirectInternetMethod-update-stage.exe" ||
+            Path.GetFileName(Path.GetDirectoryName(path)) != "UpdateTransactions" ||
+            !Hex64(expectedSha))
+            throw new InvalidDataException("Protected installer stage identity invalid.");
+        var held = OpenHeldExact(path, int.MaxValue, writable: false, bounded: true);
+        FileStream? stream = null;
+        try
+        {
+            stream = new FileStream(held, FileAccess.Read);
+            var actual = Convert.ToHexString(SHA256.HashData(stream));
+            if (!string.Equals(actual, expectedSha, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Protected installer stage SHA changed.");
+            stream.Position = 0;
+            return stream;
+        }
+        catch
+        {
+            if (stream is not null) stream.Dispose();
+            else held.Dispose();
+            throw;
+        }
     }
 
     private static SafeFileHandle OpenHeldExact(string expectedPath, int exactBytes, bool writable,
