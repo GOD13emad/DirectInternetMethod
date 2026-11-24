@@ -93,6 +93,49 @@ class R982CommonBrokerNativeScope(unittest.TestCase):
                     vm._validate_crash_observation(
                         dict(observation, **{key: wrong}), identity, cfg)
 
+    def test_r986_recovery_worker_is_fresh_process_and_bound_to_disk(self):
+        source=VM.read_text("utf-8")
+        for marker in ("--r986-recover", "def _run_recovery_worker(",
+                       "R986_DISPATCH_PIN_MISMATCH", "r986-recovery.json",
+                       "R986_RECOVERY_WORKER_REPLAY_DENIED",
+                       "R986_FRESH_RECOVERY_PROCESS_CONFIRMED"):
+            self.assertIn(marker,source)
+        self.assertIn("R986_FRESH_RECOVERY_PROCESS_CONFIRMED",
+                      R980.read_text("utf-8-sig"))
+
+    def test_r986_disk_dispatch_pin_and_worker_replay_fail_before_native(self):
+        import hashlib
+        import json
+        import tempfile
+        from unittest.mock import patch
+        from tests import r982_windows_real_native_compensation_vm as vm
+        from installer_engine.engine import EngineError
+        with tempfile.TemporaryDirectory() as td:
+            qa = Path(td)
+            base = qa / "dim-universal-r986"
+            base.mkdir()
+            policy = b'{}'
+            payload = {"platform": "windows-x86_64",
+                       "product": "Direct Internet Method", "version": "1.5.7",
+                       "scopes": [], "pb": policy.hex(), "rb": "7b7d",
+                       "pin": hashlib.sha256(policy).hexdigest(), "intent": {},
+                       "sources": {name: [f"bundle-{name}-1.5.7", "a"*64]
+                                   for name in ("protected", "user")}}
+            raw = json.dumps(payload).encode()
+            path = base / "r983-dispatch.json"
+            path.write_bytes(raw)
+            pin = hashlib.sha256(raw).hexdigest()
+            self.assertEqual(vm._read_crash_dispatch(qa, base.name, pin)[0], base)
+            path.write_bytes(raw + b" ")
+            with self.assertRaisesRegex(EngineError, "R986_DISPATCH_PIN_MISMATCH"):
+                vm._read_crash_dispatch(qa, base.name, pin)
+            path.write_bytes(raw)
+            (base / "r986-recovery.json").write_text("existing", encoding="utf-8")
+            with patch.object(vm, "RealInnoVmAdapter") as native:
+                with self.assertRaisesRegex(EngineError, "R986_RECOVERY_WORKER_REPLAY_DENIED"):
+                    vm._run_recovery_worker(qa, {}, base.name, pin)
+                native.assert_not_called()
+
     def test_r984_opt_in_native_metadata_and_held_media_gate(self):
         source=R980.read_text("utf-8-sig")
         workflow=CI.read_text("utf-8")

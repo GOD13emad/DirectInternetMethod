@@ -278,6 +278,14 @@ try {
          $result.r983_os_service_supervisor_accepted -eq $false -and
          $result.r983_reboot_accepted -eq $false) 'R983_REAL_NATIVE_CHILD_EXIT_RECOVERED'
    $observed['r983AbruptChildRecoveryObserved']=$true
+   Need ($result.r986_fresh_recovery_process -eq $true -and
+         $result.r986_recovery_worker_pid -gt 0 -and
+         $result.r986_observer_pid -gt 0 -and
+         $result.r986_recovery_worker_pid -ne $result.r986_observer_pid -and
+         $result.r986_dispatch_sha256 -cmatch '^[a-f0-9]{64}$' -and
+         $result.r986_recovery_replay_denied -eq $true -and
+         $result.r986_os_supervisor_accepted -eq $false) 'R986_FRESH_RECOVERY_PROCESS_CONFIRMED'
+   $observed['r986FreshRecoveryProcessObserved']=$true
   }
   $observed.realProductPostinstallFailureObserved=$true
   $observed['r982CommonBrokerVm']=$result

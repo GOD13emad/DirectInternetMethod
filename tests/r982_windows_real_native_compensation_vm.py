@@ -313,17 +313,24 @@ class CrashAfterApplyAdapter(RealInnoVmAdapter):
         raise EngineError("R983_CHILD_NATIVE_FAILURE_NOT_OBSERVED")
 
 
-def _run_crash_child(qa: Path, cfg: dict, name: str) -> int:
+def _read_crash_dispatch(qa: Path, name: str, expected_pin: str | None = None):
     require(name.startswith("dim-universal-") and Path(name).name == name,
             "R983_CHILD_BASE_INVALID")
     base = qa / name
     require(base.is_dir() and not base.is_symlink() and
             base.resolve().parent == qa.resolve(), "R983_CHILD_BASE_INVALID")
     inp = base / "r983-dispatch.json"
-    require(inp.is_file() and not inp.is_symlink(),
-            "R983_CHILD_DISPATCH_MISSING")
-    payload = json.loads(inp.read_text(encoding="utf-8"))
-    require(payload["platform"] == "windows-x86_64" and
+    require(inp.is_file() and not inp.is_symlink() and
+            0 < inp.stat().st_size <= 65536, "R983_CHILD_DISPATCH_MISSING")
+    raw = inp.read_bytes()
+    if expected_pin is not None:
+        require(hashlib.sha256(raw).hexdigest() == expected_pin,
+                "R986_DISPATCH_PIN_MISMATCH")
+    payload = json.loads(raw)
+    require(type(payload) is dict and set(payload) ==
+            {"platform", "product", "version", "scopes", "pb", "pin",
+             "rb", "intent", "sources"} and
+            payload["platform"] == "windows-x86_64" and
             payload["product"] == "Direct Internet Method" and
             payload["version"] == "1.5.7" and
             set(payload["sources"]) == {"protected", "user"},
@@ -338,44 +345,37 @@ def _run_crash_child(qa: Path, cfg: dict, name: str) -> int:
                       payload["platform"],
                       "PINNED_CODE_LAYOUT_REQUIRES_TRUSTED_NATIVE_ADAPTER",
                       tuple((name, manifest) for name, manifest in payload["scopes"]))
+    pb, rb = bytes.fromhex(payload["pb"]), bytes.fromhex(payload["rb"])
+    require(hashlib.sha256(pb).hexdigest() == payload["pin"],
+            "R986_DISPATCH_PIN_MISMATCH")
+    return base, plan, pb, payload["pin"], rb, payload["intent"], sources
+
+
+def _run_crash_child(qa: Path, cfg: dict, name: str) -> int:
+    base, plan, pb, pin, rb, intent, sources = _read_crash_dispatch(qa, name)
     adapter = CrashAfterApplyAdapter(qa, base,
         new_gui=cfg["new_gui"], new_service=cfg["new_service"],
         failed_setup_sha=cfg["failed_setup_sha"])
-    core = UniversalFixtureInstaller(base / "managed-journal", payload["platform"],
+    core = UniversalFixtureInstaller(base / "managed-journal", plan.platform,
         {"protected": base / "managed-protected", "user": base / "managed-user"},
         adapter)
-    ledger = BrokerReplayFixtureLedger(base / "r982-ledger", payload["platform"])
-    core.execute_broker_bound(
-        ledger, plan, bytes.fromhex(payload["pb"]), payload["pin"],
-        bytes.fromhex(payload["rb"]), payload["intent"], sources)
+    ledger = BrokerReplayFixtureLedger(base / "r982-ledger", plan.platform)
+    core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
     raise EngineError("R983_CHILD_DID_NOT_EXIT_AT_NATIVE_FAILURE")
 
 
-def _recover_after_child_exit(workspace: Path, qa: Path, cfg: dict,
-                              fixture, plan, pb, pin, rb, intent,
-                              sources, ledger):
-    base = fixture.base
-    require(base.resolve().parent == qa.resolve(),
-            "R983_CHILD_BASE_INVALID")
-    atomic_json(base / "r983-dispatch.json", {
-        "platform": plan.platform, "product": plan.product,
-        "version": plan.version, "scopes": list(plan.scopes),
-        "pb": pb.hex(), "pin": pin, "rb": rb.hex(), "intent": intent,
-        "sources": {name: [folder.name, digest]
-                    for name, (folder, digest) in sources.items()},
-    })
-    child = subprocess.run(
-        [sys.executable, str(Path(__file__).resolve()), "--r983-child", base.name],
-        cwd=workspace, timeout=720)
-    require(child.returncode == 79, "R983_CHILD_DID_NOT_EXIT_AT_NATIVE_FAILURE")
-    # No native call is replayed until the existing durable request is read.
-    pending = fixture.core._load()
-    require(pending["phase"] == "activated" and
-            fixture.core._intent(pending) == intent and
-            ledger.inspect_fixture()["active_phase"] == "applying",
-            "R983_PERSISTED_INTENT_DRIFT")
+def _run_recovery_worker(qa: Path, cfg: dict, name: str,
+                         dispatch_pin: str) -> int:
+    # A fresh interpreter reconstructs every transaction argument from disk.
+    # The parent pin is fixture integrity only, not OS/publisher authority.
+    base, plan, pb, pin, rb, intent, _ = _read_crash_dispatch(
+        qa, name, dispatch_pin)
+    report = base / "r986-recovery.json"
+    require(not report.exists() and not report.is_symlink(),
+            "R986_RECOVERY_WORKER_REPLAY_DENIED")
     observation_path = base / "r983-native-failure.json"
-    require(observation_path.is_file() and not observation_path.is_symlink(),
+    require(observation_path.is_file() and not observation_path.is_symlink() and
+            0 < observation_path.stat().st_size <= 65536,
             "R983_CRASH_OBSERVATION_MISSING")
     observation = _validate_crash_observation(
         json.loads(observation_path.read_text(encoding="utf-8")),
@@ -384,24 +384,94 @@ def _recover_after_child_exit(workspace: Path, qa: Path, cfg: dict,
                                  new_service=cfg["new_service"],
                                  failed_setup_sha=cfg["failed_setup_sha"],
                                  recovery_observation=observation)
-    # Reopen both common state machines from disk; no child adapter state
-    # survives or is reused. Use the EXISTING broker recovery entry point.
-    reopened = UniversalFixtureInstaller(fixture.control, fixture.platform,
-                                        fixture.roots, recovery)
-    reopened_ledger = BrokerReplayFixtureLedger(base / "r982-ledger",
-                                               fixture.platform)
+    roots = {"protected": base / "managed-protected", "user": base / "managed-user"}
+    reopened = UniversalFixtureInstaller(base / "managed-journal", plan.platform,
+                                        roots, recovery)
+    ledger = BrokerReplayFixtureLedger(base / "r982-ledger", plan.platform)
+    pending = reopened._load()
+    require(pending["phase"] == "activated" and reopened._intent(pending) == intent and
+            ledger.inspect_fixture()["active_phase"] == "applying",
+            "R983_PERSISTED_INTENT_DRIFT")
     require(reopened._native_complete(pending) is False,
             "R983_UNEXPECTED_NATIVE_COMPLETION_RECEIPT")
-    result = reopened.recover_broker_bound(reopened_ledger, plan, pb, pin, rb)
+    result = reopened.recover_broker_bound(ledger, plan, pb, pin, rb)
     require(result["version"] == "1.5.4" and
+            recovery.old_setup_run and recovery.failed_exit == 67 and
             not reopened.journal.exists() and
-            reopened_ledger.inspect_fixture()["active_phase"] is None and
-            reopened_ledger.inspect_fixture()["used_ids"] == 1,
+            ledger.inspect_fixture()["active_phase"] is None and
+            ledger.inspect_fixture()["used_ids"] == 1,
             "R983_RECOVERY_NOT_FINAL")
-    fixture.core = reopened
-    fixture.adapter = recovery
+    atomic_json(report, {"schema": 1, "worker_pid": os.getpid(),
+                         "dispatch_sha256": dispatch_pin,
+                         "intent_sha256": intent_sha256(intent),
+                         "old_setup_run": True, "after_failure": recovery.after_failure})
+    print("R986_FRESH_RECOVERY_PROCESS_CONFIRMED")
+    return 0
+
+
+def _recover_after_child_exit(workspace: Path, qa: Path, cfg: dict,
+                              fixture, plan, pb, pin, rb, intent,
+                              sources, ledger):
+    base = fixture.base
+    require(base.resolve().parent == qa.resolve(), "R983_CHILD_BASE_INVALID")
+    dispatch = base / "r983-dispatch.json"
+    atomic_json(dispatch, {
+        "platform": plan.platform, "product": plan.product,
+        "version": plan.version, "scopes": list(plan.scopes),
+        "pb": pb.hex(), "pin": pin, "rb": rb.hex(), "intent": intent,
+        "sources": {name: [folder.name, digest]
+                    for name, (folder, digest) in sources.items()},
+    })
+    dispatch_pin = hashlib.sha256(dispatch.read_bytes()).hexdigest()
+    child = subprocess.run(
+        [sys.executable, str(Path(__file__).resolve()), "--r983-child", base.name],
+        cwd=workspace, timeout=720)
+    require(child.returncode == 79, "R983_CHILD_DID_NOT_EXIT_AT_NATIVE_FAILURE")
+    # Validate dispatch and state before invoking the separate worker. The
+    # parent does not call restore, resume_restored or recover_broker_bound.
+    _read_crash_dispatch(qa, base.name, dispatch_pin)
+    pending = fixture.core._load()
+    require(pending["phase"] == "activated" and
+            fixture.core._intent(pending) == intent and
+            ledger.inspect_fixture()["active_phase"] == "applying",
+            "R983_PERSISTED_INTENT_DRIFT")
+    command = [sys.executable, str(Path(__file__).resolve()), "--r986-recover",
+               base.name, dispatch_pin]
+    worker = subprocess.run(command, cwd=workspace, timeout=720)
+    require(worker.returncode == 0, "R986_RECOVERY_WORKER_FAILED")
+    report = base / "r986-recovery.json"
+    require(report.is_file() and not report.is_symlink() and
+            0 < report.stat().st_size <= 65536, "R986_RECOVERY_REPORT_MISSING")
+    evidence = json.loads(report.read_text(encoding="utf-8"))
+    require(type(evidence) is dict and set(evidence) ==
+            {"schema", "worker_pid", "dispatch_sha256", "intent_sha256",
+             "old_setup_run", "after_failure"} and
+            type(evidence["schema"]) is int and evidence["schema"] == 1 and
+            type(evidence["worker_pid"]) is int and evidence["worker_pid"] > 0 and
+            evidence["worker_pid"] != os.getpid() and
+            evidence["dispatch_sha256"] == dispatch_pin and
+            evidence["intent_sha256"] == intent_sha256(intent) and
+            evidence["old_setup_run"] is True,
+            "R986_RECOVERY_REPORT_INVALID")
+    expected = _validate_crash_observation(
+        json.loads((base / "r983-native-failure.json").read_text(encoding="utf-8")),
+        intent_sha256(intent), cfg)
+    require(evidence["after_failure"] == {k: expected[k] for k in
+            ("registered_version", "gui_sha256", "service_sha256", "installer_exit_code")},
+            "R986_RECOVERY_REPORT_OBSERVATION_DRIFT")
+    # Independently confirm tombstone, code state and native postflight in
+    # main. A second recovery request must fail without repeating Inno.
+    replay = subprocess.run(command, cwd=workspace, timeout=30,
+                            capture_output=True, text=True)
+    require(replay.returncode == 31 and
+            "R986_RECOVERY_WORKER_REPLAY_DENIED" in replay.stderr,
+            "R986_RECOVERY_REPLAY_NOT_DENIED")
+    require(not fixture.core.journal.exists() and
+            ledger.inspect_fixture()["active_phase"] is None and
+            ledger.inspect_fixture()["used_ids"] == 1,
+            "R983_RECOVERY_NOT_FINAL")
     print("R983_REAL_NATIVE_CHILD_EXIT_RESTORED")
-    return recovery
+    return evidence
 
 
 def main() -> int:
@@ -426,9 +496,12 @@ def main() -> int:
     crash_mode = os.environ.get("R983_CRASH_RECOVERY", "false")
     require(crash_mode in ("true", "false"), "R983_CRASH_MODE_INVALID")
     if len(sys.argv) != 1:
-        require(crash_mode == "true" and len(sys.argv) == 3 and
-                sys.argv[1] == "--r983-child", "R983_CHILD_MODE_DENIED")
-        return _run_crash_child(qa, cfg, sys.argv[2])
+        require(crash_mode == "true", "R983_CHILD_MODE_DENIED")
+        if len(sys.argv) == 3 and sys.argv[1] == "--r983-child":
+            return _run_crash_child(qa, cfg, sys.argv[2])
+        if len(sys.argv) == 4 and sys.argv[1] == "--r986-recover":
+            return _run_recovery_worker(qa, cfg, sys.argv[2], sys.argv[3])
+        raise EngineError("R983_CHILD_MODE_DENIED")
     adapter = RealInnoVmAdapter(
         qa, new_gui=cfg["new_gui"],
         new_service=cfg["new_service"],
@@ -465,8 +538,9 @@ def main() -> int:
         ledger = BrokerReplayFixtureLedger(fixture.base / "r982-ledger",
                                            fixture.platform)
         fail_closed = False
+        recovery_evidence = None
         if crash_mode == "true":
-            adapter = _recover_after_child_exit(
+            recovery_evidence = _recover_after_child_exit(
                 workspace, qa, cfg, fixture, plan, pb, pin, rb, intent,
                 sources, ledger)
             fail_closed = True
@@ -479,9 +553,13 @@ def main() -> int:
                     fail_closed = True
                 else:
                     raise
-        require(fail_closed and adapter.old_setup_run and
-                adapter.failed_exit == 67 and
-                adapter.after_failure is not None and
+        after_failure = (recovery_evidence["after_failure"] if recovery_evidence
+                         else adapter.after_failure)
+        old_setup_run = (recovery_evidence["old_setup_run"] if recovery_evidence
+                         else adapter.old_setup_run)
+        require(fail_closed and old_setup_run and
+                after_failure is not None and
+                after_failure["installer_exit_code"] == 67 and
                 _service_state() == "RUNNING" and
                 _version() == "1.5.4" and
                 _sha(adapter.gui) == OLD_GUI_SHA and
@@ -493,8 +571,8 @@ def main() -> int:
                 "R982_COMMON_BROKER_NATIVE_COMPENSATION_INCOMPLETE")
         data = {
             "schema": 1, "status": STATUS, "source": source,
-            "real_product_failed_setup_exit": adapter.failed_exit,
-            "after_failure": adapter.after_failure,
+            "real_product_failed_setup_exit": after_failure["installer_exit_code"],
+            "after_failure": after_failure,
             "old_restore_setup_sha256": OLD_SETUP_SHA,
             "old_restored_version": _version(),
             "old_restored_gui_sha256": _sha(adapter.gui),
@@ -515,6 +593,12 @@ def main() -> int:
             data["r983_crash_scope"] = "AFTER_REAL_INNO_EXIT_BEFORE_COMPENSATION"
             data["r983_os_service_supervisor_accepted"] = False
             data["r983_reboot_accepted"] = False
+            data["r986_fresh_recovery_process"] = True
+            data["r986_recovery_worker_pid"] = recovery_evidence["worker_pid"]
+            data["r986_observer_pid"] = os.getpid()
+            data["r986_recovery_replay_denied"] = True
+            data["r986_dispatch_sha256"] = recovery_evidence["dispatch_sha256"]
+            data["r986_os_supervisor_accepted"] = False
         report.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
         print("R982_REAL_NATIVE_STATUS=" + STATUS)
         return 0
