@@ -692,6 +692,29 @@ jobs:
           # Test only; PKEXEC_UID simulated. Reviewed feature runs native install/remove without starting product units.
           sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" R962_EXPECTED_SHA="$R962_EXPECTED_SHA" GITHUB_SHA="$GITHUB_SHA" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r782_hosted_trusted_entry_ephemeral.py
 
+      - name: Retain the exact tested administrator-local Linux delivery candidate
+        if: github.ref == 'refs/heads/feature/universal-install-engine' && github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate="$(mktemp -d "$RUNNER_TEMP/dim-linux-reviewed.XXXXXXXX")"
+          install -m 0644 tools/security/privileged_entry.py "$candidate/privileged_entry.py"
+          install -m 0644 delivery/DirectInternetMethod_1.5.7_Linux_x86_64.zip "$candidate/DirectInternetMethod_1.5.7_Linux_x86_64.zip"
+          install -m 0644 docs/SECURITY_TRUSTED_ENTRY_R781.md "$candidate/BOOTSTRAP-ADMIN.md"
+          cd "$candidate"
+          printf '%s  %s\n' '346D99B8D0745C2F42D24EE835FC3C6A8646AE705E04C41640BDFC6BA196B4C5' privileged_entry.py '298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD' DirectInternetMethod_1.5.7_Linux_x86_64.zip > SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          printf '%s\n' "$GITHUB_SHA" > SOURCE_COMMIT.txt
+          echo "R965_CANDIDATE_DIR=$candidate" >> "$GITHUB_ENV"
+      - name: Upload tested Linux candidate (QA only, no release)
+        if: github.ref == 'refs/heads/feature/universal-install-engine' && github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-v157-reviewed-bootstrap-${{ github.run_id }}
+          path: ${{ env.R965_CANDIDATE_DIR }}
+          if-no-files-found: error
+          retention-days: 7
+
   windows-private-r846-native:
     name: windows-private-r846-native
     if: github.repository == 'GOD13emad/DirectInternetMethod' && ((github.event_name == 'push' && github.ref == 'refs/heads/prep/r846-forward-157-native-gates') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.native_candidate_sha != '' && inputs.native_candidate_sha == github.sha))

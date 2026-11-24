@@ -96,12 +96,35 @@ def trusted_provision():
         need(stat.S_ISDIR(st.st_mode) and st.st_uid == 0 and st.st_gid == 0 and
              not (st.st_mode & 0o022), "UNTRUSTED_HOSTED_ANCESTOR")
     ENTRY.parent.mkdir(mode=0o755)
-    fd = os.open(ENTRY, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o500)
-    with os.fdopen(fd, "wb") as stream:
-        stream.write(SOURCE.read_bytes())
-        stream.flush()
-        os.fsync(stream.fileno())
-        os.fchmod(stream.fileno(), 0o500)
+    if os.environ.get("GITHUB_REF") == "refs/heads/feature/universal-install-engine":
+        # Native administrator-local provisioning, not a Debian package.
+        # No execution from the user-writable source; verify the protected copy.
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix=".dim-bootstrap-", dir=ENTRY.parent) as d:
+            staged = Path(d) / ENTRY.name
+            subprocess.run(["/usr/bin/install", "-o", "root", "-g", "root",
+                            "-m", "0500", "--", str(SOURCE), str(staged)], check=True)
+            st = staged.lstat()
+            need(stat.S_ISREG(st.st_mode) and st.st_uid == 0 and st.st_gid == 0
+                 and st.st_nlink == 1 and stat.S_IMODE(st.st_mode) == 0o500
+                 and sha_file(staged) == PIN_ENTRY, "R965_PROTECTED_COPY_PIN")
+            with staged.open("rb") as stream:
+                os.fsync(stream.fileno())
+            subprocess.run(["/usr/bin/ln", "-T", "--", str(staged), str(ENTRY)], check=True)
+            # A second publish must fail, retaining the exact installed inode.
+            inode = ENTRY.stat().st_ino
+            duplicate = subprocess.run(["/usr/bin/ln", "-T", "--", str(staged), str(ENTRY)],
+                                       capture_output=True, check=False)
+            need(duplicate.returncode != 0 and ENTRY.stat().st_ino == inode,
+                 "R965_NATIVE_NO_CLOBBER")
+        print("R965_NATIVE_INSTALL_PINNED_COPY_NO_CLOBBER_PASS")
+    else:
+        fd = os.open(ENTRY, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o500)
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(SOURCE.read_bytes())
+            stream.flush()
+            os.fsync(stream.fileno())
+            os.fchmod(stream.fileno(), 0o500)
     st = ENTRY.lstat()
     need(stat.S_ISREG(st.st_mode) and st.st_uid == 0 and st.st_gid == 0 and
          st.st_nlink == 1 and stat.S_IMODE(st.st_mode) == 0o500 and
