@@ -151,6 +151,31 @@ class R982CommonBrokerNativeScope(unittest.TestCase):
         self.assertIn("native_broker_native_preimage:", workflow)
         self.assertIn("R984_NATIVE_PREIMAGE:", workflow)
 
+    def test_r993_os_scheduled_native_recovery_requires_exact_vm_mode(self):
+        vm=VM.read_text("utf-8")
+        ps=R980.read_text("utf-8-sig")
+        ci=CI.read_text("utf-8")
+        scheduler=(ROOT/"tests/r993_windows_os_scheduled_recovery_vm.ps1")
+        self.assertTrue(scheduler.is_file())
+        task=scheduler.read_text("utf-8-sig")
+        for marker in ("R993_OS_SCHEDULED_RECOVERY", "def _run_os_scheduled_recovery(",
+                       "R993_SCHEDULED_OS_RECEIPT_VERIFIED",
+                       "R993_OS_TASK_NOT_SAME_AS_OBSERVER"):
+            self.assertIn(marker,vm)
+        for marker in ("R993_OS_SCHEDULED_RECOVERY",
+                       "R993_REAL_NATIVE_OS_SCHEDULED_RECOVERY",
+                       "R993_REQUIRES_R992_PROTECTED_MEDIA"):
+            self.assertIn(marker,ps)
+        for marker in ("Register-ScheduledTask", "New-ScheduledTaskTrigger",
+                       "New-ScheduledTaskPrincipal", "S-1-5-18",
+                       "R993_TASK_CREATED", "R993_TASK_STATUS",
+                       "Unregister-ScheduledTask", "R993_PROTECTED_HARNESS",
+                       "R993_FIXED_ACTION_ONLY"):
+            self.assertIn(marker,task)
+        self.assertNotIn("Start-ScheduledTask",task)
+        self.assertIn("native_broker_os_scheduled_recovery:",ci)
+        self.assertIn("R993_OS_SCHEDULED_RECOVERY:",ci)
+
     def test_r992_recovery_media_uses_actual_protected_store(self):
         ps = R980.read_text("utf-8-sig")
         vm = VM.read_text("utf-8")

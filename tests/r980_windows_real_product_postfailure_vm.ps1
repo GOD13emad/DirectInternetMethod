@@ -35,6 +35,11 @@ $r992Mode=($env:R992_PROTECTED_RECOVERY_MEDIA -ceq 'true')
 if($r992Mode -and (!$r984Mode -or !$CommonBrokerRecovery -or $env:R983_CRASH_RECOVERY -cne 'true')){
  throw 'R992_REQUIRES_REVIEWED_R983_R984_NATIVE_MODE'
 }
+$r993Mode=($env:R993_OS_SCHEDULED_RECOVERY -ceq 'true')
+if($r993Mode -and (!$r992Mode -or !$CommonBrokerRecovery -or
+                   $env:R983_CRASH_RECOVERY -cne 'true')){
+ throw 'R993_REQUIRES_R992_PROTECTED_MEDIA'
+}
 $Root=$env:GITHUB_WORKSPACE
 $Sha=$env:GITHUB_SHA
 $BuildDir=Join-Path $env:RUNNER_TEMP 'DIM_R846_NATIVE'
@@ -375,6 +380,18 @@ try {
          $result.r986_recovery_replay_denied -eq $true -and
          $result.r986_os_supervisor_accepted -eq $false) 'R986_FRESH_RECOVERY_PROCESS_CONFIRMED'
    $observed['r986FreshRecoveryProcessObserved']=$true
+   if($r993Mode){
+    $ownerSid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    Need ($result.r993_os_scheduled_recovery -eq $true -and
+          $result.r993_task_sid -ceq $ownerSid -and
+          $result.r993_task_sid -cne 'S-1-5-18' -and
+          $result.r993_task_name -cmatch '^DIMR993VM-[a-f0-9]{12}$' -and
+          $result.r993_task_launcher_pid -gt 0 -and
+          $result.r993_task_worker_exit -eq 0 -and
+          $result.r993_os_supervisor_accepted -eq $false -and
+          $result.r993_reboot_accepted -eq $false) 'R993_REAL_NATIVE_OS_SCHEDULED_RECOVERY'
+    $observed['r993OsScheduledS4uRecoveryObserved']=$true
+   }
   }
   $observed.realProductPostinstallFailureObserved=$true
   $observed['r982CommonBrokerVm']=$result

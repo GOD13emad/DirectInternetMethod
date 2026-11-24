@@ -33,6 +33,11 @@ on:
         required: false
         type: boolean
         default: false
+      native_broker_os_scheduled_recovery:
+        description: 'R993 QA-only: Windows Task Scheduler S4U starts exact native recovery with prior-media pin, never physical'
+        required: false
+        type: boolean
+        default: false
       native_broker_protected_recovery_media:
         description: 'R992: use exact protected prior installer in real recovery VM (requires crash and metadata modes)'
         required: false
@@ -852,6 +857,7 @@ jobs:
       R983_CRASH_RECOVERY: ${{ inputs.native_broker_crash_recovery }}
       R984_NATIVE_PREIMAGE: ${{ inputs.native_broker_native_preimage }}
       R992_PROTECTED_RECOVERY_MEDIA: ${{ inputs.native_broker_protected_recovery_media }}
+      R993_OS_SCHEDULED_RECOVERY: ${{ inputs.native_broker_os_scheduled_recovery }}
     permissions:
       contents: read
       actions: read

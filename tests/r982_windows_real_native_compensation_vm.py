@@ -416,6 +416,121 @@ def _run_recovery_worker(qa: Path, cfg: dict, name: str,
     return 0
 
 
+
+def _run_os_scheduled_recovery(workspace: Path, qa: Path, base: Path,
+                               dispatch_pin: str, source: str) -> dict:
+    """One-shot original-user Windows scheduler VM probe, NOT a production broker.
+
+    Do not run native Setup as SYSTEM: its user shell folders differ from the
+    actual installed GUI owner. S4U preserves the original runner SID without
+    storing a password; it cannot use network resources or encrypted files.
+    """
+    require(os.name == "nt" and
+            os.environ.get("R992_PROTECTED_RECOVERY_MEDIA") == "true" and
+            os.environ.get("R984_NATIVE_PREIMAGE") == "true" and
+            os.environ.get("R983_CRASH_RECOVERY") == "true" and
+            os.environ.get("GITHUB_SHA") == source and
+            base.resolve().parent == qa.resolve(),
+            "R993_REQUIRES_REVIEWED_R992_NATIVE_VM")
+    from csv import reader as csv_reader
+    from re import fullmatch
+    who = subprocess.run(["whoami.exe", "/user", "/fo", "csv", "/nh"],
+                         capture_output=True, text=True, check=True, timeout=15)
+    identity = list(csv_reader(who.stdout.strip().splitlines()))
+    require(len(identity) == 1 and len(identity[0]) == 2 and
+            bool(fullmatch(r"S-1-5-21-(?:\d+-){3}\d+", identity[0][1])),
+            "R993_EXPECTED_OWNER_SID_MISSING")
+    owner, owner_sid = identity[0]
+    runner = Path(os.environ["RUNNER_TEMP"]).resolve(strict=True)
+    protected = Path(os.environ["ProgramFiles"]) / "DirectInternetMethod" / "Privileged" / "UpdateTransactions"
+    require(protected.is_dir() and not protected.is_symlink() and
+            protected.resolve() == protected and
+            (protected / "DirectInternetMethod-recovery-1.5.4.exe").is_file(),
+            "R993_PROTECTED_RECOVERY_SOURCE_REQUIRED")
+    launcher = workspace / "tests" / "r993_windows_os_scheduled_recovery_vm.ps1"
+    cfg = protected / "R993RecoveryConfig.json"
+    task_script = protected / "R993ProtectedRecoveryHarness.ps1"
+    receipt = base / "r993-system-task-receipt.json"
+    require(launcher.is_file() and not launcher.is_symlink() and
+            not cfg.exists() and not cfg.is_symlink() and
+            not task_script.exists() and not task_script.is_symlink() and
+            not receipt.exists() and not receipt.is_symlink(),
+            "R993_FRESH_SCHEDULED_SLOT_REQUIRED")
+    task_name = "DIMR993VM-" + source[:12]
+    atomic_json(cfg, {
+        "schema": 1, "source": source,
+        "name": base.name, "dispatchPin": dispatch_pin,
+        "scriptSha": _sha(launcher).lower(),
+        "pythonScriptSha": _sha(Path(__file__)).lower(),
+        "taskName": task_name, "ownerSid": owner_sid, "ownerName": owner,
+        "workspace": str(workspace), "runnerTemp": str(runner),
+        "python": sys.executable, "localAppData": os.environ["LOCALAPPDATA"],
+    })
+    cmd = ["pwsh", "-NoProfile", "-NonInteractive", "-File", str(launcher)]
+    def task_call(mode: str, timeout: float = 55) -> subprocess.CompletedProcess:
+        return subprocess.run(cmd + ["-Mode", mode, "-Config", str(cfg)],
+                              cwd=workspace, text=True, capture_output=True,
+                              timeout=timeout)
+    success = False
+    try:
+        registration = task_call("Register", 120)
+        require(registration.returncode == 0 and
+                "R993_TASK_CREATED" in registration.stdout,
+                "R993_TASK_REGISTRATION_FAILED:" +
+                registration.stderr[-1200:])
+        deadline = time.monotonic() + 540
+        result = None
+        while time.monotonic() < deadline:
+            if receipt.is_file() and not receipt.is_symlink():
+                status = task_call("Inspect")
+                if (status.returncode == 0 and
+                        "R993_TASK_STATUS" in status.stdout):
+                    lines = [line for line in status.stdout.splitlines()
+                             if line.startswith("{") and "lastTaskResult" in line]
+                    if len(lines) == 1:
+                        info = json.loads(lines[0])
+                        if info["lastTaskResult"] == 0:
+                            result = info
+                            break
+            time.sleep(1)
+        require(result is not None, "R993_OS_TIMED_TASK_DID_NOT_RECOVER")
+        require(result["identity"].lower() == owner.lower() and
+                result["logonType"] == "S4U" and
+                result["runLevel"] == "Highest",
+                "R993_TASK_PRINCIPAL_DRIFT")
+        require(receipt.is_file() and not receipt.is_symlink() and
+                0 < receipt.stat().st_size <= 8192,
+                "R993_TASK_RECEIPT_MISSING")
+        observed = json.loads(receipt.read_text(encoding="utf-8"))
+        require(type(observed) is dict and
+                set(observed) == {"schema", "source", "taskName", "sid",
+                                  "launcherPid", "workerExit", "dispatchPin",
+                                  "action"} and
+                observed["schema"] == 1 and
+                observed["source"] == source and
+                observed["taskName"] == task_name and
+                observed["sid"] == owner_sid and
+                observed["sid"] != "S-1-5-18" and
+                type(observed["launcherPid"]) is int and
+                observed["launcherPid"] > 0 and
+                observed["launcherPid"] != os.getpid() and
+                observed["workerExit"] == 0 and
+                observed["dispatchPin"] == dispatch_pin and
+                observed["action"] == "R986_COMMON_RECOVER_BY_OS_TASK_S4U",
+                "R993_OS_TASK_NOT_SAME_AS_OBSERVER")
+        success = True
+        print("R993_SCHEDULED_OS_RECEIPT_VERIFIED")
+        return observed
+    finally:
+        # No orphaned privileged task on the test runner. An unsuccessful
+        # restore remains a failed gate and does not authorize public use.
+        cleanup = task_call("Remove", 55)
+        require(cleanup.returncode == 0 and
+                "R993_TASK_OWNED_CLEANUP_PASS" in cleanup.stdout and
+                not cfg.exists() and not task_script.exists(),
+                "R993_TASK_CLEANUP_FAILED:" + cleanup.stderr[-1200:])
+
+
 def _recover_after_child_exit(workspace: Path, qa: Path, cfg: dict,
                               fixture, plan, pb, pin, rb, intent,
                               sources, ledger):
@@ -444,8 +559,13 @@ def _recover_after_child_exit(workspace: Path, qa: Path, cfg: dict,
             "R983_PERSISTED_INTENT_DRIFT")
     command = [sys.executable, str(Path(__file__).resolve()), "--r986-recover",
                base.name, dispatch_pin]
-    worker = subprocess.run(command, cwd=workspace, timeout=720)
-    require(worker.returncode == 0, "R986_RECOVERY_WORKER_FAILED")
+    task_evidence = None
+    if os.environ.get("R993_OS_SCHEDULED_RECOVERY") == "true":
+        task_evidence = _run_os_scheduled_recovery(
+            workspace, qa, base, dispatch_pin, os.environ["GITHUB_SHA"])
+    else:
+        worker = subprocess.run(command, cwd=workspace, timeout=720)
+        require(worker.returncode == 0, "R986_RECOVERY_WORKER_FAILED")
     report = base / "r986-recovery.json"
     require(report.is_file() and not report.is_symlink() and
             0 < report.stat().st_size <= 65536, "R986_RECOVERY_REPORT_MISSING")
@@ -477,6 +597,8 @@ def _recover_after_child_exit(workspace: Path, qa: Path, cfg: dict,
             ledger.inspect_fixture()["active_phase"] is None and
             ledger.inspect_fixture()["used_ids"] == 1,
             "R983_RECOVERY_NOT_FINAL")
+    if task_evidence is not None:
+        evidence["r993_task"] = task_evidence
     print("R983_REAL_NATIVE_CHILD_EXIT_RESTORED")
     return evidence
 
@@ -507,6 +629,11 @@ def main() -> int:
     require(media_mode != "true" or
             (crash_mode == "true" and os.environ.get("R984_NATIVE_PREIMAGE") == "true"),
             "R992_REQUIRES_REVIEWED_R983_R984_NATIVE_MODE")
+    scheduler_mode = os.environ.get("R993_OS_SCHEDULED_RECOVERY", "false")
+    require(scheduler_mode in ("true", "false", ""), "R993_MODE_INVALID")
+    require(scheduler_mode != "true" or
+            (media_mode == "true" and crash_mode == "true"),
+            "R993_REQUIRES_R992_PROTECTED_MEDIA")
     if len(sys.argv) != 1:
         require(crash_mode == "true", "R983_CHILD_MODE_DENIED")
         if len(sys.argv) == 3 and sys.argv[1] == "--r983-child":
@@ -612,6 +739,15 @@ def main() -> int:
             data["r986_recovery_replay_denied"] = True
             data["r986_dispatch_sha256"] = recovery_evidence["dispatch_sha256"]
             data["r986_os_supervisor_accepted"] = False
+            if scheduler_mode == "true":
+                task = recovery_evidence["r993_task"]
+                data["r993_os_scheduled_recovery"] = True
+                data["r993_task_name"] = task["taskName"]
+                data["r993_task_sid"] = task["sid"]
+                data["r993_task_launcher_pid"] = task["launcherPid"]
+                data["r993_task_worker_exit"] = task["workerExit"]
+                data["r993_os_supervisor_accepted"] = False
+                data["r993_reboot_accepted"] = False
         report.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
         print("R982_REAL_NATIVE_STATUS=" + STATUS)
         return 0
