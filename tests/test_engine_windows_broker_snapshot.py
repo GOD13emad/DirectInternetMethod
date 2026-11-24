@@ -82,6 +82,33 @@ class BrokerWindowsHeldSnapshotTests(unittest.TestCase):
         self.assertFalse(out["os_protected_parent_verified"])
         self.assertEqual(self.policyfile.read_bytes(), self.pb)
 
+    def test_r973_native_held_handle_staging_is_only_recovery(self):
+        # Real Win32 held-file verification, not a mocked result.
+        self.ledger["active"]["phase"] = "staging"
+        self.ledgerfile.write_bytes(canonical(self.ledger))
+        out = self.inspect()
+        self.assertEqual(out["phase"], "staging")
+        self.assertFalse(out["os_protected_parent_verified"])
+        self.assertFalse(out["privileged_broker_implemented"])
+        self.assertFalse(out["native_installation_accepted"])
+        self.assertFalse(out["protected_write_performed"])
+        self.assertNotIn("native_receipt", out)
+
+    def test_r973_native_staging_uninstall_and_terminal_denied(self):
+        self.ledger["active"]["phase"] = "staging"
+        self.ledger["active"]["operation"] = "uninstall"
+        self.ledgerfile.write_bytes(canonical(self.ledger))
+        with self.assertRaisesRegex(EngineError,
+                                    "BROKER_REPLAY_STAGE_OPERATION_INVALID"):
+            self.inspect()
+        self.ledger["active"]["operation"] = "upgrade"
+        for phase in ("completed_synthetic", "aborted_synthetic"):
+            self.ledger["active"]["phase"] = phase
+            self.ledgerfile.write_bytes(canonical(self.ledger))
+            with self.subTest(phase=phase), self.assertRaisesRegex(
+                    EngineError, "BROKER_SNAPSHOT_PHASE_INVALID"):
+                self.inspect()
+
     def test_verified_read_is_exact_original_bytes_not_a_second_open(self):
         found = read_windows_pinned_small_file(
             self.policyfile, len(self.pb), hash_bytes(self.pb))

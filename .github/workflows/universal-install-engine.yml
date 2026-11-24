@@ -132,6 +132,12 @@ jobs:
           sudo chmod 0666 "$ledger"
           python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py reject-unsafe-ledger --fixture-root "$fixture"
           sudo chmod 0644 "$ledger"
+          # R973: the real root-owned policy/replay FD must also observe
+          # the common durable pre-native staging phase without claiming
+          # that services were stopped or native installation completed.
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py emit-synthetic-staging-ledger > "$emitted_ledger"
+          sudo install -o root -g root -m 0644 "$emitted_ledger" "$ledger"
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py verify-root-staging-snapshot --fixture-root "$fixture"
           # Linux enforces directory write modes. A root-owned leaf is NOT
           # trusted if group/other write can replace the pinned member.
           sudo chmod 0777 "$fixture"

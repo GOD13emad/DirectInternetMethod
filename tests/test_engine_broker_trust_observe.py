@@ -73,6 +73,31 @@ class BrokerProtectedSnapshotTests(unittest.TestCase):
         self.assertFalse(result["privileged_broker_implemented"])
         self.assertFalse(result["protected_write_performed"])
 
+    def test_r973_broker_owned_staging_observed_without_authority(self):
+        # R970 may persist staging before native quiesce; the SAME reader
+        # should observe that ID without mistaking it for APPLYING.
+        self.doc["active"]["phase"] = "staging"
+        result = self.check()
+        self.assertEqual(result["phase"], "staging")
+        self.assertFalse(result["native_installation_accepted"])
+        self.assertFalse(result["publisher_authenticated"])
+        self.assertFalse(result["privileged_broker_implemented"])
+        self.assertFalse(result["protected_write_performed"])
+        self.assertNotIn("native_receipt", result)
+
+    def test_r973_staging_uninstall_or_terminal_is_not_live_approval(self):
+        self.doc["active"]["phase"] = "staging"
+        self.doc["active"]["operation"] = "uninstall"
+        with self.assertRaisesRegex(EngineError,
+                                    "BROKER_REPLAY_STAGE_OPERATION_INVALID"):
+            self.check()
+        self.doc["active"]["operation"] = "upgrade"
+        for phase in ("completed_synthetic", "aborted_synthetic"):
+            self.doc["active"]["phase"] = phase
+            with self.subTest(phase=phase), self.assertRaisesRegex(
+                    EngineError, "BROKER_SNAPSHOT_PHASE_INVALID"):
+                self.check()
+
     def test_reserved_snapshot_is_recovery_not_authorization(self):
         self.doc["active"]["phase"] = "reserved"
         result = self.check()

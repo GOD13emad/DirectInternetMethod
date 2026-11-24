@@ -65,7 +65,7 @@ def _match_active_snapshot(intent: dict, ledger: bytes, ledger_sha256: str,
             active["version"] == intent["version"] and
             active["operation"] == intent["operation"],
             "BROKER_SNAPSHOT_POLICY_REPLAY_IDENTITY_DRIFT")
-    require(active["phase"] in ("reserved", "applying"),
+    require(active["phase"] in ("reserved", "staging", "applying"),
             "BROKER_SNAPSHOT_PHASE_INVALID")
     return {
         "status": status,
