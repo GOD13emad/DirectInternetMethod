@@ -27,6 +27,7 @@ R=Path(__file__).resolve().parents[1]
 R528=R/"tests/r528_ephemeral_native_root_cli_contract.py"
 R529=R/"tests/r529_ephemeral_root_user_transaction.py"
 R526=R/"tests/r526_installer_metadata_contract.py"
+R532=R/"tests/r532_ephemeral_root_watchdog_contract.py"
 ROOT=R/"linux/system/protected_upgrade_transaction.py"
 GUARD=R/"linux/system/upgrade_guard.py"
 PIN_PACKAGE="298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD"
@@ -84,6 +85,22 @@ def preflight_vm():
 
 def run():
     runner=preflight_vm()
+    timer_partial=os.environ.get("DIM_R990_TIMER_PARTIAL","false")
+    need(timer_partial in ("true","false"),"R990_MODE_INVALID")
+    timer_partial=timer_partial=="true"
+    if timer_partial:
+        expected=os.environ.get("R990_EXPECTED_SHA","")
+        need(os.environ.get("GITHUB_EVENT_NAME")=="workflow_dispatch" and
+             os.environ.get("GITHUB_REF")=="refs/heads/feature/universal-install-engine" and
+             len(expected)==40 and all(c in "0123456789abcdef" for c in expected) and
+             os.environ.get("GITHUB_SHA")==expected and
+             command(["/usr/sbin/runuser","-u",runner.pw_name,"--",
+                      "/usr/bin/git","-C",str(R),"rev-parse","HEAD"])==expected,
+             "R990_REVIEWED_EXACT_SOURCE_REQUIRED")
+        need(all(os.environ.get(key)!="true" for key in
+                 ("DIM_R555_EXACT_WRAPPER","DIM_R562_SYNTHETIC_PROMOTION",
+                  "DIM_R565_SYNTHETIC_MUTABLE_DRIFT","DIM_R568_TEST_RETIRE_ROLLED_BACK")),
+             "R990_MODE_CONFLICT")
     r528=module(R528,"r554_r528")
     r529=module(R529,"r554_r529")
     r526=module(R526,"r554_r526")
@@ -134,7 +151,17 @@ def run():
         need(armed["status"]=="ARMED_INDEPENDENT_ROOT_USER_WATCHDOG","WATCHDOG_ARM")
         need(root_tx.status()["status"]=="NO_PENDING_UPGRADE","ROOT_MUTATED_BEFORE_ARM")
         need(root_tx.stage(extracted)["status"]=="STAGED","ROOT_STAGE")
-        need(root_tx.apply()["status"]=="APPLIED","ROOT_APPLY")
+        if timer_partial:
+            # Reuse the accepted R989 fault exactly; the real installed
+            # guard owns its original deadline and root/user copies.
+            fault=module(R532,"r990_existing_partial_crash")
+            fault.crash_after_first_root_write(rootmod,root_tx)
+            need(root_tx.status()["status"]=="STAGED",
+                 "R990_TIMER_ONLY_REQUIRES_STAGED")
+            r529.unchanged_records(original_user)
+            r529.unchanged_records(private)
+        else:
+            need(root_tx.apply()["status"]=="APPLIED","ROOT_APPLY")
     present=guard.verify_timer()
     need(present["uid"]==user.pw_uid and present["workerSha"]==sha(guard.WORKER),
          "SYSTEMD_TIMER_GUARD")
@@ -154,31 +181,40 @@ def run():
                              "-p","NextElapseUSecRealtime","--value"])
     need(next_cal_before and next_cal_before not in ("n/a","0"),
          "CALENDAR_DEADLINE_NOT_SCHEDULED")
-    command(["/usr/bin/systemctl","restart",NAME+".timer"],12)
-    next_cal_after=command(["/usr/bin/systemctl","show",NAME+".timer",
-                            "-p","NextElapseUSecRealtime","--value"])
-    need(next_cal_after==next_cal_before,"RESTART_MOVED_ORIGINAL_DEADLINE")
-    guard.verify_timer()
-    need(root_tx.status()["status"]=="APPLIED","ROOT_PENDING")
-    r529.as_runner(user,tx_user,"--apply","--source",extracted)
-    manifest=json.loads((pending/"manifest.json").read_text())
-    for rel,row in manifest["managed"].items():
-        need(r529.hash_file(app/rel)==row["sha"],"USER_APPLY_SHA_"+rel)
-    r529.unchanged_records(private)
-    # Run the exact, unchanged production installer INSTALL.json fragment.
-    install=(extracted/"install.sh").read_text(encoding="utf8")
-    need(install.count(r526.BEGIN)==1,"INSTALL_METADATA_ANCHOR")
-    part=install.split(r526.BEGIN,1)[1]
-    need(part.count(r526.END)==1,"INSTALL_END")
-    inline=part.split(r526.END,1)[0]
-    need("transaction_helper.atomic_bytes(" in inline
-         and len(inline.splitlines())==64,"INSTALL_INLINE_IDENTITY")
-    r529.as_runner_inline(user,inline,app/"INSTALL.json",tx_user)
-    need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.7",
-         "UPGRADED_USER_VERSION")
-    need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.7",
-         "UPGRADED_ROOT_VERSION")
-    need(root_tx.status()["status"]=="APPLIED","ROOT_STILL_PENDING")
+    if not timer_partial:
+        command(["/usr/bin/systemctl","restart",NAME+".timer"],12)
+        next_cal_after=command(["/usr/bin/systemctl","show",NAME+".timer",
+                                "-p","NextElapseUSecRealtime","--value"])
+        need(next_cal_after==next_cal_before,"RESTART_MOVED_ORIGINAL_DEADLINE")
+        guard.verify_timer()
+        need(root_tx.status()["status"]=="APPLIED","ROOT_PENDING")
+        r529.as_runner(user,tx_user,"--apply","--source",extracted)
+        manifest=json.loads((pending/"manifest.json").read_text())
+        for rel,row in manifest["managed"].items():
+            need(r529.hash_file(app/rel)==row["sha"],"USER_APPLY_SHA_"+rel)
+        r529.unchanged_records(private)
+        # Run the exact, unchanged production installer INSTALL.json fragment.
+        install=(extracted/"install.sh").read_text(encoding="utf8")
+        need(install.count(r526.BEGIN)==1,"INSTALL_METADATA_ANCHOR")
+        part=install.split(r526.BEGIN,1)[1]
+        need(part.count(r526.END)==1,"INSTALL_END")
+        inline=part.split(r526.END,1)[0]
+        need("transaction_helper.atomic_bytes(" in inline
+             and len(inline.splitlines())==64,"INSTALL_INLINE_IDENTITY")
+        r529.as_runner_inline(user,inline,app/"INSTALL.json",tx_user)
+        need(json.loads((app/"INSTALL.json").read_text())["version"]=="1.5.7",
+             "UPGRADED_USER_VERSION")
+        need(json.loads(Path("/var/lib/directinternetmethod/install.json").read_text())["version"]=="1.5.7",
+             "UPGRADED_ROOT_VERSION")
+        need(root_tx.status()["status"]=="APPLIED","ROOT_STILL_PENDING")
+    else:
+        need(root_tx.status()["status"]=="STAGED",
+             "R990_TIMER_ONLY_REQUIRES_STAGED")
+        guard.verify_timer()
+        initial_trigger=command(["/usr/bin/systemctl","show",NAME+".timer",
+                                 "-p","LastTriggerUSecMonotonic","--value"])
+        need(not SEEN.exists() and not SEEN.is_symlink(),"R990_EARLY_RECEIPT")
+        print("R990_WAITING_FOR_UNMODIFIED_PRODUCTION_DEADLINE",deadline,flush=True)
     # R562 tests interruption AFTER a deliberately simulated protected Root
     # acceptance and BEFORE User commit. NOT real owner/live acceptance:
     # a marked synthetic fixture exercises the fail-closed crash window only.
@@ -230,7 +266,25 @@ def run():
     # Actual independent root-owned systemd Service, rather than calling
     # guard.rollback_worker in-process. R532 separately proves timed firing.
     start=time.monotonic()
-    if synthetic_reject:
+    if timer_partial:
+        # The observer does NOT start the service, adjust the clock, shorten
+        # the timer or call rollback. Wait for systemd's actual deadline.
+        stop_at=time.monotonic()+max(0,deadline-time.time())+125
+        while time.monotonic()<stop_at:
+            if SEEN.is_file() and not SEEN.is_symlink():
+                active=command(["/usr/bin/systemctl","show",NAME+".service",
+                                "-p","ActiveState","--value"])
+                if active in ("inactive","failed"):
+                    break
+            time.sleep(0.5)
+        triggered=command(["/usr/bin/systemctl","show",NAME+".timer",
+                           "-p","LastTriggerUSecMonotonic","--value"])
+        need(triggered and triggered not in ("0","n/a") and
+             triggered!=initial_trigger and time.time()>=deadline-3 and
+             command(["/usr/bin/systemctl","show",NAME+".service",
+                      "-p","Result","--value"])=="success",
+             "R990_EXACT_GUARD_TIMER_NOT_FIRED")
+    elif synthetic_reject:
         # A failure is expected here. Real systemd must propagate the owned
         # worker's nonzero exit rather than silently report successful commit.
         attempt=subprocess.run(
@@ -242,6 +296,12 @@ def run():
     need(SEEN.is_file() and not SEEN.is_symlink(),"SYSTEMD_RECEIPT_MISSING")
     receipt=json.loads(SEEN.read_text())
     receipt_sha_before_retirement=sha(SEEN)
+    if timer_partial:
+        need(receipt.get("rootPhaseBefore")=="STAGED" and
+             receipt.get("status")=="PASS_AUTONOMOUS_TWO_SIDED_RESTORATION" and
+             receipt.get("recoveryAttempted") is True,
+             "R990_TIMER_STAGED_ROLLBACK_NOT_ACCEPTED")
+        print("R990_EXACT_GUARD_TIMER_FIRED",flush=True)
     if synthetic_reject:
         need(receipt.get("status")=="DEGRADED_UNRESOLVED"
              and receipt.get("uid")==0
@@ -393,7 +453,10 @@ def run():
       "guardArmedBeforeRootMutation":True,
       "systemdServiceStartedInSeparateProcess":True,
       "timerNativeLoadedAndEnabledBeforeMutation":True,
-      "calendarDeadlinePreservedAcrossTimerRestart":True,
+      "calendarDeadlinePreservedAcrossTimerRestart":not timer_partial,
+      "r990ExactGuardTimerFired":timer_partial,
+      "r990PartialRootCrashBeforeTimer":timer_partial,
+      "r990FullRebootTested":False,
       "productionShellUpgradeWrapperExecuted":native_wrapper,
       "rootAndUserByteExactRestoration":not synthetic_promotion,
       "mutatedProductionHost":False,"modifiedRouteDnsOrTailscale":False,

@@ -33,6 +33,11 @@ on:
         required: false
         type: boolean
         default: false
+      linux_guard_partial_candidate_sha:
+        description: 'Exact reviewed feature SHA: real production Linux guard timer after partial protected update (VM only)'
+        required: false
+        type: string
+        default: ''
       linux_bootstrap_candidate_sha:
         description: 'Exact reviewed feature HEAD for isolated Linux bootstrap and lifecycle QA (no release)'
         required: false
@@ -268,7 +273,7 @@ jobs:
     name: linux-rc1-native-guard-ephemeral
     needs: linux-independent-root-watchdog-ephemeral
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: R554 byte-pinned exact 27-file Linux candidate
@@ -291,7 +296,7 @@ jobs:
         run: |
           set -euo pipefail
           # Disposable hosted GitHub Ubuntu VM only, no human host mutations.
-          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" GITHUB_REF="$GITHUB_REF" GITHUB_SHA="$GITHUB_SHA" R990_EXPECTED_SHA="${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.linux_guard_partial_candidate_sha == github.sha && github.sha || '' }}" DIM_R990_TIMER_PARTIAL="${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.linux_guard_partial_candidate_sha == github.sha && 'true' || 'false' }}" /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
 
   linux-rc1-native-wrapper-ephemeral:
     name: linux-rc1-native-wrapper-ephemeral

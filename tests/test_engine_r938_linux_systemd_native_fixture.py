@@ -152,6 +152,16 @@ class R938FixtureContracts(unittest.TestCase):
         self.assertIn("R976_REAL_ROOT_SYSTEMD_FAILED_PROCESS_STATUS_PASS", shell)
         self.assertIn("R975_ROOT_RESERVED_CRASH", shell)
 
+    def test_r990_exact_product_guard_waits_for_native_timer_not_manual_service_start(self):
+        guard = (ROOT / "tests/r554_native_guard_ephemeral_contract.py").read_text("utf8")
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text("utf8")
+        for marker in ("DIM_R990_TIMER_PARTIAL", "crash_after_first_root_write",
+                       "R990_EXACT_GUARD_TIMER_FIRED", "LastTriggerUSecMonotonic",
+                       "rootPhaseBefore", "R990_TIMER_ONLY_REQUIRES_STAGED"):
+            self.assertIn(marker, guard)
+        self.assertIn("linux_guard_partial_candidate_sha:", workflow)
+        self.assertIn("inputs.linux_guard_partial_candidate_sha == github.sha", workflow)
+
     def test_r989_native_watchdog_fault_is_after_real_durable_mutation(self):
         watchdog = (ROOT / "tests/r532_ephemeral_root_watchdog_contract.py").read_text("utf8")
         workflow = (ROOT / ".github/workflows/ci.yml").read_text("utf8")
