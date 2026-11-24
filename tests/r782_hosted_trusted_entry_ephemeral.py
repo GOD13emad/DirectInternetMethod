@@ -42,13 +42,26 @@ def guard():
     need(e.get("CI") == "true" and e.get("GITHUB_ACTIONS") == "true" and
          e.get("GITHUB_REPOSITORY") == "GOD13emad/DirectInternetMethod" and
          e.get("RUNNER_ENVIRONMENT") == "github-hosted", "ORIGINAL_HOSTED_ONLY")
-    need(e.get("GITHUB_REF") == "refs/heads/prep/r803-forward-156-native-gates" and
-         e.get("GITHUB_SHA") and len(e["GITHUB_SHA"]) == 40,
+    historical = e.get("GITHUB_REF") == "refs/heads/prep/r803-forward-156-native-gates"
+    reviewed = (e.get("GITHUB_REF") == "refs/heads/feature/universal-install-engine" and
+                e.get("GITHUB_EVENT_NAME") == "workflow_dispatch" and
+                e.get("R962_EXPECTED_SHA") == e.get("GITHUB_SHA"))
+    need((historical or reviewed) and e.get("GITHUB_SHA") and
+         len(e["GITHUB_SHA"]) == 40 and
+         all(c in "0123456789abcdef" for c in e["GITHUB_SHA"]),
          "REVIEW_ONLY_BRANCH_AND_EXACT_COMMIT")
+    # Historical pins are preserved; this reviewed feature candidate has
+    # its own independently checked frozen package and bootstrap digest.
+    global PIN_ENTRY, PIN_ZIP, PKG, ARCHIVE
+    if reviewed:
+        PIN_ENTRY = "02F6D40EB083F238122CD0B1FCCE65FCBF7D802A4B67445CBA484340F54902CB"
+        PIN_ZIP = "298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD"
+        PKG = "DirectInternetMethod_1.5.7_Linux_x86_64"
+        ARCHIVE = BASE / "delivery" / (PKG + ".zip")
     need(e.get("GITHUB_WORKSPACE") == str(EXPECTED_WORKSPACE) and
          BASE == EXPECTED_WORKSPACE and BASE.is_dir(),
          "WORKSPACE_NOT_OWNED")
-    commit = subprocess.run(["/usr/bin/git", "-C", str(BASE), "rev-parse", "HEAD"],
+    commit = subprocess.run(["/usr/bin/git", "-c", "safe.directory=" + str(EXPECTED_WORKSPACE), "-C", str(BASE), "rev-parse", "HEAD"],
                             check=True, capture_output=True, text=True).stdout.strip()
     need(commit == e["GITHUB_SHA"], "CHECKED_OUT_COMMIT_DIFFERENT")
     need(Path("/run").is_dir() and Path("/run").lstat().st_uid == 0 and

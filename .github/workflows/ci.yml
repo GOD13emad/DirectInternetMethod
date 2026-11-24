@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: ''
+      linux_bootstrap_candidate_sha:
+        description: 'Exact reviewed feature HEAD for isolated R962 Linux bootstrap QA (no install or release)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -648,7 +653,9 @@ jobs:
     name: linux-r782-root-owned-bootstrap-ephemeral
     # Actual UID 0 on a fresh original-repository GitHub VM ONLY.
     # Never run this job on a user's machine, a fork, or a tag release.
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/prep/r803-forward-156-native-gates'
+    if: github.repository == 'GOD13emad/DirectInternetMethod' && (((github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.ref == 'refs/heads/prep/r803-forward-156-native-gates') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.linux_bootstrap_candidate_sha != '' && inputs.linux_bootstrap_candidate_sha == github.sha))
+    env:
+      R962_EXPECTED_SHA: ${{ inputs.linux_bootstrap_candidate_sha }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -656,19 +663,27 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Rebuild frozen candidate and verify trusted manifest source bytes
         shell: bash
         run: |
           set -euo pipefail
           python3 -B build_linux_package.py
           printf '%s  %s\n' '298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD' 'delivery/DirectInternetMethod_1.5.7_Linux_x86_64.zip' | sha256sum --check --status
+          if [ "$GITHUB_REF" = refs/heads/feature/universal-install-engine ]; then
+            test "$GITHUB_EVENT_NAME" = workflow_dispatch
+            test "$R962_EXPECTED_SHA" = "$GITHUB_SHA"
+            printf '%s  %s\n' '02F6D40EB083F238122CD0B1FCCE65FCBF7D802A4B67445CBA484340F54902CB' 'tools/security/privileged_entry.py' | sha256sum --check --status
+          else
           printf '%s  %s\n' 'D0181C15C54B90A3B6E03FBFBE32148341037AB60CF4D6788B6A72140304340F' 'tools/security/privileged_entry.py' | sha256sum --check --status
+          fi
       - name: Real root-owned bootstrap staged freeze and bad-manifest fail closed
         shell: bash
         run: |
           set -euo pipefail
           # Test only; PKEXEC_UID is simulated, and no product install runs.
-          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_SHA="$GITHUB_SHA" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r782_hosted_trusted_entry_ephemeral.py
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" R962_EXPECTED_SHA="$R962_EXPECTED_SHA" GITHUB_SHA="$GITHUB_SHA" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r782_hosted_trusted_entry_ephemeral.py
 
   windows-private-r846-native:
     name: windows-private-r846-native
