@@ -152,6 +152,17 @@ class R938FixtureContracts(unittest.TestCase):
         self.assertIn("R976_REAL_ROOT_SYSTEMD_FAILED_PROCESS_STATUS_PASS", shell)
         self.assertIn("R975_ROOT_RESERVED_CRASH", shell)
 
+    def test_r989_native_watchdog_fault_is_after_real_durable_mutation(self):
+        watchdog = (ROOT / "tests/r532_ephemeral_root_watchdog_contract.py").read_text("utf8")
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text("utf8")
+        for marker in ("R989_ROOT_PARTIAL_CRASH", "def crash_after_first_root_write(",
+                       "os.fork()", "os._exit(79)", "os.waitstatus_to_exitcode",
+                       "R989_ACTUAL_PARTIAL_ROOT_STATE", "R989_WATCHDOG_STAGED_RECOVERY",
+                       "R989_EXPECTED_CRASH_EXIT"):
+            self.assertIn(marker, watchdog)
+        self.assertIn('R989_ROOT_PARTIAL_CRASH=', workflow)
+        self.assertIn("github.event_name == 'push'", workflow)
+
     def test_r988_automatic_systemd_restart_is_bounded_and_not_manual(self):
         shell = HARNESS.read_text(encoding="utf8")
         workflow = (ROOT / ".github/workflows/universal-install-engine.yml").read_text("utf8")

@@ -257,12 +257,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py arm
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" GITHUB_REF="$GITHUB_REF" R989_ROOT_PARTIAL_CRASH="${{ github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-install-engine' && '1' || '0' }}" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py arm
       - name: Independent process verifies timed root and user rollback after arm exits
         shell: bash
         run: |
           set -euo pipefail
-          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py verify
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" GITHUB_REF="$GITHUB_REF" R989_ROOT_PARTIAL_CRASH="${{ github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-install-engine' && '1' || '0' }}" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py verify
 
   linux-rc1-native-guard-ephemeral:
     name: linux-rc1-native-guard-ephemeral
