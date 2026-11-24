@@ -280,7 +280,8 @@ class UniversalFixtureInstaller:
     def commit(self, *, fault_after: str | None = None) -> dict:
         return self._commit_locked(fault_after=fault_after)
 
-    def _commit_locked(self, *, fault_after: str | None = None) -> dict:
+    def _commit_locked(self, *, fault_after: str | None = None,
+                        before_remove=None) -> dict:
         doc = self._load()
         require(doc["phase"] in ("activated", "finalizing"),
                 "UNIVERSAL_NOT_ACTIVATED")
@@ -290,22 +291,35 @@ class UniversalFixtureInstaller:
         require(self.adapter.observed_version() == doc["new"],
                 "UNIVERSAL_NATIVE_TARGET_NOT_INSTALLED")
         if doc["phase"] != "finalizing":
+            require(self.code.path.exists(), "UNIVERSAL_CODE_JOURNAL_MISSING")
             doc["phase"] = "finalizing"
             self._write(doc)
-        result = self.code.finalize(
-            lambda: self._native_complete(doc) is True
-            and self.adapter.observed_version() == doc["new"],
-            fault_after=fault_after)
+        if self.code.path.exists():
+            self.code.finalize(
+                lambda: self._native_complete(doc) is True
+                and self.adapter.observed_version() == doc["new"],
+                fault_after=fault_after)
+        else:
+            require(not self.code.path.is_symlink() and
+                    not self.uninstall.uninstall_path.exists() and
+                    not self.uninstall.uninstall_path.is_symlink(),
+                    "UNIVERSAL_FINALIZED_JOURNAL_DRIFT")
+            for row in doc["scope_pins"]:
+                require(self.code._snapshot(row["name"]) ==
+                        {"version": doc["new"], "pin": row["manifest_sha256"]},
+                        "UNIVERSAL_FINALIZED_SCOPE_PIN_DRIFT")
+        if before_remove is not None:
+            before_remove("completed_synthetic")
         self._remove()
         return {"status": "UNIVERSAL_TWO_SCOPE_COMMIT_FIXTURE_ONLY",
-                "version": result["version"],
+                "version": doc["new"],
                 "native_product_installation_accepted": False}
 
     @_serialized
     def abort(self) -> dict:
         return self._abort_locked()
 
-    def _abort_locked(self) -> dict:
+    def _abort_locked(self, *, before_remove=None) -> dict:
         doc = self._load()
         require(doc["phase"] in UPDATE_PHASES,
                 "UNIVERSAL_UPDATE_TRANSACTION_REQUIRED")
@@ -342,6 +356,8 @@ class UniversalFixtureInstaller:
                 "UNIVERSAL_NATIVE_RESTORE_HEALTH_NOT_VERIFIED")
         require(self.adapter.observed_version() == doc["old"],
                 "UNIVERSAL_NATIVE_RESTORED_VERSION_CHANGED")
+        if before_remove is not None:
+            before_remove("aborted_synthetic")
         self._remove()
         return {"status": "UNIVERSAL_TWO_SCOPE_ABORT_FIXTURE_ONLY",
                 "version": doc["old"],
@@ -396,7 +412,8 @@ class UniversalFixtureInstaller:
     def finish_uninstall(self, *, fault_after: str | None = None) -> dict:
         return self._finish_uninstall_locked(fault_after=fault_after)
 
-    def _finish_uninstall_locked(self, *, fault_after: str | None = None) -> dict:
+    def _finish_uninstall_locked(self, *, fault_after: str | None = None,
+                        before_remove=None) -> dict:
         doc = self._load()
         require(doc["phase"] in ("uninstall-prepared", "uninstall-finalizing"),
                 "UNIVERSAL_UNINSTALL_NOT_READY")
@@ -404,14 +421,23 @@ class UniversalFixtureInstaller:
                 self.adapter.observed_version() is None,
                 "UNIVERSAL_NATIVE_UNINSTALL_RECEIPT_MISSING")
         if doc["phase"] != "uninstall-finalizing":
+            require(self.uninstall.uninstall_path.exists(),
+                    "UNIVERSAL_UNINSTALL_JOURNAL_MISSING")
             doc["phase"] = "uninstall-finalizing"
             self._write(doc)
-        self.uninstall.finish(
-            lambda: self._native_uninstalled(doc) is True
-            and self.adapter.observed_version() is None,
-            fault_after=fault_after)
+        if self.uninstall.uninstall_path.exists():
+            self.uninstall.finish(
+                lambda: self._native_uninstalled(doc) is True
+                and self.adapter.observed_version() is None,
+                fault_after=fault_after)
+        else:
+            require(not self.uninstall.uninstall_path.is_symlink() and
+                    not self.code.path.exists() and not self.code.path.is_symlink(),
+                    "UNIVERSAL_FINALIZED_JOURNAL_DRIFT")
         require(self._consistent_old() is None,
                 "UNIVERSAL_UNINSTALL_SCOPES_NOT_EMPTY")
+        if before_remove is not None:
+            before_remove("completed_synthetic")
         self._remove()
         return {"status": "UNIVERSAL_UNINSTALL_COMPLETE_FIXTURE_ONLY",
                 "native_product_uninstall_accepted": False}
@@ -420,7 +446,7 @@ class UniversalFixtureInstaller:
     def abort_uninstall(self) -> dict:
         return self._abort_uninstall_locked()
 
-    def _abort_uninstall_locked(self) -> dict:
+    def _abort_uninstall_locked(self, *, before_remove=None) -> dict:
         doc = self._load()
         require(doc["phase"] in UNINSTALL_PHASES and
                 doc["phase"] != "uninstall-finalizing",
@@ -454,6 +480,8 @@ class UniversalFixtureInstaller:
                 "UNIVERSAL_NATIVE_RESTORE_HEALTH_NOT_VERIFIED")
         require(self.adapter.observed_version() == doc["old"],
                 "UNIVERSAL_NATIVE_RESTORED_VERSION_CHANGED")
+        if before_remove is not None:
+            before_remove("aborted_synthetic")
         self._remove()
         return {"status": "UNIVERSAL_UNINSTALL_ABORT_FIXTURE_ONLY",
                 "version": doc["old"],
@@ -464,15 +492,15 @@ class UniversalFixtureInstaller:
         """Replay forward only after explicit native receipt; otherwise abort."""
         return self._recover_locked()
 
-    def _recover_locked(self) -> dict:
+    def _recover_locked(self, *, before_remove=None) -> dict:
         doc = self._load()
         if doc["phase"] in UNINSTALL_PHASES:
             if doc["phase"] == "uninstall-finalizing":
-                return self._finish_uninstall_locked()
-            return self._abort_uninstall_locked()
+                return self._finish_uninstall_locked(before_remove=before_remove)
+            return self._abort_uninstall_locked(before_remove=before_remove)
         if doc["phase"] == "finalizing":
-            return self._commit_locked()
-        return self._abort_locked()
+            return self._commit_locked(before_remove=before_remove)
+        return self._abort_locked(before_remove=before_remove)
 
     @_serialized
     def execute_broker_bound(self, ledger, plan, policy_bytes: bytes,
@@ -504,16 +532,18 @@ class UniversalFixtureInstaller:
                     binding["policy_sha256"])
         ledger.reserve(plan, policy_bytes, policy_pin, request_bytes)
         ledger.mark_applying_fixture(*identity)
+        def terminal(outcome):
+            ledger.mark_terminal_fixture(*identity, outcome=outcome)
         # Never close or automatically retry on an exception. The journal
         # and reservation must remain available to exact recovery.
         if action == "uninstall":
             self._begin_uninstall_locked(expected_intent=expected_intent)
             self._apply_uninstall_locked()
-            result = self._finish_uninstall_locked()
+            result = self._finish_uninstall_locked(before_remove=terminal)
         else:
             self._begin_locked(sources, expected_intent=expected_intent)
             self._activate_locked()
-            result = self._commit_locked()
+            result = self._commit_locked(before_remove=terminal)
         ledger.close_fixture(*identity, outcome="completed_synthetic")
         return result
 
@@ -522,25 +552,40 @@ class UniversalFixtureInstaller:
                              policy_pin: str, request_bytes: bytes) -> dict:
         """Reconcile ONLY the matching active reservation and durable journal.
 
-        No journal means an ambiguous reserve-before-begin or commit-before-
-        close boundary. Preserve evidence; do not infer success or rerun.
+        Without a journal, only an already persisted terminal ledger result
+        can close the reservation. Otherwise preserve ambiguity and refuse.
         """
         from .broker_replay import BrokerReplayFixtureLedger
         from .broker_intent import compare_native_transaction_policy_intent
         require(type(ledger) is BrokerReplayFixtureLedger and
                 ledger.control.platform == self.platform,
                 "UNIVERSAL_BROKER_LEDGER_REQUIRED")
-        require(self.journal.exists(), "UNIVERSAL_BROKER_NO_JOURNAL_RECONCILE")
-        doc = self._load()
-        binding = compare_native_transaction_policy_intent(
-            plan, policy_bytes, policy_pin, request_bytes, self._intent(doc))
+        from .broker_intent import compare_pinned_policy_intent
+        binding = compare_pinned_policy_intent(
+            plan, policy_bytes, policy_pin, request_bytes)
+        require(binding["platform"] == self.platform,
+                "UNIVERSAL_BROKER_PLATFORM_DRIFT")
         identity = (binding["request_id"], binding["request_sha256"],
                     binding["policy_sha256"])
         active = ledger.recover(*identity)
-        require(active["phase"] == "applying",
-                "UNIVERSAL_BROKER_RECOVERY_PHASE_DRIFT")
+        phase = active["phase"]
+        terminals = ("completed_synthetic", "aborted_synthetic")
+        if not self.journal.exists():
+            require(phase in terminals, "UNIVERSAL_BROKER_NO_JOURNAL_RECONCILE")
+            self._no_active()
+            ledger.close_fixture(*identity, outcome=phase)
+            return {"status": "UNIVERSAL_BROKER_TERMINAL_RECONCILED_FIXTURE_ONLY",
+                    "outcome": phase, "native_product_installation_accepted": False}
+        doc = self._load()
+        compare_native_transaction_policy_intent(
+            plan, policy_bytes, policy_pin, request_bytes, self._intent(doc))
         forward = doc["phase"] in ("finalizing", "uninstall-finalizing")
-        result = self._recover_locked()
-        ledger.close_fixture(*identity, outcome=("completed_synthetic"
-                             if forward else "aborted_synthetic"))
+        outcome = "completed_synthetic" if forward else "aborted_synthetic"
+        require(phase in ("applying", outcome),
+                "UNIVERSAL_BROKER_RECOVERY_PHASE_DRIFT")
+        def terminal(observed):
+            require(observed == outcome, "UNIVERSAL_BROKER_TERMINAL_DRIFT")
+            ledger.mark_terminal_fixture(*identity, outcome=observed)
+        result = self._recover_locked(before_remove=terminal)
+        ledger.close_fixture(*identity, outcome=outcome)
         return result

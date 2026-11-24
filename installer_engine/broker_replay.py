@@ -28,7 +28,8 @@ from .native_plan import NativePlan
 MAX_USED_REQUEST_IDS = 256
 _ID = re.compile(r"[a-f0-9]{32}\Z")
 _SHA = re.compile(r"[a-f0-9]{64}\Z")
-_PHASES = frozenset(("reserved", "applying"))
+_TERMINAL_PHASES = frozenset(("completed_synthetic", "aborted_synthetic"))
+_PHASES = frozenset(("reserved", "applying")) | _TERMINAL_PHASES
 STATUS = "REPLAY_FIXTURE_STATE_ONLY_NO_OS_AUTHORIZATION"
 
 
@@ -189,6 +190,27 @@ class BrokerReplayFixtureLedger:
                 raise EngineError("FIXTURE_INJECTED_AFTER_DURABLE_APPLYING")
             return self._report(STATUS, request_id, "applying")
 
+    def mark_terminal_fixture(self, request_id: str, request_sha256: str,
+                              policy_sha256: str, *, outcome: str) -> dict:
+        """Persist a coordinator-verified synthetic result BEFORE journal removal.
+
+        Only a serialized coordinator that has finished its existing state
+        machine may call this fixture API. It is not a native receipt or
+        independent proof of product completion.
+        """
+        require(type(outcome) is str and outcome in _TERMINAL_PHASES,
+                "BROKER_REPLAY_FIXTURE_OUTCOME_INVALID")
+        with self.control.locked():
+            doc = self._load()
+            active = self._active_exact(
+                doc, request_id, request_sha256, policy_sha256)
+            require(active["phase"] in ("applying", outcome),
+                    "BROKER_REPLAY_TERMINAL_OUTCOME_DRIFT")
+            if active["phase"] != outcome:
+                active["phase"] = outcome
+                atomic_json(self.path, doc)
+            return self._report(STATUS, request_id, outcome)
+
     def close_fixture(self, request_id: str, request_sha256: str,
                       policy_sha256: str, *, outcome: str) -> dict:
         """Tombstone request ID in bounded synthetic history; no native PASS."""
@@ -200,7 +222,8 @@ class BrokerReplayFixtureLedger:
             active = self._active_exact(
                 doc, request_id, request_sha256, policy_sha256)
             require(active["phase"] == "applying" or
-                    outcome == "aborted_synthetic",
+                    active["phase"] == outcome or
+                    (active["phase"] == "reserved" and outcome == "aborted_synthetic"),
                     "BROKER_REPLAY_SYNTHETIC_COMPLETION_NOT_APPLYING")
             doc["active"] = None
             atomic_json(self.path, doc)

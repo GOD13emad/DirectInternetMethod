@@ -262,7 +262,7 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
         commit = self.core._commit_locked
         with patch.object(self.core, "_commit_locked",
-                          side_effect=lambda: commit(fault_after="protected")):
+                          side_effect=lambda **kw: commit(fault_after="protected", **kw)):
             with self.assertRaisesRegex(EngineError, "INJECTED_AFTER_FINALIZE"):
                 self.core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
         self.assertEqual(self.core._load()["phase"], "finalizing")
@@ -271,6 +271,38 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         self.assertEqual(result["version"], "1.5.7")
         self.assertIsNone(ledger.inspect_fixture()["active_phase"])
         self.assertEqual(set(self.state().values()), {"1.5.7"})
+
+    def test_broker_terminal_recovery_across_both_retirement_boundaries(self):
+        from unittest.mock import patch
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        for boundary in ("before-terminal", "before-remove", "before-close"):
+            with self.subTest(boundary=boundary):
+                # Independent disposable coordinator for each interruption.
+                if boundary != "before-terminal":
+                    self.core.begin_uninstall()
+                    self.core.apply_uninstall()
+                    self.core.finish_uninstall()
+                ledger = BrokerReplayFixtureLedger(self.base / ("broker-" + boundary), self.platform)
+                if boundary == "before-terminal":
+                    inputs = self.broker_bound_install_inputs()
+                plan, pb, pin, rb, intent, sources = inputs
+                target, method = {
+                    "before-terminal": (ledger, "mark_terminal_fixture"),
+                    "before-remove": (self.core, "_remove"),
+                    "before-close": (ledger, "close_fixture"),
+                }[boundary]
+                with patch.object(target, method, side_effect=EngineError("CUT")):
+                    with self.assertRaisesRegex(EngineError, "CUT"):
+                        self.core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
+                self.assertFalse(self.core.code.path.exists())
+                self.assertEqual(ledger.inspect_fixture()["active_phase"],
+                                 "applying" if boundary == "before-terminal" else "completed_synthetic")
+                self.assertEqual(self.core.journal.exists(), boundary != "before-close")
+                result = self.new_engine().recover_broker_bound(ledger, plan, pb, pin, rb)
+                self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+                self.assertFalse(self.core.journal.exists())
+                self.assertEqual(set(self.state().values()), {"1.5.7"})
+                self.assertEqual(self.adapter.observed_version(), "1.5.7")
 
     def test_broker_bound_missing_journal_keeps_ambiguous_reservation(self):
         from installer_engine.broker_replay import BrokerReplayFixtureLedger
