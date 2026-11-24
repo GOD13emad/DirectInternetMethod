@@ -14,7 +14,7 @@ on:
         type: string
         default: ''
       linux_bootstrap_candidate_sha:
-        description: 'Exact reviewed feature HEAD for isolated R962 Linux bootstrap QA (no install or release)'
+        description: 'Exact reviewed feature HEAD for isolated Linux bootstrap and lifecycle QA (no release)'
         required: false
         type: string
         default: ''
@@ -657,7 +657,7 @@ jobs:
     env:
       R962_EXPECTED_SHA: ${{ inputs.linux_bootstrap_candidate_sha }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
       actions: read
@@ -678,11 +678,18 @@ jobs:
           else
           printf '%s  %s\n' 'D0181C15C54B90A3B6E03FBFBE32148341037AB60CF4D6788B6A72140304340F' 'tools/security/privileged_entry.py' | sha256sum --check --status
           fi
-      - name: Real root-owned bootstrap staged freeze and bad-manifest fail closed
+      - name: Install standard desktop prerequisites on disposable reviewed VM
+        if: github.ref == 'refs/heads/feature/universal-install-engine' && github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
-          # Test only; PKEXEC_UID is simulated, and no product install runs.
+          sudo -n apt-get update -q
+          sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 pkexec polkitd nftables iproute2 curl
+      - name: Real root-owned bootstrap admission and reviewed fresh lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Test only; PKEXEC_UID simulated. Reviewed feature runs native install/remove without starting product units.
           sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" R962_EXPECTED_SHA="$R962_EXPECTED_SHA" GITHUB_SHA="$GITHUB_SHA" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r782_hosted_trusted_entry_ephemeral.py
 
   windows-private-r846-native:
