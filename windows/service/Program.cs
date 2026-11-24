@@ -493,7 +493,7 @@ internal static class Program
             if (!NativeProtectedUpdateAcl.IsProtectedExistingDirectory(UpdatesDir))
                 throw new UnauthorizedAccessException(
                     "Protected native transaction ACL failed before finalization.");
-            using var doc = JsonDocument.Parse(File.ReadAllText(PendingUpdatePath));
+            using var doc = NativeInnoCompletionReceipt.ReadHeldPendingJson(PendingUpdatePath);
             var targetText = doc.RootElement.GetProperty("targetVersion").GetString() ?? "";
             if (doc.RootElement.GetProperty("schema").GetInt32() != 2 ||
                 !Version.TryParse(targetText, out var target))

@@ -67,10 +67,7 @@ internal static class NativeProtectedUpdateJournal
         {
             // Re-derive the only legal transition from the actual current
             // protected pending record; never promote a temp on its own.
-            using var source = File.OpenRead(target);
-            if (source.Length is < 1 or > MaximumPendingBytes)
-                throw new InvalidDataException("Protected pending preimage length invalid.");
-            using var previous = JsonDocument.Parse(source);
+            using var previous = NativeInnoCompletionReceipt.ReadHeldPendingJson(target);
             var exact = JsonSerializer.SerializeToUtf8Bytes(
                 NativeUpdateCleanupJournal.MarkReceiptConsumed(previous.RootElement));
             if (!raw.AsSpan().SequenceEqual(exact))

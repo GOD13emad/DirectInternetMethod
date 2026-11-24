@@ -106,6 +106,35 @@ internal static class HeldProbe
         Need(NativeInnoCompletionReceipt.Matches(
             NativeInnoCompletionReceipt.ReadHeldExact(receipt, id), id, sha),
             "R977_POST_SYMLINK_RECOVERY_FAILED");
+        // R985: the actual production pending record must use the same
+        // single-link no-follow native handle, with a bounded JSON size.
+        var transactions = Path.Combine(root, "UpdateTransactions");
+        Directory.CreateDirectory(transactions);
+        var pending = Path.Combine(transactions, "pending-update.json");
+        File.WriteAllText(pending, "{\"schema\":2,\"transactionId\":\"TEST\"}", new UTF8Encoding(false));
+        using (var doc = NativeInnoCompletionReceipt.ReadHeldPendingJson(pending))
+            Need(doc.RootElement.GetProperty("transactionId").GetString() == "TEST",
+                 "R985_VALID_PENDING_DENIED");
+        var pendingLink = Path.Combine(transactions, "pending-link.json");
+        Need(CreateHardLinkW(pendingLink, pending, IntPtr.Zero), "R985_LINK_SETUP_FAILED");
+        Denied(() => NativeInnoCompletionReceipt.ReadHeldPendingJson(pending).Dispose(),
+               "pending-hardlink-count");
+        File.Delete(pendingLink);
+        using (var writer = new FileStream(pending, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            Denied(() => NativeInnoCompletionReceipt.ReadHeldPendingJson(pending).Dispose(),
+                   "pending-concurrent-writer");
+        File.WriteAllText(pending, new string(' ', 65537));
+        Denied(() => NativeInnoCompletionReceipt.ReadHeldPendingJson(pending).Dispose(),
+               "pending-size-limit");
+        File.WriteAllText(pending, "");
+        Denied(() => NativeInnoCompletionReceipt.ReadHeldPendingJson(pending).Dispose(),
+               "pending-empty");
+        File.WriteAllText(pending, "{\"schema\":2}", new UTF8Encoding(false));
+        Denied(() => NativeInnoCompletionReceipt.ReadHeldPendingJson(
+            Path.Combine(transactions, "other.json")).Dispose(), "pending-wrong-leaf");
+        using (var doc = NativeInnoCompletionReceipt.ReadHeldPendingJson(pending))
+            Need(doc.RootElement.GetProperty("schema").GetInt32() == 2, "R985_PENDING_REOPEN_FAILED");
+        Console.WriteLine("R985_REAL_NATIVE_WINDOWS_HELD_PENDING_PASS");
         Console.WriteLine("R977_REAL_NATIVE_WINDOWS_HELD_RECEIPT_PASS");
         return 0;
     }
@@ -120,6 +149,14 @@ class NativeProductionHeldWin32Receipt(unittest.TestCase):
             "static async Task RunActionAsync(", 1)[0]
         self.assertIn("NativeInnoCompletionReceipt.ReadHeldExact(", part)
         self.assertNotIn("File.ReadAllText(receiptPath)", part)
+
+    def test_pending_and_transition_use_bounded_same_handle_reader(self):
+        service = (ROOT / "windows/service/Program.cs").read_text("utf-8-sig")
+        journal = (ROOT / "windows/service/NativeProtectedUpdateJournal.cs").read_text("utf-8-sig")
+        self.assertIn("NativeInnoCompletionReceipt.ReadHeldPendingJson(PendingUpdatePath)", service)
+        self.assertIn("NativeInnoCompletionReceipt.ReadHeldPendingJson(target)", journal)
+        self.assertNotIn("File.ReadAllText(PendingUpdatePath)", service)
+        self.assertNotIn("File.OpenRead(target)", journal)
 
     @unittest.skipUnless(os.name == "nt", "real Win32 handles require Windows")
     def test_actual_compiled_production_receipt_helper_native_win32(self):
@@ -164,6 +201,7 @@ class NativeProductionHeldWin32Receipt(unittest.TestCase):
             self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
             self.assertIn("R977_REAL_NATIVE_WINDOWS_HELD_RECEIPT_PASS",
                           run.stdout)
+            self.assertIn("R985_REAL_NATIVE_WINDOWS_HELD_PENDING_PASS", run.stdout)
 
 
 if __name__ == "__main__":

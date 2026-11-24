@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Win32.SafeHandles;
 
 namespace DirectInternetMethod.Service;
@@ -127,7 +128,25 @@ internal static class NativeInnoCompletionReceipt
         reader.Flush(flushToDisk: true);
     }
 
-    private static SafeFileHandle OpenHeldExact(string expectedPath, int exactBytes, bool writable)
+    // Reuse the same native handle validation for the fixed, protected
+    // pending journal. The caller must still verify the store ACL/authority.
+    internal static JsonDocument ReadHeldPendingJson(string path)
+    {
+        if (!OperatingSystem.IsWindows() ||
+            string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path) ||
+            !string.Equals(path, Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase) ||
+            Path.GetFileName(path) != "pending-update.json" ||
+            Path.GetFileName(Path.GetDirectoryName(path)) != "UpdateTransactions")
+            throw new InvalidDataException("Protected pending record identity invalid.");
+        using var held = OpenHeldExact(path, 65536, writable: false, bounded: true);
+        using var reader = new FileStream(held, FileAccess.Read);
+        // The size bound is enforced on the SAME non-reparse, single-link
+        // handle. No secondary pathname open or unbounded read.
+        return JsonDocument.Parse(reader);
+    }
+
+    private static SafeFileHandle OpenHeldExact(string expectedPath, int exactBytes, bool writable,
+                                                bool bounded = false)
     {
         // FILE_FLAG_OPEN_REPARSE_POINT opens the link itself, never follows it.
         // FILE_SHARE_READ blocks concurrent rename/deletion/new writes until
@@ -143,7 +162,9 @@ internal static class NativeInnoCompletionReceipt
             if (!GetFileInformationByHandle(held, out var info) ||
                 (info.Attributes & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)) != 0 ||
                 info.NumberOfLinks != 1 ||
-                info.FileSizeHigh != 0 || info.FileSizeLow != exactBytes)
+                info.FileSizeHigh != 0 ||
+                (!bounded && info.FileSizeLow != exactBytes) ||
+                (bounded && (info.FileSizeLow < 1 || info.FileSizeLow > exactBytes)))
                 throw new InvalidDataException("Native held-file metadata invalid.");
             var final = new StringBuilder(8192);
             var count = GetFinalPathNameByHandleW(held, final, (uint)final.Capacity, 0);

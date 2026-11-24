@@ -57,7 +57,7 @@ class ProtectedUpdateStagingContract(unittest.TestCase):
             'static async Task RunActionAsync(', 1
         )[0]
         check = final.index('!NativeProtectedUpdateAcl.IsProtectedExistingDirectory(UpdatesDir)')
-        load = final.index('JsonDocument.Parse(File.ReadAllText(PendingUpdatePath))')
+        load = final.index('NativeInnoCompletionReceipt.ReadHeldPendingJson(PendingUpdatePath)')
         stage_delete = final.index('File.Delete(stage)')
         pending_delete = final.index('File.Delete(PendingUpdatePath)')
         self.assertLess(check, load)
