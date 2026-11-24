@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R903_LINUX_REAL_PRODUCT_TWO_SCOPE_LAYOUT_20261121",
+  "parent_head": "05a9e222f9d2f590a343bd62bf264f9974218743",
+  "objective": "Close real Linux product integration gap: native_layout.json mapped 13 privileged managed code files only, yet real v1.5.7 Linux user_update_transaction manages 8 separate user-scope code files. NativePlan from one scope could never match the R899 broker requirement of exactly protected+user.",
+  "decision": "Upsert original linux/native_layout.json in place, retaining exact 13 Root entries and adding all eight authentic user managed code entries as recorded in linux/app/user_update_transaction.py FILES. Keep mutable router_gateway/providers.json and other user settings OUT of code scope. No product installer or systemd service altered.",
+  "source_hashes_sha256": {
+    "linux/native_layout.json": "b423f13fb8c03ade801fe09ad70aaf64ca485d3f6b9e51092108a083d3f5e1b8",
+    "linux/system/install_system.sh": "f2e68e145b98a14f6857fd84b68934879d936497152ebd37eb15ca64c6b62224",
+    "linux/app/user_update_transaction.py": "69ae3a76cfcd3bb251546ccd5237f3af081ed0477323a8f95737c8a4bc87b6f8",
+    "build_linux_package.py": "c44500203ad51b848285b5be409cf1174814c6fb8f7e7e1a7fa04cbf73b929d3",
+    "tests/test_engine_scoped_layout.py": "5a3bf51453926d7ba41c1f9a59d7ca765ba6f3affae622d331ff48841476faec",
+    "tests/test_engine_scoped_bundle.py": "7681972d792584e0bc5d811f9d04c534aa1062234968dc96940fceb14bbae975"
+  },
+  "accepted_real_source_contract": {
+    "package_version": "1.5.7",
+    "platform": "linux-x86_64",
+    "source_package_files": 28,
+    "protected_managed_code_files": 13,
+    "user_managed_code_files": 8,
+    "total_managed_code_files": 21,
+    "source_excluded_from_code_scope": [
+      "app/router_gateway/providers.json",
+      "user settings.json",
+      "custom hosts and strategy/scope/adult content",
+      "launchers generated on installed system"
+    ],
+    "native_plan_scopes": [
+      "privileged",
+      "user"
+    ],
+    "source_package_generation": "Read-only static ast.literal_eval of preexisting build_linux_package.py FILES declarations. Real file bytes hashed with same LF normalization as packaging script; the packaging script was NOT executed and no release ZIP overwritten or published.",
+    "broker_intent": "compiled actual 21-code-file NativePlan matches R899 exact two-scope policy/request/manifest SHA contract; no source-only plan grants native acceptance",
+    "bundle_materialization": "Actual repo 21 managed code members pinned in a synthetic distribution, then privileged output 13 files and user output 8 files separately materialized under temporary roots; synthetic Engine staged/activated/committed code only with callback stubs; customizable providers and owner settings preserved byte-for-byte."
+  },
+  "verification": {
+    "targeted_windows": {
+      "tests": 26,
+      "passed": 26,
+      "failed": 0
+    },
+    "windows_full": {
+      "tests": 267,
+      "passed": 241,
+      "skipped": 26,
+      "failed": 0,
+      "operation_id": "3b8dc141-2e82-410a-a3da-d91faa1a58f8",
+      "stderr_sha256": "fe6990b08cda6551390f71574b6820659b2d84b53c58ad42fdc41d11729bdde7"
+    },
+    "initial_test_negative": "First new user materialization test supplied only eight user members in distribution; shared compiler correctly refused because all 21 layout-declared source entries must be pinned before materializing one scope.",
+    "test_fix": "Test now includes all 21 source inputs and materializes only user scope; rerun 26/26 PASS; core code unchanged.",
+    "linux_hosted_exact_head": "PENDING_NEW_COMMIT",
+    "syntax_diff_check": "PASS",
+    "production_installation_changed": false,
+    "real_root_or_uac_acceptance": false
+  },
+  "risk_limits": [
+    "The actual version 1.5.7 release remains private/unpublished; no publisher-signature or independently authenticated package provenance",
+    "No actual installed Linux root/user upgrade, systemd/polkit grant, protected FD-write adapter or reboot test",
+    "Mutable router_gateway providers explicitly excluded from managed code but must be preserved by the native transaction when enabled",
+    "Windows remains separately defined by windows/manifest.json v1.5.7 and Inno; not modified in R903"
+  ],
+  "repo_pr": "PR #68 OPEN/DRAFT; public Release HOLD"
+}

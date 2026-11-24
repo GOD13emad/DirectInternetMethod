@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R909-REPRODUCIBLE-WINDOWS-V157-NATIVE-SYSTEM-GUEST-20261121",
+  "observed_date": "2026-11-21",
+  "repository": "GOD13emad/DirectInternetMethod",
+  "exact_source_commit": "8ee949471aaf2dc8aef1a88194e3036722e6f954",
+  "scope": "Private v1.5.7 source provenance and disposable Windows Sandbox SYSTEM context; no production host install",
+  "sdk": {
+    "original_github_ci_job_ids": [
+      124546126103,
+      124546126121
+    ],
+    "original_sdk": "10.0.403",
+    "local_sdk_10_0_404": {
+      "gui_sha256": "3A92244A10CB4C655DD586F75DA65BBD1F4E42E78089E67454C4D2268CC5DBFA",
+      "service_sha256": "1D66185F393296FA9BE41A6D1F0FD97DB13E59D8037D932F7D3EF4329D4CDE3F",
+      "double_build_identical": true,
+      "historical_sha_parity": false
+    },
+    "official_portable_10_0_403": {
+      "download_source": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.403/dotnet-sdk-10.0.403-win-x64.zip",
+      "zip_bytes": 300745255,
+      "zip_sha256": "F398979A9CAC2DBA760771C4E01F16E431DCD6BCFB2213E3E8F5B3D354095CC0",
+      "signed_host_exe_status": "Valid",
+      "installed_system_sdk_changed": false,
+      "gui_sha256": "51F5141FFD9AAF4FAF890A04E9242E40576223038440C1F0B3C607A1E068B6BE",
+      "gui_bytes": 139961422,
+      "service_sha256": "CBA9D030DFC4CAFE235AB14406BF6DA66642197BE9EC3CA631C133DD6557C480",
+      "service_bytes": 73652035,
+      "original_github_ci_guI_and_service_shas_identical": true
+    }
+  },
+  "source_packaging": {
+    "git_archive_sha256": "B9C968D60C66F153F370468057A8D58CED2082A15A9A258E0E2722D01A4E68AD",
+    "original_source_archive_bytes": 18085193,
+    "powerShellRuntime_version": "7.6.6",
+    "bundledRuntimeArchive_sha256": "02FE458BE20493FBDF43F61EA20610B811EE6C738AB1676C61B9CFCD1A33C860",
+    "bundledRuntimeArchive_bytes": 106328873,
+    "vendor_pwsh_exe_sha256": "BFB46AF89433268872DDB43D1CA7A3F433452EE91ED356A9786940F90118E285",
+    "managed_source_files": 681,
+    "original_committed_prebuild_manifest_sha256": "B6D6B5F6A927D18BB0C25A843E1589F28D218E24F75327D39ACB85A509965CEE",
+    "rebuilt_postbuild_manifest_sha256": "9C664DB49104D1F8775413260036155CCC920D8517CF7DB2AFAFBFE0A715D966",
+    "equals_original_GitHub_native_R850_postbuild_manifest": true,
+    "dotnet_target_contract": "PASS",
+    "windows_source_contract_audit": {
+      "pass": 122,
+      "fail": 0,
+      "git_tracked_source_provenance_resolved_from_original_git_index": true,
+      "initial_archive_only_git_metadata_check_false": "Archive lacks .git; not source integrity failure"
+    }
+  },
+  "compiled_inno": {
+    "source": "windows/installer/DirectInternetMethod.iss at exact R908 head, before R910 metadata fix",
+    "installer_sha256": "292E7E92363EA610B93C7E103EF49EB4061BFD70D127EF92297CA8E7FE0E8DF5",
+    "bytes": 154272738,
+    "Authenticode": "NotSigned",
+    "earlier_R850_hosted_Setup_sha256": "4E5B9AE73A5905E766839A556DD41D4D83CB5FB547901C624EEF43137DE47941",
+    "setup_byte_identical_to_R850": false,
+    "host_installation_performed": false
+  },
+  "isolated_native_sandbox": {
+    "config": {
+      "network": "disabled",
+      "clipboard": "disabled",
+      "vGPU": "disabled",
+      "protectedClient": true,
+      "inputShare": "read-only",
+      "outputShare": "isolated guest QA scratch only"
+    },
+    "sandbox_id": "d1115e2a-19d6-4d22-b032-2fb2d58c9079",
+    "login_context": "NT AUTHORITY\\SYSTEM",
+    "guest_computer_is_not_host": true,
+    "guest_native_install": {
+      "setup_exit_code": 0,
+      "registered_hklm_single_appid": true,
+      "installed_v157": true,
+      "user_exe_sha_exact": true,
+      "service_exe_sha_exact": true,
+      "installed_manifest_sha_exact": true,
+      "DirectInternetMethodSvc": "Running",
+      "ctrld": "Stopped-demand",
+      "observed_registry_display_name": "Direct Internet Method version 1.5.7",
+      "expected_native_readiness_display_name": "Direct Internet Method",
+      "native_strict_readiness": "FAIL_CLOSED_DISPLAYNAME_MISMATCH",
+      "native_install_receipt_sha256": "D976C3D2B9B127521F02F44EBE55C69A6A7E7C65D5088E2D39A9FF07F71199DC",
+      "independent_readonly_postflight_sha256": "4B7E7D747BC91D0763C0E49C45FD73BE20031EF7FC8EF4D7431DCFAF438A7326",
+      "native_setup_log_sha256": "09BF585BEE3585BDA21D84F9F2C65F4BF9436D6A734688725DA4E114A9E99804"
+    },
+    "native_guest_uninstall": {
+      "status": "PASS_NATIVE_GUEST_SYSTEM_ONLY_UNINSTALL_AND_OWNER_DATA_PRESERVATION",
+      "exit_code": 0,
+      "appid_removed": true,
+      "DirectInternetMethodSvc_unregistered": true,
+      "ctrld_unregistered": true,
+      "gui_managed_code_removed": true,
+      "privileged_service_code_removed": true,
+      "custom_hosts_sha_preserved": "CB1C761754EE0D05C74AC96C2623C1FABE96E7CFD15C82121B6E428CDB54E1D2",
+      "user_evidence_sha_preserved": "CF7D57AB066AD7B6809A05B41CC376EEECC2E98EA709D5718193B0C19619B448",
+      "native_uninstall_receipt_sha256": "9338E76AA16ED57DCBC3B164BD5EEC1DBEE082C9AF11EB2D63C8D0C2F82A7699",
+      "native_uninstall_log_sha256": "624DA16B55053E4EBD9A45434074DFC846377DF50562F04F7E08CC21B3D8523D"
+    },
+    "later_guest_session_id_no_longer_listed": true,
+    "unrelated_guest_session_observed_and_not_stopped": true,
+    "host_original_DirectInternetMethodSvc": "Running",
+    "host_original_Tailscale": "Running",
+    "host_network_or_installation_mutated": false
+  },
+  "limitations": [
+    "R909 installation used SYSTEM in disposable sandbox, not a normal interactive logged-in user, no UAC acceptance",
+    "Initial Inno DisplayName mismatch failed strict native readiness even though setup returned exit 0; R910 corrects the actual Inno source",
+    "The rebuilt unsigned Setup differs byte-wise from older hosted Setup; frozen reproducibility of compiler/Setup itself not claimed",
+    "No integration of new universal engine with production installer transaction or durable native rollback across power loss",
+    "No real physical host Start/Stop/network/VPN-leak UAT, independent security approval or public release"
+  ],
+  "result": "PASS_SCOPED_REPRODUCIBLE_MANAGED_SOURCE_AND_NATIVE_GUEST_INSTALL_UNINSTALL; NATIVE_READINESS_NEGATIVE_DISPLAYNAME_TO_BE_FIXED_R910",
+  "release": "HOLD"
+}

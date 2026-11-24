@@ -7,6 +7,10 @@
 AppId={{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+; Match the native_readiness exact registered DisplayName contract.
+; Inno otherwise appends "version 1.5.7" by default, causing false native
+; readiness rejection after an otherwise successful installer transaction.
+UninstallDisplayName={#MyAppName}
 VersionInfoVersion=1.5.7.0
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\DirectInternetMethod
@@ -89,6 +93,9 @@ Type: files; Name: "{app}\is-*.tmp"
 Type: files; Name: "{app}\app\is-*.tmp"
 Type: dirifempty; Name: "{app}\app"
 Type: dirifempty; Name: "{app}"
+; Only retire the protected updater transaction directory if it is empty;
+; never destroy pending provenance, downloaded setups or foreign data.
+Type: dirifempty; Name: "{commonpf}\DirectInternetMethod\Privileged\UpdateTransactions"
 ; Uninstaller tracks each managed file under Privileged; never delete a mixed directory recursively.
 Type: dirifempty; Name: "{commonpf}\DirectInternetMethod\Privileged"
 Type: dirifempty; Name: "{commonpf}\DirectInternetMethod"
@@ -128,6 +135,111 @@ function DIMQueryServiceStatus(Service: THandle; var Status: TDIMServiceStatus):
   external 'QueryServiceStatus@advapi32.dll stdcall';
 function DIMCloseServiceHandle(Handle: THandle): Boolean;
   external 'CloseServiceHandle@advapi32.dll stdcall';
+
+// Fail closed: an exception in ssPostInstall may be suppressed in /VERYSILENT
+// mode, otherwise producing exit 0 even if service registration failed.
+// A transaction-bound receipt is emitted only at successful Inno ssDone.
+var
+  DIMPostInstallCompleted: Boolean;
+  DIMUpdateReceiptExpected: Boolean;
+  DIMUpdateReceiptCompleted: Boolean;
+  DIMTransactionId: String;
+  DIMExpectedInstallerSHA: String;
+
+function DIMIsHex64(const Value: String): Boolean;
+var
+  I: Integer;
+  Ch: String;
+begin
+  Result := False;
+  if Length(Value) <> 64 then
+    exit;
+  for I := 1 to Length(Value) do
+  begin
+    Ch := UpperCase(Copy(Value, I, 1));
+    if Pos(Ch, '0123456789ABCDEF') = 0 then
+      exit;
+  end;
+  Result := True;
+end;
+
+function InitializeSetup(): Boolean;
+var
+  I: Integer;
+  Arg: String;
+  HaveTxn: Boolean;
+  HaveSHA: Boolean;
+  ExpectedStage: String;
+begin
+  Result := False;
+  HaveTxn := False;
+  HaveSHA := False;
+  DIMUpdateReceiptExpected := False;
+  DIMUpdateReceiptCompleted := False;
+  for I := 1 to ParamCount do
+  begin
+    Arg := ParamStr(I);
+    if Pos('/DIMTXN=', UpperCase(Arg)) = 1 then
+    begin
+      if HaveTxn then
+        exit;
+      HaveTxn := True;
+      DIMTransactionId := UpperCase(Copy(Arg, 9, Length(Arg)));
+    end
+    else if Pos('/DIMSHA256=', UpperCase(Arg)) = 1 then
+    begin
+      if HaveSHA then
+        exit;
+      HaveSHA := True;
+      DIMExpectedInstallerSHA := UpperCase(Copy(Arg, 12, Length(Arg)));
+    end;
+  end;
+  if HaveTxn <> HaveSHA then
+    exit;
+  if HaveTxn then
+  begin
+    if (not DIMIsHex64(DIMTransactionId)) or
+       (not DIMIsHex64(DIMExpectedInstallerSHA)) then
+      exit;
+    ExpectedStage := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\UpdateTransactions\DirectInternetMethod-update-stage.exe');
+    if not PathSame(ExpandConstant('{srcexe}'), ExpectedStage) then
+      exit;
+    // Verify the updater handoff before PrepareToInstall can stop services.
+    // Recheck the source again at ssDone.
+    if UpperCase(GetSHA256OfFile(ExpandConstant('{srcexe}'))) <> DIMExpectedInstallerSHA then
+    begin
+      Log('DIM_UPDATE_SOURCE_SHA_MISMATCH_BEFORE_INSTALL');
+      exit;
+    end;
+    DIMUpdateReceiptExpected := True;
+  end;
+  Result := True;
+end;
+
+procedure DIMWriteSuccessfulNativeCompletion();
+var
+  ObservedSHA: String;
+  ReceiptPath: String;
+  TempPath: String;
+  Payload: String;
+begin
+  if (not DIMUpdateReceiptExpected) or (not DIMPostInstallCompleted) then
+    RaiseException('No verified successful update transaction to finalize.');
+  ObservedSHA := UpperCase(GetSHA256OfFile(ExpandConstant('{srcexe}')));
+  if ObservedSHA <> DIMExpectedInstallerSHA then
+    RaiseException('Inno update source SHA-256 disagrees with privileged updater.');
+  ReceiptPath := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\UpdateTransactions\completion-') +
+    DIMTransactionId + '.receipt';
+  TempPath := ReceiptPath + '.tmp';
+  if FileExists(ReceiptPath) or FileExists(TempPath) then
+    RaiseException('Native completion receipt slot already occupied.');
+  Payload := 'DIM-INNO-V1|' + DIMTransactionId + '|' + DIMExpectedInstallerSHA;
+  if not SaveStringToFile(TempPath, Utf8Encode(Payload), False) then
+    RaiseException('Unable to write protected native completion temp receipt.');
+  if not RenameFile(TempPath, ReceiptPath) then
+    RaiseException('Unable to atomically publish native completion receipt.');
+  DIMUpdateReceiptCompleted := True;
+end;
 
 function RunSc(Params: String; var ResultCode: Integer): Boolean;
 begin
@@ -296,13 +408,13 @@ begin
 
   if not ServiceExists() then
   begin
-    Params := 'create "' + ServiceName + '" binPath= "' + ServiceExe + '" start= auto DisplayName= "Direct Internet Method Service"';
+    Params := 'create "' + ServiceName + '" binPath= "\"' + ServiceExe + '\"" start= auto DisplayName= "Direct Internet Method Service"';
     if (not RunSc(Params, ResultCode)) or (ResultCode <> 0) then
       RaiseException('Unable to create Direct Internet Method service. sc.exe exit=' + IntToStr(ResultCode));
   end
   else
   begin
-    Params := 'config "' + ServiceName + '" binPath= "' + ServiceExe + '" start= auto DisplayName= "Direct Internet Method Service"';
+    Params := 'config "' + ServiceName + '" binPath= "\"' + ServiceExe + '\"" start= auto DisplayName= "Direct Internet Method Service"';
     if (not RunSc(Params, ResultCode)) or (ResultCode <> 0) then
       RaiseException('Unable to update Direct Internet Method service. sc.exe exit=' + IntToStr(ResultCode));
   end;
@@ -349,7 +461,7 @@ procedure CompletePendingDirectUpdate();
 var
   PendingPath: String;
 begin
-  PendingPath := ExpandConstant('{commonappdata}\DirectInternetMethod\pending-update.json');
+  PendingPath := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\UpdateTransactions\pending-update.json');
   // Do not report an update as completed or delete SHA/provenance while Setup
   // is still running. Only the installed service, after restart, may verify
   // the exact staged installer hash and then close its one pending slot.
@@ -364,7 +476,21 @@ begin
     InstallOrUpdateCtrldService();
     InstallOrUpdateService();
     CompletePendingDirectUpdate();
-  end;
+    DIMPostInstallCompleted := True;
+  end
+  else if (CurStep = ssDone) and DIMUpdateReceiptExpected then
+    DIMWriteSuccessfulNativeCompletion();
+end;
+
+// Inno may still emit ssDone after a suppressed Pascal Script exception;
+// return a deterministic, nonzero exit code instead of a false positive.
+function GetCustomSetupExitCode: Integer;
+begin
+  if DIMPostInstallCompleted and
+     ((not DIMUpdateReceiptExpected) or DIMUpdateReceiptCompleted) then
+    Result := 0
+  else
+    Result := 67;
 end;
 
 function InitializeUninstall(): Boolean;

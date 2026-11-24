@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R911-TRUSTED-NATIVE-PENDING-RECEIPT-20261121",
+  "date": "2026-11-21",
+  "product": "Direct Internet Method",
+  "platform": "windows-x86_64",
+  "prior_feature_head": "9612eef6e72ac0ef59139d7f30a2b04ce06a9b3b",
+  "cause": "Previous privileged Service FinalizePendingUpdate used CurrentVersion>=target and owned staging installer SHA to erase pending-update.json and report done without verifying real Inno HKLM DisplayName, DisplayVersion and InstallLocation against the exact pending installDir. Inno may write uninstall metadata before later post-install failure (R878); this is a false-success/forensic-evidence risk.",
+  "correction": {
+    "program": "windows/service/Program.cs",
+    "program_sha256": "EBB6999D6D7298996DFF8EF5B795C5261BF3E269E7D34496A4A99A530A585254",
+    "pure_helper": "windows/service/NativePendingUpdateReceipt.cs",
+    "helper_sha256": "CF26A33F26DB5EE97D793021FF4F8C6C710ECF62EAF225E7A027F465C05694F0",
+    "test": "tests/test_engine_windows_pending_native_receipt.py",
+    "test_sha256": "9C0B11F21CCA62D9FAD60952316DB85D5971E4EF0357E096B4950B8382CAADF5",
+    "behavior": [
+      "Side-effect-free helper strictly validates Inno name, version vs running service, target version and canonical local absolute registered/pending install roots",
+      "Service checks HKLM exact AppId read-only and the registered application and manifest before deleting installer or pending record; unverified facts retain both",
+      "48 bounded retries may end with an explicit error status and preserved pending evidence instead of reporting done falsely",
+      "Native service --console-selftest includes valid receipt plus wrong name, wrong version, wrong local directory, UNC/relative path and wrong running/target version negatives"
+    ],
+    "native_installation_accepted": false,
+    "protected_write_performed_on_owner_host": false,
+    "publisher_authenticated": false
+  },
+  "local_tests": {
+    "targeted": {
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0
+    },
+    "full_windows_engine": {
+      "passed": 280,
+      "skipped": 28,
+      "failed": 0,
+      "seconds": 22.23,
+      "terminal": "term-99"
+    },
+    "native_service_build": {
+      "sdk": "10.0.403",
+      "dotnet_host_authenticode": "Valid",
+      "service_sha256": "980AD1889E734A4D25BC203CC41498DE960BBA0CD366EDC89524B617C842212E",
+      "service_bytes": 73656131,
+      "console_selftest_exit": 0
+    },
+    "source_package": {
+      "base_archived_git_sha256": "132A03A538EB708411132D4DE8EDC12A3A6A2EF7D289D4EC8ADD42E4DA0F2ABA",
+      "Gui_sha256": "51F5141FFD9AAF4FAF890A04E9242E40576223038440C1F0B3C607A1E068B6BE",
+      "privileged_674_and_user_7_managed_files": true,
+      "postbuild_manifest_sha256": "A2B4386498A12DFBC9D4567E8985F7620D10987D7D443FAEA74F1F6AF4DF9C84",
+      "source_windows_contract_audit": {
+        "passed": 122,
+        "failed": 0
+      },
+      "prior_manifest_not_reused": true
+    },
+    "private_setup": {
+      "sha256": "B23AB992A4EA421AF0AFD5A262D35684D0797DDB4634584DD9539ACC709DC39A",
+      "bytes": 154289644,
+      "authenticode": "NotSigned",
+      "public_release": false
+    }
+  },
+  "native_guest": {
+    "guest_id": "be15c824-8da2-4c8e-a543-af0ba67cd911",
+    "guest_identity": "2879A8BE-50DB-4",
+    "context": "NT AUTHORITY\\SYSTEM",
+    "isolated": "network disabled, clipboard disabled, vGPU disabled, protected client enabled, dedicated read-only input and writable QA-only output",
+    "real_installer_exit_code": 0,
+    "real_hklm_inno_registration": "Direct Internet Method v1.5.7, one HKLM AppId",
+    "real_scm_service_running": true,
+    "installed_gui_service_manifest_exact_sha": true,
+    "fake_pending_wrong_install_dir_refused": true,
+    "fake_pending_inno_display_name_suffix_refused": true,
+    "negative_pending_file_and_stage_checksum_preserved": true,
+    "error_status_never_done_on_negatives": true,
+    "restored_real_inno_name_and_correct_target_installdir_finalized": true,
+    "same_one_pending_stage_and_record_deleted_after_verified_service_restart": true,
+    "completion_status": "update done 0",
+    "real_native_uninstall_removed_registration_scm_and_code": true,
+    "user_owned_data_sha256_preserved": "E4F1C17ACEC8E942971DDDC759C210F5CE09188130DA7F6181E01D84422A5521",
+    "checks": 40,
+    "errors": 0,
+    "result": "PASS_R911_GUEST_NATIVE_PENDING_NEGATIVE_POSITIVE_AND_UNINSTALL",
+    "native_receipt_sha256": "53A2796165FBA6C4C932D90AAABF1C28DB8B3F38FAA087AE17D3DFBA2555566A",
+    "inno_install_log_sha256": "1EA2ADD50DEECE7BD1FD334D09B97FE445C3A663DA90EAA837CD7807A998C6C5",
+    "native_service_log_sha256": "CBBE2C813ECD97A8BDBD0BD7CFD3C12C5BAD8943A837809A523C40E6DC54C325",
+    "native_uninstall_log_sha256": "CFD919FDFD82BD2E6A9CA568A7DB998FD8688D7478369E9E3240C9FCFAA6E324",
+    "private_raw_archive_sha256": "D6663668B45D533B9FC04721FA6AE44BB1D15266A6C6C7AC7F2414AD18631E05",
+    "private_raw_archive_bytes": 25316,
+    "private_raw_archive_members_sha_checked": 5,
+    "owned_guest_shutdown_by_id": true,
+    "later_sandbox_sessions_remaining": 0,
+    "host_original_DirectInternetMethodSvc": "Running",
+    "host_original_Tailscale": "Running"
+  },
+  "limits": [
+    "Successful negative/positive pending cleanup is scoped to a genuine Inno/SCM native guest under SYSTEM, not ordinary user UAC acceptance",
+    "Native service registration/version/path consistency does NOT authenticate publisher package bytes, prove actual service-managed functionality, or complete universal Engine two-scope transaction",
+    "Native hard reboot/power cut, real protected OS broker, Linux root/systemd/polkit upgrade, authenticated VPN/no-leak physical network tests, human independent security review and public release still open"
+  ],
+  "exact_feature_commit_ci": "PENDING_AFTER_R911_COMMIT",
+  "release": "HOLD"
+}

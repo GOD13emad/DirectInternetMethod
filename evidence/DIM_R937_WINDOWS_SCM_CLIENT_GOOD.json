@@ -1,0 +1,13 @@
+﻿{
+    "schema":  1,
+    "status":  "PASS_R937_DIFFERENT_PROCESS_OS_RESTRICTED_CLIENT",
+    "mode":  "good",
+    "client_pid":  5076,
+    "client_launcher_system_sid":  "S-1-5-18",
+    "native_restricted_client_token_verified":  true,
+    "real_non_system_login_verified":  false,
+    "restricted_write_denied":  true,
+    "rpc_result":  "COMPLETED_SYNTHETIC_SCM_POSTFLIGHT",
+    "rejection_reason":  "",
+    "native_product_installation_accepted":  false
+}

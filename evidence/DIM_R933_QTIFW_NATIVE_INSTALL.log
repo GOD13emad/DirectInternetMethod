@@ -1,0 +1,43 @@
+qt.dbus.integration: Could not connect "org.freedesktop.NetworkManager" to "stateChanged"
+qt.dbus.integration: Could not connect "org.freedesktop.NetworkManager" to "connectivityChanged"
+qt.dbus.integration: Could not connect "org.freedesktop.NetworkManager" to "deviceTypeChanged"
+qt.dbus.integration: Could not connect "org.freedesktop.NetworkManager" to "meteredChanged"
+[0] Arguments: /tmp/dim-r933-qtifw-external-sole-writer-20261122/synthetic-qt-shell-installer-v2, --root, /tmp/dim-r933-qtifw-external-sole-writer-20261122/qt-managed-shell-v2, --confirm-command, --accept-licenses, --default-answer, install
+[0] Operations sanity check succeeded.
+[0] Using metadata cache from "/tmp/dim-r933-qtifw-external-sole-writer-20261122/home/.cache/qt-installer-framework/75a90a7a-d50b-313c-8418-afffe93095fb"
+[0] Found 0 cached items.
+[0] Fetching latest update information...
+[1] Loading component scripts...
+[2] Loading component scripts...
+[3] Warning: QFont::setPixelSize: Pixel size <= 0 (-1)
+[3] Selected components without dependencies:
+org.dim.bridge.fixture
+[3] Installation space required: "0.00 bytes" Temporary space required: "0.00 bytes" Local repository size: "0.00 bytes"
+[4] Cache and install directories are on the same volume. Volume mount point: "/tmp" Free space available: "14.74 GB"
+[4] Installation will use 0.00 bytes of disk space.
+[4] backup  operation: Mkdir
+[4] 	- arguments: /tmp/dim-r933-qtifw-external-sole-writer-20261122/qt-managed-shell-v2
+[4] Done
+[4] perform  operation: Mkdir
+[4] 	- arguments: /tmp/dim-r933-qtifw-external-sole-writer-20261122/qt-managed-shell-v2
+[4] Done
+[4] Preparing the installation...
+[4] Install size: 1 components
+[4] Preparing to unpack components...
+[4] Unpacking components...
+[4] Installing component R933 Qt shell bridge (no managed code)
+[4] backup org.dim.bridge.fixture operation: Execute
+[4] 	- arguments: /usr/bin/python3, -m, installer_engine, universal-selftest, --platform, linux-x86_64, workingdirectory=/tmp/dim-r933-qtifw-external-sole-writer-20261122/source
+[4] Done
+[4] perform org.dim.bridge.fixture operation: Execute
+[4] 	- arguments: /usr/bin/python3, -m, installer_engine, universal-selftest, --platform, linux-x86_64, workingdirectory=/tmp/dim-r933-qtifw-external-sole-writer-20261122/source
+[4] ElevatedExecuteOperation setWorkingDirectory: "/tmp/dim-r933-qtifw-external-sole-writer-20261122/source"
+[5] /usr/bin/python3" started, arguments: "-m installer_engine universal-selftest --platform linux-x86_64
+[137] {\"fresh_install\": \"PASS\", \"in_place_upgrade\": \"PASS\", \"incomplete_native_update_rollback\": \"PASS\", \"native_os_rollback_accepted\": false, \"native_product_install_accepted\": false, \"platform\": \"linux-x86_64\", \"power_cut_accepted\": false, \"status\": \"PASS_UNIVERSAL_TRANSACTION_FIXTURE\", \"uninstall_preserves_owner_data\": \"PASS\"}\n
+[147] Done
+[149] Writing maintenance tool: "/tmp/dim-r933-qtifw-external-sole-writer-20261122/qt-managed-shell-v2/maintenancetool.new"
+[149] Writing maintenance tool.
+[188] Wrote permissions for maintenance tool.
+[194] Maintenance tool hard restart: false.
+[194] Installation finished!
+[194] Components installed successfully.

@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "id": "DIM_R897_LINUX_PROTECTED_ROOT_ANCESTOR_CUSTODY_20261121",
+  "prior_head": "8a45cf398369a2c7a616e50b330cb8d7e714a3c4",
+  "objective": "Correct overly permissive leaf-only root ownership/mode check in read-only Linux native readiness; directory replacement possible if any parent can be written by unprivileged account",
+  "source_sha256": {
+    "installer_engine/native_observe.py": "f28ff399dce7822c7328e2ba89866e4986766dcbabd5586b467440d60cadf64e",
+    "installer_engine/native_readiness.py": "d83c2150d5a0f0660dd5d41ca472e915ec58d091084892268cc7936c16357775",
+    "tests/test_engine_native_path_custody.py": "34540baa4cd5b2a3e788cc301a5e8a2dd3692dd387d7d075f7042aa0fc642b01",
+    "tests/test_engine_native_readiness.py": "3b364af074cc4d44d29399f6683fedad6cd2fab3bd21dc7f108d36fc8984a7d4"
+  },
+  "algorithm": "Path.absolute + no_links(path); walk / through protected root, lstat each path, require every ancestor including leaf to be a directory owned UID0 with no group/other write bits and not symlink; conservative rejection of world-writable sticky parent; return first unsafe ancestor; native_readiness refuses missing or false ancestor evidence",
+  "tests": {
+    "Linux": {
+      "total": 18,
+      "passed": 17,
+      "skipped": 1,
+      "failed": 0,
+      "ancestor_chain_cases": 6,
+      "rootless_user_owned": false,
+      "root_like_leaf_under_world_writable_parent": "rejected via deliberately mocked UID0 leaf /tmp hierarchy",
+      "missing_leaf": "rejected without creation",
+      "symlink": "rejected",
+      "read_only_systemd": "yes",
+      "exact_sha_source_test": true,
+      "temporary_test_copy_removed": true
+    },
+    "Windows": {
+      "full_source_suite_total": 182,
+      "passed": 172,
+      "skipped": 10,
+      "failed": 0,
+      "operation": "3365f557-f8b1-4ee5-88bd-4ec0efb48f76",
+      "stderr_sha256": "6f1e3d7aa3f355d8f16cf8927ec03a8388275de1d64456032ebe3af32fb229f3",
+      "linux_only_cases_skipped": 6,
+      "readiness_mock_negatives": 2
+    }
+  },
+  "limits": [
+    "Read-only Linux ownership/mode custody, no root grant or native installation",
+    "TOCTOU between observation and action remains; no openat2 directory-handle-based privileged broker",
+    "Ancestor ACL access rules and POSIX sticky semantics conservatively fail-closed; not proof of package-publisher authenticity",
+    "No privileged Linux systemd/polkit acceptance; no user-write approved source manifest"
+  ],
+  "next_gate": "privileged native adapter with pinned trusted assets and OS-enforced path/root boundary; isolated VM reboot/poweroff recovery before production release"
+}

@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R915-WINDOWS-PROTECTED-UPDATER-STAGING-AND-NATIVE-CLEAN-LIFECYCLE-20261122",
+  "date": "2026-11-22",
+  "baseline_feature_sha": "6ab760a06febedf8e51082777c1496b4c00ccd9d",
+  "scope": "Windows Service source moves future updater staging to protected Program Files; completed native clean install/uninstall only in isolated SYSTEM Windows Sandbox; not a production upgrade, rollback, authenticated final receipt or publication.",
+  "source_changes": [
+    "windows/service/Program.cs: protected UpdateTransactions under exact Privileged parent, refuse legacy pending-update.json in old user-addable ProgramData, verify ACL before download and before finalize/deletion",
+    "windows/installer/DirectInternetMethod.iss: observe protected pending-update path, never auto-delete pending evidence",
+    "tests/windows_contract_audit.py: protected pending path source contract",
+    "tests/test_engine_windows_protected_staging.py: six fail-closed source contract tests"
+  ],
+  "architecture": {
+    "new_protected_root": "C:\\Program Files\\DirectInternetMethod\\Privileged\\UpdateTransactions",
+    "legacy_untrusted_root": "C:\\ProgramData\\DirectInternetMethod\\updates",
+    "legacy_untrusted_pending": "C:\\ProgramData\\DirectInternetMethod\\pending-update.json",
+    "actual_owner_privileged_parent_acl": "accepted native R914 policy; nonprivileged users have RX but no write",
+    "future_service_download_and_pending_under_same_privileged_root": true,
+    "legacy_record_deleted_by_new_code": false,
+    "legacy_record_auto_migrated": false,
+    "per_attempt_inno_completion_attested": false,
+    "native_signed_publisher_authenticated": false
+  },
+  "local_verification": {
+    "targeted_source_tests": {
+      "passed": 19,
+      "failed": 0
+    },
+    "full_windows_engine": {
+      "passed": 294,
+      "skipped": 28,
+      "failed": 0,
+      "seconds": 32.21,
+      "session": "term-24"
+    },
+    "sdk": "10.0.403",
+    "native_service_build": {
+      "passed": true,
+      "warning_count": 0,
+      "error_count": 0,
+      "console_selftest_exit": 0,
+      "dll_sha256": "B0DCA34FEC7288F7BF426BCCF692EBEC05A0D5F374B54FA759271E5965C8910B"
+    },
+    "native_service_singlefile_sha256": "B2D2AF3B999F0B773238DC36DD7F62A9DF72D5422FDBEACDD9EEB040BDC11FE9",
+    "native_service_singlefile_bytes": 73660227,
+    "staged_historical_manifest_sha256": "9C664DB49104D1F8775413260036155CCC920D8517CF7DB2AFAFBFE0A715D966",
+    "staged_R915_manifest_sha256": "E29C3C0D87B4E9BBA55F7FBDF1F28F1D56E771D772147BC702FEEDA816278510",
+    "staged_files": {
+      "old": 681,
+      "new": 681,
+      "unchanged": 680,
+      "replaced": 1,
+      "replacement": "privileged app/DirectInternetMethod.Service.exe"
+    },
+    "staged_real_package_contract_audit": {
+      "passed": 122,
+      "failed": 0
+    },
+    "staged_iscc_compiler": {
+      "passed": true,
+      "test_only": true,
+      "setup_sha256": "666FCF8AC61BD162B50992A2426152A3B413B718F447CB0DC14135313C120DC8",
+      "setup_bytes": 154266111,
+      "authenticode": "NotSigned"
+    }
+  },
+  "native_sandbox_clean_lifecycle": {
+    "guest_id": "34d0b197-abc8-43ac-91dc-000000000915",
+    "guest_identity": "C3AE7B74-39BB-4 NT AUTHORITY\\SYSTEM",
+    "isolated": true,
+    "network_disabled": true,
+    "clipboard_disabled": true,
+    "setup_sha256": "666FCF8AC61BD162B50992A2426152A3B413B718F447CB0DC14135313C120DC8",
+    "native_install": {
+      "exit_code": 0,
+      "status": "PASS_NATIVE_GUEST_SYSTEM_CLEAN_INSTALL_SOURCE_IDENTITY_AND_SCM",
+      "checks_pass": 17,
+      "errors": 0,
+      "manifest_sha256": "E29C3C0D87B4E9BBA55F7FBDF1F28F1D56E771D772147BC702FEEDA816278510",
+      "service_exe_sha256": "B2D2AF3B999F0B773238DC36DD7F62A9DF72D5422FDBEACDD9EEB040BDC11FE9",
+      "gui_sha256": "51F5141FFD9AAF4FAF890A04E9242E40576223038440C1F0B3C607A1E068B6BE",
+      "service_state": "Running",
+      "ctrld_state": "Stopped"
+    },
+    "postflight": {
+      "status": "READONLY_GUEST_POSTFLIGHT",
+      "errors": 0,
+      "registry_version": "1.5.7",
+      "registry_name": "Direct Internet Method",
+      "gui_sha_match": true,
+      "service_sha_match": true,
+      "manifest_sha_match": true,
+      "service_state": "Running"
+    },
+    "native_uninstall": {
+      "exit_code": 0,
+      "status": "PASS_NATIVE_GUEST_SYSTEM_ONLY_UNINSTALL_AND_OWNER_DATA_PRESERVATION",
+      "checks_pass": 16,
+      "errors": 0,
+      "app_id_removed": true,
+      "service_removed": true,
+      "ctrld_removed": true,
+      "user_exe_removed": true,
+      "privileged_exe_removed": true,
+      "user_config_sha_preserved": "352AFD733246D8B76B8077CC4A7311C1AA63FB4678B64B672545FF5FBC1D92C6",
+      "user_evidence_sha_preserved": "14006828C1ABAE9E2B89B7519E5ED527B5DFA8814D4269F1591478165A54F74D"
+    },
+    "raw_receipt_sha256": {
+      "preflight": "231A5E0CE402293C935690D8CF730F4501D60F03E51659EA37BDEE8D7A9377D1",
+      "install": "2A71E6F6F9CE25D087D7BA46333C9DF94E1BF184B46AB5D229F4D9BAF033191B",
+      "postflight": "30B3F7B2A682FD51BA25154DB20C688C82BDDF6EB03CF14BFBA192F1743C17A4",
+      "install_log": "A9C03518CA16F532D4CC2A507702C3550626B7EE628DF05448C254C0AFF8B44A",
+      "uninstall": "88AF5061E4BD1653FFDEA44D0379565E50274479B6DA92D504F5AE5A9F24DDA2",
+      "uninstall_log": "AE8EA060702145B9401BA7FA5DD3AFE9716095B128BB32E22605438671851D48"
+    },
+    "guest_stopped": true,
+    "test_only_setup_in_guest_input_disabled": true,
+    "owner_host_DIM_Tailscale_services_unchanged": true
+  },
+  "negative_coverage": [
+    "Legacy user-creatable ProgramData pending record preserved and new transaction blocked rather than silently auto-finalized",
+    "Insecure existing privileged transaction directory rejected before download and before finalization"
+  ],
+  "remaining": [
+    "Actual 1.5.6 owner install -> 1.5.7 elevated in-place update with old ProgramData pending record, trust-bound migration not proved; current new code deliberately blocks it",
+    "Protected path alone is not authenticated installer final-completion attestation, nor does it prevent race with running Inno",
+    "User-creatable legacy file and protected stage already-known package must be reverified under OS-held handles; publisher identity not attested",
+    "Native retry/rollback/drive crash/reboot, ordinary user UAC, Linux Root/systemd/polkit, VPN no-leak, human independent security review and Stable release remain HOLD"
+  ],
+  "release": "HOLD",
+  "exact_commit_hosted_ci": "PENDING_COMMIT_PUSH_RUN"
+}

@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R905-WINDOWS-REAL-156-TO-157-READONLY-CODE-DELTA-20261121",
+  "observed_date": "2026-11-21",
+  "platform": "windows-x86_64",
+  "host": "EMAD-PC-ULTIMAT",
+  "repository": "GOD13emad/DirectInternetMethod",
+  "baseline_feature_head": "b8caa6600497e64fcb78ca72d042427c17c06609",
+  "baseline_archive": {
+    "path": "C:\\Users\\Aa.Emad\\AppData\\Local\\DIM_RECOVERY_STAGING\\DIM_156_INSTALLED_MANAGED_RECOVERY.zip",
+    "sha256": "ECFEC3E563407FF23232A75E804850F5858EF69CB9E1106D4505337AE0BE3779",
+    "manifest_sha256": "0084F000B7E4741C181F92240378206E1249C643A6291611D15C1021AA8FD328"
+  },
+  "target": {
+    "path": "windows/manifest.json",
+    "sha256": "B6D6B5F6A927D18BB0C25A843E1589F28D218E24F75327D39ACB85A509965CEE",
+    "version": "1.5.7"
+  },
+  "installed": {
+    "version": "1.5.6",
+    "user_root": "C:\\Users\\Aa.Emad\\AppData\\Local\\Programs\\DirectInternetMethod",
+    "privileged_root": "C:\\Program Files\\DirectInternetMethod\\Privileged",
+    "manifest_sha256": "0084F000B7E4741C181F92240378206E1249C643A6291611D15C1021AA8FD328",
+    "managed_files": 681,
+    "user": 7,
+    "privileged": 674,
+    "service_observed": "RUNNING",
+    "tailscale_observed": "RUNNING"
+  },
+  "result": {
+    "status": "PASS_READONLY_WINDOWS_INSTALLED_CODE_DELTA_NOT_NATIVE_INSTALLATION",
+    "exit_code": 0,
+    "total": 681,
+    "unchanged": 678,
+    "replace": 3,
+    "create": 0,
+    "retire": 0,
+    "replacements": [
+      {
+        "scope": "privileged",
+        "path": "app/DirectInternetMethod.Service.exe"
+      },
+      {
+        "scope": "user",
+        "path": "app/DirectInternetMethod.exe"
+      },
+      {
+        "scope": "user",
+        "path": "RELEASE.json"
+      }
+    ],
+    "installed_old_files_sha256_verified": 681,
+    "archive_and_manifest_independent_sha256_checked": true
+  },
+  "probe": {
+    "path": "tools/native_fixtures/windows/ReadOnlyManagedCodeDelta.py",
+    "sha256": "E86DB1022B5C29BD6B32A2BAB004B08CBE9211D506EF77C6A64954F669CED9EB",
+    "terminal_session": "term-64",
+    "output_exit_code": 0,
+    "tests": "24 PASS 1 conditional SKIP across probe and native delta tests",
+    "full_engine_windows_tests": {
+      "passed": 265,
+      "skipped": 27,
+      "failed": 0,
+      "terminal_session": "term-65",
+      "exit_code": 0,
+      "duration_seconds": 35.44
+    }
+  },
+  "source_ci_baseline": {
+    "head": "b8caa6600497e64fcb78ca72d042427c17c06609",
+    "engine_run": 44866566037,
+    "engine_windows_linux_python_jobs": "4/4 SUCCESS",
+    "frozen_run": 44866566094,
+    "frozen_windows_linux_jobs": "2/2 SUCCESS",
+    "root_policy_job": "SKIPPED on this PR event"
+  },
+  "limits": [
+    "Pure read-only user-token path/hash readback, not OS-handle-held broker attestation; path TOCTOU possible",
+    "Prior archive and target repository manifest pins are distinct from signed publisher authentication",
+    "No installer, SCM/Registry modification, service restart, Windows UAC install, rollback, disk power-loss or package release",
+    "No user mutable config migration or VPN-leak acceptance",
+    "Observed root and app currently version 1.5.6; candidate 1.5.7 bytes not installed"
+  ],
+  "next_ready": "Design and verify OS-trusted native adapter/replay and exact source authenticated 1.5.7 package handoff; then isolated native install, failure/rollback and poweroff acceptance",
+  "release_gate": "HOLD"
+}

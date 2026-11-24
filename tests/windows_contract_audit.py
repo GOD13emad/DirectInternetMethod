@@ -222,7 +222,7 @@ check("installer_service_recovery", 'failure "' in iss and "failureflag" in iss)
 check("installer_preserves_pending_update_until_service_SHA_verifies",
     "CompletePendingDirectUpdate" in iss and "pending-update.json" in iss
     and "new service completes SHA-checked cleanup" in iss
-    and r"PendingPath := ExpandConstant('{commonappdata}\DirectInternetMethod\pending-update.json')" in iss
+    and r"PendingPath := ExpandConstant('{commonpf}\DirectInternetMethod\Privileged\UpdateTransactions\pending-update.json')" in iss
     and "DeleteFile(PendingPath)" not in iss
     and '"action":"update","phase":"done"' not in iss)
 check("installer_ctrld_owned_demand_service", "CtrldServiceName = 'ctrld'" in iss and "InstallOrUpdateCtrldService" in iss and "start= demand" in iss and "CurrentControlSet\\Services\\" in iss)

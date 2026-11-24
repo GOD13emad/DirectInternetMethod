@@ -1,0 +1,18 @@
+{
+  "frozen_engine_bytes": 10049109,
+  "frozen_engine_sha256": "0bd3879668b9e91d501c5b494bdc3d5fd7bc5b62e2cabe443b362d81e9bff534",
+  "guest_runner_sha256": "e4ca494877ec800d6ffcb97484a8b4bac6004272c1de71b8ec097ed4a1f00465",
+  "network_enabled": false,
+  "product_installed": false,
+  "project_source_head": "308faa0e08b7803a7f96a417128ddd36aef2237f",
+  "publisher_authenticated": false,
+  "qt_product_payload_file_count": 0,
+  "schema": 1,
+  "scope": "R933_WINDOWS_SANDBOX_QT_VENDOR_METADATA_ONLY",
+  "synthetic_component": "org.dim.bridge.fixture",
+  "vendor": "Qt Installer Framework",
+  "vendor_archive_sha256": "a8d18072fbcc99362e6972c924beaab4f0fb08a24dde27970de5d55f682f9b6f",
+  "vendor_qt_setup_bytes": 33266738,
+  "vendor_qt_setup_sha256": "e6fdec99a7ca4b690b402ca746321d74807d5b5c04562412804fa90f709b8054",
+  "vendor_version": "4.7.0"
+}

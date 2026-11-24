@@ -122,6 +122,7 @@ def prepare_guard(source,user,root_hashes,user_hashes,mutables):
     need(all(not Path(a).exists() for a in absent),"NEW_PROTECTED_ROOT_NOT_ABSENT")
     doc={
       "schema":1,"revision":"R532","host":os.uname().nodename,
+      "r989PartialRootCrash":partial_crash_mode(),
       "productionMachineTouched":False,
       "ownerUser":"runner","ownerUid":user.pw_uid,
       "rootHelperSHA256":ROOT_SHA,"userHelperSHA256":USER_SHA,
@@ -145,6 +146,51 @@ def exact_inline(r526,src):
     need('transaction_helper.atomic_bytes(' in code and len(code.splitlines())==64,
          "INSTALLED_METADATA_FRAGMENT_DRIFT")
     return code
+
+def partial_crash_mode():
+    mode=os.environ.get("R989_ROOT_PARTIAL_CRASH","0")
+    need(mode in ("0","1"),"R989_INVALID_MODE")
+    if mode=="1":
+        need(os.environ.get("GITHUB_EVENT_NAME")=="push" and
+             os.environ.get("GITHUB_REF")=="refs/heads/feature/universal-install-engine",
+             "R989_TRUSTED_FEATURE_PUSH_REQUIRED")
+    return mode=="1"
+
+def crash_after_first_root_write(module, root_tx):
+    """Fault injection in the test child only; never patch the shipped bytes."""
+    before=root_tx.manifest()
+    need(root_tx.native and before["phase"]=="STAGED","R989_INITIAL_STATE")
+    name,_,target,old,new,_=module.FILES[0]
+    need(old is not None and old!=new and before["fromVersion"]=="1.5.2",
+         "R989_DISTINCT_FIRST_ROOT_MEMBER")
+    expected_path=root_tx.p(target)
+    pid=os.fork()
+    if pid==0:
+        original=module.atomic_bytes
+        def crash_after_durable_write(path,data,mode,owner=True):
+            original(path,data,mode,owner)
+            if path==expected_path:
+                os._exit(79)
+        module.atomic_bytes=crash_after_durable_write
+        try:
+            root_tx.apply()
+        except BaseException:
+            os._exit(80)
+        os._exit(81)
+    waited,status=os.waitpid(pid,0)
+    need(waited==pid and os.waitstatus_to_exitcode(status)==79,
+         "R989_EXPECTED_CRASH_EXIT")
+    observed=root_tx.manifest()
+    need(observed==before and observed["phase"]=="STAGED",
+         "R989_MANIFEST_MUST_REMAIN_STAGED")
+    states,meta=root_tx._target_states(observed)
+    expected={n:module.baseline_old_sha(before["fromVersion"],o,v)
+              for n,_,_,o,v,_ in module.FILES}
+    expected[name]=new
+    need(states==expected and meta==before["oldMetadataSHA"],
+         "R989_EXACT_PARTIAL_ROOT_STATE")
+    print("R989_ACTUAL_PARTIAL_ROOT_STATE child_exit=79 phase=STAGED changed=1",
+          flush=True)
 
 def arm():
     ensure_guard_absent()
@@ -176,6 +222,15 @@ def arm():
          "PRE_MUTATION_USER_DIRTY")
     r529.as_runner(user,user_script,"--stage","--source",extracted)
     need(root_tx.stage(extracted)["status"]=="STAGED","ROOT_STAGE")
+    if partial_crash_mode():
+        crash_after_first_root_write(module,root_tx)
+        # No apply retry or rollback in the observer. User staging is still
+        # intact and the independently armed timer owns recovery.
+        for path,digest in old_user.items():
+            need(sha(Path(path))==digest,"R989_USER_CHANGED_BEFORE_ROOT_RECOVERY")
+        need(root_tx.status()["status"]=="STAGED","R989_PENDING_PHASE_DRIFT")
+        print("PASS_R989_ARM_EXIT_WITH_REAL_PARTIAL_ROOT_MUTATION",flush=True)
+        return
     need(root_tx.apply()["status"]=="APPLIED","ROOT_APPLY")
     r529.as_runner(user,user_script,"--apply","--source",extracted)
     r529.as_runner_inline(user,exact_inline(r526,extracted),
@@ -213,6 +268,10 @@ def verify():
          "TIMER_WORKER_NOT_SUCCESS:"+str(receipt.get("failure","NONE")))
     need(receipt.get("actualEffectiveUid")==0 and receipt.get("recoveryAttempted"),
          "ROOT_TIMER_EXECUTION_UNPROVEN")
+    need(check.get("r989PartialRootCrash") is partial_crash_mode(),"R989_MODE_DRIFT")
+    if partial_crash_mode():
+        need(receipt.get("preRollbackRootPhase")=="STAGED",
+             "R989_WATCHDOG_STAGED_RECOVERY")
     need(receipt["userRollback"]=="PASS" and receipt["protectedRootRollback"]=="PASS",
          "TWO_SIDED_ROLLBACK_MISSING")
     need(receipt["restoredFiles"]["userMutable"]>=8,
@@ -238,6 +297,8 @@ def verify():
     print("WORKER_RECEIPT_SHA256",sha(WORKER_RETURN))
     print("RESTORED_SHA_GROUPS",json.dumps(receipt["restoredFiles"],sort_keys=True))
     print("PREVIOUS_PUBLIC_STABLE_UNCHANGED_v1.5.4")
+    if partial_crash_mode():
+        print("R989_WATCHDOG_STAGED_RECOVERY_PASS")
 
 def main():
     need(len(sys.argv)==2 and sys.argv[1] in ("arm","verify"),"CLI_ACTION")

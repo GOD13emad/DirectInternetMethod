@@ -1,0 +1,384 @@
+name: Universal Installation Engine (isolated contract)
+
+on:
+  pull_request:
+    paths:
+      - 'installer_engine/**'
+      - 'tests/test_engine*.py'
+      - '.github/workflows/universal-install-engine.yml'
+      - 'tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py'
+      - 'tools/native_fixtures/linux/RunR938*'
+      - 'tools/native_fixtures/windows/R935*'
+      - 'tools/native_fixtures/windows/R937*'
+  push:
+    branches:
+      - feature/universal-install-engine
+    paths:
+      - 'installer_engine/**'
+      - 'tests/test_engine*.py'
+      - '.github/workflows/universal-install-engine.yml'
+      - 'tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py'
+      - 'tools/native_fixtures/linux/RunR938*'
+      - 'tools/native_fixtures/windows/R935*'
+      - 'tools/native_fixtures/windows/R937*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-platform-kernel:
+    name: Engine / ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    concurrency:
+      group: dim-universal-engine-${{ github.ref }}-${{ matrix.os }}-${{ matrix.python }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11', '3.14']
+    steps:
+      - name: Checkout immutable source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install pinned Python runtime
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6 ref verified 2026-11-20
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Isolated contract + crash/rollback tests
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python -m unittest discover -s tests -p test_engine*.py -v
+
+  linux-root-owned-fd-probe:
+    name: Linux / root-owned fd + synthetic broker policy fixture
+    # No untrusted PR checkout is launched under sudo; the only elevated
+    # commands create/mode/retire one isolated synthetic fixture directory.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-install-engine'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout immutable source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up pinned Python (no sudo Python execution)
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Root-owned fixture + negative ACL + descriptor-pinned bytes
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          # Executing a nested script by path replaces sys.path[0] with its
+          # subdirectory. Make this checked-out, trusted feature-push source
+          # available to the NON-ROOT fixture process explicitly.
+          PYTHONPATH: '.'
+        run: |
+          set -euo pipefail
+          fixture='/usr/local/share/dim-r898-ci-protected-fd-fixture'
+          marker="$fixture/marker.txt"
+          policy="$fixture/synthetic-broker-policy.json"
+          ledger="$fixture/synthetic-broker-journal.json"
+          emitted="$RUNNER_TEMP/dim-r899-synthetic-broker-policy.json"
+          emitted_ledger="$RUNNER_TEMP/dim-r902-synthetic-broker-journal.json"
+          if [[ -e "$fixture" || -L "$fixture" ]]; then
+            echo 'FOREIGN_FIXTURE_ROOT_EXISTS'
+            exit 2
+          fi
+          sudo install -d -o root -g root -m 0755 "$fixture"
+          cleanup() {
+            sudo rm -f -- "$marker" "$policy" "$ledger"
+            sudo rmdir -- "$fixture"
+            rm -f -- "$emitted" "$emitted_ledger"
+          }
+          trap cleanup EXIT
+          printf 'DIM-R898-SYNTHETIC-ROOT-MARKER\n' | sudo tee "$marker" >/dev/null
+          sudo chmod 0644 "$marker"
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from installer_engine.linux_trusted_fd import TrustedLinuxRootFD
+          fixture=Path('/usr/local/share/dim-r898-ci-protected-fd-fixture')
+          content=b'DIM-R898-SYNTHETIC-ROOT-MARKER\n'
+          with TrustedLinuxRootFD(fixture) as directory:
+              got=directory.read_pinned_member('marker.txt',
+                  hashlib.sha256(content).hexdigest(),len(content))
+          assert got['native_installation_accepted'] is False
+          assert got['publisher_authenticated'] is False
+          assert got['bytes'] == len(content)
+          print('R898_HOSTED_ROOT_OWNED_FD_READONLY_PASS')
+          PY
+          # The same read-only root FD now carries a bounded synthetically
+          # pinned policy into the cross-platform broker-intent validator.
+          # The external policy pin here is generated by this fixture, NOT
+          # independently authenticated publisher/update authority.
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py emit-synthetic-policy > "$emitted"
+          sudo install -o root -g root -m 0644 "$emitted" "$policy"
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py verify-root-policy --fixture-root "$fixture"
+          sudo chmod 0666 "$policy"
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py reject-unsafe-policy --fixture-root "$fixture"
+          sudo chmod 0644 "$policy"
+          # Both synthetic roots must be distinct, real OS-root-owned,
+          # non-writable files opened from one trusted directory FD. Read
+          # and compare the independently pinned policy + replay snapshot.
+          # The CI fixture's self-generated hashes are NOT publisher pins.
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py emit-synthetic-ledger > "$emitted_ledger"
+          sudo install -o root -g root -m 0644 "$emitted_ledger" "$ledger"
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py verify-root-snapshot --fixture-root "$fixture"
+          sudo chmod 0666 "$ledger"
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py reject-unsafe-ledger --fixture-root "$fixture"
+          sudo chmod 0644 "$ledger"
+          # R973: the real root-owned policy/replay FD must also observe
+          # the common durable pre-native staging phase without claiming
+          # that services were stopped or native installation completed.
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py emit-synthetic-staging-ledger > "$emitted_ledger"
+          sudo install -o root -g root -m 0644 "$emitted_ledger" "$ledger"
+          python tools/native_fixtures/linux/RunPinnedBrokerPolicyFixture.py verify-root-staging-snapshot --fixture-root "$fixture"
+          # Linux enforces directory write modes. A root-owned leaf is NOT
+          # trusted if group/other write can replace the pinned member.
+          sudo chmod 0777 "$fixture"
+          python - <<'PY'
+          from pathlib import Path
+          from installer_engine.engine import EngineError
+          from installer_engine.linux_trusted_fd import TrustedLinuxRootFD
+          fixture=Path('/usr/local/share/dim-r898-ci-protected-fd-fixture')
+          try:
+              with TrustedLinuxRootFD(fixture):
+                  raise RuntimeError('UNTRUSTED_ROOT_ACL_WAS_ACCEPTED')
+          except EngineError as err:
+              if 'TRUSTED_FD_UNSAFE_DIRECTORY_COMPONENT' not in str(err):
+                  raise
+          print('R898_HOSTED_INSECURE_ROOT_DACL_REFUSED')
+          PY
+          sudo chmod 0755 "$fixture"
+          echo 'R898_HOSTED_FIXTURE_SCOPE_ONLY_NOT_NATIVE_PRODUCT_INSTALL'
+
+  windows-native-pipe-source-compile:
+    name: Windows / sandbox-only named-pipe ACL fixture source compile
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout pinned feature source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Use pinned .NET 10 toolchain
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Set up pinned Python for production C# receipt harness
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Compile isolated Windows native token/pipe OS adapter only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet build tools/native_fixtures/windows/R935NativePipeBoundaryFixture.csproj --configuration Release -p:NuGetAudit=false --nologo --verbosity quiet
+          if ($LASTEXITCODE -ne 0) { throw 'R935_OS_NATIVE_PIPE_SOURCE_COMPILE_FAILED' }
+          $binary = 'tools/native_fixtures/windows/bin/Release/net10.0-windows/R935NativePipeBoundaryFixture.exe'
+          if (-not (Test-Path -LiteralPath $binary)) { throw 'R935_OS_NATIVE_PIPE_BINARY_MISSING' }
+          $t = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile('tools/native_fixtures/windows/RunR935NativeBrokerPipeSandboxFixture.ps1', [ref]$t, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw 'R935_SANDBOX_SCRIPT_SYNTAX_INVALID' }
+          Write-Host 'R935_WINDOWS_NATIVE_PIPE_OS_ADAPTER_SOURCE_COMPILE_PASS_NOT_NATIVE_AUTHORITY'
+      - name: Compile isolated SCM-backed receipt fixture without SCM authorization
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet build tools/native_fixtures/windows/R937NativeScmReceiptFixture.csproj --configuration Release -p:NuGetAudit=false --nologo --verbosity quiet
+          if ($LASTEXITCODE -ne 0) { throw 'R937_NATIVE_SCM_SOURCE_COMPILE_FAILED' }
+          $binary = 'tools/native_fixtures/windows/bin/Release/net10.0-windows/R937NativeScmReceiptFixture.exe'
+          if (-not (Test-Path -LiteralPath $binary)) { throw 'R937_NATIVE_SCM_BUILT_EXE_MISSING' }
+          # Test the ACTUAL compiled existing SCM fixture's full native
+          # ID64/replay identity; never start or install a service.
+          $validator = 'tools/native_fixtures/windows/bin/Release/net10.0-windows/R937NativeScmReceiptFixture.dll'
+          if (-not (Test-Path -LiteralPath $validator)) { throw 'R974_NATIVE_DLL_NOT_BUILT' }
+          $good = @(('0' * 32), ('0123456789abcdef' * 4))
+          foreach ($id in $good) {
+            $observed = dotnet $validator --validate-id $id
+            if ($LASTEXITCODE -ne 0 -or $observed -cne 'R974_NATIVE_ID_FORMAT_PASS_NO_AUTHORITY') {
+              throw 'R974_NATIVE_VALID_ID_DENIED'
+            }
+          }
+          $bad = @(('0' * 31), ('0' * 33), ('0' * 63), ('0' * 65),
+                   (('0123456789abcdef' * 4).ToUpperInvariant()),
+                   ('0x' + ('0' * 62)), (('0' * 32) + '-' + ('0' * 32)),
+                   (('0' * 64) + ' '))
+          foreach ($id in $bad) {
+            $observed = dotnet $validator --validate-id $id
+            if ($LASTEXITCODE -ne 3 -or $observed -cne 'R974_NATIVE_ID_FORMAT_REJECTED') {
+              throw 'R974_NATIVE_INVALID_ID_ACCEPTED'
+            }
+          }
+          # All eight rejects intentionally return 3. GitHub's pwsh wrapper
+          # propagates a stale LASTEXITCODE even after a later Write-Host.
+          # Execute one final real compiled-binary positive probe (exit 0)
+          # rather than masking a native nonzero status in the runner.
+          $finalProbe = dotnet $validator --version
+          if ($LASTEXITCODE -ne 0 -or
+              $finalProbe -cne 'R937-SYNTHETIC-SCM-BROKER-NO-PRODUCT') {
+            throw 'R974_NATIVE_FINAL_PROBE_EXIT_STATUS_INVALID'
+          }
+          Write-Host 'R974_COMPILED_WINDOWS_SCM_ID32_ID64_REPLAY_PARITY_PASS_FIXTURE_ONLY'
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile('tools/native_fixtures/windows/RunR937ScmReceiptSandboxFixture.ps1', [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw 'R937_NATIVE_SCM_GUEST_RUNNER_PARSE_FAILED' }
+          Write-Host 'R937_NATIVE_SCM_RECEIPT_FIXTURE_SOURCE_ONLY_COMPILED_NOT_OS_AUTHORIZED'
+      - name: Compile and run actual production Inno held-receipt reader
+        # Existing service helper is linked into a user-local .NET 10 native
+        # probe: positive ssDone, wrong ID/bytes/length, hardlink and reparse.
+        # No service registration, privilege or real product update here.
+        shell: pwsh
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          R977_REQUIRE_NATIVE: '1'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -B -m unittest tests.test_engine_windows_native_held_receipt -v
+          if ($LASTEXITCODE -ne 0) { throw 'R977_REAL_NATIVE_RECEIPT_PROBE_FAILED' }
+          Write-Host 'R977_WINDOWS_PRODUCTION_HELD_RECEIPT_OS_PROBE_PASS_NO_INSTALL'
+      - name: Execute compiled production Win32 durable pending writer
+        # No product install or private user files. Mandatory Windows
+        # CreateNew, Flush(true) and MoveFileEx(WITH_WRITE_THROUGH) tests.
+        shell: pwsh
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          R978_REQUIRE_NATIVE: '1'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -B -m unittest tests.test_engine_windows_native_journal_durability -v
+          if ($LASTEXITCODE -ne 0) { throw 'R978_REAL_WINDOWS_PENDING_JOURNAL_NATIVE_TEST_FAILED' }
+          Write-Host 'R978_REAL_WIN32_DURABLE_PENDING_WRITE_HARNESS_PASS_NO_POWERCUT_CLAIM'
+  linux-root-systemd-synthetic-broker:
+    name: Linux / real root systemd + kernel peer receipt/replay (synthetic only)
+    # Only trusted feature PUSH source is executed under real root on
+    # isolated ephemeral GitHub runners; never run untrusted PR code via sudo.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-install-engine'
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact feature source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Source-only R938 negative/contract tests (non-root)
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          python3 -m unittest tests.test_engine_r938_linux_systemd_native_fixture -v
+          bash -n tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
+      - name: Genuine ephemeral root systemd OS fixture, not DIM installation
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
+      - name: Root-owned durable reserved crash, new PID, exact ID64 tombstone
+        # Fail-closed real systemd process exit code 78 BEFORE any native
+        # product callback; no powercut or production installation claim.
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          R975_ROOT_RESERVED_CRASH: '1'
+          R988_AUTO_RESTART: '1'
+        run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
+
+  linux-root-systemd-polkit-native:
+    name: Linux / OS Polkit DENY+ALLOW with real root systemd broker (synthetic)
+    # Reuse one root/systemd fixture plus the existing vendor pkcheck adapter.
+    # NEVER run feature-branch privileged scripts on untrusted pull_requests.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-install-engine'
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact trusted feature source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Linux vendor Polkit subject and R938/R940 source tests
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          python3 -m unittest tests.test_engine_linux_polkit_authorization tests.test_engine_r938_linux_systemd_native_fixture -q
+          bash -n tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
+      - name: OS-installed temporary Polkit action denies then authorizes isolated peer
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          R940_POLKIT_NATIVE: '1'
+        run: bash tools/native_fixtures/linux/RunR938SystemdNativeReceiptCI.sh
+      - name: Verify real DIM 21-file scopes under root and owner custody
+        # Isolated /run fixture on a trusted feature-PUSH runner; NEVER a
+        # real user or production product installation.
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = push
+          test "$GITHUB_REF" = refs/heads/feature/universal-install-engine
+          test "$(id -u)" != 0
+          sudo -n env \
+            GITHUB_ACTIONS="$GITHUB_ACTIONS" \
+            GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" \
+            GITHUB_REF="$GITHUB_REF" \
+            CI="$CI" \
+            RUNNER_TEMP="$RUNNER_TEMP" \
+            R948_ROOT_ISOLATED=1 \
+            SUDO_UID="$(id -u)" \
+            SUDO_GID="$(id -g)" \
+            PYTHONPATH="$GITHUB_WORKSPACE" \
+            PYTHONDONTWRITEBYTECODE=1 \
+            /usr/bin/python3 -m unittest tests.test_engine_r948_linux_root_ownership -v
+      - name: Execute same real-file transaction inside isolated root systemd unit
+        # Reuse R948 and ONE common engine. Transient ephemeral CI service,
+        # writable /run only. No DIM production service, publisher or receipt.
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_ACTIONS" = true
+          test "$GITHUB_EVENT_NAME" = push
+          test "$GITHUB_REF" = refs/heads/feature/universal-install-engine
+          test "$(id -u)" != 0
+          test -n "${GITHUB_RUN_ID:-}"
+          test -n "${GITHUB_RUN_ATTEMPT:-}"
+          unit="dim-r949-g${GITHUB_RUN_ID}-a${GITHUB_RUN_ATTEMPT}-scopes"
+          sudo -n systemd-run --system --wait --collect --pipe \
+            --unit="$unit" \
+            --property=Type=exec \
+            --property=Restart=no \
+            --property=NoNewPrivileges=yes \
+            --property=PrivateTmp=yes \
+            --property=ProtectSystem=strict \
+            --property=ProtectHome=no \
+            --property=ReadWritePaths=/run \
+            --property=RuntimeMaxSec=120s \
+            --setenv=GITHUB_ACTIONS=true \
+            --setenv=GITHUB_EVENT_NAME=push \
+            --setenv="GITHUB_REF=$GITHUB_REF" \
+            --setenv=CI=true \
+            --setenv=R948_ROOT_ISOLATED=1 \
+            --setenv=R949_NATIVE_SYSTEMD=1 \
+            --setenv=R950_NATIVE_POSTFLIGHT=1 \
+            --setenv="R949_SYSTEMD_UNIT=$unit.service" \
+            --setenv="SUDO_UID=$(id -u)" \
+            --setenv="SUDO_GID=$(id -g)" \
+            --setenv="PYTHONPATH=$GITHUB_WORKSPACE" \
+            --setenv=PYTHONDONTWRITEBYTECODE=1 \
+            /usr/bin/python3 -m unittest tests.test_engine_r948_linux_root_ownership -v

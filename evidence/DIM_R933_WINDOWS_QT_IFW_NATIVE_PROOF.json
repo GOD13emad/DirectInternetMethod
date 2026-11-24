@@ -1,0 +1,30 @@
+﻿{
+    "schema":  1,
+    "status":  "PASS_R933_REAL_WINDOWS_QT_VENDOR_SHELL_ONLY",
+    "stages":  [
+                   "REAL_SYSTEM_WINDOWS_SANDBOX_AND_PINNED_OFFICIAL_VENDOR_BINARIES",
+                   "REAL_QT_VENDOR_SETUP_EXECUTES_EXISTING_FROZEN_COMMON_ENGINE_NO_CODE_PAYLOAD",
+                   "REAL_QT_VENDOR_HEALTHY_SHELL_UPDATE_EXTERNAL_OWNER_UNCHANGED",
+                   "REAL_QT_VENDOR_FAILED_SHELL_UPDATE_CANNOT_MUTATE_OWNER_CONFIG_OR_PRODUCT_CODE",
+                   "REAL_QT_VENDOR_METADATA_RECONCILIATION_FROM_PINNED_PACKAGE",
+                   "REAL_QT_SHELL_UNINSTALLED_OWNER_DATA_STILL_INTACT"
+               ],
+    "vendor":  "Qt Installer Framework",
+    "vendor_version":  "4.7.0",
+    "vendor_archive_sha256":  "a8d18072fbcc99362e6972c924beaab4f0fb08a24dde27970de5d55f682f9b6f",
+    "vendor_compiled_setup_sha256":  "e6fdec99a7ca4b690b402ca746321d74807d5b5c04562412804fa90f709b8054",
+    "frozen_existing_engine_sha256":  "0bd3879668b9e91d501c5b494bdc3d5fd7bc5b62e2cabe443b362d81e9bff534",
+    "source_commit":  "308faa0e08b7803a7f96a417128ddd36aef2237f",
+    "owner_data_sha256":  "9c4ce477a54beb95aaef91ec2a78608aa74b21709c5c8e46c4c4315a430eb166",
+    "broken_update_exit_code":  0,
+    "qt_windows_cli_zero_exit_despite_native_abort":  true,
+    "internal_qt_native_abort_verified_by_log":  true,
+    "qt_component_metadata_final_empty":  true,
+    "os_native_windows_sandbox":  true,
+    "qt_owns_product_code":  false,
+    "product_service_modified":  false,
+    "native_privileged_broker_authenticated":  false,
+    "product_installation_accepted":  false,
+    "publisher_authenticated":  false,
+    "powercut_accepted":  false
+}

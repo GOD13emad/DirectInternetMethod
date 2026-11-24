@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R916-R917-NATIVE-SYSTEM-PROTECTED-DIR-AND-SAFE-UNINSTALL-20261122",
+  "date": "2026-11-22",
+  "feature_baseline_head": "84120e1e559c22e6f873ee9e14505ee1e07d5ff5",
+  "scope": "Native Windows Sandbox SYSTEM-only protected update folder creation, empty cleanup and nonempty-preservation test with actual Inno; NOT production rollout/rollback acceptance",
+  "native_guest": {
+    "id": "34d0b197-abc8-43ac-91dc-000000000916",
+    "identity": "NT AUTHORITY\\SYSTEM (guest machine account identity observed by native probe)",
+    "os": "Windows Sandbox, network and clipboard disabled",
+    "preflight": "Isolated fresh empty VM and pinned product test-only source, no existing owner DIM service or Tailscale",
+    "prior_R915_testonly_inno_sha256": "666FCF8AC61BD162B50992A2426152A3B413B718F447CB0DC14135313C120DC8",
+    "system_protected_root_helper": {
+      "source": "NativeProtectedUpdateAcl.cs from R914 original exact HEAD",
+      "testonly_dotnet_sdk": "10.0.403 authenticated Microsoft host",
+      "testonly_probe_exe_sha256": "869D0503BA803FCA91C2D0C7D76ABD0F4424965BDE02CF1646C13B77496A982B",
+      "status": "PASS_NATIVE_SYSTEM_CREATED_OS_PROTECTED_UPDATE_DIRECTORY",
+      "parent": "C:\\Program Files\\DirectInternetMethod\\Privileged",
+      "child": "C:\\Program Files\\DirectInternetMethod\\Privileged\\UpdateTransactions",
+      "native_policy_acl_accepted": true,
+      "installed_product_service_running_before_creation": true,
+      "host_os_privileged_acl_modified": false
+    },
+    "first_native_uninstall_without_dirifempty": {
+      "exit_code": 0,
+      "checks_pass": 16,
+      "registry_and_services_removed": true,
+      "user_config_preserved": true,
+      "empty_protected_directory_remained": true,
+      "entry_count": 0,
+      "reason": "Prior Inno [UninstallDelete] only removed Privileged parent if empty; child UpdateTransactions remained even when empty",
+      "scope": "Negative pre-fix evidence, not new product install acceptance"
+    },
+    "corrected_inno_source": {
+      "path": "windows/installer/DirectInternetMethod.iss",
+      "rule": "Type: dirifempty; Name: {commonpf}/DirectInternetMethod/Privileged/UpdateTransactions",
+      "effect": "Remove only an empty owned transaction directory before parent dirifempty, preserving nonempty pending/downloaded files",
+      "source_sha256": "1895810B0B844BE0E11ACB2ACFEF63E50795E861A3655DFA3480818D48E469D2",
+      "targeted_tests_passed": 7,
+      "test_only_native_setup_sha256": "9DCD9D8DD3B9AB064B5946E06D4C1B9EE802EB01C6362DFFBCFAEEDC4FC0C77C",
+      "test_only_native_setup_bytes": 154266128,
+      "signer": "NotSigned / test only",
+      "test_environment": "same disposable R916 isolated VM, after prior native uninstall with empty orphaned folder; no owner host install"
+    },
+    "empty_dir_native_acceptance": {
+      "result": "PASS_NATIVE_GUEST_EMPTY_PROTECTED_UPDATE_DIR_REMOVED_WHILE_USER_DATA_PRESERVED",
+      "checks_pass": 21,
+      "install_exit": 0,
+      "uninstall_exit": 0,
+      "orphan_dir_removed": true,
+      "registry_removed": true,
+      "dim_scm_removed": true,
+      "ctrld_scm_removed": true,
+      "user_config_sha_preserved": true
+    },
+    "nonempty_dir_native_acceptance": {
+      "result": "PASS_NATIVE_GUEST_NONEMPTY_TRANSACTION_SURVIVES_UNINSTALL",
+      "checks_pass": 17,
+      "install_exit": 0,
+      "uninstall_exit": 0,
+      "pending_testonly_file": "UpdateTransactions/r917-testonly-pending-transaction.txt",
+      "pending_file_sha256": "DC1B6E4A94742A7D1438B12E7AC7BA6E9C1F4E9221AEE3000B7D1A40470F7294",
+      "folder_preserved": true,
+      "pending_file_sha_preserved": true,
+      "registry_removed": true,
+      "dim_scm_removed": true,
+      "ctrld_scm_removed": true,
+      "user_config_sha_preserved": true
+    },
+    "guest_lifecycle": "Raw receipts preserved, exactly owned Sandbox stopped and test-only setup copies renamed .test-only-disabled; test-only pending sentinel discarded with VM",
+    "owner_host_services_after": {
+      "DirectInternetMethodSvc": "Running",
+      "Tailscale": "Running"
+    },
+    "raw_receipt_sha256": {
+      "preflight": "BBB57AB021DA473FA68BCAF36F1B574D98933F2D4FD0DA516ABCABD165228406",
+      "initial_product_install": "B6B5C743CFE8D9FDAD8B0B44FED88DE1B555C63C0E2EAE185BC89E49F87C3B0B",
+      "native_system_protected_root": "6D4BBA858506429D8C4988FB3B4E4ABB27316056D0511D20833C7F6B281075D8",
+      "native_postflight": "30B3F7B2A682FD51BA25154DB20C688C82BDDF6EB03CF14BFBA192F1743C17A4",
+      "native_uninstall_prior": "A154D0EC051E2D67FDB0A3A36EAEE3DAFD82A0C0650F966496640C4D4027DAC5",
+      "native_residual": "117D3F12C150CCE54FF8094E6F478D1F575A8F2178502C3B01C0EB92C90DB344",
+      "corrected_empty_cleanup": "4361DA913DF76203FB5D0104AA6DE79BF9809B93345CC27BC3B4E8D22C123C15",
+      "corrected_nonempty_preservation": "BB895948B79A458A48B71EB71FD362945B61668E7C911258588A02401852A68A"
+    }
+  },
+  "limits": [
+    "Empty vs nonempty native Inno uninstall semantics verified only in disposable SYSTEM VM, not ordinary user UAC",
+    "Keeping a nonempty directory is correct data safety but may block parent cleanup until separately reconciled",
+    "Legacy ProgramData pending migration and authenticated installer completed receipt remain unimplemented/unaccepted",
+    "Actual old version -> new version atomic upgrade, crash/powercut automatic rollback, publisher authentication, VPN leak safety and independent security review remain open",
+    "Linux real Root/systemd/polkit acceptance still blocked by Commander NoNewPrivs"
+  ],
+  "release": "HOLD",
+  "ci_exact_head": "PENDING_COMMIT",
+  "source_full_windows_engine_test": {
+    "passed": 295,
+    "skipped": 28,
+    "failed": 0,
+    "exitCode": 0,
+    "terminal": "term-32",
+    "seconds": 27.07
+  },
+  "source_targeted_test": {
+    "passed": 7,
+    "failed": 0
+  }
+}

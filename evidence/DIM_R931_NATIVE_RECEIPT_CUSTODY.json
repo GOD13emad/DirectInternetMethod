@@ -1,0 +1,33 @@
+﻿{
+    "schema":  1,
+    "status":  "PASS_R931_OS_RESTRICTED_NATIVE_RECEIPT_CUSTODY_ONLY",
+    "stages":  [
+                   "SHA_PINNED_EXACT_SHARED_NATIVE_RECEIPT",
+                   "SYSTEM_OWNED_PROTECTED_RECEIPT_ROOT_IN_REAL_NTFS_DACL",
+                   "RESTRICTED_WINDOWS_TOKEN_DENIED_OVERWRITE_APPEND_DELETE_RENAME_INJECT",
+                   "SEPARATE_USER_SCOPE_CAN_WRITE_BUT_PROTECTED_RECEIPT_SHA_UNCHANGED"
+               ],
+    "receipt_sha256":  "8cbbd36be5cc4d130dd8cdb2e06545e4751ab1bf8c6fcbfb2621e8dd8ebd0f96",
+    "intent_sha256":  "ed9628bebec363b9eb0e53ebb6bbaf608e7746a7ebbae37f4f33bcf9f1962261",
+    "probe_sha256":  "da89924c8c473f4b0fabe36729551199b5e6db39b66068cff4e3df9719b14199",
+    "restricted_token_observed":  true,
+    "native_probe":  {
+                         "schema":  1,
+                         "status":  "PASS_R931_RESTRICTED_RECEIPT_CUSTODY",
+                         "restricted_token":  true,
+                         "overwrite_denied":  true,
+                         "append_denied":  true,
+                         "delete_denied":  true,
+                         "rename_denied":  true,
+                         "injection_denied":  true,
+                         "user_scope_write_allowed":  true,
+                         "protected_receipt_intact":  true,
+                         "trusted_broker_implemented":  false
+                     },
+    "os_acl_protection_observed":  true,
+    "native_privileged_broker_implemented":  false,
+    "publisher_authenticated":  false,
+    "trusted_native_receipt_mint_accepted":  false,
+    "native_product_installation_accepted":  false,
+    "host_reboot_accepted":  false
+}

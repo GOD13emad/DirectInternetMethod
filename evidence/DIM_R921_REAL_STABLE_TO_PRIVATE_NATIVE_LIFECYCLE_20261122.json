@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "id": "DIM-UE-R919-R921-REAL-V154-TO-PRIVATE-V157-NATIVE-INPLACE-LIFECYCLE-20261122",
+  "date": "2026-11-22",
+  "branch": "feature/universal-install-engine",
+  "source_commit": "9d8d7710bdf38acdcb18eb3294a8eb27f0edcfa2",
+  "scope": "Native Windows Sandbox SYSTEM controlled real old-to-new version upgrade plus registered native Inno Uninstaller; no production host deployment, no regular user UAC, no rollback, no root Linux.",
+  "builds": {
+    "old": {
+      "source": "GitHub public Stable tag v1.5.4 (official release)",
+      "installer": "DirectInternetMethod_1.5.4_Windows_Setup.exe",
+      "sha256": "FFB9A2AE19C2E89338EE12EE8DA133F5A16DBF4DCF961678C33D77D0C3843133",
+      "bytes": 154270907,
+      "verified_against_official_release_SHA256SUMS": true,
+      "release_sha256s_file_hash": "68E70329E8B9DAC6B738CE9B90D99A0010030980CD9C17CDE45A5199A60692D8",
+      "signature": "NotSigned"
+    },
+    "new": {
+      "source": "R918 testonly full Windows Inno native 681-managed-file payload",
+      "version": "1.5.7",
+      "installer_sha256": "64A1E0E5BD3EF7F3B19DD1C148E334D678322374C17FAC6CBB7AFE6B7B08A89D",
+      "manifest_sha256": "56E7B8B1A6B9C1FD6E6692A0D247FDB4984E350F35CE18EA116E9C4583565D38",
+      "privileged_service_exe_sha256": "A234022BC43C4FD409F96D7ADD1D348A4E36F0D0BB9C474C95088D8FE332649D",
+      "signed_or_publicly_released": false
+    }
+  },
+  "native_guest_R919": {
+    "id": "34d0b197-abc8-43ac-91dc-000000000919",
+    "environment": "Fresh isolated Windows Sandbox network disabled, clipboard disabled, SYSTEM",
+    "clean_R918_install": "PASS_NATIVE_GUEST_SYSTEM_CLEAN_INSTALL_SOURCE_IDENTITY_AND_SCM",
+    "raw_receipt_sha256": {
+      "preflight": "ED281F9BDB34F8A1AECFAF1F81323F4C01ED706AE6364DC9298C589E024E7B37",
+      "clean_install": "2C12716183CF756E54B460E72D820A3FAC626D8FBD0A4828253B3DBB6910986D"
+    },
+    "forged_completion_negative": "NOT_RUN_TOOL_SAFETY_BLOCKED",
+    "claim": "No forged receipt injection was performed; not PASS or FAIL of product validator",
+    "guest_stopped": true,
+    "testonly_guest_setup_disabled": true
+  },
+  "native_guest_R920": {
+    "id": "34d0b197-abc8-43ac-91dc-000000000920",
+    "environment": "Fresh isolated Windows Sandbox NETWORK OFF SYSTEM",
+    "first_preflight": {
+      "status": "FIXTURE_FAILURE",
+      "cause": "Fixture expected a single v1.5.7 filename rather than the two pinned old/new installers",
+      "evidence_preserved_as": "preflight-error-first-attempt.txt"
+    },
+    "native_v154_install": {
+      "exit_code": 0,
+      "registered_version": "1.5.4"
+    },
+    "first_old_to_new_test": {
+      "status": "FIXTURE_FAILURE_BEFORE_NEW_INSTALL",
+      "cause": "PowerShell 5.1's .NET Framework lacks Path.IsPathFullyQualified; not a product bug",
+      "old_setup_exit": 0,
+      "new_setup_exit": null,
+      "raw_receipt_sha256": "178C22312A252922A5B19950FAAF6BD15FA4DA8DED6B80A6911864C32A6C73A6"
+    },
+    "native_resumed_upgrade": {
+      "status": "PASS_REAL_NATIVE_OFFICIAL_V154_TO_PRIVATE_V157_INPLACE_UPGRADE",
+      "checks_pass": 16,
+      "new_setup_exit": 0,
+      "old_install_root_equals_new": true,
+      "registered_version": "1.5.7",
+      "native_service_running": true,
+      "new_manifest_sha_pin": true,
+      "new_service_sha_pin": true,
+      "user_config_and_evidence_sentinels_preserved": true,
+      "raw_receipt_sha256": "4319DAE5BB9E4FBF1B0F86B0DD0AECFD969B23DA5F4147CB27EFCDF018EF3627"
+    },
+    "first_postupgrade_uninstall_test": {
+      "status": "FIXTURE_PRECONDITION_FAILURE_NO_UNINSTALL_EXECUTED",
+      "cause": "Assumed the Inno registered UninstallString must lie under InstallLocation, but SYSTEM guest SysWOW64 uninstaller differs from system32 install root",
+      "raw_receipt_sha256": "CDE883A4A8B5D19905FAD3DC3FA875E0DFB65B28FC56A8677FB73CB7BEE8D357"
+    },
+    "read_only_reconciliation": "WSB exec returned internal -196608 and no result receipt; no further claim",
+    "inno_actual_log_evidence": "Full native R920 upgrade log shows Inno directory for uninstall files C:\\Windows\\SysWOW64\\config\\systemprofile\\AppData\\Local\\Programs\\DirectInternetMethod; new log explicitly overwritten existing uninstall log",
+    "raw_logs_sha256": {
+      "v154": "723504879D24391915C283F3A5832239E329DB6B11C4A18F1E7F8A6151065EDA",
+      "v157": "E16D253A87ECD86FFEEE46A595F1F77597CD42158F305325AD5222686A724856"
+    },
+    "guest_stopped": true
+  },
+  "native_guest_R921": {
+    "id": "34d0b197-abc8-43ac-91dc-000000000921",
+    "environment": "Fresh isolated Windows Sandbox NETWORK OFF CLIPBOARD OFF SYSTEM",
+    "status": "PASS_NATIVE_STABLE_154_TO_PRIVATE_157_UPGRADE_AND_UNINSTALL_PRESERVE_OWNER_DATA",
+    "checks_pass": 28,
+    "errors": 0,
+    "native_v154_setup_exit": 0,
+    "native_v157_inplace_setup_exit": 0,
+    "registered_native_uninstaller_exit": 0,
+    "registered_old_version": "1.5.4",
+    "registered_new_version": "1.5.7",
+    "install_root_before_and_after": "C:\\Windows\\system32\\config\\systemprofile\\AppData\\Local\\Programs\\DirectInternetMethod",
+    "uninstaller_path": "C:\\Windows\\SysWOW64\\config\\systemprofile\\AppData\\Local\\Programs\\DirectInternetMethod\\unins000.exe",
+    "actual_inno_log_uninstaller_path_matches_registry": true,
+    "one_inplace_install_root": true,
+    "new_manifest_and_privileged_service_exact_sha": true,
+    "new_native_dim_service_running_after_upgrade": true,
+    "app_id_removed_after_uninstall": true,
+    "dim_and_ctrld_services_removed_after_uninstall": true,
+    "user_gui_and_privileged_service_managed_exes_removed_after_uninstall": true,
+    "owner_synthetic_user_config_and_evidence_sha_preserved_through_upgrade_and_uninstall": true,
+    "raw_evidence_sha256": {
+      "preflight": "2D3CA8FA5A97D32F84485FBD4C5EC424F0B1A0F09C56680A7B6C59FEBAD53EC0",
+      "lifecycle_receipt": "EB1A0B45CFEC05060520F72D8094E99D3B64ABF0EB251B135AB0CE0286E786F4",
+      "official_v154_install_log": "C7439699B69B092C8EF45B525FE4024E728E7F4174968B4CA57D4F6031C53412",
+      "private_v157_upgrade_log": "38EC22A8F3A59D224F185E2704C438383C1207666FE89F625AA760118CE093C5",
+      "registered_inno_uninstall_log": "A5D8ABAB77C92DA02386AFD547F76DBF6B0E069D69E7AC79FB2004ECC6C6F0B2"
+    },
+    "guest_stopped": true,
+    "guest_input_binaries_disabled": true
+  },
+  "owner_host": {
+    "actual_installed_services": "DirectInternetMethodSvc Running and Tailscale Running",
+    "code_or_os_changed": false,
+    "public_release_unchanged": true,
+    "production_install_unchanged": true
+  },
+  "strict_remaining_gates": [
+    "Private v1.5.6 -> v1.5.7 native in-place upgrade not verified because no official public v1.5.6 release asset was found",
+    "Version-to-version SYSTEM sandbox test cannot attest regular-user UAC or Linux root-owned deployment",
+    "Automatic rollback after failed native service registration and power-loss/reboot remain HOLD",
+    "Legacy user-writable pending-update.json requires trusted migration/reconciliation; not auto-promoted",
+    "R919 forged completion injection NOT_RUN due tool safety; no claim",
+    "Signer/publisher provenance, independent VPN no-leak and independent human review remain HOLD"
+  ],
+  "publication": "HOLD",
+  "notion_portfolio_sync": "NOTION_SYNC_PENDING_NO_ELIGIBLE_LINK",
+  "next_ready": "Bounded native rollback and crash-reboot recovery design/verification, legacy transaction conservative reconciliation, regular-user UAC and Linux root gating; do not release until accepted."
+}

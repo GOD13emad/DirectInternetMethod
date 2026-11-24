@@ -7,6 +7,57 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      native_candidate_sha:
+        description: 'Exact reviewed feature HEAD for isolated R846 native Windows candidate QA (no release)'
+        required: false
+        type: string
+        default: ''
+      native_failure_candidate_sha:
+        description: 'Reviewed exact SHA: real native Windows Inno postinstall failure, ephemeral VM only'
+        required: false
+        type: string
+        default: ''
+      native_broker_recovery_candidate_sha:
+        description: 'Reviewed exact SHA: R982 actual Inno failure + common broker native restoration (ephemeral VM only)'
+        required: false
+        type: string
+        default: ''
+      native_broker_crash_recovery:
+        description: 'R983: abrupt broker child exit after actual Inno failure, then cold recovery (VM-only)'
+        required: false
+        type: boolean
+        default: false
+      native_broker_native_preimage:
+        description: 'R984: compare selected native SCM/registry/ACL metadata and hold exact old media during crash recovery (VM only)'
+        required: false
+        type: boolean
+        default: false
+      native_broker_registrar_exit:
+        description: 'R994 QA-only: separate registrar exits after OS Task Scheduler registers protected recovery'
+        required: false
+        type: boolean
+        default: false
+      native_broker_os_scheduled_recovery:
+        description: 'R993 QA-only: Windows Task Scheduler S4U starts exact native recovery with prior-media pin, never physical'
+        required: false
+        type: boolean
+        default: false
+      native_broker_protected_recovery_media:
+        description: 'R992: use exact protected prior installer in real recovery VM (requires crash and metadata modes)'
+        required: false
+        type: boolean
+        default: false
+      linux_guard_partial_candidate_sha:
+        description: 'Exact reviewed feature SHA: real production Linux guard timer after partial protected update (VM only)'
+        required: false
+        type: string
+        default: ''
+      linux_bootstrap_candidate_sha:
+        description: 'Exact reviewed feature HEAD for isolated Linux bootstrap and lifecycle QA (no release)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -226,18 +277,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py arm
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" GITHUB_REF="$GITHUB_REF" R989_ROOT_PARTIAL_CRASH="${{ github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-install-engine' && '1' || '0' }}" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py arm
       - name: Independent process verifies timed root and user rollback after arm exits
         shell: bash
         run: |
           set -euo pipefail
-          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py verify
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" GITHUB_REF="$GITHUB_REF" R989_ROOT_PARTIAL_CRASH="${{ github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-install-engine' && '1' || '0' }}" /usr/bin/python3 -B tests/r532_ephemeral_root_watchdog_contract.py verify
 
   linux-rc1-native-guard-ephemeral:
     name: linux-rc1-native-guard-ephemeral
     needs: linux-independent-root-watchdog-ephemeral
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: R554 byte-pinned exact 27-file Linux candidate
@@ -260,7 +311,7 @@ jobs:
         run: |
           set -euo pipefail
           # Disposable hosted GitHub Ubuntu VM only, no human host mutations.
-          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" GITHUB_REF="$GITHUB_REF" GITHUB_SHA="$GITHUB_SHA" R990_EXPECTED_SHA="${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.linux_guard_partial_candidate_sha == github.sha && github.sha || '' }}" DIM_R990_TIMER_PARTIAL="${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.linux_guard_partial_candidate_sha == github.sha && 'true' || 'false' }}" /usr/bin/python3 -B tests/r554_native_guard_ephemeral_contract.py
 
   linux-rc1-native-wrapper-ephemeral:
     name: linux-rc1-native-wrapper-ephemeral
@@ -642,39 +693,83 @@ jobs:
     name: linux-r782-root-owned-bootstrap-ephemeral
     # Actual UID 0 on a fresh original-repository GitHub VM ONLY.
     # Never run this job on a user's machine, a fork, or a tag release.
-    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/prep/r803-forward-156-native-gates'
+    if: github.repository == 'GOD13emad/DirectInternetMethod' && (((github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.ref == 'refs/heads/prep/r803-forward-156-native-gates') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.linux_bootstrap_candidate_sha != '' && inputs.linux_bootstrap_candidate_sha == github.sha))
+    env:
+      R962_EXPECTED_SHA: ${{ inputs.linux_bootstrap_candidate_sha }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
       actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Rebuild frozen candidate and verify trusted manifest source bytes
         shell: bash
         run: |
           set -euo pipefail
           python3 -B build_linux_package.py
           printf '%s  %s\n' '298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD' 'delivery/DirectInternetMethod_1.5.7_Linux_x86_64.zip' | sha256sum --check --status
+          if [ "$GITHUB_REF" = refs/heads/feature/universal-install-engine ]; then
+            test "$GITHUB_EVENT_NAME" = workflow_dispatch
+            test "$R962_EXPECTED_SHA" = "$GITHUB_SHA"
+            printf '%s  %s\n' '452D7BF28865A376B25EA7B87BDDCD73BA66A406BE1C90B6A45B7AD09F5ACBA4' 'tools/security/privileged_entry.py' | sha256sum --check --status
+          else
           printf '%s  %s\n' 'D0181C15C54B90A3B6E03FBFBE32148341037AB60CF4D6788B6A72140304340F' 'tools/security/privileged_entry.py' | sha256sum --check --status
-      - name: Real root-owned bootstrap staged freeze and bad-manifest fail closed
+          fi
+      - name: Install standard desktop prerequisites on disposable reviewed VM
+        if: github.ref == 'refs/heads/feature/universal-install-engine' && github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
-          # Test only; PKEXEC_UID is simulated, and no product install runs.
-          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_SHA="$GITHUB_SHA" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r782_hosted_trusted_entry_ephemeral.py
+          sudo -n apt-get update -q
+          sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-gi gir1.2-gtk-4.0 gir1.2-adw-1 pkexec polkitd nftables iproute2 curl
+      - name: Real root-owned bootstrap admission and reviewed fresh lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Test only; PKEXEC_UID simulated. Reviewed feature runs native install/remove without starting product units.
+          sudo -n /usr/bin/env CI=true GITHUB_ACTIONS=true GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" R962_EXPECTED_SHA="$R962_EXPECTED_SHA" GITHUB_SHA="$GITHUB_SHA" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" GITHUB_WORKSPACE="$GITHUB_WORKSPACE" RUNNER_TEMP="$RUNNER_TEMP" /usr/bin/python3 -B tests/r782_hosted_trusted_entry_ephemeral.py
+
+      - name: Retain the exact tested administrator-local Linux delivery candidate
+        if: github.ref == 'refs/heads/feature/universal-install-engine' && github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate="$(mktemp -d "$RUNNER_TEMP/dim-linux-reviewed.XXXXXXXX")"
+          install -m 0644 tools/security/privileged_entry.py "$candidate/privileged_entry.py"
+          install -m 0644 delivery/DirectInternetMethod_1.5.7_Linux_x86_64.zip "$candidate/DirectInternetMethod_1.5.7_Linux_x86_64.zip"
+          install -m 0644 docs/SECURITY_TRUSTED_ENTRY_R781.md "$candidate/BOOTSTRAP-ADMIN.md"
+          cd "$candidate"
+          printf '%s  %s\n' '452D7BF28865A376B25EA7B87BDDCD73BA66A406BE1C90B6A45B7AD09F5ACBA4' privileged_entry.py '298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD' DirectInternetMethod_1.5.7_Linux_x86_64.zip > SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          printf '%s\n' "$GITHUB_SHA" > SOURCE_COMMIT.txt
+          echo "R965_CANDIDATE_DIR=$candidate" >> "$GITHUB_ENV"
+      - name: Upload tested Linux candidate (QA only, no release)
+        if: github.ref == 'refs/heads/feature/universal-install-engine' && github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: linux-v157-reviewed-bootstrap-${{ github.run_id }}
+          path: ${{ env.R965_CANDIDATE_DIR }}
+          if-no-files-found: error
+          retention-days: 7
 
   windows-private-r846-native:
     name: windows-private-r846-native
-    if: github.event_name == 'push' && github.repository == 'GOD13emad/DirectInternetMethod' && github.ref == 'refs/heads/prep/r846-forward-157-native-gates'
+    if: github.repository == 'GOD13emad/DirectInternetMethod' && ((github.event_name == 'push' && github.ref == 'refs/heads/prep/r846-forward-157-native-gates') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.native_candidate_sha != '' && inputs.native_candidate_sha == github.sha))
     needs: windows-source
     runs-on: windows-2025
     timeout-minutes: 75
+    env:
+      R951_EXPECTED_SHA: ${{ inputs.native_candidate_sha }}
     permissions:
       contents: read
       actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: '10.0.x'
@@ -708,6 +803,102 @@ jobs:
           path: delivery/DirectInternetMethod_1.5.7_Windows_Setup.exe
           if-no-files-found: error
           retention-days: 7
+
+  windows-r980-real-postinstall-failure:
+    name: windows-r980-real-product-postfailure-ephemeral
+    # This test actually installs DIM, but ONLY in a fresh original-repo
+    # hosted runner, on explicit workflow_dispatch for reviewed exact HEAD.
+    # No release, PR, push, self-hosted or physical host invocation.
+    if: github.repository == 'GOD13emad/DirectInternetMethod' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.native_failure_candidate_sha != '' && inputs.native_failure_candidate_sha == github.sha
+    needs: windows-source
+    runs-on: windows-2025
+    timeout-minutes: 65
+    env:
+      R951_EXPECTED_SHA: ${{ inputs.native_failure_candidate_sha }}
+      R980_EXPECTED_SHA: ${{ inputs.native_failure_candidate_sha }}
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build exact unchanged private v1.5.7 source installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r846_windows_candidate_hosted_build.ps1
+          if($LASTEXITCODE -ne 0){throw 'R980_EXACT_PRIVATE_BUILD_FAILED'}
+      - name: Force real Inno postinstall failure in separate QA script copy
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r980_windows_real_product_postfailure_vm.ps1
+          if($LASTEXITCODE -ne 0){throw 'R980_REAL_NATIVE_POSTFAILURE_EVIDENCE_FAILED'}
+      - name: Preserve negative real product evidence (not rollback acceptance)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: r980-real-product-inno-failure-${{ github.run_id }}
+          path: ${{ runner.temp }}/DIM_R980_REAL_POSTFAIL/R980_REAL_POSTFAIL.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  windows-r982-common-broker-native-compensation:
+    name: windows-r982-real-product-common-broker-vm
+    # VM-only first integration of actual DIM Inno into the SAME shared
+    # R981 transaction coordinator. Owner physical products are never touched.
+    if: github.repository == 'GOD13emad/DirectInternetMethod' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/universal-install-engine' && inputs.native_broker_recovery_candidate_sha != '' && inputs.native_broker_recovery_candidate_sha == github.sha
+    needs: windows-source
+    runs-on: windows-2025
+    timeout-minutes: 65
+    env:
+      R951_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
+      R980_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
+      R982_EXPECTED_SHA: ${{ inputs.native_broker_recovery_candidate_sha }}
+      R983_CRASH_RECOVERY: ${{ inputs.native_broker_crash_recovery }}
+      R984_NATIVE_PREIMAGE: ${{ inputs.native_broker_native_preimage }}
+      R992_PROTECTED_RECOVERY_MEDIA: ${{ inputs.native_broker_protected_recovery_media }}
+      R993_OS_SCHEDULED_RECOVERY: ${{ inputs.native_broker_os_scheduled_recovery }}
+      R994_REGISTRAR_EXIT: ${{ inputs.native_broker_registrar_exit }}
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Build native exact-SHA private v1.5.7 (not public)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r846_windows_candidate_hosted_build.ps1
+          if($LASTEXITCODE -ne 0){throw 'R982_EXACT_CANDIDATE_NOT_BUILT'}
+      - name: R982 real Inno failure with one shared broker VM compensation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          & pwsh -NoProfile -NonInteractive -File tests/r980_windows_real_product_postfailure_vm.ps1 -CommonBrokerRecovery
+          if($LASTEXITCODE -ne 0){throw 'R982_COMMON_BROKER_VM_ACCEPTANCE_FAILED'}
+      - name: Preserve raw VM evidence without releasing binaries
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: r982-common-broker-real-inno-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/DIM_R980_REAL_POSTFAIL/R980_REAL_POSTFAIL.json
+            ${{ runner.temp }}/DIM_R980_REAL_POSTFAIL/R982_REAL_NATIVE_BROKER_VM_RESULT.json
+          if-no-files-found: warn
+          retention-days: 14
 
   windows-private-r848-v156-forward:
     name: windows-private-r848-v156-forward-one-time

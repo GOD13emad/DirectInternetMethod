@@ -135,8 +135,15 @@ internal static class Program
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "runtime", "pwsh", "pwsh.exe"));
 
 
-    static string UpdatesDir => Path.Combine(RuntimeDir, "updates");
-    static string PendingUpdatePath => Path.Combine(RuntimeDir, "pending-update.json");
+    // Pending installer and its provenance must not live in a user-creatable
+    // ProgramData directory. This path is under verified privileged service.
+    static string UpdatesDir => Path.Combine(
+        Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..")),
+        "UpdateTransactions");
+    static string PendingUpdatePath => Path.Combine(UpdatesDir, "pending-update.json");
+    static string CompletionReceiptPath(string transactionId) =>
+        Path.Combine(UpdatesDir, NativeInnoCompletionReceipt.FileName(transactionId));
+    static string LegacyPendingUpdatePath => Path.Combine(RuntimeDir, "pending-update.json");
     // Only one owned staging installer may exist for an active update.
     static string OwnedUpdateInstallerPath => Path.Combine(UpdatesDir, "DirectInternetMethod-update-stage.exe");
     static string NetworkStatePath => Path.Combine(
@@ -231,10 +238,7 @@ internal static class Program
 
     static void WriteJsonAtomic(string path, object payload)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        var temp = path + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(payload), new UTF8Encoding(false));
-        File.Move(temp, path, true);
+        NativeProtectedUpdateJournal.WriteJsonAtomic(path, payload);
     }
 
 
@@ -307,6 +311,13 @@ internal static class Program
 
         try
         {
+            if (File.Exists(LegacyPendingUpdatePath))
+                throw new IOException(
+                    "Legacy user-writable pending update requires protected native reconciliation; evidence preserved.");
+            if (Directory.Exists(UpdatesDir) &&
+                !NativeProtectedUpdateAcl.IsProtectedExistingDirectory(UpdatesDir))
+                throw new UnauthorizedAccessException(
+                    "Protected updater transaction directory ACL is untrusted.");
             if (File.Exists(NetworkStatePath))
             {
                 WriteActionStatus(action, "error", -10, "Direct Method must be OFF before update.");
@@ -318,6 +329,12 @@ internal static class Program
                 if (File.Exists(PendingUpdatePath))
                     throw new IOException("Prior update still needs verification or cleanup; refusing a second installer.");
             }
+            if (Directory.Exists(UpdatesDir) &&
+                Directory.EnumerateFiles(UpdatesDir, "completion-*.receipt").Any())
+                throw new IOException("Orphan native completion evidence requires reconciliation; refusing another update.");
+
+            if (File.Exists(PendingUpdatePath + ".tmp"))
+                throw new IOException("Interrupted native pending journal requires reconciliation; refusing another download.");
 
             Log("action-begin:update");
             WriteActionStatus(action, "running", null, "Checking official GitHub release.");
@@ -330,7 +347,11 @@ internal static class Program
                 return;
             }
 
-            Directory.CreateDirectory(UpdatesDir);
+            var approvedRoot = NativeProtectedUpdateAcl.PrepareProtectedTransactionDirectory(
+                AppContext.BaseDirectory);
+            if (!string.Equals(approvedRoot, UpdatesDir,
+                               StringComparison.OrdinalIgnoreCase))
+                throw new UnauthorizedAccessException("Protected update root changed.");
             var sumsText = await UpdateHttp.GetStringAsync(package.ChecksumsUrl, timeout.Token);
             var expected = ParseExpectedSha256(sumsText, package.InstallerName);
             if (!expected.Equals(package.ApiSha256, StringComparison.OrdinalIgnoreCase))
@@ -350,12 +371,21 @@ internal static class Program
                 throw new CryptographicException("Downloaded installer failed SHA-256 verification.");
             }
             File.Move(partPath, finalPath); // Never overwrite a pending/foreign installer.
+            // Reverify the exact final inode and hold it through journal publication
+            // and native launch; preserve the stage on any identity mismatch.
+            if (!NativeProtectedUpdateAcl.IsProtectedExistingDirectory(UpdatesDir))
+                throw new UnauthorizedAccessException("Protected update root changed before handoff.");
+            using var verifiedInstaller = NativeInnoCompletionReceipt.HoldVerifiedStage(finalPath, expected);
 
             var installDir = GetRegisteredInstallDirectory();
+            var transactionId = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            if (File.Exists(CompletionReceiptPath(transactionId)))
+                throw new IOException("Native completion receipt collision; refusing update.");
 
             WriteJsonAtomic(PendingUpdatePath, new
             {
-                schema = 1,
+                schema = 2,
+                transactionId,
                 targetVersion = package.Version.ToString(3),
                 tag = package.Tag,
                 installer = finalPath,
@@ -379,6 +409,8 @@ internal static class Program
             psi.ArgumentList.Add("/SP-");
             psi.ArgumentList.Add("/DIR=" + installDir);
             psi.ArgumentList.Add("/LOG=" + logPath);
+            psi.ArgumentList.Add("/DIMTXN=" + transactionId);
+            psi.ArgumentList.Add("/DIMSHA256=" + actual);
 
             var installer = Process.Start(psi);
             if (installer is null)
@@ -398,8 +430,39 @@ internal static class Program
         }
     }
 
+    // Registration consistency is a prerequisite to cleanup, not publisher
+    // authentication or full native service/rollback acceptance.
+    static bool PendingNativeRegistrationMatches(JsonElement pending,
+                                                 Version serviceVersion,
+                                                 Version targetVersion)
+    {
+        const string keyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{B5388E8B-9AF3-41F4-87E2-01C9601A36CB}_is1";
+        if (!pending.TryGetProperty("installDir", out var installRoot) ||
+            installRoot.ValueKind != JsonValueKind.String)
+            return false;
+        using var key = Registry.LocalMachine.OpenSubKey(keyPath, writable: false);
+        if (key is null ||
+            !NativePendingUpdateReceipt.IsConsistent(
+                key.GetValue("DisplayName") as string,
+                key.GetValue("DisplayVersion") as string,
+                key.GetValue("InstallLocation") as string,
+                installRoot.GetString(), serviceVersion, targetVersion))
+            return false;
+        // A matching registry string alone is insufficient even for cleanup:
+        // the registered application and manifest must exist in that root.
+        _ = GetRegisteredInstallDirectory();
+        return true;
+    }
+
     static async Task FinalizePendingAfterServiceRestartAsync()
     {
+        if (File.Exists(LegacyPendingUpdatePath))
+        {
+            Log("legacy-user-writable-pending-update-preserved-no-auto-finalize");
+            WriteActionStatus("update", "error", -5,
+                "Legacy updater transaction requires protected native reconciliation.");
+            return;
+        }
         // The Setup executable may be locked until Inno closes. Recheck only
         // the one SHA-pinned owned installer, never delete a foreign path.
         for (var attempt = 0; attempt < 48 && !StopEvent.IsSet; attempt++)
@@ -417,22 +480,66 @@ internal static class Program
             await Task.Delay(TimeSpan.FromSeconds(5));
         }
         if (File.Exists(PendingUpdatePath))
+        {
             Log("pending-update-finalization-deferred-no-overwrite");
+            WriteActionStatus("update", "error", -4,
+                "Post-install native verification incomplete; pending evidence preserved.");
+        }
     }
 
     static void FinalizePendingUpdate()
     {
         try
         {
+            if (File.Exists(LegacyPendingUpdatePath))
+                throw new IOException(
+                    "Legacy user-writable updater evidence cannot be auto-finalized.");
             if (!File.Exists(PendingUpdatePath)) return;
-            using var doc = JsonDocument.Parse(File.ReadAllText(PendingUpdatePath));
+            if (!NativeProtectedUpdateAcl.IsProtectedExistingDirectory(UpdatesDir))
+                throw new UnauthorizedAccessException(
+                    "Protected native transaction ACL failed before finalization.");
+            using var doc = NativeInnoCompletionReceipt.ReadHeldPendingJson(PendingUpdatePath);
             var targetText = doc.RootElement.GetProperty("targetVersion").GetString() ?? "";
-            if (doc.RootElement.GetProperty("schema").GetInt32() != 1 ||
+            if (doc.RootElement.GetProperty("schema").GetInt32() != 2 ||
                 !Version.TryParse(targetText, out var target))
                 throw new InvalidDataException("Pending update schema or version invalid; preserve record.");
             var installed = CurrentVersion;
             if (installed >= target)
             {
+                if (!PendingNativeRegistrationMatches(doc.RootElement, installed, target))
+                {
+                    // Inno can finalize its registry/uninstall record before
+                    // a later ssPostInstall failure. Never erase update evidence
+                    // from Service version alone.
+                    Log("pending-update-native-registration-unverified-preserving-evidence");
+                    WriteActionStatus("update", "running", null,
+                        "Waiting for matching native Inno registration and service version.");
+                    return;
+                }
+                // The registered version and SCM state can predate ssPostInstall failure.
+                // Require a per-attempt receipt emitted only at native Inno ssDone.
+                var transactionId = doc.RootElement.GetProperty("transactionId").GetString() ?? "";
+                if (!NativeInnoCompletionReceipt.Hex64(transactionId))
+                    throw new InvalidDataException("Protected pending transaction identifier invalid.");
+                var receiptPath = CompletionReceiptPath(transactionId);
+                var cleanupCommitted = NativeUpdateCleanupJournal.IsReceiptConsumed(doc.RootElement);
+                // A committed, OS-protected cleanup journal proves that the
+                // receipt was already validated in the prior service process.
+                // Ordinary/prepared transactions ALWAYS require live ssDone.
+                if (!File.Exists(receiptPath) && !cleanupCommitted)
+                {
+                    Log("pending-update-awaiting-inno-ssdone-completion-receipt");
+                    WriteActionStatus("update", "running", null,
+                        "Waiting for native installer completion; pending evidence preserved.");
+                    return;
+                }
+                if (File.Exists(receiptPath) &&
+                    !NativeInnoCompletionReceipt.Matches(
+                        NativeInnoCompletionReceipt.ReadHeldExact(
+                            receiptPath, transactionId),
+                        transactionId,
+                        doc.RootElement.GetProperty("sha256").GetString()))
+                    throw new CryptographicException("Native completion receipt does not match protected pending identity.");
                 // Setup can still be running from this EXE while the service restarts.
                 // Keep one pending record until the verified file can be removed.
                 var stage = doc.RootElement.GetProperty("installer").GetString() ?? "";
@@ -458,6 +565,8 @@ internal static class Program
                     (!fixedOwnedStage && !pinnedLegacyStage) ||
                     expectedSha.Length != 64 || !expectedSha.All(Uri.IsHexDigit))
                     throw new CryptographicException("Foreign staging path or invalid pending checksum.");
+
+                NativeUpdateCleanupJournal.RequireSafeStageAfterCommit(cleanupCommitted, File.Exists(stage));
                 if (File.Exists(stage))
                 {
                     if ((File.GetAttributes(stage) & FileAttributes.ReparsePoint) != 0 ||
@@ -476,6 +585,26 @@ internal static class Program
                         return;
                     }
                 }
+                // The last irreversible boundary is the protected pending
+                // record, not the transient Inno receipt. Commit only AFTER
+                // verifying native ssDone and retiring the SHA-pinned stage.
+                // A process crash after receipt deletion can now recover from
+                // the committed protected journal (not from a forged receipt).
+                if (!cleanupCommitted)
+                    NativeProtectedUpdateJournal.CommitReceiptConsumed(PendingUpdatePath,
+                        NativeUpdateCleanupJournal.MarkReceiptConsumed(doc.RootElement));
+                try
+                {
+                    if (File.Exists(receiptPath))
+                        File.Delete(receiptPath);
+                }
+                catch (IOException)
+                {
+                    Log("completed-inno-receipt-locked-retry-on-service-restart");
+                    WriteActionStatus("update", "running", null,
+                        "Installed; protected completion cleanup pending retry.");
+                    return;
+                }
                 File.Delete(PendingUpdatePath);
                 WriteActionStatus("update", "done", 0, $"Updated to v{installed.ToString(3)}.");
                 Log($"update-complete:{installed.ToString(3)}:no-cache-duplicate");
@@ -489,6 +618,8 @@ internal static class Program
         catch (Exception ex)
         {
             Log($"update-finalize-failed:{ex.GetType().Name}:{Compact(ex.Message)}");
+            WriteActionStatus("update", "error", -4,
+                "Post-install verification failed; pending installer and identity preserved.");
         }
     }
 
@@ -654,6 +785,28 @@ internal static class Program
         var required = new[] { "Start-Direct.ps1", "Stop-Direct.ps1", "Recovery.ps1" };
         var missing = required.Where(x => !File.Exists(Path.Combine(AppContext.BaseDirectory, x))).ToArray();
         if (missing.Length != 0) return "MISSING:" + string.Join(",", missing);
+        var running = new Version(1, 5, 7, 0);
+        var pending = new Version(1, 5, 7);
+        const string root = @"C:\Users\qa\App";
+        if (!NativePendingUpdateReceipt.IsConsistent(
+                "Direct Internet Method", "1.5.7", root + @"\",
+                root, running, pending))
+            return "PENDING_NATIVE_VALID_RECEIPT_REJECTED";
+        var negatives = new (string? Name, string? Version, string? Root, string? Expected, Version Running, Version Target)[]
+        {
+            ("Direct Internet Method version 1.5.7", "1.5.7", root, root, running, pending),
+            ("Foreign", "1.5.7", root, root, running, pending),
+            ("Direct Internet Method", "1.5.6", root, root, running, pending),
+            ("Direct Internet Method", "1.5.8", root, root, running, pending),
+            ("Direct Internet Method", "1.5.7", @"C:\Users\foreign\App", root, running, pending),
+            ("Direct Internet Method", "1.5.7", root, @"..\relative", running, pending),
+            ("Direct Internet Method", "1.5.7", @"\\server\share\App", root, running, pending),
+            ("Direct Internet Method", "1.5.7", root, root, running, new Version(1, 5, 8)),
+            ("Direct Internet Method", "1.5.7", root, root, new Version(1, 5, 6), pending)
+        };
+        if (negatives.Any(n => NativePendingUpdateReceipt.IsConsistent(
+                n.Name, n.Version, n.Root, n.Expected, n.Running, n.Target)))
+            return "PENDING_NATIVE_NEGATIVE_RECEIPT_ACCEPTED";
         if (!DescribeActionFailure(1, "START_FAIL_DEFAULT_ROUTE_NOT_PHYSICAL").Contains("VPN or virtual adapter", StringComparison.Ordinal))
             return "MISSING_ROUTE_GUARD_MESSAGE";
         if (!DescribeActionFailure(1, "REFUSE_BROAD_TUNNEL_ROUTE").Contains("broad VPN route", StringComparison.Ordinal))
@@ -662,6 +815,12 @@ internal static class Program
             return "MISSING_RUNTIME_INTEGRITY_MESSAGE";
         if (DescribeActionFailure(1, "SECRET_SAMPLE private path").Contains("SECRET_SAMPLE", StringComparison.Ordinal))
             return "RAW_STDERR_LEAK";
+        if (!NativeProtectedUpdateAcl.SyntheticPolicySelfTest())
+            return "PROTECTED_UPDATE_ACL_SELFTEST_FAILED";
+        if (!NativeInnoCompletionReceipt.SelfTest())
+            return "NATIVE_INNO_COMPLETION_RECEIPT_SELFTEST_FAILED";
+        if (!NativeUpdateCleanupJournal.SelfTest())
+            return "NATIVE_UPDATE_CLEANUP_JOURNAL_SELFTEST_FAILED";
         return "PASS";
     }
 }

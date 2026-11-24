@@ -57,6 +57,49 @@ class ForwardWindows157(unittest.TestCase):
             self.assertIn("github-hosted",source)
             self.assertNotIn("refs/heads/prep/r803-forward-156-native-gates",source)
 
+    def test_universal_branch_native_qa_requires_explicit_sha_dispatch(self):
+        section=WF.split("  windows-private-r846-native:",1)[1].split(
+            "  windows-private-r848-v156-forward:",1)[0]
+        for token in ("github.repository == 'GOD13emad/DirectInternetMethod'",
+                      "github.event_name == 'workflow_dispatch'",
+                      "github.ref == 'refs/heads/feature/universal-install-engine'",
+                      "inputs.native_candidate_sha != ''",
+                      "inputs.native_candidate_sha == github.sha",
+                      "runs-on: windows-2025",
+                      "R951_EXPECTED_SHA:",
+                      "persist-credentials: false",
+                      "contents: read"):
+            self.assertIn(token,section)
+        self.assertNotIn("contents: write",section)
+        self.assertNotIn("pull_request",section)
+        for rel in ("tests/r846_windows_candidate_hosted_build.ps1",
+                    "tests/r846_windows_native_rollback.ps1"):
+            source=(R/rel).read_text("utf-8")
+            for token in ("$env:RUNNER_ENVIRONMENT -ne 'github-hosted'",
+                          "$env:GITHUB_EVENT_NAME -ceq 'workflow_dispatch'",
+                          "$env:R951_EXPECTED_SHA -ceq $env:GITHUB_SHA",
+                          "(git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA",
+                          "(!$historical -and !$reviewedCandidate)"):
+                self.assertIn(token,source,rel)
+
+
+
+    def test_native_restart_uses_actual_receipt_and_releases_owned_lock(self):
+        source=(R/"tests/r846_windows_native_rollback.ps1").read_text("utf-8")
+        scope=source.split("# R957:",1)[1].split("$report.completedNativeHandoff=",1)[0]
+        steps=("[IO.FileShare]::Read)", "R955_REAL_HANDOFF_EXIT_ZERO",
+               "R957_REAL_NATIVE_EVIDENCE_RETAINED", "Stop-Service -Name",
+               "R957_EVIDENCE_SURVIVES_STOP", "Start-Service -Name",
+               "R957_NEW_NATIVE_SERVICE_PROCESS",
+               "R957_EVIDENCE_SURVIVES_RESTART_WHILE_LOCKED",
+               "$held.Dispose()", "R955_NATIVE_SERVICE_CONSUMED_TRANSACTION")
+        indexes=[scope.index(step) for step in steps]
+        self.assertEqual(indexes, sorted(indexes))
+        self.assertIn("$afterPid -ne $beforePid",scope)
+        self.assertNotIn("WriteAllText($receipt",scope)
+        self.assertNotIn("Remove-Item -LiteralPath $pending",scope)
+
+
 if __name__=="__main__":
     result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(ForwardWindows157))
     raise SystemExit(0 if result.wasSuccessful() else 1)

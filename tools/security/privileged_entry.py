@@ -12,6 +12,8 @@ separately reviewed trust-anchor update; this is not a generic updater.
 from __future__ import annotations
 
 import argparse
+import fcntl
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -217,6 +219,51 @@ def check_trusted_entry():
     require("PKEXEC_UID" in os.environ and os.environ["PKEXEC_UID"].isdigit(),
             "NATIVE_PKEXEC_AUTH_REQUIRED")
 
+# Fixed destinations owned by the existing native first-install script.
+# An incomplete or foreign backend is not an empty host, even if its
+# install.json and executable directory are both absent.
+FRESH_TARGETS = (
+    Path("/usr/lib/directinternetmethod"),
+    Path("/var/lib/directinternetmethod"),
+    Path("/etc/directinternetmethod.uid"),
+    Path("/etc/directinternetmethod.conf"),
+    Path("/etc/polkit-1/rules.d/49-directinternetmethod.rules"),
+    *(Path("/etc/systemd/system") / ("directinternetmethod-" + a + suffix)
+      for a in ("start", "stop", "recovery")
+      for suffix in (".service", ".service.d")),
+)
+BOOTSTRAP_LOCK = Path("/run/directinternetmethod-bootstrap.lock")
+
+def require_fresh_backend():
+    for target in FRESH_TARGETS:
+        # lstat detects a dangling symlink as an occupied destination.
+        try:
+            target.lstat()
+        except FileNotFoundError:
+            continue
+        raise AdmissionError("R781_REJECT_FRESH_TARGET_OCCUPIED:" + str(target))
+
+@contextmanager
+def bootstrap_lock():
+    """Serialize actual bootstrap requests, not arbitrary system writers."""
+    run = Path("/run").lstat()
+    require(stat.S_ISDIR(run.st_mode) and run.st_uid == 0 and
+            run.st_gid == 0 and not run.st_mode & 0o022, "TRUSTED_RUN_DIR")
+    fd = os.open(BOOTSTRAP_LOCK, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW |
+                 os.O_CLOEXEC | os.O_NONBLOCK, 0o600)
+    try:
+        st = os.fstat(fd)
+        require(stat.S_ISREG(st.st_mode) and st.st_uid == 0 and st.st_gid == 0
+                and st.st_nlink == 1 and stat.S_IMODE(st.st_mode) == 0o600,
+                "BOOTSTRAP_LOCK_IDENTITY")
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise AdmissionError("R781_REJECT_BOOTSTRAP_BUSY") from exc
+        yield fd
+    finally:
+        os.close(fd)
+
 def main():
     args=argparse.ArgumentParser()
     args.add_argument("--action",required=True,choices=("upgrade","install"))
@@ -226,8 +273,12 @@ def main():
     uid=int(os.environ["PKEXEC_UID"])
     require(0<uid<2**31 and pwd.getpwuid(uid).pw_uid==uid,
             "CALLING_ACCOUNT_IDENTITY")
-    require(Path("/run").is_dir() and Path("/run").stat().st_uid==0,
-            "TRUSTED_RUN_DIR")
+    with bootstrap_lock() as lock_fd:
+        if opts.action == "install":
+            require_fresh_backend()
+        run_frozen_action(opts, uid, lock_fd)
+
+def run_frozen_action(opts, uid, lock_fd):
     temp=Path(tempfile.mkdtemp(prefix="dim-trusted-root-",dir="/run"))
     try:
         require(temp.stat().st_uid==0 and
@@ -240,8 +291,12 @@ def main():
                 "ROOT_FROZEN_SCRIPT")
         safe_env={"PATH":"/usr/sbin:/usr/bin:/sbin:/bin","HOME":"/root",
                   "LANG":"C","PYTHONDONTWRITEBYTECODE":"1"}
+        # The kernel lock follows the open file description across exec.
+        # If the bootstrap dies while the native script survives, that
+        # script must retain the lock until its own descriptors close.
         done=subprocess.run(["/bin/bash",str(script),str(source),str(uid)],
-                            cwd="/",env=safe_env,check=False,timeout=900)
+                            cwd="/",env=safe_env,check=False,timeout=900,
+                            pass_fds=(lock_fd,))
         raise SystemExit(done.returncode)
     finally:
         # The independent Root watchdog owns its persistent rollback copy.

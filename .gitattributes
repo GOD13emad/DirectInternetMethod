@@ -25,3 +25,11 @@ windows/bin/zapret/LGPL3.Cygwin.txt text eol=lf
 windows/bin/zapret/GPL3.Cygwin.txt text eol=lf
 # The tracked Inno .iss uses original mixed EOL. Preserve exact bytes on Windows checkout.
 windows/installer/DirectInternetMethod.iss -text whitespace=cr-at-eol
+# Keep exact OS guest error/receipt bytes; no CRLF normalization.
+evidence/DIM_R933_WINDOWS_QT_IFW_* -text whitespace=cr-at-eol
+# Preserve byte-exact real Windows guest policy/ledger and failure logs.
+evidence/DIM_R934_WINDOWS_BROKER_* -text whitespace=cr-at-eol
+# Exact byte fidelity for independently pinned Windows SYSTEM guest receipts.
+evidence/DIM_R935_WINDOWS_PIPE_* -text whitespace=cr-at-eol
+# Preserve original guest NTFS/System test receipt and denial bytes verbatim.
+evidence/DIM_R937_WINDOWS_SCM_* -text whitespace=cr-at-eol

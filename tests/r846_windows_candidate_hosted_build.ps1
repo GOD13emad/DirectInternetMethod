@@ -4,7 +4,12 @@ $ErrorActionPreference='Stop'
 Set-StrictMode -Version Latest
 $Root=$env:GITHUB_WORKSPACE
 if($env:CI -ne 'true' -or $env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted' -or $env:GITHUB_REPOSITORY -cne 'GOD13emad/DirectInternetMethod'){throw 'R846_GITHUB_HOST_ONLY'}
-if($env:GITHUB_REF -cnotin @('refs/heads/prep/r846-forward-157-native-gates') -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R846_BRANCH_HEAD_AUTHORITY'}
+# Preserve the original historical hosted route. The current universal
+# engine branch may use this same pipeline ONLY via an explicit exact-SHA
+# dispatch on a GitHub-hosted disposable runner, never from a PR or local host.
+$historical=($env:GITHUB_REF -ceq 'refs/heads/prep/r846-forward-157-native-gates')
+$reviewedCandidate=($env:GITHUB_REF -ceq 'refs/heads/feature/universal-install-engine' -and $env:GITHUB_EVENT_NAME -ceq 'workflow_dispatch' -and $env:R951_EXPECTED_SHA -cmatch '^[0-9a-f]{40}$' -and $env:R951_EXPECTED_SHA -ceq $env:GITHUB_SHA)
+if((!$historical -and !$reviewedCandidate) -or (git -C $Root rev-parse HEAD).Trim() -cne $env:GITHUB_SHA){throw 'R846_BRANCH_HEAD_AUTHORITY'}
 $r=Get-Content (Join-Path $Root 'windows\RELEASE.json') -Raw|ConvertFrom-Json
 if($r.version -cne '1.5.7' -or $r.status -cne 'PRIVATE_WINDOWS_V157_SOURCE_CANDIDATE_UNPUBLISHED_UNPROVEN'){throw 'R846_RC1_DECLARATION'}
 $qa=Join-Path $env:RUNNER_TEMP 'DIM_R846_NATIVE'

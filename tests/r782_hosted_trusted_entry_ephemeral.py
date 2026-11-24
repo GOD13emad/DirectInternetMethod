@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """R782 real-UID0/bootstrap content test on disposable original GitHub runner ONLY.
 
-Never execute product install/upgrade/rollback, pkexec, systemctl, DNS or network
-commands. PKEXEC_UID is simulated solely for ownership validation: this is
-NOT native Polkit authentication acceptance.
+Historical path tests only admission. R963 exact reviewed feature dispatch
+also tests the real fresh-install/owner reinstall/removal lifecycle without
+starting any product network units. PKEXEC_UID is simulated in the guarded
+VM, NOT native Polkit authentication acceptance.
 """
 from __future__ import annotations
 import hashlib
@@ -42,13 +43,26 @@ def guard():
     need(e.get("CI") == "true" and e.get("GITHUB_ACTIONS") == "true" and
          e.get("GITHUB_REPOSITORY") == "GOD13emad/DirectInternetMethod" and
          e.get("RUNNER_ENVIRONMENT") == "github-hosted", "ORIGINAL_HOSTED_ONLY")
-    need(e.get("GITHUB_REF") == "refs/heads/prep/r803-forward-156-native-gates" and
-         e.get("GITHUB_SHA") and len(e["GITHUB_SHA"]) == 40,
+    historical = e.get("GITHUB_REF") == "refs/heads/prep/r803-forward-156-native-gates"
+    reviewed = (e.get("GITHUB_REF") == "refs/heads/feature/universal-install-engine" and
+                e.get("GITHUB_EVENT_NAME") == "workflow_dispatch" and
+                e.get("R962_EXPECTED_SHA") == e.get("GITHUB_SHA"))
+    need((historical or reviewed) and e.get("GITHUB_SHA") and
+         len(e["GITHUB_SHA"]) == 40 and
+         all(c in "0123456789abcdef" for c in e["GITHUB_SHA"]),
          "REVIEW_ONLY_BRANCH_AND_EXACT_COMMIT")
+    # Historical pins are preserved; this reviewed feature candidate has
+    # its own independently checked frozen package and bootstrap digest.
+    global PIN_ENTRY, PIN_ZIP, PKG, ARCHIVE
+    if reviewed:
+        PIN_ENTRY = "452D7BF28865A376B25EA7B87BDDCD73BA66A406BE1C90B6A45B7AD09F5ACBA4"
+        PIN_ZIP = "298C4D3B9AE5C8B0709EDFFCAE665FB66A84A47BBDB2564E4E92356903738FCD"
+        PKG = "DirectInternetMethod_1.5.7_Linux_x86_64"
+        ARCHIVE = BASE / "delivery" / (PKG + ".zip")
     need(e.get("GITHUB_WORKSPACE") == str(EXPECTED_WORKSPACE) and
          BASE == EXPECTED_WORKSPACE and BASE.is_dir(),
          "WORKSPACE_NOT_OWNED")
-    commit = subprocess.run(["/usr/bin/git", "-C", str(BASE), "rev-parse", "HEAD"],
+    commit = subprocess.run(["/usr/bin/git", "-c", "safe.directory=" + str(EXPECTED_WORKSPACE), "-C", str(BASE), "rev-parse", "HEAD"],
                             check=True, capture_output=True, text=True).stdout.strip()
     need(commit == e["GITHUB_SHA"], "CHECKED_OUT_COMMIT_DIFFERENT")
     need(Path("/run").is_dir() and Path("/run").lstat().st_uid == 0 and
@@ -82,12 +96,35 @@ def trusted_provision():
         need(stat.S_ISDIR(st.st_mode) and st.st_uid == 0 and st.st_gid == 0 and
              not (st.st_mode & 0o022), "UNTRUSTED_HOSTED_ANCESTOR")
     ENTRY.parent.mkdir(mode=0o755)
-    fd = os.open(ENTRY, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o500)
-    with os.fdopen(fd, "wb") as stream:
-        stream.write(SOURCE.read_bytes())
-        stream.flush()
-        os.fsync(stream.fileno())
-        os.fchmod(stream.fileno(), 0o500)
+    if os.environ.get("GITHUB_REF") == "refs/heads/feature/universal-install-engine":
+        # Native administrator-local provisioning, not a Debian package.
+        # No execution from the user-writable source; verify the protected copy.
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix=".dim-bootstrap-", dir=ENTRY.parent) as d:
+            staged = Path(d) / ENTRY.name
+            subprocess.run(["/usr/bin/install", "-o", "root", "-g", "root",
+                            "-m", "0500", "--", str(SOURCE), str(staged)], check=True)
+            st = staged.lstat()
+            need(stat.S_ISREG(st.st_mode) and st.st_uid == 0 and st.st_gid == 0
+                 and st.st_nlink == 1 and stat.S_IMODE(st.st_mode) == 0o500
+                 and sha_file(staged) == PIN_ENTRY, "R965_PROTECTED_COPY_PIN")
+            with staged.open("rb") as stream:
+                os.fsync(stream.fileno())
+            subprocess.run(["/usr/bin/ln", "-T", "--", str(staged), str(ENTRY)], check=True)
+            # A second publish must fail, retaining the exact installed inode.
+            inode = ENTRY.stat().st_ino
+            duplicate = subprocess.run(["/usr/bin/ln", "-T", "--", str(staged), str(ENTRY)],
+                                       capture_output=True, check=False)
+            need(duplicate.returncode != 0 and ENTRY.stat().st_ino == inode,
+                 "R965_NATIVE_NO_CLOBBER")
+        print("R965_NATIVE_INSTALL_PINNED_COPY_NO_CLOBBER_PASS")
+    else:
+        fd = os.open(ENTRY, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o500)
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(SOURCE.read_bytes())
+            stream.flush()
+            os.fsync(stream.fileno())
+            os.fchmod(stream.fileno(), 0o500)
     st = ENTRY.lstat()
     need(stat.S_ISREG(st.st_mode) and st.st_uid == 0 and st.st_gid == 0 and
          st.st_nlink == 1 and stat.S_IMODE(st.st_mode) == 0o500 and
@@ -149,6 +186,199 @@ def reject_drifted_manifest(package: Path, uid: int):
          "REAL_BACKEND_TOUCHED")
     print("R782_REAL_ROOT_ENTRY_CORRUPTED_MANIFEST_FAIL_CLOSED")
 
+
+def reviewed_fresh_lifecycle(package: Path, uid: int, helper):
+    """Actual existing installer phases; only in the guarded disposable VM."""
+    import json
+    from dataclasses import asdict
+    sys.path.insert(0, str(BASE))
+    from installer_engine.scoped_layout import compile_scoped_layout
+    from installer_engine.native_readiness import linux_flat_scope_postflight, linux_readiness
+
+    need(os.environ.get("GITHUB_REF") == "refs/heads/feature/universal-install-engine" and
+         os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch" and
+         os.environ.get("R962_EXPECTED_SHA") == os.environ.get("GITHUB_SHA"),
+         "R963_REVIEWED_DISPATCH_ONLY")
+    user = pwd.getpwuid(uid)
+    home = Path(user.pw_dir)
+    app = home / ".local/share/DirectInternetMethod"
+    pending = home / ".local/state/DirectInternetMethod/update-pending"
+    root = Path("/usr/lib/directinternetmethod")
+    metadata = Path("/var/lib/directinternetmethod/install.json")
+    units = tuple("directinternetmethod-" + action + ".service"
+                  for action in ("start", "stop", "recovery"))
+    unit_paths = [Path("/etc/systemd/system") / unit for unit in units]
+    rule = Path("/etc/polkit-1/rules.d/49-directinternetmethod.rules")
+    uid_file = Path("/etc/directinternetmethod.uid")
+    clean = [app, pending.parent, root, metadata.parent, rule, uid_file,
+             Path("/etc/directinternetmethod.conf"),
+             home / ".local/bin/direct-internet-method",
+             home / ".local/bin/direct-internet-method-uninstall",
+             home / ".local/share/applications/io.github.god13emad.DirectInternetMethod.desktop",
+             home / ".local/share/icons/hicolor/scalable/apps/direct-internet-method.svg",
+             home / "Desktop/Direct Internet Method.desktop", *unit_paths,
+             Path("/run/directinternetmethod-selective"),
+             Path("/run/directinternetmethod-encrypted"),
+             Path("/run/directinternetmethod-encrypted-ctrld.toml"),
+             Path("/sys/class/net/dimesd0")]
+    need(all(not p.exists() and not p.is_symlink() for p in clean), "R963_FRESH_TARGETS")
+    need(rule.parent.is_dir() and not rule.parent.is_symlink(), "R963_POLKIT_RULES_DIRECTORY")
+    manifest = json.loads((package / "PACKAGE_MANIFEST.json").read_bytes())
+    plan = compile_scoped_layout(manifest, (BASE / "linux/native_layout.json").read_bytes(),
+                                 "b423f13fb8c03ade801fe09ad70aaf64ca485d3f6b9e51092108a083d3f5e1b8")
+    env = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "HOME": "/root",
+           "LANG": "C", "PYTHONDONTWRITEBYTECODE": "1", "PKEXEC_UID": str(uid)}
+    user_env = {"PATH": env["PATH"], "HOME": str(home), "LANG": "C",
+                "PYTHONDONTWRITEBYTECODE": "1", "USER": user.pw_name,
+                "LOGNAME": user.pw_name}
+    def checked(args, *, owner=False, stdin=None, limit=180):
+        command = (["/usr/sbin/runuser", "-u", user.pw_name, "--", "/usr/bin/env", "-i",
+                    *[key + "=" + value for key, value in user_env.items()]] + args
+                   if owner else args)
+        out = subprocess.run(command, cwd="/", env=env, input=stdin, capture_output=True,
+                             text=True, timeout=limit, check=False)
+        need(out.returncode == 0, "R963_COMMAND_FAILED_" + str(out.returncode) +
+             "_" + out.stderr[-1500:] + "_" + out.stdout[-1000:])
+        return out.stdout
+
+    resolver = Path("/etc/resolv.conf")
+    baseline = (sha_file(resolver), os.readlink(resolver) if resolver.is_symlink() else None)
+    package.parent.chmod(0o711)
+    package.parent.parent.chmod(0o711)
+    try:
+        # Check genuine user dependencies BEFORE any product mutation.
+        checked(["/usr/bin/python3", "-c",
+                 "import gi; gi.require_version('Gtk','4.0'); gi.require_version('Adw','1')"],
+                owner=True)
+        checked(["/bin/bash", "-c", "for c in python3 sha256sum pkexec systemctl nft busctl ip curl getent; do command -v \"$c\" || exit 3; done"],
+                owner=True)
+        # R964: an orphaned native registration is not a fresh host.
+        # Create ONLY a disposable sentinel in the already verified empty VM.
+        sentinel = b"R964_QA_FOREIGN_UID_RECORD\n"
+        fd = os.open(uid_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+                     os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "wb") as out:
+            out.write(sentinel)
+        try:
+            rejected = subprocess.run(
+                ["/usr/bin/python3", "-I", str(ENTRY), "--action", "install",
+                 "--source", str(package)], cwd="/", env=env,
+                capture_output=True, text=True, timeout=30)
+            need(rejected.returncode == 86 and
+                 "R781_REJECT_FRESH_TARGET_OCCUPIED:" in rejected.stderr,
+                 "R964_FOREIGN_TARGET_NOT_REJECTED")
+            need(uid_file.read_bytes() == sentinel and not root.exists() and
+                 not metadata.parent.exists() and
+                 all(not p.exists() for p in unit_paths),
+                 "R964_FOREIGN_TARGET_OR_BACKEND_MUTATED")
+        finally:
+            need(not uid_file.is_symlink() and uid_file.read_bytes() == sentinel,
+                 "R964_SENTINEL_IDENTITY")
+            uid_file.unlink()
+        # Kernel flock must reject a second real bootstrap invocation.
+        with helper.bootstrap_lock():
+            busy = subprocess.run(
+                ["/usr/bin/python3", "-I", str(ENTRY), "--action", "install",
+                 "--source", str(package)], cwd="/", env=env,
+                capture_output=True, text=True, timeout=15)
+            need(busy.returncode == 86 and
+                 "R781_REJECT_BOOTSTRAP_BUSY" in busy.stderr and not root.exists(),
+                 "R964_CONCURRENT_BOOTSTRAP_NOT_REJECTED")
+        print("R964_REAL_BOOTSTRAP_FOREIGN_REGISTRATION_PRESERVED")
+        print("R964_REAL_BOOTSTRAP_CONCURRENT_REQUEST_REJECTED")
+        # R966: close the parent's descriptor while a harmless native
+        # child holds the inherited open file description. This reproduces
+        # the lock-lifetime boundary without killing an actual installer.
+        child = None
+        try:
+            with helper.bootstrap_lock() as lock_fd:
+                child = subprocess.Popen(["/bin/sleep", "30"],
+                                         pass_fds=(lock_fd,), cwd="/", env=env)
+            need(child.poll() is None, "R966_NATIVE_CHILD_NOT_ALIVE")
+            busy = subprocess.run(
+                ["/usr/bin/python3", "-I", str(ENTRY), "--action", "install",
+                 "--source", str(package)], cwd="/", env=env,
+                capture_output=True, text=True, timeout=15)
+            need(busy.returncode == 86 and
+                 "R781_REJECT_BOOTSTRAP_BUSY" in busy.stderr and not root.exists(),
+                 "R966_CHILD_HELD_LOCK_NOT_ENFORCED")
+        finally:
+            if child is not None:
+                child.terminate()
+                child.wait(timeout=10)
+        with helper.bootstrap_lock():
+            pass
+        print("R966_NATIVE_CHILD_LOCK_SURVIVES_PARENT_DESCRIPTOR_CLOSE")
+        # Same protected executable, same frozen package, simulated authorization
+        # identity ONLY in this VM. The production install_system.sh is unmodified.
+        output = checked(["/usr/bin/python3", "-I", str(ENTRY), "--action", "install",
+                          "--source", str(package)])
+        need('"systemBackend":"installed"' in output, "R963_ROOT_INSTALL_OUTPUT")
+        record = json.loads(metadata.read_bytes())
+        need(record["version"] == "1.5.7" and record["uid"] == uid and
+             record["home"] == str(home), "R963_ROOT_INSTALL_METADATA")
+        root_report = linux_flat_scope_postflight(plan, "privileged", root)
+        need(root_report["files"] == 13, "R963_ROOT_13_FILES")
+        def check_units():
+            observed = linux_readiness(root, units)
+            need(len(observed["units"]) == 3 and all(
+                x["ActiveState"] == "inactive" for x in observed["units"]),
+                "R963_REGISTERED_UNITS_NOT_INACTIVE")
+            need(all(p.stat().st_uid == 0 and not p.is_symlink() for p in unit_paths) and
+                 rule.stat().st_uid == 0 and not rule.is_symlink() and
+                 uid_file.read_text().strip() == str(uid), "R963_NATIVE_REGISTRATION_OWNERSHIP")
+        check_units()
+        # Execute the actual owner installer. The verified backend matches,
+        # so the production script must take its no-elevation path.
+        def user_install():
+            output = checked(["/bin/bash", str(package / "install.sh")], owner=True)
+            need("Protected backend already matches current package" in output and
+                 "R519_CANDIDATE_FRESH_USER_CODE_COMMITTED" in output,
+                 "R963_OWNER_INSTALL_NOT_COMMITTED")
+            need(not pending.exists() and not pending.is_symlink(), "R963_PENDING_RETAINED")
+            info = json.loads((app / "INSTALL.json").read_bytes())
+            need(info["version"] == "1.5.7" and info["protectedBackendVersion"] == "1.5.7",
+                 "R963_OWNER_INSTALL_METADATA")
+            code = ("import json,sys; from installer_engine.native_plan import NativePlan; "
+                    "from installer_engine.native_readiness import linux_flat_scope_postflight; "
+                    "d=json.load(sys.stdin); d['scopes']=tuple((n,m) for n,m in d['scopes']); "
+                    "print(json.dumps(linux_flat_scope_postflight(NativePlan(**d),'user',sys.argv[1])))")
+            user_output = checked(["/usr/bin/python3", "-B", "-c",
+                                   "import sys;sys.path.insert(0," + repr(str(BASE)) + ");" + code,
+                                   str(app)], owner=True, stdin=json.dumps(asdict(plan)))
+            report = json.loads(user_output)
+            need(report["files"] == 8 and report["observed_uid"] == uid,
+                 "R963_OWNER_8_FILES")
+        user_install()
+        private = app / "settings.json"
+        checked(["/usr/bin/python3", "-c",
+                 "from pathlib import Path; Path.home().joinpath('.local/share/DirectInternetMethod/settings.json').write_bytes(b'{\"r963Private\":true}\\n')"],
+                owner=True)
+        private_sha = sha_file(private)
+        root_sha = sha_file(metadata)
+        user_install()
+        need(sha_file(private) == private_sha and sha_file(metadata) == root_sha,
+             "R963_REINSTALL_PRESERVES_OWNER_AND_ROOT")
+        check_units()
+        # Existing real uninstall phases, root first; no product service starts.
+        uninstall = app / "user_uninstall_preserve.py"
+        checked(["/usr/bin/python3", str(uninstall), "--verify"], owner=True)
+        need(sha_file(root / "uninstall_system.sh") ==
+             sha_file(package / "system/uninstall_system.sh"), "R963_ROOT_UNINSTALL_PIN")
+        checked(["/bin/bash", str(root / "uninstall_system.sh")])
+        checked(["/usr/bin/python3", str(uninstall), "--remove-after-backend"], owner=True)
+        need(not root.exists() and not metadata.exists() and
+             all(not p.exists() and not p.is_symlink() for p in [*unit_paths, rule, uid_file]) and
+             not (app / "INSTALL.json").exists() and sha_file(private) == private_sha,
+             "R963_REAL_UNINSTALL_OWNER_DATA_PRESERVED")
+        need((sha_file(resolver), os.readlink(resolver) if resolver.is_symlink() else None)
+             == baseline, "R963_RESOLVER_UNCHANGED")
+        print("R963_NATIVE_FRESH_INSTALL_REINSTALL_UNINSTALL_21_FILES_PASS_NO_PRODUCT_UNIT_START")
+    finally:
+        package.parent.chmod(0o700)
+        package.parent.parent.chmod(0o700)
+
+
 def main():
     temp, uid = guard()
     scratch = None
@@ -171,8 +401,12 @@ def main():
         helper.check_trusted_entry()
         scratch, package = package_fixture(temp, uid)
         native_root_snapshot(helper, package, uid, temp)
+        original_manifest = (package / "PACKAGE_MANIFEST.json").read_bytes()
         reject_drifted_manifest(package, uid)
         print("R782_EPHEMERAL_ROOT_OWNERSHIP_AND_MANIFEST_GATE_PASS")
+        if os.environ.get("GITHUB_REF") == "refs/heads/feature/universal-install-engine":
+            (package / "PACKAGE_MANIFEST.json").write_bytes(original_manifest)
+            reviewed_fresh_lifecycle(package, uid, helper)
     finally:
         if scratch is not None:
             need(scratch.parent == temp and scratch.name == "dim-r782-exact-reviewed-fixture",

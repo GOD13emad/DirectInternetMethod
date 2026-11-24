@@ -1,0 +1,10 @@
+﻿{
+    "schema":  1,
+    "status":  "PASS_R937_REAL_SCM_SYSTEM_BROKER_READY_ONLY",
+    "service_pid":  4744,
+    "protected_root_system_owned":  true,
+    "service_executable_sha256":  "b3ca5a49e5bbaf2d734d701754d2e76dc90696adb22ee6323fd5f36ed8ad1ca5",
+    "owner_data_sha256":  "e0e191d912fa226020e83c5440583db269986eece43e55ea0d7312f792b0b499",
+    "native_product_installation_accepted":  false,
+    "publisher_authenticated":  false
+}

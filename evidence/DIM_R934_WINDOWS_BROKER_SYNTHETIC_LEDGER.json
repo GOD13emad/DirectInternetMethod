@@ -1,0 +1,1 @@
+{"active":{"operation":"upgrade","phase":"applying","policy_sha256":"f78b8d6482d5eb0da85cc266ed763ccf094c25101774d278a161907b62265238","request_id":"10101010101010101010101010101010","request_sha256":"a4845f1f8dca967b0b21c62665d9c7929716a55e58e501c17c8c0563d8a99048","version":"1.5.7"},"platform":"windows-x86_64","schema":1,"used_request_ids":["10101010101010101010101010101010"]}

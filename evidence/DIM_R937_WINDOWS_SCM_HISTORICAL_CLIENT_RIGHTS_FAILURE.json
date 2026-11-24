@@ -1,0 +1,7 @@
+﻿{
+    "schema":  1,
+    "status":  "FAIL_CLOSED_R937_NATIVE_SCM_FIXTURE",
+    "phase":  "client-good",
+    "reason":  "R937_DIFFERENT_USER_CLIENT_EXIT_31_R937_CLIENT_FAIL_CLOSED_Access to the path is denied.\r\n",
+    "native_product_installation_accepted":  false
+}

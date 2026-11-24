@@ -1,0 +1,154 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R898_LINUX_KERNEL_TRUSTED_FD_20261121",
+  "project": "Direct Internet Method universal installation engine",
+  "prior_head": "407445da1c31d2c5f6a66a48ea9bccf0094d73e9",
+  "scope": "Linux x86_64 read-only FD-bound protected source verifier, not privileged broker or installation",
+  "source_sha256": {
+    "installer_engine/linux_trusted_fd.py": "fa81cbe7f00932a0d54f1b77c268625de7c2b65b387703c1d1959bf4b91a3c5a",
+    "tests/test_engine_linux_trusted_fd.py": "b27b710cb600e8cb20c2e397dbb37358535073191278899e9ef85fb6ac5401bb",
+    ".github/workflows/universal-install-engine.yml": "1c735192c68d5bd0f47e01211160d50c5faa39551edd1fe2c15af97d7828c7a7"
+  },
+  "source_code_contract": {
+    "parent_walk": "O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC with os.open(dir_fd=...) plus fstat of each held directory descriptor from / through protected root; UID0 and no group/other write required",
+    "nested_member_walk": "All intermediate member directories opened by dirfd and verified UID0 / mode nonwritable before member open",
+    "file_resolution": "Linux kernel syscall openat2 (x86_64 number 437), RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS|RESOLVE_NO_MAGICLINKS; fail closed on unsupported kernel",
+    "member_validation": "file descriptor fstat must be UID0, regular, no group/other write, expected exact bytes and SHA256, stable dev/inode/size/mtime_ns/ctime_ns across read; never reopen path by name",
+    "output_accepted": false,
+    "publisher_provenance_authenticated": false,
+    "subprocess_shell_or_service_execution": false
+  },
+  "linux_emad_native": {
+    "tests": 13,
+    "passed": 13,
+    "skipped": 0,
+    "failed": 0,
+    "python_version": "3.14.4",
+    "architecture": "x86_64",
+    "kernel": "7.0.0-44-generic",
+    "host_uid": 1000,
+    "verification_material": "/usr/share/common-licenses/GPL-3",
+    "verification_material_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "verification_material_bytes": 35149,
+    "protected_path_ancestor_uids": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "protected_path_ancestor_modes": [
+      "755",
+      "755",
+      "755",
+      "755"
+    ],
+    "positive_exercise": "read pinned immutable public GPL-3 bytes via OS FD relative to protected root and nested /usr/share; verify exact length/digest",
+    "negative_exercises": [
+      "bad out-of-band pin",
+      "bad size",
+      "missing pin",
+      "path traversal and absolute paths",
+      "symlink file and symlink intermediate",
+      "world-writable /tmp ancestor despite trusted / root",
+      "user-owned source root",
+      "no kernel fallback",
+      "closed FD",
+      "file descriptor remains anchored to same inode after a user-owned directory is renamed"
+    ],
+    "production_dim_install_accepted": false,
+    "root_privilege_obtained": false,
+    "test_copy_removed_after_source_sha_check": true,
+    "second_corrected_test_run": {
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "source_test_sha256": "b27b710cb600e8cb20c2e397dbb37358535073191278899e9ef85fb6ac5401bb",
+      "temporary_user_test_copy_removed": true
+    }
+  },
+  "github_ephemeral_root_owned_ci": {
+    "job": "Linux / root-owned fd-bound fixture (not privileged installer)",
+    "condition": "push to feature/universal-install-engine only; not pull_request",
+    "permissions": "contents read; checkout persist-credentials false",
+    "only_sudo_commands": [
+      "install -d",
+      "tee fixture marker",
+      "chmod fixture",
+      "rm -f exact marker",
+      "rmdir exact directory"
+    ],
+    "fixture_root": "/usr/local/share/dim-r898-ci-protected-fd-fixture",
+    "code_executed_as_root": false,
+    "host_authorization_claim": false,
+    "status": "FIRST_PUSH_JOB_PASS_BUT_WHOLE_CI_FAILED_TEST_ENV_ASSUMPTION; NEW_COMMIT_PENDING"
+  },
+  "limits": [
+    "Open file handles are only read-only primitives; they are not an OS privilege grant",
+    "Expected pins supplied by this test are not independently signed publisher policy",
+    "Rooted directory descriptors do not automatically make later pathname-based Engine writes TOCTOU-safe; future broker must use descriptors for writes",
+    "No native root/systemd/polkit installed-service transaction",
+    "No actual DIM package upgrade, physical VM power loss or signed release acceptance"
+  ],
+  "sources": [
+    "https://man7.org/linux/man-pages/man2/openat2.2.html",
+    "https://www.freedesktop.org/software/polkit/docs/latest/pkexec.1.html"
+  ],
+  "windows_final_contract_suite": {
+    "executed": 195,
+    "passed": 172,
+    "skipped": 23,
+    "failed": 0,
+    "operation_id": "556fac58-b524-4693-9df7-df837f1f6cc8",
+    "stderr_sha256": "c082e5f8e5d8edcc375f4cfb8cfa27c4db725aafd711d0f0054a660a2117f956",
+    "source_compile": "PASS",
+    "workflow_yaml_parsed": "PASS",
+    "runner_os": "Windows",
+    "native_linux_13_tests_skipped": "expected"
+  },
+  "corrections": [
+    {
+      "scope": "Windows source module import, before Linux native test",
+      "failure": "os.O_DIRECTORY not present on Windows at module import",
+      "fix": "Use getattr(os,O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC,0) while hard-requiring Linux x86_64 before every syscall, retaining fail-closed semantics",
+      "final": "Windows test module imports; 13 Linux native cases appropriately skipped"
+    },
+    {
+      "scope": "CI portability of test fixture (security core unchanged)",
+      "failure": "Root-owned public file path was assumed trustworthy on every Ubuntu runner; matrix host metadata did not match the owner's Linux",
+      "fix": "Discover a suitable public non-symlink UID0/read-only file under an actually verified parent chain (/etc/issue, /etc/debian_version, then original GPL-3); if none, conditionally Skip host assumption. Native root-owned positive/negative is independently required by push-only synthetic CI fixture.",
+      "initial_test_source_sha256": "da402280af85af056a364b941e6913e2900b4aae173680c283ef822a097f7365",
+      "corrected_test_source_sha256": "b27b710cb600e8cb20c2e397dbb37358535073191278899e9ef85fb6ac5401bb",
+      "corrected_local_linux_tests": "13/13 PASS",
+      "corrected_windows_target_tests": "13/13 expected platform SKIP",
+      "ci_followup": "READY_TO_PUSH_CORRECTED_HOST_AGNOSTIC_TEST"
+    }
+  ],
+  "github_first_hosted_failure": {
+    "commit_sha": "1cd8e134d2bca925ca683d90e232b14a0319daae",
+    "pull_request_engine_run": 44859408746,
+    "push_engine_run": 44859403986,
+    "specific_failure": "Eight errors on each Ubuntu 3.11/3.14 test matrix: tests assumed /usr/share/common-licenses/GPL-3 was beneath an all-UID0/non-group-writable trusted directory chain, while Linux TrustedRootFD rejected an untrusted ancestor on runner. OS fail-closed behavior correct; fixture assumption incorrect.",
+    "local_root_owned_linux_file": "/usr/share/common-licenses/GPL-3 was safe on Emad owner Linux; cannot assume hosted Ubuntu path metadata identical",
+    "incomplete_contract_conclusion": "The full Engine CI did not PASS on this commit; Windows 2/2 PASS, Linux 2/2 FAIL, frozen CI 2/2 PASS.",
+    "push_only_root_owned_fixture": {
+      "status": "PASS",
+      "run_id": 44859403986,
+      "job_id": 136709054739,
+      "positive_log_marker": "R898_HOSTED_ROOT_OWNED_FD_READONLY_PASS",
+      "negative_log_marker": "R898_HOSTED_INSECURE_ROOT_DACL_REFUSED",
+      "fixture_only_marker": "R898_HOSTED_FIXTURE_SCOPE_ONLY_NOT_NATIVE_PRODUCT_INSTALL",
+      "scope": "root-owned synthetic fixture under isolated hosted Ubuntu /usr/local/share; Python unprivileged"
+    }
+  },
+  "windows_corrected_suite": {
+    "total": 195,
+    "passed": 172,
+    "skipped": 23,
+    "failed": 0,
+    "operation_id": "04c585b5-9727-44e4-a2e4-3a1ddf7833e2",
+    "stderr_sha256": "a414df3b49e38e897d3eef881f46b77cec893b2ed9dd69b89e75177435c24b59",
+    "source_compile": "PASS",
+    "yaml_parser": "PASS",
+    "source_diff_check": "PASS"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "record_id": "DIM_R892_WINDOWS_INNO_SCM_TWO_SCOPE_SANDBOX_20261121",
+  "scope": "Windows Sandbox offline synthetic Inno 6 HKLM 64-bit AppId plus disposable SCM plus two-scope Frozen Coordinator (not product)",
+  "git_parent": "77dd72ec4ee084d4bea9aaa46b198fe3abd1e7e7",
+  "source": {
+    "inno_renderer": "tools/native_fixtures/windows/RenderInnoRegistryFixture.py",
+    "inno_renderer_sha256": "c3168c4a8ba5ac9cd60fba13df4cb70125e9a6965eec1602b654c0180fd8c704",
+    "synthetic_inno_appid": "{E8039748-26D7-4E64-ACEF-3E24B708B9A2}",
+    "wrapper": "tools/native_fixtures/windows/ScmInnoTwoScopeFixtureEntry.py",
+    "wrapper_sha256": "e3687da7ee31444c853a7121b262c32c0a9c5baaf71622cb23dbd99e4f534b4c",
+    "guest": "tools/native_fixtures/windows/RunScmInnoTwoScopeSandboxFixture.ps1",
+    "guest_sha256": "bb973fea55fd5f0d33f4b58655ece35c60afb80c5e9023b53a1da54c3727b1e7",
+    "frozen_sha256": "C975CEA25A93D4EB02471C0ECEC344CE5D2DA938599AA2B1334056FB4CE1E93F"
+  },
+  "failed_first_guest": {
+    "receipt_sha256": "d5753cb906431ef214d474a8804e5838968ba3b35412fe2ca4dd653c948b1bd4",
+    "error": "INNO_REGISTRATION_WRONG",
+    "stages": [
+      "FROZEN_CLI_AND_6_SOURCE_PACKAGES_SHA_PINNED"
+    ],
+    "trace_sha256": "022AF2362D8CED7D1400A3C0E24F1DE26CFF958433A130634F18DC6ADACA32B4",
+    "resolution": "Explicit UninstallDisplayName=AppName in synthetic Inno generated script; default AppVerName includes version, so DisplayName did not match contract"
+  },
+  "passed_second_guest": {
+    "receipt_sha256": "604afcb603503edb9be4f10e81b6c2e417095b707988011748e48794044f8e80",
+    "receipt": {
+      "schema": 1,
+      "status": "PASS_R892_SYNTHETIC_NATIVE_INNO_SCM_TWO_SCOPE",
+      "native_product_installation_accepted": false,
+      "service": "DIMR887IsolatedFixtureSvc",
+      "platform": "windows-x86_64",
+      "code_root": "C:\\ProgramData\\DIM_R891_Isolated_Code",
+      "user_root": "C:\\Users\\WDAGUtilityAccount\\AppData\\Local\\DIM_R891_Isolated_UserCode",
+      "stages": [
+        "FROZEN_CLI_AND_6_SOURCE_PACKAGES_SHA_PINNED",
+        "INNO_HKLM_AND_SCM_156_TWO_SCOPE_COMMIT",
+        "BAD_NATIVE_START_ABORT_BOTH_ROOTS_RESTORE_156",
+        "INNO_HKLM_SCM_FIRST_COMMIT_REPLAY_BOTH_ROOTS_157",
+        "INNO_SCM_UNREGISTER_TWO_SCOPE_UNINSTALL_OWNER_DATA_PRESERVED"
+      ],
+      "frozen_sha256": "C975CEA25A93D4EB02471C0ECEC344CE5D2DA938599AA2B1334056FB4CE1E93F",
+      "owner_data_sha256": "BF8B33E85EDD5D27338804483044A928A938CC424A3AC29CA5DD4D0AF744EAD0",
+      "original_service_sha256": "620bf1a312de37a95fe800fd9c4db26d701c02c4bdb4e1cbaea60d376b5ba3e6",
+      "upgraded_service_sha256": "317c9d6e48ecfc873c6bdb03dc68c5b45544da6383a9dbe4ac03e7b15c08b90b",
+      "inno_appid": "{E8039748-26D7-4E64-ACEF-3E24B708B9A2}",
+      "inno_old_installer_sha256": "99E989263728FE2D6E6D02440C1C234D07E2E7BFA9B85F4E051A70ED68F41D1D",
+      "inno_new_installer_sha256": "24752C2B3A6EDB30704A0BF63CA2CDDD8BFDF9803386FDB6D13F522E4D56A9C0"
+    },
+    "trace_sha256": "85293BC58E10D06045C0998714FFD2C8EB04F53A56FF2050484C6840C4592C0F"
+  },
+  "postflight": {
+    "sandbox_closed": true,
+    "host_dim": "Running",
+    "host_tailscale": "Running",
+    "host_synthetic_service": "ABSENT",
+    "host_synthetic_appid": "ABSENT"
+  },
+  "limits": [
+    "Real isolated native Inno registry and SCM fixture, NOT production DIM installer/AppId or service",
+    "Guest admin operated both roots; no authenticated UAC privilege boundary or independently trusted publisher",
+    "Scoped read-only OS observations are not cryptographic authorization",
+    "Failure between first code scope commit and second scope recovery was injected; not actual abrupt power loss or hard reboot",
+    "No Linux root/systemd/polkit or real product update",
+    "No public release or independent security approval"
+  ],
+  "references": [
+    "https://jrsoftware.org/inno-setup/documentation/topic_setup_appvername.htm",
+    "https://jrsoftware.org/inno-setup/documentation/topic_setup_uninstalldisplayname.htm"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "guest_runner_sha256": "6932bdc26b7dc0e88589491437a281dbdb8e7d91561d5ca2e064d642d050c8f1",
+  "native_product_installation_accepted": false,
+  "policy_bytes": 446,
+  "policy_sha256": "f78b8d6482d5eb0da85cc266ed763ccf094c25101774d278a161907b62265238",
+  "probe_sha256": "26c3898ddc2399564375322611ed10b2d1bdd10ca6c688b3a811a6210f73f625",
+  "publisher_authenticated": false,
+  "request_bytes": 377,
+  "request_sha256": "a4845f1f8dca967b0b21c62665d9c7929716a55e58e501c17c8c0563d8a99048",
+  "schema": 1,
+  "scope": "R935_SYNTHETIC_NATIVE_BROKER_PIPE_ONLY",
+  "source_cs_sha256": "73c12036f7f7507499fc4b59382f7f0d080723315832ea775dc07ba044656f72",
+  "trusted_broker_implemented": false
+}
