@@ -179,8 +179,7 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         self.assertEqual(set(self.state().values()), {None})
 
 
-    def test_policy_bound_request_survives_real_coordinator_journal(self):
-        from installer_engine.broker_intent import compare_native_transaction_policy_intent
+    def broker_bound_install_inputs(self):
         from installer_engine.native_plan import NativePlan
         sources = self.sources("1.5.7")
         manifests = []
@@ -205,6 +204,11 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         policy["scopes"] = [dict(row, role=row["name"]) for row in request["scopes"]]
         pb = json.dumps(policy, sort_keys=True).encode()
         policy_pin = hashlib.sha256(pb).hexdigest()
+        return plan, pb, policy_pin, rb, intent, sources
+
+    def test_policy_bound_request_survives_real_coordinator_journal(self):
+        from installer_engine.broker_intent import compare_native_transaction_policy_intent
+        plan, pb, policy_pin, rb, intent, sources = self.broker_bound_install_inputs()
         preflight = compare_native_transaction_policy_intent(plan, pb, policy_pin, rb, intent)
         self.core.begin(sources, expected_intent=intent)
         reopened = self.new_engine()
@@ -215,6 +219,72 @@ class UniversalInstallCrossPlatform(unittest.TestCase):
         self.assertFalse(postflight["publisher_authenticated"])
         reopened.activate()
         reopened.commit()
+
+    def test_broker_bound_dispatch_tombstones_and_denies_replay(self):
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.base / "broker", self.platform)
+        args = self.broker_bound_install_inputs()
+        result = self.core.execute_broker_bound(ledger, *args)
+        self.assertEqual(result["version"], "1.5.7")
+        self.assertEqual(ledger.inspect_fixture()["used_ids"], 1)
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertFalse(self.core.journal.exists())
+        with self.assertRaisesRegex(EngineError, "REQUEST_ID_ALREADY_USED"):
+            self.core.execute_broker_bound(ledger, *args)
+        self.assertEqual(set(self.state().values()), {"1.5.7"})
+
+    def test_broker_bound_failed_apply_recovers_exact_request_without_replay(self):
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.base / "broker", self.platform)
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        self.adapter.fail_after_apply = True
+        with self.assertRaisesRegex(EngineError, "SYNTHETIC_NATIVE_POSTINSTALL_ERROR"):
+            self.core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "applying")
+        self.assertEqual(self.core._intent(self.core._load()), intent)
+        again = self.new_engine()
+        self.adapter.fail_after_apply = False
+        with self.assertRaises(EngineError):
+            again.recover_broker_bound(ledger, plan, pb, pin, rb + b" ")
+        self.assertTrue(again.journal.exists())
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "applying")
+        result = again.recover_broker_bound(ledger, plan, pb, pin, rb)
+        self.assertIsNone(result["version"])
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertEqual(set(self.state().values()), {None})
+        with self.assertRaisesRegex(EngineError, "REQUEST_ID_ALREADY_USED"):
+            again.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
+
+    def test_broker_bound_interrupted_commit_replays_forward(self):
+        from unittest.mock import patch
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.base / "broker", self.platform)
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        commit = self.core._commit_locked
+        with patch.object(self.core, "_commit_locked",
+                          side_effect=lambda: commit(fault_after="protected")):
+            with self.assertRaisesRegex(EngineError, "INJECTED_AFTER_FINALIZE"):
+                self.core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
+        self.assertEqual(self.core._load()["phase"], "finalizing")
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "applying")
+        result = self.new_engine().recover_broker_bound(ledger, plan, pb, pin, rb)
+        self.assertEqual(result["version"], "1.5.7")
+        self.assertIsNone(ledger.inspect_fixture()["active_phase"])
+        self.assertEqual(set(self.state().values()), {"1.5.7"})
+
+    def test_broker_bound_missing_journal_keeps_ambiguous_reservation(self):
+        from installer_engine.broker_replay import BrokerReplayFixtureLedger
+        ledger = BrokerReplayFixtureLedger(self.base / "broker", self.platform)
+        plan, pb, pin, rb, intent, sources = self.broker_bound_install_inputs()
+        intent["preimage_sha256"] = "0" * 64
+        with self.assertRaisesRegex(EngineError, "EXPECTED_INTENT_DRIFT"):
+            self.core.execute_broker_bound(ledger, plan, pb, pin, rb, intent, sources)
+        self.assertFalse(self.core.journal.exists())
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "applying")
+        with self.assertRaisesRegex(EngineError, "NO_JOURNAL_RECONCILE"):
+            self.core.recover_broker_bound(ledger, plan, pb, pin, rb)
+        self.assertEqual(ledger.inspect_fixture()["active_phase"], "applying")
+        self.assertEqual(set(self.state().values()), {None})
 
     def test_intent_drift_rejected_before_journal_and_native_mutation(self):
         import copy

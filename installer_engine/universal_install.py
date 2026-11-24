@@ -228,6 +228,10 @@ class UniversalFixtureInstaller:
     @_serialized
     def begin(self, sources: Mapping[str, tuple[Path | str, str]], *,
               expected_intent: dict | None = None) -> dict:
+        return self._begin_locked(sources, expected_intent=expected_intent)
+
+    def _begin_locked(self, sources: Mapping[str, tuple[Path | str, str]], *,
+              expected_intent: dict | None = None) -> dict:
         self._no_active()
         old = self._consistent_old()
         raw_b64, sha = self._capture(old)
@@ -257,6 +261,9 @@ class UniversalFixtureInstaller:
 
     @_serialized
     def activate(self) -> dict:
+        return self._activate_locked()
+
+    def _activate_locked(self) -> dict:
         doc = self._load()
         require(doc["phase"] == "staged", "UNIVERSAL_NOT_STAGED")
         self.adapter.quiesce()
@@ -271,6 +278,9 @@ class UniversalFixtureInstaller:
 
     @_serialized
     def commit(self, *, fault_after: str | None = None) -> dict:
+        return self._commit_locked(fault_after=fault_after)
+
+    def _commit_locked(self, *, fault_after: str | None = None) -> dict:
         doc = self._load()
         require(doc["phase"] in ("activated", "finalizing"),
                 "UNIVERSAL_NOT_ACTIVATED")
@@ -293,6 +303,9 @@ class UniversalFixtureInstaller:
 
     @_serialized
     def abort(self) -> dict:
+        return self._abort_locked()
+
+    def _abort_locked(self) -> dict:
         doc = self._load()
         require(doc["phase"] in UPDATE_PHASES,
                 "UNIVERSAL_UPDATE_TRANSACTION_REQUIRED")
@@ -336,6 +349,9 @@ class UniversalFixtureInstaller:
 
     @_serialized
     def begin_uninstall(self, *, expected_intent: dict | None = None) -> dict:
+        return self._begin_uninstall_locked(expected_intent=expected_intent)
+
+    def _begin_uninstall_locked(self, *, expected_intent: dict | None = None) -> dict:
         self._no_active()
         old = self._consistent_old()
         require(old is not None, "UNIVERSAL_NOT_INSTALLED")
@@ -365,6 +381,9 @@ class UniversalFixtureInstaller:
 
     @_serialized
     def apply_uninstall(self) -> dict:
+        return self._apply_uninstall_locked()
+
+    def _apply_uninstall_locked(self) -> dict:
         doc = self._load()
         require(doc["phase"] == "uninstall-prepared",
                 "UNIVERSAL_UNINSTALL_NOT_PREPARED")
@@ -375,6 +394,9 @@ class UniversalFixtureInstaller:
 
     @_serialized
     def finish_uninstall(self, *, fault_after: str | None = None) -> dict:
+        return self._finish_uninstall_locked(fault_after=fault_after)
+
+    def _finish_uninstall_locked(self, *, fault_after: str | None = None) -> dict:
         doc = self._load()
         require(doc["phase"] in ("uninstall-prepared", "uninstall-finalizing"),
                 "UNIVERSAL_UNINSTALL_NOT_READY")
@@ -396,6 +418,9 @@ class UniversalFixtureInstaller:
 
     @_serialized
     def abort_uninstall(self) -> dict:
+        return self._abort_uninstall_locked()
+
+    def _abort_uninstall_locked(self) -> dict:
         doc = self._load()
         require(doc["phase"] in UNINSTALL_PHASES and
                 doc["phase"] != "uninstall-finalizing",
@@ -434,13 +459,88 @@ class UniversalFixtureInstaller:
                 "version": doc["old"],
                 "native_product_rollback_accepted": False}
 
+    @_serialized
     def recover(self) -> dict:
         """Replay forward only after explicit native receipt; otherwise abort."""
+        return self._recover_locked()
+
+    def _recover_locked(self) -> dict:
         doc = self._load()
         if doc["phase"] in UNINSTALL_PHASES:
             if doc["phase"] == "uninstall-finalizing":
-                return self.finish_uninstall()
-            return self.abort_uninstall()
+                return self._finish_uninstall_locked()
+            return self._abort_uninstall_locked()
         if doc["phase"] == "finalizing":
-            return self.commit()
-        return self.abort()
+            return self._commit_locked()
+        return self._abort_locked()
+
+    @_serialized
+    def execute_broker_bound(self, ledger, plan, policy_bytes: bytes,
+                             policy_pin: str, request_bytes: bytes,
+                             expected_intent: dict, sources=None) -> dict:
+        """One serialized dispatch of an exact reserved broker request.
+
+        The existing replay ledger and this fixture's native adapter have
+        NO OS authority. This API does not accept arbitrary commands or
+        acquire privileges. Production must independently authenticate the
+        policy, replay ledger and caller, and restrict all mutation to this
+        entry point. Unknown outcomes remain reserved for reconciliation.
+        """
+        from .broker_replay import BrokerReplayFixtureLedger
+        from .broker_intent import compare_native_transaction_policy_intent
+        require(type(ledger) is BrokerReplayFixtureLedger and
+                ledger.control.platform == self.platform,
+                "UNIVERSAL_BROKER_LEDGER_REQUIRED")
+        binding = compare_native_transaction_policy_intent(
+            plan, policy_bytes, policy_pin, request_bytes, expected_intent)
+        require(binding["platform"] == self.platform,
+                "UNIVERSAL_BROKER_PLATFORM_DRIFT")
+        self._no_active()
+        action = binding["operation"]
+        require((action == "uninstall" and sources is None) or
+                (action != "uninstall" and type(sources) is dict),
+                "UNIVERSAL_BROKER_SOURCE_MAP_INVALID")
+        identity = (binding["request_id"], binding["request_sha256"],
+                    binding["policy_sha256"])
+        ledger.reserve(plan, policy_bytes, policy_pin, request_bytes)
+        ledger.mark_applying_fixture(*identity)
+        # Never close or automatically retry on an exception. The journal
+        # and reservation must remain available to exact recovery.
+        if action == "uninstall":
+            self._begin_uninstall_locked(expected_intent=expected_intent)
+            self._apply_uninstall_locked()
+            result = self._finish_uninstall_locked()
+        else:
+            self._begin_locked(sources, expected_intent=expected_intent)
+            self._activate_locked()
+            result = self._commit_locked()
+        ledger.close_fixture(*identity, outcome="completed_synthetic")
+        return result
+
+    @_serialized
+    def recover_broker_bound(self, ledger, plan, policy_bytes: bytes,
+                             policy_pin: str, request_bytes: bytes) -> dict:
+        """Reconcile ONLY the matching active reservation and durable journal.
+
+        No journal means an ambiguous reserve-before-begin or commit-before-
+        close boundary. Preserve evidence; do not infer success or rerun.
+        """
+        from .broker_replay import BrokerReplayFixtureLedger
+        from .broker_intent import compare_native_transaction_policy_intent
+        require(type(ledger) is BrokerReplayFixtureLedger and
+                ledger.control.platform == self.platform,
+                "UNIVERSAL_BROKER_LEDGER_REQUIRED")
+        require(self.journal.exists(), "UNIVERSAL_BROKER_NO_JOURNAL_RECONCILE")
+        doc = self._load()
+        binding = compare_native_transaction_policy_intent(
+            plan, policy_bytes, policy_pin, request_bytes, self._intent(doc))
+        identity = (binding["request_id"], binding["request_sha256"],
+                    binding["policy_sha256"])
+        active = ledger.recover(*identity)
+        require(active["phase"] == "applying",
+                "UNIVERSAL_BROKER_RECOVERY_PHASE_DRIFT")
+        forward = doc["phase"] in ("finalizing", "uninstall-finalizing")
+        result = self._recover_locked()
+        ledger.close_fixture(*identity, outcome=("completed_synthetic"
+                             if forward else "aborted_synthetic"))
+        return result
