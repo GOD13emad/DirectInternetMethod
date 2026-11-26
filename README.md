@@ -6,7 +6,7 @@
 
 ## Current public release: v1.5.4 Stable (.NET 10 LTS)
 
-Published 13 October 2026, official release: https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.4 .
+Published 13 October 2026. **[Download the current official Stable v1.5.4](https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.4)** (Windows x64 and Linux x86_64).
 
 Windows: `DirectInternetMethod_1.5.4_Windows_Setup.exe`, SHA256 FFB9A2AE19C2E89338EE12EE8DA133F5A16DBF4DCF961678C33D77D0C3843133.
 Linux: `DirectInternetMethod_1.5.4_Linux_x86_64.zip`, SHA256 4784FCD44ED3D1B40103BCA140B2C0066784F794D07C3AE1F525334766A553C7.
@@ -15,7 +15,7 @@ Published SHA256SUMS.txt SHA 68E70329E8B9DAC6B738CE9B90D99A0010030980CD9C17CDE45
 This is a public Stable, NOT a private draft. Windows WPF and Service use .NET 10 LTS. Publisher signing is not mandatory; users must not disable OS protections.
 Active remote Tailscale/Direct Method host upgrades remain gated by safe managed OFF and verified rollback. Regional HTTP403 cannot universally be fixed by direct DNS/DPI.
 The source-level RELEASE.json historical candidate label is build-time provenance and is NOT current publication authority.
-See docs/PUBLISHED_V154_ASSET_AUTHORITY.md and the official Release for exact checksums and native accepted tests.
+See [published asset authority and checksums](docs/PUBLISHED_V154_ASSET_AUTHORITY.md) and the official Release for the exact native acceptance evidence. Before updating an active connection, use the application's managed Stop/Recovery and preserve a separate recovery route. Follow the installation instructions in the v1.5.4 Release.
 
 ---
 
@@ -23,7 +23,7 @@ See docs/PUBLISHED_V154_ASSET_AUTHORITY.md and the official Release for exact ch
 
 **v1.5.3 was published on 13 October 2026.** It is a public stable release, not an unpublished draft.
 
-[Download the official Windows or Linux installer](https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.3)
+[Archived v1.5.3 Windows and Linux installers (historical / rollback)](https://github.com/GOD13emad/DirectInternetMethod/releases/tag/v1.5.3)
 
 | Platform | One installation package | SHA-256 |
 |---|---|---|
@@ -46,7 +46,7 @@ Site availability depends on the network. HTTP 401 from an unauthenticated API d
 
 Settings, user-managed files and custom Router Gateway provider data are protected by the tested update/rollback paths. Back up configuration before making changes on a live machine.
 
-### Accepted release evidence
+### Historical v1.5.3 release evidence
 
 - Exact published Windows installer: hosted Windows native install, in-place update and rollback [run 38389324841](https://github.com/GOD13emad/DirectInternetMethod/actions/runs/38389324841).
 - Direct Windows v1.5.1 to official v1.5.3 update and rollback: [run 38406271349](https://github.com/GOD13emad/DirectInternetMethod/actions/runs/38406271349).
@@ -58,7 +58,7 @@ These are bounded acceptance results, not a guarantee that every ISP, destinatio
 
 ### Source development is not a replacement release
 
-The `main` branch contains the .NET 10 maintenance change accepted in PR #55. It was tested with a genuine Windows installation, a visible WPF window, a running service, preserved user data and rollback in [run 38428921577](https://github.com/GOD13emad/DirectInternetMethod/actions/runs/38428921577). **The published v1.5.3 Windows installer has not been replaced by this .NET 10 build.** A future versioned distribution requires its own exact-asset acceptance.
+The `main` branch contains the .NET 10 maintenance change accepted in PR #55. It was tested with a genuine Windows installation, a visible WPF window, a running service, preserved user data and rollback in [run 38428921577](https://github.com/GOD13emad/DirectInternetMethod/actions/runs/38428921577). **The original published v1.5.3 Windows installer remains unchanged.** The later v1.5.4 Stable distribution is separately published with its own exact-asset acceptance, linked at the top of this page.
 
 The existing v1.5.3 archive contains build-time documentation and metadata. Their historical candidate labels do not override this public Release record. `docs/README_PACKAGE_153.md` preserves the exact originally shipped README solely so that the accepted Linux ZIP can be reproduced without changing any released byte. New releases must intentionally version their package documentation.
 
