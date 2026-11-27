@@ -80,7 +80,21 @@ check("ui_openai_403_cannot_be_chatgpt_login_pass",
     and '"200" when p.Reached => "API HTTP 200 reachable · login unverified"' in gui
     and '"API transport unavailable · login unverified"' in gui)
 
-check("ui_live_probe_semantics", "FAIL · HTTP" in gui and 'https://gemini.google.com/' in gui and "adultTasks is not null" in gui and "full pages" in gui)
+# Static source contract, not a runtime URL sanitizer or full C# parser.
+def exact_gemini_probe(source):
+    args = re.findall(r'(?m)^[ \t]*var geminiTask\s*=\s*ProbeAsync\(\s*"([^"\r\n]*)"\s*,', source)
+    return args == ["https://gemini.google.com/"]
+
+_probe_fixture = 'var geminiTask = ProbeAsync("https://gemini.google.com/", IpText.Text, codes);'
+check("ui_gemini_probe_exact_literal_contract", exact_gemini_probe(_probe_fixture) and not any(exact_gemini_probe(x) for x in (
+    '// '+_probe_fixture,
+    _probe_fixture+'\n'+_probe_fixture,
+    _probe_fixture.replace('https://gemini.google.com/', 'https://example.invalid/?next=https://gemini.google.com/'),
+    _probe_fixture.replace('https://gemini.google.com/', 'https://gemini.google.com/example'),
+    _probe_fixture.replace('https://gemini.google.com/', 'https://gemini.google.com.example.invalid/'),
+    _probe_fixture.replace('https://gemini.google.com/', 'http://gemini.google.com/'),
+)))
+check("ui_live_probe_semantics", "FAIL · HTTP" in gui and exact_gemini_probe(gui) and "adultTasks is not null" in gui and "full pages" in gui)
 check("ui_direct_update_service_handoff", 'ServiceClient.Send("update")' in gui and 'ServiceClient.Send("recovery")' in gui and '"handoff"' in gui and "300000" in gui and "DownloadVerifiedAsync" not in gui and "LaunchInstaller" not in gui)
 check("ui_update_advisory_release_digest", "InstallerDigest" in updater and "digest" in updater and "SHA256SUMS.txt" in updater and "DownloadVerifiedAsync" not in updater and "Process.Start" not in updater)
 
